@@ -489,7 +489,8 @@ export async function init() {
       const f = textoBusqueda.toLowerCase().trim();
 
       let lista = getGrupos();
-      lista = lista.filter(g => !estoyEn(g));
+      // Mostrar TODOS los grupos, incluso los míos, PERO marcar cuáles son míos
+      // (el botón cambia a "Ya eres miembro")
 
       if (filtroTipo === 'equipo')     lista = lista.filter(g => g.tipo === 'equipo');
       if (filtroTipo === 'comunidad')  lista = lista.filter(g => g.tipo === 'comunidad');
@@ -525,8 +526,12 @@ export async function init() {
             const iconoTipo = esComunidad ? '🌐' : '🛡️';
             const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
 
+            const yaSoyMiembro = estoyEn(g);
+
             let botonHtml = '';
-            if (yaSolicite) {
+            if (yaSoyMiembro) {
+              botonHtml = `<button class="btn btn--ghost btn--sm" disabled>✓ Ya eres miembro</button>`;
+            } else if (yaSolicite) {
               botonHtml = `<button class="btn btn--ghost btn--sm" disabled>⏳ Solicitud enviada</button>`;
             } else if (esPrivado) {
               botonHtml = `<button class="btn btn--primary btn--sm" data-unirse="${g.id}">Solicitar unirme</button>`;
