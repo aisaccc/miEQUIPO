@@ -1,0 +1,117 @@
+<h1 class="page-title">Torneos</h1>
+
+<!-- ================= SUB-PESTAÑAS ================= -->
+<div class="subtabs mb-4">
+  <button class="subtab subtab--active" data-tab-torneos="disponibles">🔍 Disponibles</button>
+  <button class="subtab" data-tab-torneos="creados">
+    👑 Mis creados <span class="subtab__count" id="count-torneos-creados">0</span>
+  </button>
+  <button class="subtab" data-tab-torneos="inscritos">
+    ✅ Inscritos <span class="subtab__count" id="count-torneos-inscritos">0</span>
+  </button>
+</div>
+
+<!-- ================= PANEL: DISPONIBLES ================= -->
+<div class="subpanel subpanel--active" id="panel-torneos-disponibles">
+  <div class="toolbar mb-4">
+    <div class="toolbar__filters">
+      <button class="chip chip--active" data-filtro-torneo="todos">Todos</button>
+      <button class="chip" data-filtro-torneo="inscripcion">Inscripción abierta</button>
+      <button class="chip" data-filtro-torneo="en_curso">En curso</button>
+      <button class="chip" data-filtro-torneo="gratis">Gratis</button>
+    </div>
+    <button class="btn btn--primary" id="btn-crear-torneo">+ Crear torneo</button>
+  </div>
+
+  <div id="lista-torneos" class="card-grid"></div>
+</div>
+
+<!-- ================= PANEL: MIS CREADOS ================= -->
+<div class="subpanel" id="panel-torneos-creados">
+  <div class="toolbar mb-4">
+    <p class="text-sm text-muted">Torneos que tú organizas</p>
+    <button class="btn btn--primary" id="btn-crear-torneo-2">+ Crear torneo</button>
+  </div>
+  <div id="lista-torneos-creados" class="card-grid"></div>
+</div>
+
+<!-- ================= PANEL: INSCRITOS ================= -->
+<div class="subpanel" id="panel-torneos-inscritos">
+  <div class="toolbar mb-4">
+    <p class="text-sm text-muted">Torneos en los que participas</p>
+  </div>
+  <div id="lista-torneos-inscritos" class="card-grid"></div>
+</div>
+
+<!-- ================= MODAL: CREAR / EDITAR TORNEO ================= -->
+<div class="modal-backdrop" id="modal-crear-torneo">
+  <div class="modal" style="max-width: 580px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="torneo-modal-titulo">Crear torneo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-torneo">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <div class="field">
+        <label class="field__label" for="torneo-nombre">Nombre del torneo *</label>
+        <input type="text" id="torneo-nombre" class="field__input" placeholder="Ej: Copa Verano 2026" maxlength="80" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-deporte">Deporte *</label>
+        <select id="torneo-deporte" class="field__input">
+          <option value="">Selecciona un deporte...</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="torneo-fecha-inicio">Fecha de inicio *</label>
+          <input type="date" id="torneo-fecha-inicio" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="torneo-fecha-fin">Fecha de término</label>
+          <input type="date" id="torneo-fecha-fin" class="field__input" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-lugar">Lugar *</label>
+        <input type="text" id="torneo-lugar" class="field__input" placeholder="Ej: Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-equipos">Cupos de equipos *</label>
+        <input type="number" id="torneo-equipos" class="field__input" min="2" max="64" value="8" />
+      </div>
+
+      <div class="field">
+        <label class="switch mb-4">
+          <input type="checkbox" id="torneo-gratis" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Torneo gratis</div>
+            <div class="switch__hint">Desactiva para cobrar inscripción por equipo</div>
+          </div>
+        </label>
+
+        <div id="torneo-precio-wrapper" class="hidden">
+          <label class="field__label" for="torneo-precio">Valor de inscripción por equipo (CLP)</label>
+          <input type="number" id="torneo-precio" class="field__input" min="0" step="1000" value="20000" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-descripcion">Descripción (opcional)</label>
+        <textarea id="torneo-descripcion" class="textarea" placeholder="Formato, reglas, premios, etc." maxlength="400"></textarea>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-torneo">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-torneo">Crear torneo</button>
+    </div>
+  </div>
+</div>

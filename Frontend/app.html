@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiEquipo — Inicio</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/pages.css" />
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <!-- ================= HEADER ================= -->
+    <header class="app-header">
+      <a href="app.html#/inicio" class="app-header__logo">
+        <img src="assets/images/logo.svg" alt="MiEquipo" style="height: 36px;" />
+      </a>
+
+      <div class="app-header__search">
+        <input type="text" placeholder="Buscar partidos, equipos, personas..." />
+      </div>
+
+      <div class="app-header__actions">
+
+        <!-- Amigos -->
+        <div class="dropdown" id="dropdown-amigos">
+          <button class="app-header__icon-btn dropdown__trigger" title="Amigos">
+            👥<span class="badge">2</span>
+          </button>
+
+          <div class="dropdown__panel">
+            <div class="dropdown__header">
+              <h4>Amigos</h4>
+              <button class="dropdown__link">Ver todos</button>
+            </div>
+
+            <div class="dropdown__tabs">
+              <button class="dropdown__tab active" data-tab-amigos="solicitudes">
+                Solicitudes <span class="badge badge--primary">2</span>
+              </button>
+              <button class="dropdown__tab" data-tab-amigos="lista">
+                Amigos <span class="badge badge--neutral">18</span>
+              </button>
+            </div>
+
+            <div class="dropdown__search">
+              <input type="text" placeholder="Buscar personas..." />
+            </div>
+
+            <div class="dropdown__pane active" id="pane-solicitudes">
+              <div class="amigo-item">
+                <img src="https://i.pravatar.cc/100?img=22" alt="" class="avatar avatar--md" />
+                <div class="amigo-item__info">
+                  <div class="amigo-item__name">Rodrigo Muñoz</div>
+                  <div class="amigo-item__sub">Fútbol · Santiago</div>
+                </div>
+                <div class="amigo-item__actions">
+                  <button class="btn btn--primary btn--sm" data-aceptar="1">Aceptar</button>
+                  <button class="btn btn--ghost btn--sm" data-rechazar="1">✕</button>
+                </div>
+              </div>
+
+              <div class="amigo-item">
+                <img src="https://i.pravatar.cc/100?img=24" alt="" class="avatar avatar--md" />
+                <div class="amigo-item__info">
+                  <div class="amigo-item__name">Valentina Rojas</div>
+                  <div class="amigo-item__sub">Vóleibol · Valparaíso</div>
+                </div>
+                <div class="amigo-item__actions">
+                  <button class="btn btn--primary btn--sm" data-aceptar="2">Aceptar</button>
+                  <button class="btn btn--ghost btn--sm" data-rechazar="2">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown__pane" id="pane-lista">
+              <div class="amigo-item">
+                <img src="https://i.pravatar.cc/100?img=13" alt="" class="avatar avatar--md" />
+                <div class="amigo-item__info">
+                  <div class="amigo-item__name">Carlos Ruiz</div>
+                  <div class="amigo-item__sub">En línea</div>
+                </div>
+                <button class="btn btn--ghost btn--sm">Mensaje</button>
+              </div>
+
+              <div class="amigo-item">
+                <img src="https://i.pravatar.cc/100?img=45" alt="" class="avatar avatar--md" />
+                <div class="amigo-item__info">
+                  <div class="amigo-item__name">María González</div>
+                  <div class="amigo-item__sub">Hace 5 min</div>
+                </div>
+                <button class="btn btn--ghost btn--sm">Mensaje</button>
+              </div>
+
+              <div class="amigo-item">
+                <img src="https://i.pravatar.cc/100?img=14" alt="" class="avatar avatar--md" />
+                <div class="amigo-item__info">
+                  <div class="amigo-item__name">Andrés Soto</div>
+                  <div class="amigo-item__sub">Hace 1 h</div>
+                </div>
+                <button class="btn btn--ghost btn--sm">Mensaje</button>
+              </div>
+            </div>
+
+            <div class="dropdown__footer">
+              <button class="btn btn--ghost btn--block btn--sm">🔍 Buscar nuevos amigos</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notificaciones -->
+        <div class="dropdown" id="dropdown-notif">
+          <button class="app-header__icon-btn dropdown__trigger" title="Notificaciones" id="btn-campana">
+            🔔<span class="badge hidden" id="badge-notif">0</span>
+          </button>
+
+          <div class="dropdown__panel">
+            <div class="dropdown__header">
+              <h4>Notificaciones</h4>
+              <button class="dropdown__link" id="btn-marcar-leidas">Marcar leídas</button>
+            </div>
+
+            <div class="dropdown__pane active" id="lista-notificaciones">
+              <!-- Se llena dinámicamente desde components.js -->
+            </div>
+
+            <div class="dropdown__footer">
+              <button class="btn btn--ghost btn--block btn--sm" id="btn-ver-todas-notif">
+                Ver todas
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Menú de usuario -->
+        <div class="user-menu" id="user-menu">
+          <button class="user-menu__trigger" id="user-trigger" aria-label="Menú de usuario">
+            <img id="avatar-header" src="" alt="Usuario" class="app-header__avatar" />
+          </button>
+
+          <div class="user-menu__dropdown">
+            <div class="user-menu__header">
+              <div class="user-menu__name"></div>
+              <div class="user-menu__email"></div>
+            </div>
+
+            <button class="user-menu__item" data-action="perfil">
+              <span>👤</span> Ver perfil
+            </button>
+            <button class="user-menu__item" data-action="config">
+              <span>⚙️</span> Configuración
+            </button>
+            <button class="user-menu__item" data-action="ayuda">
+              <span>❓</span> Ayuda
+            </button>
+
+            <div class="user-menu__divider"></div>
+
+            <button class="user-menu__item user-menu__item--danger" data-action="logout">
+              <span>🚪</span> Cerrar sesión
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav">
+        <a href="#/inicio" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">🏠</span> Inicio
+        </a>
+        <a href="#/partidos" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">⚽</span> Partidos
+        </a>
+        <a href="#/torneos" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">🏆</span> Torneos
+        </a>
+        <a href="#/mi-equipo" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">👥</span> Mi Equipo
+        </a>
+        <a href="#/mensajes" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">💬</span> Mensajes
+        </a>
+        <a href="#/perfil" class="sidebar-nav__item">
+          <span class="sidebar-nav__icon">👤</span> Perfil
+        </a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="app-main">
+      <div class="container" id="page-content">
+        <!-- El router carga aquí las páginas -->
+      </div>
+    </main>
+
+  </div>
+  <!-- ================= MODAL: VER PERFIL DE USUARIO ================= -->
+<div class="modal-backdrop" id="modal-ver-perfil">
+  <div class="modal" style="max-width: 480px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Perfil de usuario</h3>
+      <button class="modal__close" data-cerrar-modal="modal-ver-perfil">✕</button>
+    </div>
+
+    <div class="modal__body" id="ver-perfil-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-ver-perfil">Cerrar</button>
+    </div>
+  </div>
+</div>
+<!-- ================= MODAL: CONFIGURACIÓN ================= -->
+<div class="modal-backdrop" id="modal-configuracion">
+  <div class="modal" style="max-width: 460px;">
+    <div class="modal__header">
+      <h3 class="modal__title">⚙️ Configuración</h3>
+      <button class="modal__close" data-cerrar-modal="modal-configuracion">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Perfil -->
+      <div class="dropdown__pane active" style="padding:0">
+        <button class="user-menu__item" data-config-action="perfil">
+          <span>👤</span> Ver mi perfil
+        </button>
+        <button class="user-menu__item" data-config-action="editar-perfil">
+          <span>✏️</span> Editar mi perfil
+        </button>
+        <button class="user-menu__item" data-config-action="cambiar-pass">
+          <span>🔒</span> Cambiar contraseña
+        </button>
+        <button class="user-menu__item" data-config-action="notificaciones">
+          <span>🔔</span> Notificaciones
+        </button>
+        <button class="user-menu__item" data-config-action="privacidad">
+          <span>🔐</span> Privacidad
+        </button>
+        <button class="user-menu__item" data-config-action="ayuda">
+          <span>❓</span> Ayuda
+        </button>
+
+        <div class="user-menu__divider"></div>
+
+        <button class="user-menu__item user-menu__item--danger" data-config-action="cerrar-sesion">
+          <span>🚪</span> Cerrar sesión
+        </button>
+        <button class="user-menu__item user-menu__item--danger" data-config-action="eliminar-cuenta">
+          <span>⚠️</span> Eliminar mi cuenta
+        </button>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-configuracion">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CAMBIAR CONTRASEÑA ================= -->
+<div class="modal-backdrop" id="modal-cambiar-pass">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal__header">
+      <h3 class="modal__title">🔒 Cambiar contraseña</h3>
+      <button class="modal__close" data-cerrar-modal="modal-cambiar-pass">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <label class="field__label" for="pass-actual">Contraseña actual *</label>
+        <input type="password" id="pass-actual" class="field__input" placeholder="••••••••" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="pass-nueva">Nueva contraseña *</label>
+        <input type="password" id="pass-nueva" class="field__input" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="pass-confirmar">Confirmar nueva contraseña *</label>
+        <input type="password" id="pass-confirmar" class="field__input" placeholder="Repite la nueva contraseña" />
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-cambiar-pass">Cancelar</button>
+      <button class="btn btn--primary" id="btn-confirmar-pass">Cambiar contraseña</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ================= INICIALIZACIÓN ================= -->
+  <script type="module">
+    import { getSesion } from './js/auth.js';
+    import { iniciarRouter } from './js/router.js';
+    import {
+      initHeader,
+      initDropdowns,
+      initNotificaciones,
+      initConfiguracion
+    } from './js/components.js';
+
+    const user = getSesion();
+    if (!user) {
+      window.location.href = 'index.html';
+    } else {
+      initHeader();
+      initDropdowns();
+      initNotificaciones();
+      initConfiguracion();
+      iniciarRouter();
+    }
+  </script>
+</body>
+</html>

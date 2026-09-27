@@ -1,0 +1,77 @@
+<div id="detalle-partido">
+  <!-- Se llena dinámicamente desde partido-detalle.js -->
+</div>
+
+<!-- ================= MODAL: EDITAR PARTIDO ================= -->
+<div class="modal-backdrop" id="modal-editar-partido">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Editar partido</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-partido">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <div class="field">
+        <label class="field__label" for="edit-titulo">Título *</label>
+        <input type="text" id="edit-titulo" class="field__input" maxlength="80" />
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="edit-fecha">Fecha *</label>
+          <input type="date" id="edit-fecha" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="edit-hora">Hora *</label>
+          <input type="time" id="edit-hora" class="field__input" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-lugar">Lugar *</label>
+        <input type="text" id="edit-lugar" class="field__input" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-cupos">Cupos totales *</label>
+        <input type="number" id="edit-cupos" class="field__input" min="2" max="50" />
+        <p class="text-xs text-muted mt-4" id="edit-cupos-hint"></p>
+      </div>
+
+      <div class="field">
+        <label class="switch mb-4">
+          <input type="checkbox" id="edit-gratis" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Partido gratis</div>
+            <div class="switch__hint">Desactiva para cobrar inscripción</div>
+          </div>
+        </label>
+
+        <div id="edit-precio-wrapper" class="hidden">
+          <label class="field__label" for="edit-precio">Valor de inscripción (CLP)</label>
+          <input type="number" id="edit-precio" class="field__input" min="0" step="500" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-descripcion">Descripción</label>
+        <textarea id="edit-descripcion" class="textarea" maxlength="300"></textarea>
+      </div>
+
+      <div class="aviso-aprobacion show" id="edit-aviso-cambios">
+        <span class="aviso-aprobacion__icon">🔔</span>
+        <div>
+          Los <strong>inscritos</strong> recibirán una notificación con los cambios que hagas.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-partido">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-edicion">Guardar cambios</button>
+    </div>
+  </div>
+</div>

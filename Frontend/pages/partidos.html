@@ -1,0 +1,163 @@
+<h1 class="page-title">Partidos</h1>
+
+<!-- ================= SUB-PESTAÑAS ================= -->
+<div class="subtabs mb-4">
+  <button class="subtab subtab--active" data-tab-partidos="disponibles">
+    🔍 Disponibles
+  </button>
+  <button class="subtab" data-tab-partidos="creados">
+    👑 Mis creados <span class="subtab__count" id="count-creados">0</span>
+  </button>
+  <button class="subtab" data-tab-partidos="inscritos">
+    ✅ Inscritos <span class="subtab__count" id="count-inscritos">0</span>
+  </button>
+</div>
+
+<!-- ================= PANEL: DISPONIBLES ================= -->
+<div class="subpanel subpanel--active" id="panel-disponibles">
+  <div class="toolbar mb-4">
+    <div class="toolbar__filters">
+      <button class="chip chip--active" data-filtro="todos">Todos</button>
+      <button class="chip" data-filtro="abiertos">Abiertos</button>
+      <button class="chip" data-filtro="llenos">Llenos</button>
+    </div>
+    <button class="btn btn--primary" id="btn-crear-partido">+ Crear partido</button>
+  </div>
+
+  <div id="lista-partidos" class="card-grid"></div>
+</div>
+
+<!-- ================= PANEL: MIS CREADOS ================= -->
+<div class="subpanel" id="panel-creados">
+  <div class="toolbar mb-4">
+    <p class="text-sm text-muted">Partidos que tú organizas</p>
+    <button class="btn btn--primary" id="btn-crear-partido-2">+ Crear partido</button>
+  </div>
+  <div id="lista-creados" class="card-grid"></div>
+</div>
+
+<!-- ================= PANEL: INSCRITOS ================= -->
+<div class="subpanel" id="panel-inscritos">
+  <div class="toolbar mb-4">
+    <p class="text-sm text-muted">Partidos en los que estás participando</p>
+  </div>
+  <div id="lista-inscritos" class="card-grid"></div>
+</div>
+
+<!-- ================= MODAL: CREAR PARTIDO ================= -->
+<div class="modal-backdrop" id="modal-crear-partido">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Crear partido</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-partido">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <div class="field">
+        <label class="field__label" for="partido-deporte">Deporte *</label>
+        <select id="partido-deporte" class="field__input" required>
+          <option value="">Selecciona un deporte...</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="partido-titulo">Título *</label>
+        <input type="text" id="partido-titulo" class="field__input" placeholder="Ej: Fútbol 7 - Cancha Sur" maxlength="80" />
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="partido-fecha">Fecha *</label>
+          <input type="date" id="partido-fecha" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="partido-hora">Hora *</label>
+          <input type="time" id="partido-hora" class="field__input" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="partido-lugar">Lugar *</label>
+        <input type="text" id="partido-lugar" class="field__input" placeholder="Ej: Cancha Sur, Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="partido-cupos">Cupos totales *</label>
+        <input type="number" id="partido-cupos" class="field__input" min="2" max="50" value="14" />
+      </div>
+
+      <div class="field">
+        <label class="switch mb-4">
+          <input type="checkbox" id="partido-gratis" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Partido gratis</div>
+            <div class="switch__hint">Desactiva para cobrar inscripción</div>
+          </div>
+        </label>
+
+        <div id="precio-wrapper" class="hidden">
+          <label class="field__label" for="partido-precio">Valor de inscripción (CLP)</label>
+          <input type="number" id="partido-precio" class="field__input" min="0" step="500" value="5000" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Nivel del partido *</label>
+        <div class="nivel-grid" id="nivel-grid" style="grid-template-columns:repeat(3, 1fr)"></div>
+
+        <!-- Aviso: siempre requiere aprobación (Profesional) -->
+        <div class="aviso-aprobacion mt-4" id="aviso-aprobacion">
+          <span class="aviso-aprobacion__icon">⚠️</span>
+          <div>
+            <strong>Este nivel siempre requiere aprobación.</strong>
+            Los interesados se postularán y tú decidirás quién entra
+            revisando sus perfiles. El partido se cierra automáticamente
+            al llenarse los cupos.
+          </div>
+        </div>
+
+        <!-- Elección libre (Semi-profesional) -->
+        <div class="mt-4 hidden" id="eleccion-aprobacion">
+          <label class="switch">
+            <input type="checkbox" id="partido-requiere-aprobacion" />
+            <span class="switch__slider"></span>
+            <div>
+              <div class="switch__label">¿Requiere aprobación?</div>
+              <div class="switch__hint">Si activas, los interesados deben postularse y tú apruebas quién entra</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="field hidden" id="posiciones-wrapper">
+        <label class="field__label">Posiciones buscadas</label>
+        <label class="switch mb-4">
+          <input type="checkbox" id="partido-pedir-posiciones" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Pedir posición al inscribirse</div>
+            <div class="switch__hint">Los jugadores deberán elegir su posición al postularse</div>
+          </div>
+        </label>
+        <div id="posiciones-selector" class="hidden">
+          <label class="field__label">Selecciona las posiciones que buscas</label>
+          <div class="posiciones-lista" id="posiciones-lista"></div>
+          <p class="text-xs text-muted mt-4">Click en cada posición para activarla o desactivarla.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="partido-descripcion">Descripción (opcional)</label>
+        <textarea id="partido-descripcion" class="textarea" placeholder="Reglas, qué llevar, nivel esperado, etc." maxlength="300"></textarea>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-partido">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-partido">Publicar partido</button>
+    </div>
+  </div>
+</div>

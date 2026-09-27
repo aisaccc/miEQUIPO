@@ -1,0 +1,55 @@
+<h1 class="page-title">Mensajes</h1>
+
+<div class="chat-layout">
+  <aside class="chat-layout__list">
+    <!-- Buscador + botón nueva conversación -->
+    <div class="flex gap-2 mb-4">
+      <input
+        type="text"
+        id="buscar-conversacion"
+        class="field__input"
+        placeholder="Buscar conversación..."
+        style="flex:1"
+      />
+      <button class="btn btn--primary" id="btn-nueva-conv" title="Nueva conversación" style="padding:0 14px">
+        ✏️
+      </button>
+    </div>
+
+    <div id="lista-conversaciones"></div>
+  </aside>
+
+  <section class="chat-layout__panel" id="panel-mensajes">
+    <div class="chat-empty">
+      <div style="font-size:48px">💬</div>
+      <p class="text-muted mt-4">Selecciona una conversación</p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= MODAL: NUEVA CONVERSACIÓN ================= -->
+<div class="modal-backdrop" id="modal-nueva-conv">
+  <div class="modal" style="max-width: 480px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Nueva conversación</h3>
+      <button class="modal__close" data-cerrar-modal="modal-nueva-conv">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <input
+          type="text"
+          id="buscar-usuario"
+          class="field__input"
+          placeholder="Buscar por nombre o usuario..."
+        />
+      </div>
+
+      <div id="lista-usuarios"></div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-nueva-conv">Cerrar</button>
+    </div>
+  </div>
+</div>

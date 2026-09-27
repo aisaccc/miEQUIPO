@@ -1,0 +1,131 @@
+<div id="detalle-torneo">
+  <!-- Se llena dinámicamente desde torneo-detalle.js -->
+</div>
+
+<!-- ================= MODAL: INSCRIBIR EQUIPO ================= -->
+<div class="modal-backdrop" id="modal-inscribir-equipo">
+  <div class="modal" style="max-width: 480px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Inscribir equipo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-inscribir-equipo">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <p class="text-sm text-muted mb-4">
+        Selecciona cuál de tus equipos quieres inscribir en este torneo.
+      </p>
+
+      <div id="lista-mis-equipos"></div>
+
+      <div class="aviso-aprobacion show mt-4">
+        <span class="aviso-aprobacion__icon">⏳</span>
+        <div>
+          Tu solicitud quedará <strong>pendiente</strong> hasta que el organizador la apruebe.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-inscribir-equipo">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: INVITAR EQUIPO ================= -->
+<div class="modal-backdrop" id="modal-invitar-equipo">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Invitar equipo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-invitar-equipo">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <input
+          type="text"
+          id="buscar-equipo-invitar"
+          class="field__input"
+          placeholder="Buscar por nombre o deporte..."
+        />
+      </div>
+
+      <div id="lista-equipos-invitar" style="max-height: 340px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-invitar-equipo">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: GESTIONAR SOLICITUDES ================= -->
+<div class="modal-backdrop" id="modal-gestionar-solicitudes">
+  <div class="modal" style="max-width: 620px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Gestionar solicitudes</h3>
+      <button class="modal__close" data-cerrar-modal="modal-gestionar-solicitudes">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="dropdown__tabs mb-4">
+        <button class="dropdown__tab active" data-tab-sol="pendientes">
+          ⏳ Pendientes <span class="badge badge--primary" id="count-sol-pendientes">0</span>
+        </button>
+        <button class="dropdown__tab" data-tab-sol="aceptados">
+          ✅ Aceptados <span class="badge badge--neutral" id="count-sol-aceptados">0</span>
+        </button>
+        <button class="dropdown__tab" data-tab-sol="rechazados">
+          ❌ Rechazados <span class="badge badge--neutral" id="count-sol-rechazados">0</span>
+        </button>
+      </div>
+
+      <div id="lista-solicitudes" style="max-height: 400px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-gestionar-solicitudes">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CHAT DEL TORNEO ================= -->
+<div class="modal-backdrop" id="modal-chat-torneo">
+  <div class="modal" style="max-width: 720px; height: 80vh;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="chat-torneo-titulo">Chat del torneo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-chat-torneo">✕</button>
+    </div>
+
+    <div class="modal__body" style="padding:0; display:flex; flex-direction:column; height:100%;">
+      <div class="chat-mensajes" id="chat-torneo-mensajes" style="flex:1; overflow-y:auto;"></div>
+
+      <form class="chat-input" id="chat-torneo-form" style="margin:0">
+        <input
+          type="text"
+          id="chat-torneo-input"
+          placeholder="Escribe un mensaje..."
+          maxlength="500"
+          autocomplete="off"
+        />
+        <button type="submit" class="chat-input__btn">➤</button>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- ================= MODAL: VER DETALLES DE EQUIPO ================= -->
+<div class="modal-backdrop" id="modal-ver-equipo">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="ver-equipo-titulo">Detalles del equipo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-ver-equipo">✕</button>
+    </div>
+
+    <div class="modal__body" id="ver-equipo-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-ver-equipo">Cerrar</button>
+    </div>
+  </div>
+</div>

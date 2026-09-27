@@ -1,0 +1,145 @@
+<h1 class="page-title">Inicio</h1>
+
+<div class="page-grid">
+
+  <!-- ================= COLUMNA PRINCIPAL ================= -->
+  <div class="page-grid__main">
+
+    <!-- Composer -->
+    <div class="composer">
+      <div class="composer__top">
+        <img id="composer-avatar" src="" alt="" class="avatar avatar--md" />
+        <button class="composer__input" id="btn-abrir-composer">
+          ¿Qué estás pensando?
+        </button>
+      </div>
+      <div class="composer__actions">
+        <button class="composer__action" data-tipo-rapido="post">
+          <span>📝</span> Publicación
+        </button>
+        <button class="composer__action" data-tipo-rapido="partido">
+          <span>⚽</span> Partido
+        </button>
+        <button class="composer__action" data-tipo-rapido="torneo">
+          <span>🏆</span> Torneo
+        </button>
+        <button class="composer__action" data-tipo-rapido="grupo">
+          <span>👥</span> Grupo
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros del feed -->
+    <div class="feed-filters">
+      <button class="chip chip--active" data-feed="todo">Todo</button>
+      <button class="chip" data-feed="post">Publicaciones</button>
+      <button class="chip" data-feed="partido">Partidos</button>
+      <button class="chip" data-feed="torneo">Torneos</button>
+      <button class="chip" data-feed="grupo">Grupos</button>
+    </div>
+
+    <!-- Feed -->
+    <div id="feed"></div>
+
+  </div>
+
+  <!-- ================= COLUMNA LATERAL ================= -->
+  <aside class="page-grid__aside">
+
+    <div class="card mb-4">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="card__title" style="margin:0">🌐 Comunidades</h3>
+        <button class="btn btn--ghost btn--sm" id="btn-ver-comunidades">Ver todas</button>
+      </div>
+      <p class="card__subtitle mb-4">Encuentra gente que juega lo mismo</p>
+      <div id="grupos-sugeridos" class="feed-list"></div>
+
+      <div class="sidebar-divider" style="margin:var(--space-3) 0"></div>
+
+      <button class="btn btn--primary btn--block btn--sm" id="btn-crear-comunidad">
+        + Crear comunidad
+      </button>
+    </div>
+
+    <div class="card">
+      <h3 class="card__title">Torneos abiertos</h3>
+      <p class="card__subtitle mb-4">Inscripciones activas</p>
+      <div id="torneos-abiertos" class="feed-list"></div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ================= MODAL: CREAR PUBLICACIÓN ================= -->
+<div class="modal-backdrop" id="modal-crear-post">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 class="modal__title">Crear publicación</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-post">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Selector de tipo -->
+      <div class="form-tipo" id="selector-tipo">
+        <div class="form-tipo__opcion active" data-tipo="post">
+          <span class="form-tipo__icono">📝</span>
+          Publicación
+        </div>
+        <div class="form-tipo__opcion" data-tipo="partido">
+          <span class="form-tipo__icono">⚽</span>
+          Partido
+        </div>
+        <div class="form-tipo__opcion" data-tipo="torneo">
+          <span class="form-tipo__icono">🏆</span>
+          Torneo
+        </div>
+      </div>
+
+      <!-- Texto -->
+      <div class="field">
+        <label class="field__label" for="post-contenido">¿Qué quieres compartir?</label>
+        <textarea
+          id="post-contenido"
+          class="textarea"
+          placeholder="Escribe algo..."
+          maxlength="500"
+        ></textarea>
+        <div class="text-xs text-muted mt-4" style="text-align:right">
+          <span id="contador-chars">0</span>/500
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-post">Cancelar</button>
+      <button class="btn btn--primary" id="btn-publicar">Publicar</button>
+    </div>
+          <!-- Preview de imagen/video -->
+      <div class="field hidden" id="post-preview-wrapper">
+        <label class="field__label">Vista previa</label>
+        <div id="post-preview" style="border-radius:var(--radius-md); overflow:hidden; max-height:300px; background:var(--color-surface-2)"></div>
+      </div>
+  </div>
+        <!-- Adjuntos -->
+      <div class="field">
+        <label class="field__label">Adjuntos</label>
+        <div class="flex gap-2" style="flex-wrap:wrap">
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer">
+            📷 Imagen
+            <input type="file" id="post-input-imagen" accept="image/*" style="display:none" />
+          </label>
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer">
+            🎥 Video
+            <input type="file" id="post-input-video" accept="video/*" style="display:none" />
+          </label>
+          <button class="btn btn--ghost btn--sm" id="post-btn-eliminar-adjunto" style="display:none">
+            🗑️ Quitar
+          </button>
+        </div>
+        <p class="text-xs text-muted mt-4">
+          Los archivos se convierten a base64 y se guardan localmente (por ahora).
+        </p>
+      </div>
+</div>

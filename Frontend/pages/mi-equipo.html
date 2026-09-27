@@ -1,0 +1,199 @@
+<h1 class="page-title">Mi Equipo</h1>
+
+<!-- ================= SUB-PESTAÑAS ================= -->
+<div class="subtabs mb-4">
+  <button class="subtab subtab--active" data-tab-equipo="equipo">
+    🛡️ Mi Equipo
+  </button>
+  <button class="subtab" data-tab-equipo="comunidad">
+    🌐 Mi Comunidad
+  </button>
+  <button class="subtab" data-tab-equipo="chat">
+    💬 Chat
+  </button>
+  <button class="subtab" data-tab-equipo="buscar">
+    🔍 Buscar
+  </button>
+</div>
+
+<!-- ================= PANEL: MI EQUIPO ================= -->
+<div class="subpanel subpanel--active" id="panel-equipo">
+  <div id="equipo-contenido"></div>
+</div>
+
+<!-- ================= PANEL: MI COMUNIDAD ================= -->
+<div class="subpanel" id="panel-comunidad">
+  <div id="comunidad-contenido"></div>
+</div>
+
+<!-- ================= PANEL: CHAT ================= -->
+<div class="subpanel" id="panel-chat">
+  <div class="chat-layout">
+    <aside class="chat-layout__list">
+      <div class="field mb-4">
+        <input type="text" class="field__input" placeholder="Buscar conversación..." />
+      </div>
+      <div id="lista-canales"></div>
+    </aside>
+
+    <section class="chat-layout__panel">
+      <div class="chat-empty">
+        <div style="font-size:48px">💬</div>
+        <p class="text-muted mt-4">Selecciona un canal</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ================= PANEL: BUSCAR ================= -->
+<div class="subpanel" id="panel-buscar">
+  <div class="card mb-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="card__title" style="margin:0">🔍 Buscar</h3>
+      <div class="flex gap-2">
+        <button class="btn btn--ghost btn--sm" id="btn-crear-equipo-panel">+ Equipo</button>
+        <button class="btn btn--primary btn--sm" id="btn-crear-comunidad-panel">+ Comunidad</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <input
+        type="text"
+        id="input-buscar-clubes"
+        class="field__input"
+        placeholder="Buscar por nombre, deporte o ciudad..."
+      />
+    </div>
+
+    <div class="toolbar__filters" style="margin-top:var(--space-3)">
+      <button class="chip chip--active" data-filtro-clubes="todos">Todos</button>
+      <button class="chip" data-filtro-clubes="equipo">🛡️ Equipos</button>
+      <button class="chip" data-filtro-clubes="comunidad">🌐 Comunidades</button>
+      <button class="chip" data-filtro-clubes="publico">🌐 Públicos</button>
+      <button class="chip" data-filtro-clubes="privado">🔒 Privados</button>
+    </div>
+  </div>
+
+  <div id="resultados-busqueda"></div>
+</div>
+
+<!-- ================= MODAL: CREAR / EDITAR GRUPO ================= -->
+<div class="modal-backdrop" id="modal-crear-comunidad">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="crear-modal-titulo">Crear</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-comunidad">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field hidden" id="crear-tipo-wrapper">
+        <label class="field__label">Tipo</label>
+        <div id="crear-tipo-label" style="display:flex; gap:var(--space-2); align-items:center; padding:12px 16px; background:var(--color-surface-2); border-radius:var(--radius-md); font-weight:600; font-size:var(--fs-sm)"></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="com-nombre">Nombre *</label>
+        <input type="text" id="com-nombre" class="field__input" maxlength="50" placeholder="Ej: Futboleros Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label">Ícono</label>
+        <div class="posiciones-lista" id="com-iconos"></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="com-deporte">Deporte *</label>
+        <select id="com-deporte" class="field__input">
+          <option value="">Selecciona un deporte...</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="com-ciudad">Ciudad</label>
+        <input type="text" id="com-ciudad" class="field__input" maxlength="40" placeholder="Ej: Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="com-descripcion">Descripción</label>
+        <textarea id="com-descripcion" class="textarea" maxlength="200" placeholder="Cuenta de qué se trata..."></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Visibilidad</label>
+        <div class="nivel-grid" style="grid-template-columns:1fr 1fr">
+          <div class="nivel-opcion active" data-tipo-com="publico">
+            <div class="nivel-opcion__label">🌐 Público</div>
+            <div class="nivel-opcion__desc">Cualquiera puede unirse</div>
+          </div>
+          <div class="nivel-opcion" data-tipo-com="privado">
+            <div class="nivel-opcion__label">🔒 Privado</div>
+            <div class="nivel-opcion__desc">Solo con aprobación</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-comunidad">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-comunidad">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: GESTIONAR MIEMBROS ================= -->
+<div class="modal-backdrop" id="modal-gestionar-grupo">
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Gestionar miembros</h3>
+      <button class="modal__close" data-cerrar-modal="modal-gestionar-grupo">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="dropdown__tabs mb-4">
+        <button class="dropdown__tab active" data-tab-gestion="miembros">
+          👥 Miembros <span class="badge badge--neutral" id="count-gestion-miembros">0</span>
+        </button>
+        <button class="dropdown__tab" data-tab-gestion="solicitudes">
+          ⏳ Solicitudes <span class="badge badge--primary" id="count-gestion-solicitudes">0</span>
+        </button>
+      </div>
+
+      <div id="lista-gestion-grupo" style="max-height: 420px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-gestionar-grupo">Cerrar</button>
+    </div>
+  </div>
+  <!-- ================= MODAL: EDITAR STATS (compartido) ================= -->
+<div class="modal-backdrop" id="modal-editar-stats">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Editar estadísticas</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-stats">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <label class="field__label" for="edit-stats-partidos">Partidos jugados</label>
+        <input type="number" id="edit-stats-partidos" class="field__input" min="0" value="0" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-stats-goles">Goles / Anotaciones</label>
+        <input type="number" id="edit-stats-goles" class="field__input" min="0" value="0" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-stats-mvps">MVPs</label>
+        <input type="number" id="edit-stats-mvps" class="field__input" min="0" value="0" />
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-stats">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+</div>

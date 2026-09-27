@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiEquipo — Tu red social deportiva</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/pages.css" />
+</head>
+<body>
+
+  <div class="auth">
+
+    <!-- ================= LADO IZQUIERDO ================= -->
+    <aside class="auth__hero">
+      <div class="auth__hero-logo">
+        <img src="assets/images/logo.svg" alt="MiEquipo" />
+      </div>
+
+      <div class="auth__hero-content">
+        <h1 class="auth__hero-title">
+          Tu comunidad <span>deportiva</span>, todo en un solo lugar.
+        </h1>
+        <p class="auth__hero-subtitle">
+          Encuentra partidos cerca de ti, arma tu equipo,
+          organiza torneos y conecta con otros jugadores.
+        </p>
+
+        <div class="auth__hero-features">
+          <div class="auth__hero-feature">
+            <div class="auth__hero-feature-icon">⚽</div>
+            <span>Únete a partidos en tu ciudad</span>
+          </div>
+          <div class="auth__hero-feature">
+            <div class="auth__hero-feature-icon">👥</div>
+            <span>Arma tu equipo y compite</span>
+          </div>
+          <div class="auth__hero-feature">
+            <div class="auth__hero-feature-icon">🏆</div>
+            <span>Crea torneos y reta a otros</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth__hero-footer">
+        © 2026 MiEquipo. Todos los derechos reservados.
+      </div>
+    </aside>
+
+    <!-- ================= LADO DERECHO ================= -->
+    <section class="auth__panel">
+      <div class="auth__box">
+
+        <!-- Tabs Login / Registro -->
+        <div class="auth__tabs">
+          <button class="auth__tab active" data-tab="login">Iniciar sesión</button>
+          <button class="auth__tab" data-tab="registro">Crear cuenta</button>
+        </div>
+
+        <!-- Alerta global -->
+        <div id="alerta" class="auth__alert"></div>
+
+        <!-- ============ PANE LOGIN ============ -->
+        <div class="auth__pane active" id="pane-login">
+          <h2 class="auth__heading">¡Bienvenido de vuelta!</h2>
+          <p class="auth__subheading">Ingresa para seguir conectado con tu equipo.</p>
+
+          <form class="auth__form" id="form-login" novalidate>
+
+            <div class="field">
+              <label class="field__label" for="login-id">Email o usuario</label>
+              <div class="input-group">
+                <span class="input-group__icon">✉️</span>
+                <input
+                  class="field__input"
+                  type="text"
+                  id="login-id"
+                  name="login-id"
+                  placeholder="tu@email.com o usuario"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+              <div class="field__error">Ingresa tu email o usuario</div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="login-pass">Contraseña</label>
+              <div class="input-group">
+                <span class="input-group__icon">🔒</span>
+                <input
+                  class="field__input"
+                  type="password"
+                  id="login-pass"
+                  name="login-pass"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  required
+                />
+                <button type="button" class="input-group__toggle" data-toggle="login-pass">Ver</button>
+              </div>
+              <div class="field__error">Ingresa tu contraseña</div>
+            </div>
+
+            <div class="auth__row">
+              <label class="auth__check">
+                <input type="checkbox" id="recordarme" checked />
+                Recordarme
+              </label>
+              <a href="#" class="auth__link">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--lg btn--block">
+              Iniciar sesión
+            </button>
+          </form>
+
+          <div class="auth__divider">o continúa con</div>
+
+          <div class="auth__socials">
+            <button class="auth__social-btn">🔵 Google</button>
+            <button class="auth__social-btn">⚫ Apple</button>
+          </div>
+
+          <div class="auth__demo">
+            <strong>Demo:</strong> juan@miejquipo.com · <strong>123456</strong>
+          </div>
+        </div>
+
+        <!-- ============ PANE REGISTRO ============ -->
+        <div class="auth__pane" id="pane-registro">
+          <h2 class="auth__heading">Crea tu cuenta</h2>
+          <p class="auth__subheading">Es gratis y toma menos de un minuto.</p>
+
+          <form class="auth__form" id="form-registro" novalidate>
+
+            <div class="field">
+              <label class="field__label" for="reg-nombre">Nombre completo</label>
+              <div class="input-group">
+                <span class="input-group__icon">👤</span>
+                <input
+                  class="field__input"
+                  type="text"
+                  id="reg-nombre"
+                  name="reg-nombre"
+                  placeholder="Juan Pérez"
+                  autocomplete="name"
+                  required
+                  minlength="2"
+                />
+              </div>
+              <div class="field__error">Ingresa tu nombre (mínimo 2 caracteres)</div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="reg-email">Email</label>
+              <div class="input-group">
+                <span class="input-group__icon">✉️</span>
+                <input
+                  class="field__input"
+                  type="email"
+                  id="reg-email"
+                  name="reg-email"
+                  placeholder="tu@email.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+              <div class="field__error">Ingresa un email válido</div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="reg-user">Nombre de usuario</label>
+              <div class="input-group">
+                <span class="input-group__icon">@</span>
+                <input
+                  class="field__input"
+                  type="text"
+                  id="reg-user"
+                  name="reg-user"
+                  placeholder="juanpe"
+                  autocomplete="username"
+                  required
+                  pattern="[a-zA-Z0-9_]{3,20}"
+                />
+              </div>
+              <div class="field__error">3-20 caracteres, sin espacios</div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="reg-pass">Contraseña</label>
+              <div class="input-group">
+                <span class="input-group__icon">🔒</span>
+                <input
+                  class="field__input"
+                  type="password"
+                  id="reg-pass"
+                  name="reg-pass"
+                  placeholder="Mínimo 6 caracteres"
+                  autocomplete="new-password"
+                  required
+                  minlength="6"
+                />
+                <button type="button" class="input-group__toggle" data-toggle="reg-pass">Ver</button>
+              </div>
+              <div class="field__error">La contraseña debe tener al menos 6 caracteres</div>
+            </div>
+
+            <p class="auth__terms">
+              Al crear tu cuenta aceptas nuestros
+              <a href="#">Términos de servicio</a> y
+              <a href="#">Política de privacidad</a>.
+            </p>
+
+            <button type="submit" class="btn btn--primary btn--lg btn--block">
+              Crear cuenta
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script type="module" src="js/auth-page.js"></script>
+</body>
+</html>

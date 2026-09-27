@@ -1,0 +1,157 @@
+<h1 class="page-title">Mi Perfil</h1>
+
+<!-- ================= HEADER DEL PERFIL ================= -->
+<div class="card mb-4">
+  <div class="profile-header">
+    <img id="perfil-avatar" src="" alt="" class="avatar avatar--xl" />
+
+    <div style="flex:1; min-width:0">
+      <h2 id="perfil-nombre" class="card__title" style="font-size:var(--fs-xl)"></h2>
+      <p id="perfil-username" class="card__subtitle"></p>
+      <p id="perfil-bio" class="text-sm text-muted mt-4"></p>
+
+      <div class="flex gap-2 mt-4" style="flex-wrap:wrap">
+        <span id="perfil-deporte" class="badge badge--primary"></span>
+        <span id="perfil-posicion" class="badge badge--info"></span>
+        <span id="perfil-ciudad" class="badge badge--neutral"></span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; flex-direction:column">
+      <button class="btn btn--primary btn--sm" id="btn-editar-perfil">✏️ Editar perfil</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ESTADÍSTICAS ================= -->
+<div class="card mb-4">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="card__title" style="margin:0">📊 Mis estadísticas</h3>
+    <div class="flex gap-2">
+      <button class="btn btn--ghost btn--sm" id="btn-editar-stats">✏️ Editar</button>
+      <label class="switch" style="margin:0">
+        <input type="checkbox" id="perfil-stats-privadas" />
+        <span class="switch__slider"></span>
+        <div>
+          <div class="switch__label" style="font-size:var(--fs-xs)">Solo yo veo mis stats</div>
+        </div>
+      </label>
+    </div>
+  </div>
+  <div id="perfil-stats" class="stats-grid"></div>
+</div>
+
+<!-- ================= MIS PUBLICACIONES ================= -->
+<div class="card mb-4">
+  <h3 class="card__title mb-4">📝 Mis publicaciones</h3>
+  <div id="perfil-publicaciones" class="feed-list"></div>
+</div>
+
+<!-- ================= ACTIVIDAD RECIENTE ================= -->
+<div class="card">
+  <h3 class="card__title mb-4">🕒 Actividad reciente</h3>
+  <div id="perfil-actividad" class="feed-list"></div>
+</div>
+
+<!-- ================= MODAL: EDITAR PERFIL ================= -->
+<div class="modal-backdrop" id="modal-editar-perfil">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Editar perfil</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-perfil">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Foto de perfil -->
+      <div class="field">
+        <label class="field__label">Foto de perfil</label>
+
+        <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4)">
+          <img id="edit-perf-avatar-preview" src="" alt="" class="avatar avatar--lg" />
+          <div style="flex:1">
+            <label class="btn btn--primary btn--sm" style="cursor:pointer; display:inline-flex">
+              📷 Subir foto
+              <input type="file" id="edit-perf-avatar-file" accept="image/*" style="display:none" />
+            </label>
+            <button class="btn btn--ghost btn--sm" id="edit-perf-avatar-quitar">Quitar</button>
+          </div>
+        </div>
+
+        <label class="field__label">O elige una:</label>
+        <div id="perfil-galeria-avatares" class="posiciones-lista" style="min-height:auto"></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-nombre">Nombre completo *</label>
+        <input type="text" id="edit-perf-nombre" class="field__input" maxlength="60" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-username">Nombre de usuario *</label>
+        <input type="text" id="edit-perf-username" class="field__input" maxlength="30" pattern="[a-zA-Z0-9_]{3,20}" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-bio">Bio</label>
+        <textarea id="edit-perf-bio" class="textarea" maxlength="200" placeholder="Cuéntanos algo sobre ti..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="edit-perf-deporte">Deporte favorito</label>
+          <select id="edit-perf-deporte" class="field__input"></select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="edit-perf-posicion">Posición favorita</label>
+          <select id="edit-perf-posicion" class="field__input">
+            <option value="">Sin definir</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-ciudad">Ciudad</label>
+        <input type="text" id="edit-perf-ciudad" class="field__input" maxlength="40" placeholder="Ej: Santiago" />
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-perfil">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-perfil">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EDITAR STATS ================= -->
+<div class="modal-backdrop" id="modal-editar-stats">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Editar estadísticas</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-stats">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <label class="field__label" for="edit-stats-partidos">Partidos jugados</label>
+        <input type="number" id="edit-stats-partidos" class="field__input" min="0" value="0" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-stats-goles">Goles / Anotaciones</label>
+        <input type="number" id="edit-stats-goles" class="field__input" min="0" value="0" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-stats-mvps">MVPs</label>
+        <input type="number" id="edit-stats-mvps" class="field__input" min="0" value="0" />
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-stats">Guardar cambios</button>
+    </div>
+  </div>
+</div>
