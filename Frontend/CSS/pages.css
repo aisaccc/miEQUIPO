@@ -2286,3 +2286,38 @@ select.field__input {
 .btn--accion-lote:hover {
   background: var(--color-primary-hover);
 }
+/* =========================================
+   FIX: Espaciado del toggle "Público" en stats
+   ========================================= */
+
+#modal-editar-stats-deporte .field {
+  margin-bottom: var(--space-5);
+}
+
+#modal-editar-stats-deporte .field .flex {
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+#modal-editar-stats-deporte .switch {
+  width: auto;
+  gap: var(--space-2);
+}
+
+#modal-editar-stats-deporte .switch__label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+/* =========================================
+   BOTÓN BORRAR EN CONVERSACIONES
+   ========================================= */
+
+.conversation__delete:hover {
+  background: var(--color-danger) !important;
+  transform: scale(1.1);
+}
+
+.conversation {
+  position: relative;
+}

@@ -13,7 +13,11 @@ import {
   contarNoLeidosGrupo,
   marcarLeidoGrupo,
   getMensajesDeCanal,
-  agregarMensaje
+  agregarMensaje,
+  ocultarConversacion,
+  ocultarCanal,
+  estaOculto,
+  mostrarConversacion
 } from '../store.js';
 
 export async function init() {
@@ -48,8 +52,8 @@ export async function init() {
      RENDER: LISTA DE CONVERSACIONES
      ========================================================= */
   function renderListaConversaciones() {
-    const convs = conversacionesDe(user.id);
-    const grupos = chatsGrupoDe(user.id);
+    const convs = conversacionesDe(user.id).filter(c => !estaOculto(user.id, c.id));
+    const grupos = chatsGrupoDe(user.id).filter(g => !estaOculto(user.id, g.id));
 
     if (convs.length === 0 && grupos.length === 0) {
       listaConversaciones.innerHTML = `
@@ -98,7 +102,7 @@ export async function init() {
         const noLeidos = contarNoLeidosGrupo(g.id, user.id);
 
         return `
-          <div class="conversation ${g.id === convActualId ? 'active' : ''}" data-conv="${g.id}" data-tipo="grupo">
+          <div class="conversation ${g.id === convActualId ? 'active' : ''}" data-conv="${g.id}" data-tipo="grupo" style="position:relative">
             <div class="avatar avatar--md"
                  style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px">
               ${g.icono || '📢'}
@@ -111,6 +115,7 @@ export async function init() {
               ${ultimo ? `<span class="text-xs text-muted">${horaCorta(ultimo.fecha)}</span>` : ''}
               ${noLeidos > 0 ? `<span class="badge badge--primary">${noLeidos}</span>` : ''}
             </div>
+            <button class="conversation__delete" data-borrar-canal="${g.id}" title="Silenciar chat" style="position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,0.5); color:white; display:none; align-items:center; justify-content:center; font-size:12px; cursor:pointer; border:none">🗑️</button>
           </div>
         `;
       }).join('');
@@ -133,17 +138,23 @@ export async function init() {
           : 'Sin mensajes aún';
         const noLeidos = contarNoLeidos(c.id, user.id);
 
+        const vinculo = c.vinculadaA;
+
         return `
-          <div class="conversation ${c.id === convActualId ? 'active' : ''}" data-conv="${c.id}" data-tipo="privado">
+          <div class="conversation ${c.id === convActualId ? 'active' : ''}" data-conv="${c.id}" data-tipo="privado" style="position:relative">
             <img src="${otro.avatar}" class="avatar avatar--md" alt="" />
             <div class="conversation__info">
-              <div class="conversation__name">${otro.nombre}</div>
+              <div class="conversation__name">
+                ${otro.nombre}
+                ${vinculo ? `<span class="badge badge--warning" style="margin-left:6px; font-size:9px">📎 ${vinculo.nombre.slice(0, 20)}</span>` : ''}
+              </div>
               <div class="conversation__preview">${escapeHtml(preview).slice(0, 60)}</div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
               ${ultimo ? `<span class="text-xs text-muted">${horaCorta(ultimo.fecha)}</span>` : ''}
               ${noLeidos > 0 ? `<span class="badge badge--primary">${noLeidos}</span>` : ''}
             </div>
+            <button class="conversation__delete" data-borrar-conv="${c.id}" title="Borrar chat" style="position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,0.5); color:white; display:none; align-items:center; justify-content:center; font-size:12px; cursor:pointer; border:none">🗑️</button>
           </div>
         `;
       }).join('');
@@ -158,6 +169,59 @@ export async function init() {
     }
 
     listaConversaciones.innerHTML = html;
+        // Mostrar botón al hacer hover
+    listaConversaciones.querySelectorAll('.conversation').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        const btn = el.querySelector('.conversation__delete');
+        if (btn) btn.style.display = 'flex';
+      });
+      el.addEventListener('mouseleave', () => {
+        const btn = el.querySelector('.conversation__delete');
+        if (btn) btn.style.display = 'none';
+      });
+    });
+
+    // Borrar conversación privada
+    listaConversaciones.querySelectorAll('[data-borrar-conv]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const convId = btn.dataset.borrarConv;
+        if (!confirm('¿Borrar este chat? Solo se borrará para ti.')) return;
+
+        ocultarConversacion(user.id, convId);
+        if (convActualId === convId) {
+          convActualId = null;
+          panelMensajes.innerHTML = `
+            <div class="chat-empty">
+              <div style="font-size:48px">💬</div>
+              <p class="text-muted mt-4">Selecciona una conversación</p>
+            </div>`;
+        }
+        toast('Chat borrado', 'info');
+        renderListaConversaciones();
+      });
+    });
+
+    // Silenciar canal de grupo
+    listaConversaciones.querySelectorAll('[data-borrar-canal]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const canalId = btn.dataset.borrarCanal;
+        if (!confirm('¿Silenciar este chat de grupo? Solo se silenciará para ti.')) return;
+
+        ocultarCanal(user.id, canalId);
+        if (convActualId === canalId) {
+          convActualId = null;
+          panelMensajes.innerHTML = `
+            <div class="chat-empty">
+              <div style="font-size:48px">💬</div>
+              <p class="text-muted mt-4">Selecciona una conversación</p>
+            </div>`;
+        }
+        toast('Chat silenciado', 'info');
+        renderListaConversaciones();
+      });
+    });
 
     // Conectar clicks
     listaConversaciones.querySelectorAll('.conversation').forEach(el => {
@@ -176,6 +240,11 @@ export async function init() {
      ABRIR CONVERSACIÓN PRIVADA
      ========================================================= */
   function abrirConversacion(convId) {
+    convActualId = chatId;
+    mostrarConversacion(user.id, chatId);
+    // Si estaba oculto, mostrarlo de nuevo
+    mostrarConversacion(user.id, convId);
+
     convActualId = convId;
     if (intervaloRefresco) clearInterval(intervaloRefresco);
 
@@ -197,7 +266,15 @@ export async function init() {
     const otro = buscarUsuarioPorId(otroId);
 
     if (!soloMensajes) {
+      const vinculo = conv.vinculadaA;
+
       panelMensajes.innerHTML = `
+        ${vinculo ? `
+          <div style="padding:8px 16px; background:var(--color-primary-light); border-bottom:1px solid var(--color-border); font-size:12px; font-weight:600; color:var(--color-primary-dark); display:flex; align-items:center; gap:6px">
+            📎 Hablando sobre: "${vinculo.nombre}"
+          </div>
+        ` : ''}
+
         <div class="chat-header">
           <img src="${otro.avatar}" class="avatar avatar--md" alt="" />
           <div class="chat-header__info">

@@ -14,14 +14,37 @@ export function getPartidos() {
   const raw = localStorage.getItem(KEY_PARTIDOS);
   if (raw) {
     const lista = JSON.parse(raw);
-    // Migración: eliminar "amateur" → convertir a "amistoso"
-    const migrados = lista.map(p =>
-      p.nivel === 'amateur' ? { ...p, nivel: 'amistoso' } : p
-    );
-    // Si hubo cambios, guardar
-    if (migrados.some((p, i) => p.nivel !== lista[i]?.nivel)) {
-      guardarPartidos(migrados);
-    }
+
+    // Migración: agregar tipoPartido a partidos viejos + normalizar
+    const migrados = lista.map(p => {
+      const cambios = {};
+
+      // Amateur → amistoso
+      if (p.nivel === 'amateur') cambios.nivel = 'amistoso';
+
+      // tipoPartido por defecto: 'jugador'
+      if (!p.tipoPartido) cambios.tipoPartido = 'jugador';
+
+      // equiposPostulantes e equiposInscritos por defecto
+      if (!p.equiposPostulantes) cambios.equiposPostulantes = [];
+      if (!p.equiposInscritos) cambios.equiposInscritos = [];
+
+      return { ...p, ...cambios };
+    });
+
+    // Solo guardar si hubo cambios reales
+    const huboCambios = lista.some((p, i) => {
+      const m = migrados[i];
+      return (
+        p.nivel !== m.nivel ||
+        p.tipoPartido !== m.tipoPartido ||
+        !Array.isArray(p.equiposPostulantes) ||
+        !Array.isArray(p.equiposInscritos)
+      );
+    });
+
+    if (huboCambios) guardarPartidos(migrados);
+
     return migrados;
   }
   const iniciales = seedPartidos();
@@ -129,12 +152,15 @@ function seedPartidos() {
       fecha: '2026-10-05T18:00:00', lugar: 'Santiago',
       cupos: 14, estado: 'abierto',
       precio: 0, nivel: 'amistoso',
+      tipoPartido: 'jugador',
       pedirPosiciones: false, posiciones: [],
       aprobacionRequerida: false,
       descripcion: '',
       organizador: { id: 2, nombre: 'María González', avatar: 'https://i.pravatar.cc/100?img=45' },
       inscritos: [2, 3, 4, 5, 6, 7, 8, 9, 10],
-      postulantes: []
+      postulantes: [],
+      equiposPostulantes: [],
+      equiposInscritos: []
     },
     {
       id: 2, deporte: 'Básquetbol', emoji: '🏀',
@@ -142,6 +168,7 @@ function seedPartidos() {
       fecha: '2026-10-06T20:00:00', lugar: 'Providencia',
       cupos: 6, estado: 'abierto',
       precio: 3000, nivel: 'semiprofesional',
+      tipoPartido: 'jugador',
       pedirPosiciones: true,
       posiciones: ['Base', 'Alero'],
       aprobacionRequerida: true,
@@ -150,7 +177,9 @@ function seedPartidos() {
       inscritos: [1, 13, 14, 15, 16],
       postulantes: [
         { userId: 45, nombre: 'María González', avatar: 'https://i.pravatar.cc/100?img=45', posicion: 'Base', estado: 'pendiente' }
-      ]
+      ],
+      equiposPostulantes: [],
+      equiposInscritos: []
     },
     {
       id: 3, deporte: 'Tenis', emoji: '🎾',
@@ -158,12 +187,36 @@ function seedPartidos() {
       fecha: '2026-10-07T19:30:00', lugar: 'Ñuñoa',
       cupos: 4, estado: 'lleno',
       precio: 8000, nivel: 'profesional',
+      tipoPartido: 'jugador',
       pedirPosiciones: false, posiciones: [],
       aprobacionRequerida: true,
       descripcion: '',
       organizador: { id: 5, nombre: 'Camila Torres', avatar: 'https://i.pravatar.cc/100?img=47' },
       inscritos: [5, 20, 21, 22],
-      postulantes: []
+      postulantes: [],
+      equiposPostulantes: [],
+      equiposInscritos: []
+    },
+    {
+      id: 4, deporte: 'Fútbol', emoji: '⚽',
+      titulo: 'Amistoso entre clubes - Sábado',
+      fecha: '2026-10-12T16:00:00', lugar: 'Maipú',
+      cupos: 2, estado: 'abierto',       // ← 2 equipos
+      precio: 0, nivel: 'amateur',
+      tipoPartido: 'equipo',              // ← ¡NUEVO!
+      pedirPosiciones: false, posiciones: [],
+      aprobacionRequerida: true,
+      descripcion: 'Buscamos un club para amistoso. Nivel intermedio.',
+      organizador: { id: 1, nombre: 'Juan Pérez', avatar: 'https://i.pravatar.cc/100?img=12' },
+      organizadorEquipo: {
+        id: 1, nombre: 'Los Galácticos FC', escudo: '🛡️', capitanId: 1
+      },
+      inscritos: [],
+      postulantes: [],
+      equiposPostulantes: [],
+      equiposInscritos: [
+        { id: 1, nombre: 'Los Galácticos FC', escudo: '🛡️', capitanId: 1, jugadores: [1, 13, 14, 15, 16] }
+      ]
     }
   ];
 }
@@ -449,20 +502,20 @@ export function actualizarUsuario(id, cambios) {
   if (idx >= 0) {
     usuarios[idx] = { ...usuarios[idx], ...cambios };
     guardarUsuariosRegistrados(usuarios);
+  }
 
-    // Actualizar sesión si es el mismo usuario
-    const KEY_SESSION = 'miejquipo_session';
-    const raw = localStorage.getItem(KEY_SESSION);
-    if (raw) {
-      const sesion = JSON.parse(raw);
-      if (sesion.id === Number(id)) {
-        const actualizado = { ...sesion, ...cambios };
-        // No guardar password en la sesión
-        delete actualizado.password;
-        localStorage.setItem(KEY_SESSION, JSON.stringify(actualizado));
-      }
+  // Actualizar SIEMPRE la sesión activa, aunque no exista en usuarios registrados
+  const KEY_SESSION = 'miejquipo_session';
+  const raw = localStorage.getItem(KEY_SESSION);
+  if (raw) {
+    const sesion = JSON.parse(raw);
+    if (sesion.id === Number(id)) {
+      const actualizado = { ...sesion, ...cambios };
+      delete actualizado.password;
+      localStorage.setItem(KEY_SESSION, JSON.stringify(actualizado));
     }
   }
+
   return usuarios[idx];
 }
 
@@ -1068,4 +1121,401 @@ export function eliminarCuenta(userId) {
     p.postulantes = (p.postulantes || []).filter(pp => pp.userId !== Number(userId));
   });
   guardarPartidos(partidos);
+}
+/* =========================================================
+   HILOS DE COMUNIDAD (posts dentro de cada grupo)
+   ========================================================= */
+
+/**
+ * Los hilos se guardan dentro de cada grupo en `grupo.hilos`.
+ * Estructura:
+ *   grupo.hilos = [
+ *     {
+ *       id,
+ *       autor: { id, nombre, avatar },
+ *       tipo: 'post' | 'partido' | 'torneo',
+ *       contenido,
+ *       imagen, video,
+ *       fecha,
+ *       likes, yoLikee,
+ *       comentarios: [...]
+ *     }
+ *   ]
+ */
+
+export function getHilosDeGrupo(grupoId) {
+  const grupo = getGrupoPorId(grupoId);
+  return grupo?.hilos || [];
+}
+
+export function agregarHilo(grupoId, hilo) {
+  const grupo = getGrupoPorId(grupoId);
+  if (!grupo) return;
+
+  grupo.hilos = grupo.hilos || [];
+  grupo.hilos.unshift(hilo);
+  guardarGrupo(grupo);
+}
+
+export function actualizarHilo(grupoId, hiloId, cambios) {
+  const grupo = getGrupoPorId(grupoId);
+  if (!grupo) return;
+
+  grupo.hilos = (grupo.hilos || []).map(h =>
+    h.id === hiloId ? { ...h, ...cambios } : h
+  );
+  guardarGrupo(grupo);
+}
+
+export function eliminarHilo(grupoId, hiloId) {
+  const grupo = getGrupoPorId(grupoId);
+  if (!grupo) return;
+
+  grupo.hilos = (grupo.hilos || []).filter(h => h.id !== hiloId);
+  guardarGrupo(grupo);
+}
+
+/** Devuelve TODOS los hilos públicos (de comunidades públicas) para el feed de Inicio */
+export function getTodosLosHilos() {
+  const grupos = getGrupos().filter(g => g.tipo === 'comunidad' && g.tipoAcceso === 'publico');
+  const todos = [];
+
+  grupos.forEach(g => {
+    (g.hilos || []).forEach(h => {
+      todos.push({
+        ...h,
+        _grupoId: g.id,
+        _grupoNombre: g.nombre,
+        _grupoEscudo: g.escudo
+      });
+    });
+  });
+
+  // Ordenar por fecha descendente
+  return todos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
+
+/* =========================================================
+   HELPER: ¿un usuario puede estar en varios grupos?
+   =========================================================
+   Regla nueva: SÍ puede estar en varios, PERO:
+   - Solo UN equipo (por deporte)
+   - Múltiples comunidades
+*/
+
+/* =========================================================
+   HELPER: ¿un usuario puede unirse a un grupo?
+   =========================================================
+   Regla nueva: SÍ puede estar en MÚLTIPLES equipos Y comunidades.
+   Solo se bloquea si YA es miembro.
+*/
+
+export function puedeUnirseAGrupo(grupo, userId) {
+  if (esMiembro(grupo, userId)) {
+    return { ok: false, motivo: 'Ya eres miembro' };
+  }
+  return { ok: true };
+}
+/* =========================================================
+   MIGRACIÓN DE PERFIL: multi-deporte
+   =========================================================
+   Convierte usuarios con:
+     deporte_favorito: 'Fútbol'
+     posicion_favorita: 'Delantero'
+   a:
+     deportes: [{ deporte: 'Fútbol', posiciones: ['Delantero'], stats: {} }]
+*/
+
+export function migrarUsuarioAMultiDeporte(usuario) {
+  if (!usuario) return usuario;
+  if (Array.isArray(usuario.deportes)) return usuario; // ya migrado
+
+  const deportes = [];
+
+  if (usuario.deporte_favorito) {
+    deportes.push({
+      deporte: usuario.deporte_favorito,
+      posiciones: usuario.posicion_favorita ? [usuario.posicion_favorita] : [],
+      stats: {}
+    });
+  }
+
+  return {
+    ...usuario,
+    deportes,
+    // Mantener los viejos por compatibilidad, pero ya no se usan
+    deporte_favorito: undefined,
+    posicion_favorita: undefined
+  };
+}
+
+/** Migra todos los usuarios del store */
+export function migrarTodosLosUsuarios() {
+  const usuarios = getUsuariosRegistrados();
+  let huboCambios = false;
+
+  const migrados = usuarios.map(u => {
+    const m = migrarUsuarioAMultiDeporte(u);
+    if (m !== u) huboCambios = true;
+    return m;
+  });
+
+  if (huboCambios) {
+    guardarUsuariosRegistrados(migrados);
+
+    // Actualizar también la sesión activa
+    const KEY_SESSION = 'miejquipo_session';
+    const raw = localStorage.getItem(KEY_SESSION);
+    if (raw) {
+      const sesion = JSON.parse(raw);
+      const sesionMigrada = migrarUsuarioAMultiDeporte(sesion);
+      localStorage.setItem(KEY_SESSION, JSON.stringify(sesionMigrada));
+    }
+  }
+
+  return migrados;
+}
+
+/* =========================================================
+   HELPERS DE MULTI-DEPORTE
+   ========================================================= */
+
+/** Devuelve la lista de deportes del usuario (o []) */
+export function getDeportesDeUsuario(usuario) {
+  if (!usuario) return [];
+  if (Array.isArray(usuario.deportes)) return usuario.deportes;
+  return [];
+}
+
+/** Devuelve un deporte específico del usuario o null */
+export function getDeporteDeUsuario(usuario, deporteNombre) {
+  const deportes = getDeportesDeUsuario(usuario);
+  return deportes.find(d => d.deporte === deporteNombre) || null;
+}
+
+/** Agrega un deporte nuevo al usuario (si no existe) */
+export function agregarDeporteAUsuario(usuario, deporteNombre) {
+  const deportes = getDeportesDeUsuario(usuario);
+  if (deportes.find(d => d.deporte === deporteNombre)) return usuario;
+
+  deportes.push({
+    deporte: deporteNombre,
+    posiciones: [],
+    stats: {}
+  });
+
+  return { ...usuario, deportes };
+}
+
+/** Quita un deporte del usuario */
+export function quitarDeporteAUsuario(usuario, deporteNombre) {
+  const deportes = getDeportesDeUsuario(usuario).filter(d => d.deporte !== deporteNombre);
+  return { ...usuario, deportes };
+}
+
+/** Actualiza las posiciones de un deporte */
+export function actualizarPosicionesDeporte(usuario, deporteNombre, posiciones) {
+  const deportes = getDeportesDeUsuario(usuario).map(d =>
+    d.deporte === deporteNombre ? { ...d, posiciones } : d
+  );
+  return { ...usuario, deportes };
+}
+
+/** Actualiza las stats de un deporte */
+export function actualizarStatsDeporte(usuario, deporteNombre, stats) {
+  const deportes = getDeportesDeUsuario(usuario).map(d =>
+    d.deporte === deporteNombre ? { ...d, stats } : d
+  );
+  return { ...usuario, deportes };
+}
+
+/* =========================================================
+   HELPERS PARA VISUALIZACIÓN PÚBLICA
+   ========================================================= */
+
+/** Devuelve solo las stats públicas de un deporte */
+export function getStatsPublicasDeDeporte(deporteData) {
+  if (!deporteData || !deporteData.stats) return [];
+  return Object.entries(deporteData.stats)
+    .filter(([, v]) => v && v.publico)
+    .map(([clave, v]) => ({ clave, valor: v.valor }));
+}
+/* =========================================================
+   PARTIDOS DE EQUIPO (extensión)
+   ========================================================= */
+
+/** ¿Este partido es de equipos? */
+export function esPartidoDeEquipo(partido) {
+  return partido?.tipoPartido === 'equipo';
+}
+
+/** ¿Este partido es de jugadores? */
+export function esPartidoDeJugador(partido) {
+  return !partido?.tipoPartido || partido.tipoPartido === 'jugador';
+}
+
+/** Equipos postulantes pendientes */
+export function equiposPostulantesPendientes(partido) {
+  return (partido.equiposPostulantes || []).filter(e => e.estado === 'pendiente');
+}
+
+/** ¿Este equipo ya se postuló? */
+export function equipoYaSePostulo(partido, equipoId) {
+  return (partido.equiposPostulantes || []).some(e => e.equipoId === equipoId);
+}
+
+/** ¿Este equipo ya está inscrito? */
+export function equipoYaEstaInscrito(partido, equipoId) {
+  return (partido.equiposInscritos || []).some(e => e.equipoId === equipoId);
+}
+
+/** Agregar un equipo como postulante */
+export function postularEquipoAPartido(partidoId, equipo) {
+  const partido = getPartidoPorId(partidoId);
+  if (!partido) return;
+  if (esPartidoDeJugador(partido)) return;
+
+  partido.equiposPostulantes = partido.equiposPostulantes || [];
+  if (equipoYaSePostulo(partido, equipo.id)) return;
+
+  partido.equiposPostulantes.push({
+    equipoId: equipo.id,
+    equipo: {
+      id: equipo.id,
+      nombre: equipo.nombre,
+      escudo: equipo.escudo,
+      capitanId: equipo.capitanId,
+      jugadores: (equipo.jugadores || []).map(j => j.id)
+    },
+    estado: 'pendiente',
+    fecha: new Date().toISOString()
+  });
+
+  guardarPartido(partido);
+}
+
+/** Aceptar equipo postulante */
+export function aceptarEquipoPostulante(partidoId, equipoId) {
+  const partido = getPartidoPorId(partidoId);
+  if (!partido) return;
+
+  const post = (partido.equiposPostulantes || []).find(e => e.equipoId === equipoId);
+  if (!post) return;
+
+  post.estado = 'aceptado';
+  partido.equiposInscritos = partido.equiposInscritos || [];
+  partido.equiposInscritos.push(post.equipo);
+
+  // Si el partido tiene "cupos" como cupos de equipos, ajustar
+  if (partido.equiposInscritos.length >= partido.cupos) {
+    partido.estado = 'lleno';
+  }
+
+  guardarPartido(partido);
+}
+
+/** Rechazar equipo postulante */
+export function rechazarEquipoPostulante(partidoId, equipoId) {
+  const partido = getPartidoPorId(partidoId);
+  if (!partido) return;
+
+  const post = (partido.equiposPostulantes || []).find(e => e.equipoId === equipoId);
+  if (!post) return;
+
+  post.estado = 'rechazado';
+  guardarPartido(partido);
+}
+
+/* =========================================================
+   CHAT CONTEXTUAL (vincular conversación a partido/torneo)
+   ========================================================= */
+
+/** Vincula una conversación a un partido o torneo */
+export function vincularConversacion(convId, vinculo) {
+  const convs = getConversaciones();
+  if (!convs[convId]) return;
+
+  convs[convId].vinculadaA = vinculo; // { tipo, id, nombre }
+  guardarConversaciones(convs);
+}
+
+/** Devuelve el vínculo de una conversación (si existe) */
+export function getVinculoConversacion(convId) {
+  const convs = getConversaciones();
+  return convs[convId]?.vinculadaA || null;
+}
+
+/**
+ * Abre (o crea) una conversación entre dos usuarios vinculada a un partido.
+ * Devuelve el ID de la conversación.
+ */
+export function obtenerOCrearConversacionVinculada(idA, idB, vinculo) {
+  const conv = obtenerOCrearConversacion(idA, idB);
+  // Si no tiene vínculo, o el vínculo es diferente, actualizar
+  if (!conv.vinculadaA || conv.vinculadaA.id !== vinculo.id || conv.vinculadaA.tipo !== vinculo.tipo) {
+    vincularConversacion(conv.id, vinculo);
+  }
+  return conv;
+}
+/* =========================================================
+   BORRAR CHATS (solo del lado del usuario)
+   =========================================================
+   El chat se marca como "oculto para X usuario".
+   Los mensajes NO se borran para los demás.
+*/
+
+const KEY_CHATS_OCULTOS = 'miejquipo_chats_ocultos';
+
+/**
+ * Estructura:
+ * {
+ *   [userId]: {
+ *     conversaciones: [convId1, convId2],   // privadas borradas
+ *     canales: [canalId1, canalId2]         // chats de grupo silenciados
+ *   }
+ * }
+ */
+export function getChatsOcultos() {
+  const raw = localStorage.getItem(KEY_CHATS_OCULTOS);
+  return raw ? JSON.parse(raw) : {};
+}
+
+export function guardarChatsOcultos(obj) {
+  localStorage.setItem(KEY_CHATS_OCULTOS, JSON.stringify(obj));
+}
+
+export function ocultarConversacion(userId, convId) {
+  const todos = getChatsOcultos();
+  if (!todos[userId]) todos[userId] = { conversaciones: [], canales: [] };
+  if (!todos[userId].conversaciones.includes(convId)) {
+    todos[userId].conversaciones.push(convId);
+  }
+  guardarChatsOcultos(todos);
+}
+
+export function ocultarCanal(userId, canalId) {
+  const todos = getChatsOcultos();
+  if (!todos[userId]) todos[userId] = { conversaciones: [], canales: [] };
+  if (!todos[userId].canales.includes(canalId)) {
+    todos[userId].canales.push(canalId);
+  }
+  guardarChatsOcultos(todos);
+}
+
+export function estaOculto(userId, convId) {
+  const todos = getChatsOcultos();
+  const user = todos[userId];
+  if (!user) return false;
+  return (user.conversaciones || []).includes(convId) || (user.canales || []).includes(convId);
+}
+
+/** Cuando llega un mensaje nuevo, el chat vuelve a aparecer */
+export function mostrarConversacion(userId, convId) {
+  const todos = getChatsOcultos();
+  if (!todos[userId]) return;
+
+  todos[userId].conversaciones = (todos[userId].conversaciones || []).filter(c => c !== convId);
+  todos[userId].canales = (todos[userId].canales || []).filter(c => c !== convId);
+
+  guardarChatsOcultos(todos);
 }

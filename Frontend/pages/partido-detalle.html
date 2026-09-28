@@ -1,5 +1,5 @@
 <div id="detalle-partido">
-  <!-- Se llena dinámicamente desde partido-detalle.js -->
+  <!-- Se llena dinámicamente -->
 </div>
 
 <!-- ================= MODAL: EDITAR PARTIDO ================= -->
@@ -11,7 +11,6 @@
     </div>
 
     <div class="modal__body">
-
       <div class="field">
         <label class="field__label" for="edit-titulo">Título *</label>
         <input type="text" id="edit-titulo" class="field__input" maxlength="80" />
@@ -66,12 +65,45 @@
           Los <strong>inscritos</strong> recibirán una notificación con los cambios que hagas.
         </div>
       </div>
-
     </div>
 
     <div class="modal__footer">
       <button class="btn btn--ghost" data-cerrar-modal="modal-editar-partido">Cancelar</button>
       <button class="btn btn--primary" id="btn-guardar-edicion">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: GESTIONAR EQUIPOS POSTULANTES ================= -->
+<div class="modal-backdrop" id="modal-equipos-postulantes">
+  <div class="modal" style="max-width: 660px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Equipos postulantes</h3>
+      <button class="modal__close" data-cerrar-modal="modal-equipos-postulantes">✕</button>
+    </div>
+
+    <div class="modal__body" id="equipos-postulantes-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-equipos-postulantes">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: VER EQUIPO (con plantilla) ================= -->
+<div class="modal-backdrop" id="modal-ver-equipo">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="ver-equipo-titulo">Detalles del equipo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-ver-equipo">✕</button>
+    </div>
+
+    <div class="modal__body" id="ver-equipo-body"></div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-ver-equipo">Cerrar</button>
     </div>
   </div>
 </div>

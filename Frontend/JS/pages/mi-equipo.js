@@ -3,8 +3,7 @@ import { toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes } from '../data-mock.js';
 import {
   getGrupos, getGrupoPorId, guardarGrupo, eliminarGrupo,
-  getEquiposNuevos, getComunidades,
-  esCapitan, esAdmin, puedeEditar, esMiembro,
+  esCapitan, esAdmin, esMiembro,
   agregarSolicitud, aceptarSolicitud, rechazarSolicitud,
   agregarMiembroDirecto, expulsarMiembro, salirDeGrupo,
   nombrarAdmin, quitarAdmin,
@@ -69,15 +68,28 @@ export async function init() {
             </p>
             ${grupo.descripcion ? `<p class="text-sm text-muted mt-4">${grupo.descripcion}</p>` : ''}
 
-            ${!grupo.statsPrivadas || puedeEditarEste || esMiembro(grupo, user.id) ? `
-              <div class="flex gap-3 mt-4" style="flex-wrap:wrap">
-                <span class="badge badge--success">${grupo.stats?.victorias || 0} V</span>
-                <span class="badge badge--warning">${grupo.stats?.empates || 0} E</span>
-                <span class="badge badge--danger">${grupo.stats?.derrotas || 0} D</span>
-              </div>
-            ` : `
-              <p class="text-xs text-muted mt-4">🔒 Estadísticas privadas</p>
-            `}
+            ${!esComunidad ? (
+              (!grupo.statsPrivadas || puedeEditarEste || esMiembro(grupo, user.id)) ? `
+                <div class="stats-grid mt-4" style="grid-template-columns:repeat(3, 1fr); max-width:420px">
+                  <div class="stat-box">
+                    <div class="stat-box__value" style="color:var(--color-success)">${grupo.stats?.victorias || 0}</div>
+                    <div class="stat-box__label">Victorias</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-box__value" style="color:var(--color-warning)">${grupo.stats?.empates || 0}</div>
+                    <div class="stat-box__label">Empates</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-box__value" style="color:var(--color-danger)">${grupo.stats?.derrotas || 0}</div>
+                    <div class="stat-box__label">Derrotas</div>
+                  </div>
+                </div>
+              ` : `
+                <div class="mt-4" style="padding:var(--space-3); background:var(--color-surface-2); border-radius:var(--radius-md); display:inline-block">
+                  <span class="text-sm text-muted">🔒 Estadísticas privadas</span>
+                </div>
+              `
+            ) : ''}
           </div>
         </div>
 
@@ -88,13 +100,17 @@ export async function init() {
             <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar">
               👥 Gestionar ${solicitudesCount > 0 ? `<span class="badge badge--primary" style="margin-left:4px">${solicitudesCount}</span>` : ''}
             </button>
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+            ${!esComunidad ? `
+              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+            ` : ''}
             <button class="btn btn--ghost btn--sm" data-accion-grupo="eliminar" style="color:var(--color-danger)">🗑️ Eliminar</button>
           ` : puedeEditarEste ? `
             <span class="badge badge--warning" style="padding:8px 12px">⭐ Eres admin</span>
             <button class="btn btn--primary btn--sm" data-accion-grupo="editar">✏️ Editar</button>
             <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar">👥 Gestionar</button>
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+            ${!esComunidad ? `
+              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+            ` : ''}
           ` : `
             <button class="btn btn--ghost btn--sm" data-accion-grupo="salir" style="color:var(--color-danger)">🚪 Salir</button>
           `}
@@ -142,7 +158,26 @@ export async function init() {
           </div>
         `}
       </div>
+
+      ${esComunidad ? `
+        <div class="card mt-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="card__title" style="margin:0">📌 Publicaciones</h3>
+            ${esMiembro(grupo, user.id) || capitan || admin ? `
+              <button class="btn btn--primary btn--sm" data-nuevo-hilo="${grupo.id}">
+                + Crear publicación
+              </button>
+            ` : ''}
+          </div>
+
+          <div id="hilos-grupo-${grupo.id}" class="feed-list"></div>
+        </div>
+      ` : ''}
     `;
+
+    if (esComunidad) {
+      renderHilosGrupo(grupo, contenedor);
+    }
 
     conectarEventosGrupo(grupo, contenedor, esComunidad);
   }
@@ -192,6 +227,38 @@ export async function init() {
     renderPanelEquipo();
     renderPanelComunidad();
   }
+    /* =========================================================
+     CONECTAR BOTONES DE LOS PANELES (crear + buscar)
+     ========================================================= */
+  function conectarBotonesPanel(tipo) {
+    if (tipo === 'equipo') {
+      document.getElementById('btn-crear-equipo')?.addEventListener('click', () => {
+        abrirModalCrearGrupo('equipo');
+      });
+      document.getElementById('btn-buscar-equipos')?.addEventListener('click', () => {
+        cambiarTab('buscar');
+        // Dejar el filtro en "equipo"
+        setTimeout(() => {
+          const chipEquipo = document.querySelector('[data-filtro-clubes="equipo"]');
+          chipEquipo?.click();
+        }, 100);
+      });
+    }
+
+    if (tipo === 'comunidad') {
+      document.getElementById('btn-crear-comunidad')?.addEventListener('click', () => {
+        abrirModalCrearGrupo('comunidad');
+      });
+      document.getElementById('btn-buscar-comunidades')?.addEventListener('click', () => {
+        cambiarTab('buscar');
+        // Dejar el filtro en "comunidad"
+        setTimeout(() => {
+          const chipComunidad = document.querySelector('[data-filtro-clubes="comunidad"]');
+          chipComunidad?.click();
+        }, 100);
+      });
+    }
+  }
 
   /* =========================================================
      RENDER: PANEL MI EQUIPO
@@ -199,48 +266,53 @@ export async function init() {
   function renderPanelEquipo() {
     const equipos = misEquipos();
 
+    // Header siempre visible con botón crear
+    let html = `
+      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
+          <div>
+            <div style="font-weight:700; font-size:var(--fs-base)">🛡️ Tus equipos (${equipos.length})</div>
+            <div class="text-xs text-muted">
+              ${equipos.length === 0
+                ? 'Aún no perteneces a ningún equipo'
+                : 'Puedes estar en tantos equipos como quieras'}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn--primary btn--sm" id="btn-crear-equipo">+ Crear equipo</button>
+            <button class="btn btn--ghost btn--sm" id="btn-buscar-equipos">🔍 Buscar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (equipos.length === 0) {
-      contenedorEquipo.innerHTML = `
+      html += `
         <div class="card">
           <div class="empty-state">
             <div class="empty-state__icon">🛡️</div>
             <p>No perteneces a ningún equipo todavía.</p>
-            <div class="flex gap-3 mt-4" style="justify-content:center">
-              <button class="btn btn--primary" id="btn-crear-equipo">+ Crear equipo</button>
-              <button class="btn btn--ghost" id="btn-buscar-equipos">Buscar</button>
-            </div>
+            <p class="text-sm text-muted mt-4">Crea uno o busca uno existente para unirte</p>
           </div>
         </div>`;
-      document.getElementById('btn-crear-equipo')?.addEventListener('click', () => abrirModalCrearGrupo('equipo'));
-      document.getElementById('btn-buscar-equipos')?.addEventListener('click', () => cambiarTab('buscar'));
+      contenedorEquipo.innerHTML = html;
+      conectarBotonesPanel('equipo');
       return;
     }
 
-    let selectorHtml = '';
-    if (equipos.length > 1) {
-      selectorHtml = `
-        <div class="card mb-4">
-          <label class="field__label">Tus equipos</label>
-          <div class="posiciones-lista" style="justify-content:flex-start">
-            ${equipos.map((e, i) => `
-              <button class="posicion-chip ${i === 0 ? 'active' : ''}" data-elegir-equipo="${e.id}">
-                ${e.escudo} ${e.nombre}
-              </button>
-            `).join('')}
-          </div>
-        </div>`;
-      contenedorEquipo.innerHTML = selectorHtml + '<div id="equipo-detalle"></div>';
-      contenedorEquipo.querySelectorAll('[data-elegir-equipo]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = Number(btn.dataset.elegirEquipo);
-          const eq = getGrupoPorId(id);
-          if (eq) renderGrupo(eq, document.getElementById('equipo-detalle'), false);
-        });
-      });
-      renderGrupo(equipos[0], document.getElementById('equipo-detalle'), false);
-    } else {
-      renderGrupo(equipos[0], contenedorEquipo, false);
-    }
+    // Renderizar cada equipo con separador
+    equipos.forEach(e => {
+      html += `<div id="equipo-${e.id}" style="margin-bottom:var(--space-5)"></div>`;
+    });
+
+    contenedorEquipo.innerHTML = html;
+
+    equipos.forEach(e => {
+      const cont = document.getElementById(`equipo-${e.id}`);
+      if (cont) renderGrupo(e, cont, false);
+    });
+
+    conectarBotonesPanel('equipo');
   }
 
   /* =========================================================
@@ -249,48 +321,53 @@ export async function init() {
   function renderPanelComunidad() {
     const comunidades = misComunidades();
 
+    // Header siempre visible con botón crear
+    let html = `
+      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
+          <div>
+            <div style="font-weight:700; font-size:var(--fs-base)">🌐 Tus comunidades (${comunidades.length})</div>
+            <div class="text-xs text-muted">
+              ${comunidades.length === 0
+                ? 'Aún no perteneces a ninguna comunidad'
+                : 'Puedes estar en tantas comunidades como quieras'}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn--primary btn--sm" id="btn-crear-comunidad">+ Crear comunidad</button>
+            <button class="btn btn--ghost btn--sm" id="btn-buscar-comunidades">🔍 Buscar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
     if (comunidades.length === 0) {
-      contenedorComunidad.innerHTML = `
+      html += `
         <div class="card">
           <div class="empty-state">
             <div class="empty-state__icon">🌐</div>
             <p>No perteneces a ninguna comunidad todavía.</p>
-            <div class="flex gap-3 mt-4" style="justify-content:center">
-              <button class="btn btn--primary" id="btn-crear-comunidad-nueva">+ Crear comunidad</button>
-              <button class="btn btn--ghost" id="btn-buscar-comunidades">Buscar</button>
-            </div>
+            <p class="text-sm text-muted mt-4">Crea una o busca una existente para unirte</p>
           </div>
         </div>`;
-      document.getElementById('btn-crear-comunidad-nueva')?.addEventListener('click', () => abrirModalCrearGrupo('comunidad'));
-      document.getElementById('btn-buscar-comunidades')?.addEventListener('click', () => cambiarTab('buscar'));
+      contenedorComunidad.innerHTML = html;
+      conectarBotonesPanel('comunidad');
       return;
     }
 
-    let selectorHtml = '';
-    if (comunidades.length > 1) {
-      selectorHtml = `
-        <div class="card mb-4">
-          <label class="field__label">Tus comunidades</label>
-          <div class="posiciones-lista" style="justify-content:flex-start">
-            ${comunidades.map((c, i) => `
-              <button class="posicion-chip ${i === 0 ? 'active' : ''}" data-elegir-comunidad="${c.id}">
-                ${c.escudo} ${c.nombre}
-              </button>
-            `).join('')}
-          </div>
-        </div>`;
-      contenedorComunidad.innerHTML = selectorHtml + '<div id="comunidad-detalle"></div>';
-      contenedorComunidad.querySelectorAll('[data-elegir-comunidad]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = Number(btn.dataset.elegirComunidad);
-          const c = getGrupoPorId(id);
-          if (c) renderGrupo(c, document.getElementById('comunidad-detalle'), true);
-        });
-      });
-      renderGrupo(comunidades[0], document.getElementById('comunidad-detalle'), true);
-    } else {
-      renderGrupo(comunidades[0], contenedorComunidad, true);
-    }
+    // Renderizar cada comunidad con separador
+    comunidades.forEach(c => {
+      html += `<div id="comunidad-${c.id}" style="margin-bottom:var(--space-5)"></div>`;
+    });
+
+    contenedorComunidad.innerHTML = html;
+
+    comunidades.forEach(c => {
+      const cont = document.getElementById(`comunidad-${c.id}`);
+      if (cont) renderGrupo(c, cont, true);
+    });
+
+    conectarBotonesPanel('comunidad');
   }
     /* =========================================================
      RENDER: CHAT
@@ -489,8 +566,6 @@ export async function init() {
       const f = textoBusqueda.toLowerCase().trim();
 
       let lista = getGrupos();
-      // Mostrar TODOS los grupos, incluso los míos, PERO marcar cuáles son míos
-      // (el botón cambia a "Ya eres miembro")
 
       if (filtroTipo === 'equipo')     lista = lista.filter(g => g.tipo === 'equipo');
       if (filtroTipo === 'comunidad')  lista = lista.filter(g => g.tipo === 'comunidad');
@@ -624,13 +699,6 @@ export async function init() {
       });
     });
 
-    document.getElementById('btn-crear-equipo-panel')?.addEventListener('click', () => {
-      abrirModalCrearGrupo('equipo');
-    });
-
-    document.getElementById('btn-crear-comunidad-panel')?.addEventListener('click', () => {
-      abrirModalCrearGrupo('comunidad');
-    });
 
     pintar();
   }
@@ -646,7 +714,7 @@ export async function init() {
 
   let tipoGrupoSeleccionado = 'equipo';
 
-  function abrirModalCrearGrupo(tipo = 'equipo') {
+   function abrirModalCrearGrupo(tipo = 'equipo') {
     const modal = document.getElementById('modal-crear-comunidad');
     if (!modal) return;
 
@@ -700,6 +768,9 @@ export async function init() {
       };
     });
 
+    // Ocultar toggle de stats privadas al crear
+    document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
+
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
     btnGuardar.onclick = () => {
@@ -711,8 +782,19 @@ export async function init() {
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
+      // Evitar nombres duplicados del mismo usuario y tipo
+      const yaExiste = getGrupos().some(g =>
+        g.nombre.toLowerCase() === nombre.toLowerCase() &&
+        g.tipo === tipoGrupoSeleccionado &&
+        g.capitanId === user.id
+      );
+      if (yaExiste) {
+        return toast('Ya tienes un grupo con ese nombre', 'error');
+      }
+
+      // ID único (evita colisiones al crear varios seguidos)
       const nuevo = {
-        id: Date.now(),
+        id: Date.now() + Math.floor(Math.random() * 100000),
         tipo: tipoGrupoSeleccionado,
         nombre,
         escudo: iconoSel,
@@ -735,14 +817,17 @@ export async function init() {
         ],
         stats: { victorias: 0, empates: 0, derrotas: 0 },
         statsPrivadas: false,
+        hilos: [],
         creado: new Date().toISOString()
       };
 
+      // Guardar
       guardarGrupo(nuevo);
       cerrarModal('modal-crear-comunidad');
 
       toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} "${nombre}" creado!`, 'success');
 
+      // Cambiar a la pestaña correcta y recargar
       cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
       recargarPaneles();
     };
@@ -756,7 +841,7 @@ export async function init() {
 
     abrirModal('modal-crear-comunidad');
   }
-    /* =========================================================
+  /* =========================================================
      MODAL: EDITAR GRUPO
      ========================================================= */
   function abrirModalEditarGrupo(grupo) {
@@ -812,6 +897,19 @@ export async function init() {
       };
     });
 
+    // Toggle de stats privadas (SOLO visible al editar)
+    // Toggle de stats privadas (SOLO visible al editar Y solo si es EQUIPO)
+    const wrapperPriv = document.getElementById('editar-stats-privadas-wrapper');
+    const chkPriv = document.getElementById('edit-grupo-stats-privadas');
+    if (wrapperPriv && chkPriv) {
+      if (grupo.tipo === 'equipo') {
+        wrapperPriv.classList.remove('hidden');
+        chkPriv.checked = !!grupo.statsPrivadas;
+      } else {
+        wrapperPriv.classList.add('hidden');
+        chkPriv.checked = false;
+      }
+    }
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = 'Guardar cambios';
     btnGuardar.onclick = () => {
@@ -819,6 +917,7 @@ export async function init() {
       const deporte = document.getElementById('com-deporte').value;
       const ciudad = document.getElementById('com-ciudad').value.trim();
       const descripcion = document.getElementById('com-descripcion').value.trim();
+      const statsPrivadasNueva = (grupo.tipo === 'equipo' && chkPriv) ? chkPriv.checked : false;
 
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
@@ -830,6 +929,7 @@ export async function init() {
       if (descripcion !== (grupo.descripcion || '')) cambios.push('descripción');
       if (iconoSel !== grupo.escudo)              cambios.push('ícono');
       if (tipoAccesoSel !== grupo.tipoAcceso)     cambios.push('visibilidad');
+      if (statsPrivadasNueva !== grupo.statsPrivadas) cambios.push('privacidad de stats');
 
       if (cambios.length === 0) {
         cerrarModal('modal-crear-comunidad');
@@ -842,6 +942,7 @@ export async function init() {
       grupo.ciudad = ciudad;
       grupo.descripcion = descripcion;
       grupo.tipoAcceso = tipoAccesoSel;
+      grupo.statsPrivadas = statsPrivadasNueva;
 
       guardarGrupo(grupo);
 
@@ -869,13 +970,24 @@ export async function init() {
 
     abrirModal('modal-crear-comunidad');
   }
-
-  /* =========================================================
+    /* =========================================================
      MODAL: GESTIONAR MIEMBROS
      ========================================================= */
   function abrirModalGestionar(grupo) {
     window.__grupoEditando = grupo.id;
     renderGestionMiembros(grupo, 'miembros');
+
+    const modal = document.getElementById('modal-gestionar-grupo');
+    if (!modal) return;
+
+    // Conectar cierre
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.onclick = () => cerrarModal('modal-gestionar-grupo');
+    });
+    modal.onclick = (e) => {
+      if (e.target === modal) cerrarModal('modal-gestionar-grupo');
+    };
+
     abrirModal('modal-gestionar-grupo');
   }
 
@@ -1043,55 +1155,43 @@ export async function init() {
   });
 
   /* =========================================================
-     MODAL: EDITAR STATS
+     MODAL: EDITAR STATS DEL GRUPO (nuevo, exclusivo)
      ========================================================= */
   function abrirModalStats(grupo) {
-    // Guardar grupo para después
-    window.__grupoStatsId = grupo.id;
+    const modal = document.getElementById('modal-grupo-stats');
+    if (!modal) return;
 
-    // Precargar
-    document.getElementById('edit-stats-partidos').value = grupo.stats?.victorias || 0;
-    document.getElementById('edit-stats-goles').value = grupo.stats?.empates || 0;
-    document.getElementById('edit-stats-mvps').value = grupo.stats?.derrotas || 0;
+    document.getElementById('grupo-stats-titulo').textContent =
+      `📊 Stats de ${grupo.escudo} ${grupo.nombre}`;
 
-    // Cambiar labels del modal para indicar V/E/D
-    const modal = document.getElementById('modal-editar-stats');
-    modal.querySelector('.modal__title').textContent = 'Editar estadísticas del grupo';
-    modal.querySelectorAll('.field__label')[0].textContent = 'Victorias';
-    modal.querySelectorAll('.field__label')[1].textContent = 'Empates';
-    modal.querySelectorAll('.field__label')[2].textContent = 'Derrotas';
+    document.getElementById('gs-victorias').value = grupo.stats?.victorias || 0;
+    document.getElementById('gs-empates').value   = grupo.stats?.empates || 0;
+    document.getElementById('gs-derrotas').value  = grupo.stats?.derrotas || 0;
 
-    document.getElementById('btn-guardar-stats').onclick = () => {
+    document.getElementById('btn-guardar-grupo-stats').onclick = () => {
       const grupoActual = getGrupoPorId(grupo.id);
       if (!grupoActual) return;
 
       grupoActual.stats = {
-        victorias: Math.max(0, Number(document.getElementById('edit-stats-partidos').value) || 0),
-        empates:   Math.max(0, Number(document.getElementById('edit-stats-goles').value) || 0),
-        derrotas:  Math.max(0, Number(document.getElementById('edit-stats-mvps').value) || 0)
+        victorias: Math.max(0, Number(document.getElementById('gs-victorias').value) || 0),
+        empates:   Math.max(0, Number(document.getElementById('gs-empates').value) || 0),
+        derrotas:  Math.max(0, Number(document.getElementById('gs-derrotas').value) || 0)
       };
 
       guardarGrupo(grupoActual);
-      cerrarModal('modal-editar-stats');
-
-      // Restaurar labels originales
-      modal.querySelector('.modal__title').textContent = 'Editar estadísticas';
-      modal.querySelectorAll('.field__label')[0].textContent = 'Partidos jugados';
-      modal.querySelectorAll('.field__label')[1].textContent = 'Goles / Anotaciones';
-      modal.querySelectorAll('.field__label')[2].textContent = 'MVPs';
-
+      cerrarModal('modal-grupo-stats');
       toast('Stats del grupo actualizadas', 'success');
       recargarPaneles();
     };
 
-    document.querySelectorAll('#modal-editar-stats [data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-editar-stats');
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.onclick = () => cerrarModal('modal-grupo-stats');
     });
     modal.onclick = (e) => {
-      if (e.target.id === 'modal-editar-stats') cerrarModal('modal-editar-stats');
+      if (e.target === modal) cerrarModal('modal-grupo-stats');
     };
 
-    abrirModal('modal-editar-stats');
+    abrirModal('modal-grupo-stats');
   }
 
   /* =========================================================
@@ -1131,6 +1231,362 @@ export async function init() {
 
     toast('Saliste del grupo', 'info');
     recargarPaneles();
+  }
+
+  /* =========================================================
+     HILOS DE COMUNIDAD
+     ========================================================= */
+  function renderHilosGrupo(grupo, contenedor) {
+    const contenedorHilos = contenedor.querySelector(`#hilos-grupo-${grupo.id}`);
+    if (!contenedorHilos) return;
+
+    const hilos = grupo.hilos || [];
+
+    if (hilos.length === 0) {
+      contenedorHilos.innerHTML = `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">📝</div>
+          <p>Aún no hay publicaciones en esta comunidad.</p>
+          ${esMiembro(grupo, user.id) || esCapitan(grupo, user.id) || esAdmin(grupo, user.id) ? `
+            <p class="text-xs text-muted mt-2">¡Sé el primero en publicar!</p>
+          ` : ''}
+        </div>`;
+      return;
+    }
+
+    contenedorHilos.innerHTML = hilos.map(h => renderHilo(h, grupo)).join('');
+    conectarEventosHilos(contenedorHilos, grupo);
+  }
+
+  function renderHilo(h, grupo) {
+    const esMio = h.autor.id === user.id;
+    const esAdminOGrupo = esCapitan(grupo, user.id) || esAdmin(grupo, user.id);
+    const puedeBorrar = esMio || esAdminOGrupo;
+
+    return `
+      <article class="post" data-hilo-id="${h.id}">
+        <header class="post__header">
+          <img
+            src="${h.autor.avatar}"
+            alt=""
+            class="avatar avatar--md"
+            data-autor-id="${h.autor.id}"
+            style="cursor:pointer"
+          />
+          <div class="post__author">
+            <div class="post__author-name"
+                 data-autor-id="${h.autor.id}"
+                 style="cursor:pointer">
+              ${h.autor.nombre}
+            </div>
+            <div class="post__meta">
+              <span class="post__tipo-icono">📝</span>
+              publicó · ${tiempoRelativoHilo(h.fecha)}
+            </div>
+          </div>
+          ${puedeBorrar ? `
+            <button class="post__menu" data-menu-hilo="${h.id}" title="Opciones">⋯</button>
+          ` : ''}
+        </header>
+
+        ${h.contenido ? `<div class="post__body">${escapeHtmlHilo(h.contenido)}</div>` : ''}
+
+        ${h.imagen ? `<img src="${h.imagen}" alt="" class="post__image" loading="lazy" />` : ''}
+        ${h.video ? `<video src="${h.video}" controls class="post__image" style="max-height:400px; width:100%"></video>` : ''}
+
+        <div class="post__stats">
+          <button class="post__action post__action--like ${h.yoLikee ? 'activo' : ''}" data-accion-hilo="like">
+            <span class="post__action-icon">${h.yoLikee ? '❤️' : '🤍'}</span>
+            <span class="contador-likes">${h.likes || 0}</span>
+          </button>
+
+          <button class="post__action" data-accion-hilo="comentarios">
+            <span class="post__action-icon">💬</span>
+            <span class="contador-comentarios">${(h.comentarios || []).length}</span>
+          </button>
+
+          ${puedeBorrar ? `
+            <button class="post__action" data-accion-hilo="eliminar" style="margin-left:auto; color:var(--color-danger)">
+              <span class="post__action-icon">🗑️</span>
+            </button>
+          ` : ''}
+        </div>
+
+        <div class="post__comentarios">
+          ${(h.comentarios || []).map(c => `
+            <div class="comentario">
+              <img src="${c.avatar}" alt="" class="avatar avatar--sm" />
+              <div class="comentario__cuerpo">
+                <div class="comentario__autor">${c.autor}</div>
+                <div class="comentario__texto">${escapeHtmlHilo(c.texto)}</div>
+                <div class="comentario__fecha">${c.fecha}</div>
+              </div>
+            </div>
+          `).join('')}
+
+          <form class="comentario-form" data-form-comentario-hilo>
+            <input type="text" placeholder="Escribe un comentario..." maxlength="200" />
+            <button type="submit" class="btn btn--primary btn--sm">Enviar</button>
+          </form>
+        </div>
+      </article>
+    `;
+  }
+
+  function conectarEventosHilos(contenedor, grupo) {
+    // Like
+    contenedor.querySelectorAll('[data-accion-hilo="like"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const postEl = btn.closest('[data-hilo-id]');
+        const hiloId = Number(postEl.dataset.hiloId);
+        toggleLikeHilo(grupo, hiloId, postEl);
+      });
+    });
+
+    // Comentarios (toggle)
+    contenedor.querySelectorAll('[data-accion-hilo="comentarios"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const postEl = btn.closest('[data-hilo-id]');
+        postEl.querySelector('.post__comentarios')?.classList.toggle('abierto');
+      });
+    });
+
+    // Eliminar
+    contenedor.querySelectorAll('[data-accion-hilo="eliminar"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const postEl = btn.closest('[data-hilo-id]');
+        const hiloId = Number(postEl.dataset.hiloId);
+        if (!confirm('¿Eliminar esta publicación?')) return;
+
+        import('../store.js').then(({ eliminarHilo }) => {
+          eliminarHilo(grupo.id, hiloId);
+          toast('Publicación eliminada', 'info');
+          renderHilosGrupo(getGrupoPorId(grupo.id), contenedor);
+        });
+      });
+    });
+
+    // Formulario de comentarios
+    contenedor.querySelectorAll('[data-form-comentario-hilo]').forEach(form => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = form.querySelector('input');
+        const texto = input.value.trim();
+        if (!texto) return;
+
+        const postEl = form.closest('[data-hilo-id]');
+        const hiloId = Number(postEl.dataset.hiloId);
+
+        agregarComentarioHilo(grupo, hiloId, texto);
+        input.value = '';
+        renderHilosGrupo(getGrupoPorId(grupo.id), contenedor);
+
+        const nuevo = contenedor.querySelector(`[data-hilo-id="${hiloId}"]`);
+        nuevo?.querySelector('.post__comentarios')?.classList.add('abierto');
+      });
+    });
+
+    // Click en autor → ver perfil
+    contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => {
+          verPerfilUsuario(Number(el.dataset.autorId));
+        });
+      });
+    });
+
+    // Click en "+ Crear publicación"
+    contenedor.parentElement?.querySelector('[data-nuevo-hilo]')?.addEventListener('click', () => {
+      abrirModalCrearHilo(grupo);
+    });
+  }
+
+  function toggleLikeHilo(grupo, hiloId, postEl) {
+    const hilo = (grupo.hilos || []).find(h => h.id === hiloId);
+    if (!hilo) return;
+
+    hilo.yoLikee = !hilo.yoLikee;
+    hilo.likes = (hilo.likes || 0) + (hilo.yoLikee ? 1 : -1);
+
+    import('../store.js').then(({ actualizarHilo }) => {
+      actualizarHilo(grupo.id, hiloId, {
+        yoLikee: hilo.yoLikee,
+        likes: hilo.likes
+      });
+
+      const btn = postEl.querySelector('[data-accion-hilo="like"]');
+      btn.classList.toggle('activo', hilo.yoLikee);
+      btn.querySelector('.post__action-icon').textContent = hilo.yoLikee ? '❤️' : '🤍';
+      btn.querySelector('.contador-likes').textContent = hilo.likes;
+    });
+  }
+
+  function agregarComentarioHilo(grupo, hiloId, texto) {
+    const hilo = (grupo.hilos || []).find(h => h.id === hiloId);
+    if (!hilo) return;
+
+    hilo.comentarios = hilo.comentarios || [];
+    hilo.comentarios.push({
+      id: Date.now(),
+      autor: user.nombre,
+      avatar: user.avatar,
+      texto,
+      fecha: 'ahora'
+    });
+
+    import('../store.js').then(({ actualizarHilo }) => {
+      actualizarHilo(grupo.id, hiloId, { comentarios: hilo.comentarios });
+    });
+  }
+
+  function tiempoRelativoHilo(iso) {
+    const dif = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (dif < 60) return 'hace unos segundos';
+    if (dif < 3600) return `hace ${Math.floor(dif / 60)} min`;
+    if (dif < 86400) return `hace ${Math.floor(dif / 3600)} h`;
+    if (dif < 604800) return `hace ${Math.floor(dif / 86400)} d`;
+    return new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+  }
+
+  function escapeHtmlHilo(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /* =========================================================
+     MODAL: CREAR HILO
+     ========================================================= */
+  let hiloGrupoActual = null;
+  let hiloAdjunto = null;
+
+  function abrirModalCrearHilo(grupo) {
+    const modal = document.getElementById('modal-crear-hilo');
+    if (!modal) return;
+
+    hiloGrupoActual = grupo;
+    hiloAdjunto = null;
+
+    document.getElementById('hilo-contenido').value = '';
+    document.getElementById('hilo-contador').textContent = '0';
+    document.getElementById('hilo-preview-wrapper').classList.add('hidden');
+    document.getElementById('hilo-preview').innerHTML = '';
+    document.getElementById('hilo-btn-quitar-adjunto').style.display = 'none';
+
+    document.getElementById('crear-hilo-titulo').textContent = `Publicar en ${grupo.escudo} ${grupo.nombre}`;
+
+    const textarea = document.getElementById('hilo-contenido');
+    const contador = document.getElementById('hilo-contador');
+    textarea.oninput = () => {
+      contador.textContent = textarea.value.length;
+    };
+
+    const inputImg = document.getElementById('hilo-input-imagen');
+    inputImg.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) return toast('Imagen muy grande (máx 5 MB)', 'error');
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        hiloAdjunto = { tipo: 'imagen', dataUrl: ev.target.result };
+        mostrarPreviewHilo();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    };
+
+    const inputVid = document.getElementById('hilo-input-video');
+    inputVid.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) return toast('Video muy grande (máx 5 MB)', 'error');
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        hiloAdjunto = { tipo: 'video', dataUrl: ev.target.result };
+        mostrarPreviewHilo();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    };
+
+    document.getElementById('hilo-btn-quitar-adjunto').onclick = () => {
+      hiloAdjunto = null;
+      mostrarPreviewHilo();
+    };
+
+    document.getElementById('btn-publicar-hilo').onclick = () => {
+      const contenido = textarea.value.trim();
+
+      if (!contenido && !hiloAdjunto) {
+        return toast('Escribe algo o adjunta una imagen/video', 'error');
+      }
+
+      const nuevo = {
+        id: Date.now(),
+        autor: {
+          id: user.id,
+          nombre: user.nombre,
+          avatar: user.avatar
+        },
+        tipo: 'post',
+        contenido,
+        imagen: hiloAdjunto?.tipo === 'imagen' ? hiloAdjunto.dataUrl : null,
+        video:  hiloAdjunto?.tipo === 'video'  ? hiloAdjunto.dataUrl : null,
+        fecha: new Date().toISOString(),
+        likes: 0,
+        yoLikee: false,
+        comentarios: []
+      };
+
+      import('../store.js').then(({ agregarHilo }) => {
+        agregarHilo(grupo.id, nuevo);
+
+        cerrarModal('modal-crear-hilo');
+        toast('¡Publicación creada!', 'success');
+
+        const contenedor = document.getElementById(
+          grupo.tipo === 'comunidad' ? 'comunidad-contenido' : 'equipo-contenido'
+        );
+        if (contenedor) {
+          renderGrupo(getGrupoPorId(grupo.id), contenedor, grupo.tipo === 'comunidad');
+        }
+        recargarPaneles();
+      });
+    };
+
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.onclick = () => cerrarModal('modal-crear-hilo');
+    });
+    modal.onclick = (e) => {
+      if (e.target === modal) cerrarModal('modal-crear-hilo');
+    };
+
+    abrirModal('modal-crear-hilo');
+  }
+
+  function mostrarPreviewHilo() {
+    const wrapper = document.getElementById('hilo-preview-wrapper');
+    const preview = document.getElementById('hilo-preview');
+    const btnQuitar = document.getElementById('hilo-btn-quitar-adjunto');
+
+    if (!hiloAdjunto) {
+      wrapper.classList.add('hidden');
+      preview.innerHTML = '';
+      btnQuitar.style.display = 'none';
+      return;
+    }
+
+    wrapper.classList.remove('hidden');
+    btnQuitar.style.display = '';
+
+    if (hiloAdjunto.tipo === 'imagen') {
+      preview.innerHTML = `<img src="${hiloAdjunto.dataUrl}" style="width:100%; display:block" />`;
+    } else {
+      preview.innerHTML = `<video src="${hiloAdjunto.dataUrl}" controls style="width:100%; display:block"></video>`;
+    }
   }
 
   /* =========================================================

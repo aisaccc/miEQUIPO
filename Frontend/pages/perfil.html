@@ -10,9 +10,10 @@
       <p id="perfil-username" class="card__subtitle"></p>
       <p id="perfil-bio" class="text-sm text-muted mt-4"></p>
 
+      <div class="flex gap-2 mt-4" style="flex-wrap:wrap" id="perfil-deportes-chips"></div>
       <div class="flex gap-2 mt-4" style="flex-wrap:wrap">
-        <span id="perfil-deporte" class="badge badge--primary"></span>
-        <span id="perfil-posicion" class="badge badge--info"></span>
+        <span id="perfil-edad" class="badge badge--neutral"></span>
+        <span id="perfil-pais" class="badge badge--neutral"></span>
         <span id="perfil-ciudad" class="badge badge--neutral"></span>
       </div>
     </div>
@@ -23,23 +24,8 @@
   </div>
 </div>
 
-<!-- ================= ESTADÍSTICAS ================= -->
-<div class="card mb-4">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="card__title" style="margin:0">📊 Mis estadísticas</h3>
-    <div class="flex gap-2">
-      <button class="btn btn--ghost btn--sm" id="btn-editar-stats">✏️ Editar</button>
-      <label class="switch" style="margin:0">
-        <input type="checkbox" id="perfil-stats-privadas" />
-        <span class="switch__slider"></span>
-        <div>
-          <div class="switch__label" style="font-size:var(--fs-xs)">Solo yo veo mis stats</div>
-        </div>
-      </label>
-    </div>
-  </div>
-  <div id="perfil-stats" class="stats-grid"></div>
-</div>
+<!-- ================= ESTADÍSTICAS POR DEPORTE ================= -->
+<div id="perfil-stats-deportes"></div>
 
 <!-- ================= MIS PUBLICACIONES ================= -->
 <div class="card mb-4">
@@ -55,7 +41,7 @@
 
 <!-- ================= MODAL: EDITAR PERFIL ================= -->
 <div class="modal-backdrop" id="modal-editar-perfil">
-  <div class="modal" style="max-width: 520px;">
+  <div class="modal" style="max-width: 560px;">
     <div class="modal__header">
       <h3 class="modal__title">Editar perfil</h3>
       <button class="modal__close" data-cerrar-modal="modal-editar-perfil">✕</button>
@@ -99,13 +85,13 @@
 
       <div class="form-row">
         <div class="field">
-          <label class="field__label" for="edit-perf-deporte">Deporte favorito</label>
-          <select id="edit-perf-deporte" class="field__input"></select>
+          <label class="field__label" for="edit-perf-edad">Edad</label>
+          <input type="number" id="edit-perf-edad" class="field__input" min="10" max="100" placeholder="Ej: 25" />
         </div>
         <div class="field">
-          <label class="field__label" for="edit-perf-posicion">Posición favorita</label>
-          <select id="edit-perf-posicion" class="field__input">
-            <option value="">Sin definir</option>
+          <label class="field__label" for="edit-perf-pais">País</label>
+          <select id="edit-perf-pais" class="field__input">
+            <option value="">Selecciona un país...</option>
           </select>
         </div>
       </div>
@@ -113,6 +99,20 @@
       <div class="field">
         <label class="field__label" for="edit-perf-ciudad">Ciudad</label>
         <input type="text" id="edit-perf-ciudad" class="field__input" maxlength="40" placeholder="Ej: Santiago" />
+      </div>
+
+      <!-- DEPORTES -->
+      <div class="field">
+        <label class="field__label">Deportes que practico</label>
+
+        <div style="display:flex; gap:8px; margin-bottom:var(--space-3)">
+          <select id="edit-perf-nuevo-deporte" class="field__input" style="flex:1">
+            <option value="">Agregar deporte...</option>
+          </select>
+          <button type="button" class="btn btn--primary btn--sm" id="edit-perf-add-deporte">+</button>
+        </div>
+
+        <div id="edit-perf-deportes-lista" class="feed-list"></div>
       </div>
 
     </div>
@@ -124,34 +124,26 @@
   </div>
 </div>
 
-<!-- ================= MODAL: EDITAR STATS ================= -->
-<div class="modal-backdrop" id="modal-editar-stats">
-  <div class="modal" style="max-width: 420px;">
+<!-- ================= MODAL: EDITAR STATS DE UN DEPORTE ================= -->
+<div class="modal-backdrop" id="modal-editar-stats-deporte">
+  <div class="modal" style="max-width: 460px;">
     <div class="modal__header">
-      <h3 class="modal__title">Editar estadísticas</h3>
-      <button class="modal__close" data-cerrar-modal="modal-editar-stats">✕</button>
+      <h3 class="modal__title" id="stats-deporte-titulo">Editar estadísticas</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-stats-deporte">✕</button>
     </div>
 
     <div class="modal__body">
-      <div class="field">
-        <label class="field__label" for="edit-stats-partidos">Partidos jugados</label>
-        <input type="number" id="edit-stats-partidos" class="field__input" min="0" value="0" />
-      </div>
+      <p class="text-xs text-muted mb-4">
+        Marca el ✓ de cada registro para que sea <strong>público</strong> en tu perfil.
+        Si lo dejas sin marcar, solo lo verás tú.
+      </p>
 
-      <div class="field">
-        <label class="field__label" for="edit-stats-goles">Goles / Anotaciones</label>
-        <input type="number" id="edit-stats-goles" class="field__input" min="0" value="0" />
-      </div>
-
-      <div class="field">
-        <label class="field__label" for="edit-stats-mvps">MVPs</label>
-        <input type="number" id="edit-stats-mvps" class="field__input" min="0" value="0" />
-      </div>
+      <div id="stats-deporte-campos"></div>
     </div>
 
     <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats">Cancelar</button>
-      <button class="btn btn--primary" id="btn-guardar-stats">Guardar cambios</button>
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats-deporte">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-stats-deporte">Guardar</button>
     </div>
   </div>
 </div>

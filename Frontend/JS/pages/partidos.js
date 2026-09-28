@@ -1,12 +1,13 @@
 import { formatearFecha, toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes, posicionesPorDeporte, nivelesPartido } from '../data-mock.js';
 import { getSesion } from '../auth.js';
-import { getPartidos, guardarPartidos } from '../store.js';
+import { getPartidos, guardarPartidos, getGrupos } from '../store.js';
 
 export async function init() {
   /* ---------- ESTADO ---------- */
   let partidos = getPartidos();
   let filtroActual = 'todos';
+  let filtroTipoActual = 'todos';
   let tabActual = 'disponibles';
   const user = getSesion();
 
@@ -19,23 +20,41 @@ export async function init() {
   const panelInscritos   = document.getElementById('panel-inscritos');
   const subtabs          = document.querySelectorAll('[data-tab-partidos]');
   const chips            = document.querySelectorAll('[data-filtro]');
+  const chipsTipo        = document.querySelectorAll('[data-filtro-tipo]');
   const btnCrear         = document.getElementById('btn-crear-partido');
   const btnCrear2        = document.getElementById('btn-crear-partido-2');
 
   if (!contDisponibles) return null;
 
-  /* ---------- MAPA DE EMOJIS ---------- */
-  const emojiDeporte = {
-    'Fútbol': '⚽', 'Básquetbol': '🏀', 'Tenis': '🎾', 'Vóleibol': '🏐',
-    'Pádel': '🎾', 'Golf': '⛳', 'Béisbol': '⚾', 'Hockey': '🏒',
-    'Boxeo': '🥊', 'Bádminton': '🏸', 'Rugby': '🏉', 'Ciclismo': '🚴',
-    'Natación': '🏊', 'Atletismo': '🏃', 'Tenis de mesa': '🏓',
-    'Squash': '🎾', 'Handball': '🤾', 'Fútbol americano': '🏈',
-    'Surf': '🏄', 'Escalada': '🧗'
-  };
+  /* ---------- HELPERS ---------- */
+  function misEquiposComoCapitanOAdmin() {
+    return getGrupos().filter(g =>
+      g.tipo === 'equipo' &&
+      (g.capitanId === user.id || (g.admins || []).includes(user.id))
+    );
+  }
 
+const emojiDeporte = {
+  'Fútbol': '<img src="assets/icons/futbol2.png" alt="Fútbol" style="width:32px; height:32px; object-fit:contain; display:block" />',
+  'Básquetbol': '🏀', 'Tenis': '🎾', 'Vóleibol': '🏐',
+  'Pádel': '🎾', 'Golf': '⛳', 'Béisbol': '⚾', 'Hockey': '🏒',
+  'Boxeo': '🥊', 'Bádminton': '🏸', 'Rugby': '🏉', 'Ciclismo': '🚴',
+  'Natación': '🏊', 'Atletismo': '🏃', 'Tenis de mesa': '🏓',
+  'Squash': '🎾', 'Handball': '🤾', 'Balonmano': '🤾',
+  'Fútbol americano': '🏈', 'Surf': '🏄', 'Escalada': '🧗'
+};
   function cantidadInscritos(p) {
     return Array.isArray(p.inscritos) ? p.inscritos.length : (p.inscritos || 0);
+  }
+
+  function esDeEquipo(p) {
+    return p.tipoPartido === 'equipo';
+  }
+
+  function totalInscritosReal(p) {
+    return esDeEquipo(p)
+      ? (p.equiposInscritos || []).length
+      : cantidadInscritos(p);
   }
 
   /* =========================================================
@@ -43,8 +62,8 @@ export async function init() {
      ========================================================= */
   function renderCard(p, opciones = {}) {
     const { mostrarAcciones = false, mostrarBadgeRol = null } = opciones;
-    const inscritosCount = cantidadInscritos(p);
-    const porcentaje = Math.min(100, Math.round((inscritosCount / p.cupos) * 100));
+    const totalInsc = totalInscritosReal(p);
+    const porcentaje = Math.min(100, Math.round((totalInsc / p.cupos) * 100));
 
     const badgeClase =
       p.estado === 'lleno'      ? 'badge--danger'  :
@@ -53,7 +72,7 @@ export async function init() {
     const badgeTexto =
       p.estado === 'lleno'      ? 'Lleno'      :
       p.estado === 'finalizado' ? 'Finalizado' :
-                                  'Abierto';
+                                  'Disponible';
 
     const precioHtml = p.precio === 0
       ? `<span class="match-card__precio match-card__precio--gratis">🎉 Gratis</span>`
@@ -81,6 +100,15 @@ export async function init() {
       ? `<span class="badge badge--primary" style="margin-left:auto">${mostrarBadgeRol}</span>`
       : '';
 
+    // Badge de tipo de partido
+    const badgeTipoHtml = esDeEquipo(p)
+      ? `<span class="badge badge--warning">🛡️ De equipos</span>`
+      : `<span class="badge badge--info">👤 De jugadores</span>`;
+
+    const contadorTexto = esDeEquipo(p)
+      ? `${totalInsc}/${p.cupos} equipos`
+      : `${totalInsc}/${p.cupos} jugadores`;
+
     const accionesHtml = mostrarAcciones ? `
       <div class="match-card__acciones" style="display:flex; gap:6px; margin-top:var(--space-3); padding-top:var(--space-3); border-top:1px solid var(--color-border);">
         <button class="btn btn--ghost btn--sm" data-accion="editar" data-id="${p.id}">✏️ Editar</button>
@@ -93,7 +121,7 @@ export async function init() {
       <article class="match-card" data-id="${p.id}">
         <div class="match-card__header">
           <div class="match-card__sport">${p.emoji}</div>
-          <div style="display:flex; gap:6px; align-items:center">
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
             ${badgeRolHtml}
             <span class="badge ${badgeClase}">${badgeTexto}</span>
           </div>
@@ -102,6 +130,7 @@ export async function init() {
         <h3 class="match-card__title">${p.titulo}</h3>
 
         <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+          ${badgeTipoHtml}
           ${nivelHtml}
           ${precioHtml}
           ${aprobacionHtml}
@@ -112,17 +141,13 @@ export async function init() {
         <div class="match-card__info">
           <span>📅 ${formatearFecha(p.fecha)}</span>
           <span>📍 ${p.lugar}</span>
-          ${p.organizador?.id ? `
-            <span data-autor-id="${p.organizador.id}" style="cursor:pointer; color:var(--color-primary-dark); text-decoration:underline">
-              👤 ${p.organizador.nombre}
-            </span>
-          ` : ''}
         </div>
+
         <div class="match-card__footer">
           <div class="match-card__progress">
             <div class="match-card__progress-bar" style="width:${porcentaje}%"></div>
           </div>
-          <span class="text-xs text-muted">${inscritosCount}/${p.cupos}</span>
+          <span class="text-xs text-muted">${contadorTexto}</span>
         </div>
 
         ${accionesHtml}
@@ -135,15 +160,24 @@ export async function init() {
      ========================================================= */
   function renderDisponibles() {
     let lista = partidos;
-    if (filtroActual === 'abiertos')    lista = partidos.filter(p => p.estado === 'abierto');
-    if (filtroActual === 'llenos')      lista = partidos.filter(p => p.estado === 'lleno');
+
+    // Filtros de estado
+    if (filtroActual === 'abiertos')    lista = lista.filter(p => p.estado === 'abierto');
+    if (filtroActual === 'llenos')      lista = lista.filter(p => p.estado === 'lleno');
+    if (filtroActual === 'finalizados') lista = lista.filter(p => p.estado === 'finalizado');
+
+    // Filtros de tipo
+    if (filtroTipoActual === 'jugador')  lista = lista.filter(p => !esDeEquipo(p));
+    if (filtroTipoActual === 'equipo')   lista = lista.filter(p => esDeEquipo(p));
+    if (filtroTipoActual === 'publico')  lista = lista.filter(p => !p.aprobacionRequerida);
+    if (filtroTipoActual === 'privado')  lista = lista.filter(p => p.aprobacionRequerida);
 
     if (lista.length === 0) {
       contDisponibles.innerHTML = `
         <div class="card" style="grid-column: 1 / -1;">
           <div class="empty-state">
             <div class="empty-state__icon">🔍</div>
-            <p>No hay partidos con este filtro.</p>
+            <p>No hay partidos con estos filtros.</p>
           </div>
         </div>`;
       return;
@@ -182,7 +216,16 @@ export async function init() {
   function renderInscritos() {
     const misInscritos = partidos.filter(p => {
       if (p.organizador?.id === user?.id) return false;
-      return (p.inscritos || []).includes(user?.id);
+
+      // Si es de jugadores
+      if (!esDeEquipo(p)) {
+        return (p.inscritos || []).includes(user?.id);
+      }
+
+      // Si es de equipos: estoy en algún equipo inscrito
+      return (p.equiposInscritos || []).some(eq =>
+        eq.capitanId === user?.id || (eq.jugadores || []).includes(user?.id)
+      );
     });
 
     document.getElementById('count-inscritos').textContent = misInscritos.length;
@@ -218,14 +261,6 @@ export async function init() {
         if (e.target.closest('[data-accion]')) return;
         const id = Number(card.dataset.id);
         window.location.hash = `#/partido/${id}`;
-      });
-    });
-        contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(Number(el.dataset.autorId));
-        });
       });
     });
   }
@@ -264,7 +299,7 @@ export async function init() {
   }
 
   /* =========================================================
-     SUB-PESTAÑAS + FILTROS
+     SUB-PESTAÑAS Y FILTROS
      ========================================================= */
   function cambiarTab(tab) {
     tabActual = tab;
@@ -290,6 +325,14 @@ export async function init() {
   }
   chips.forEach(chip => chip.addEventListener('click', handleChip));
 
+  function handleChipTipo(e) {
+    chipsTipo.forEach(c => c.classList.remove('chip--active'));
+    e.currentTarget.classList.add('chip--active');
+    filtroTipoActual = e.currentTarget.dataset.filtroTipo;
+    renderDisponibles();
+  }
+  chipsTipo.forEach(chip => chip.addEventListener('click', handleChipTipo));
+  
   /* =========================================================
      MODAL CREAR PARTIDO — SETUP
      ========================================================= */
@@ -361,7 +404,7 @@ export async function init() {
     }
   }
 
-  /* ---------- ACTUALIZAR POSICIONES (según DEPORTE, independiente del nivel) ---------- */
+  /* ---------- ACTUALIZAR POSICIONES (según DEPORTE) ---------- */
   function actualizarPosiciones() {
     const deporte = document.getElementById('partido-deporte').value;
     const posiciones = posicionesPorDeporte[deporte] || [];
@@ -369,12 +412,10 @@ export async function init() {
     const lista = document.getElementById('posiciones-lista');
     const checkPedir = document.getElementById('partido-pedir-posiciones');
 
-    // Reset
     posicionesActivas = [];
     if (checkPedir) checkPedir.checked = false;
     document.getElementById('posiciones-selector')?.classList.add('hidden');
 
-    // Mostrar si el deporte tiene posiciones
     if (posiciones.length > 0) {
       wrapper?.classList.remove('hidden');
 
@@ -401,7 +442,72 @@ export async function init() {
     }
   }
 
-  /* ---------- LISTENERS DEL MODAL ---------- */
+  /* =========================================================
+     TIPO DE PARTIDO (jugador o equipo)
+     ========================================================= */
+  let tipoPartidoSeleccionado = 'jugador';
+  let equipoOrganizadorSel = null;
+
+  const campoEquipoOrg = document.getElementById('campo-equipo-organizador');
+  const selEquipoOrg = document.getElementById('partido-equipo-organizador');
+
+  function actualizarTipoPartido() {
+    // Toggle visual
+    document.querySelectorAll('[data-tipo-partido]').forEach(op => {
+      op.classList.toggle('active', op.dataset.tipoPartido === tipoPartidoSeleccionado);
+    });
+
+    // Mostrar/ocultar selector de equipo
+    if (tipoPartidoSeleccionado === 'equipo') {
+      const misEq = misEquiposComoCapitanOAdmin();
+
+      if (misEq.length === 0) {
+        campoEquipoOrg?.classList.add('hidden');
+      } else {
+        campoEquipoOrg?.classList.remove('hidden');
+        selEquipoOrg.innerHTML = '<option value="">Selecciona un equipo...</option>' +
+          misEq.map(e => `<option value="${e.id}">${e.escudo} ${e.nombre}</option>`).join('');
+      }
+
+      const labelCupos = document.getElementById('label-partido-cupos');
+      const hintCupos = document.getElementById('hint-partido-cupos');
+      if (labelCupos) labelCupos.textContent = 'Cupos de equipos *';
+      if (hintCupos) hintCupos.textContent = 'Ej: 2 equipos (uno es el tuyo, el otro se postula)';
+
+      const inputCupos = document.getElementById('partido-cupos');
+      if (inputCupos) inputCupos.value = '2';
+
+    } else {
+      campoEquipoOrg?.classList.add('hidden');
+
+      const labelCupos = document.getElementById('label-partido-cupos');
+      const hintCupos = document.getElementById('hint-partido-cupos');
+      if (labelCupos) labelCupos.textContent = 'Cupos totales *';
+      if (hintCupos) hintCupos.textContent = '';
+
+      const inputCupos = document.getElementById('partido-cupos');
+      if (inputCupos) inputCupos.value = '14';
+    }
+  }
+
+  // Mostrar opción "equipo" solo si el user tiene equipos
+  const opcionEquipo = document.querySelector('[data-tipo-partido="equipo"]');
+  if (opcionEquipo) {
+    opcionEquipo.style.display = misEquiposComoCapitanOAdmin().length > 0 ? '' : 'none';
+  }
+
+  document.querySelectorAll('[data-tipo-partido]').forEach(op => {
+    op.addEventListener('click', () => {
+      tipoPartidoSeleccionado = op.dataset.tipoPartido;
+      actualizarTipoPartido();
+    });
+  });
+
+  selEquipoOrg?.addEventListener('change', () => {
+    equipoOrganizadorSel = Number(selEquipoOrg.value) || null;
+  });
+
+  /* ---------- LISTENERS ---------- */
 
   // Cambio de deporte → actualizar posiciones
   selectDeporte?.addEventListener('change', () => {
@@ -430,6 +536,11 @@ export async function init() {
 
   /* ---------- RESET FORMULARIO ---------- */
   function resetearFormulario() {
+    // Reset toggle tipo partido
+    tipoPartidoSeleccionado = 'jugador';
+    equipoOrganizadorSel = null;
+    actualizarTipoPartido();
+
     document.getElementById('partido-deporte').value = '';
     document.getElementById('partido-titulo').value = '';
     document.getElementById('partido-fecha').value = '';
@@ -500,8 +611,29 @@ export async function init() {
       return toast('Selecciona al menos una posición', 'error');
     }
 
+    // Validaciones extra si es partido de equipo
+    if (tipoPartidoSeleccionado === 'equipo' && !equipoOrganizadorSel) {
+      return toast('Selecciona con qué equipo publicás', 'error');
+    }
+
+    // Buscar el equipo organizador si aplica
+    let organizadorEquipo = null;
+    if (tipoPartidoSeleccionado === 'equipo') {
+      const eq = getGrupos().find(g => g.id === equipoOrganizadorSel);
+      if (!eq) return toast('No se encontró el equipo', 'error');
+
+      organizadorEquipo = {
+        id: eq.id,
+        nombre: eq.nombre,
+        escudo: eq.escudo,
+        capitanId: eq.capitanId,
+        jugadores: (eq.jugadores || []).map(j => j.id)
+      };
+    }
+
     const nuevo = {
       id: Date.now(),
+      tipoPartido: tipoPartidoSeleccionado,
       deporte,
       emoji: emojiDeporte[deporte] || '🏅',
       titulo,
@@ -513,22 +645,29 @@ export async function init() {
       nivel: nivelSeleccionado,
       pedirPosiciones: pedirPos,
       posiciones: pedirPos ? [...posicionesActivas] : [],
-      aprobacionRequerida: nivelRequiereAprobacion(),
+      aprobacionRequerida: nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo',
       descripcion,
       organizador: {
         id: user?.id,
         nombre: user?.nombre || 'Tú',
         avatar: user?.avatar
       },
-      inscritos: user?.id ? [user.id] : [],
-      postulantes: []
+      // Estructura para jugador
+      inscritos: (tipoPartidoSeleccionado === 'jugador' && user?.id) ? [user.id] : [],
+      postulantes: [],
+      // Estructura para equipo
+      organizadorEquipo,
+      equiposPostulantes: [],
+      equiposInscritos: organizadorEquipo ? [organizadorEquipo] : []
     };
 
     partidos.unshift(nuevo);
     guardarPartidos(partidos);
 
     filtroActual = 'todos';
+    filtroTipoActual = 'todos';
     chips.forEach(c => c.classList.toggle('chip--active', c.dataset.filtro === 'todos'));
+    chipsTipo.forEach(c => c.classList.toggle('chip--active', c.dataset.filtroTipo === 'todos'));
     renderTodo();
     cambiarTab('creados');
 
@@ -549,5 +688,6 @@ export async function init() {
 
   return () => {
     chips.forEach(chip => chip.removeEventListener('click', handleChip));
+    chipsTipo.forEach(chip => chip.removeEventListener('click', handleChipTipo));
   };
 }

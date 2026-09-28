@@ -49,11 +49,7 @@
 <div class="subpanel" id="panel-buscar">
   <div class="card mb-4">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="card__title" style="margin:0">🔍 Buscar</h3>
-      <div class="flex gap-2">
-        <button class="btn btn--ghost btn--sm" id="btn-crear-equipo-panel">+ Equipo</button>
-        <button class="btn btn--primary btn--sm" id="btn-crear-comunidad-panel">+ Comunidad</button>
-      </div>
+      <h3 class="card__title" style="margin:0">🔍 Buscar grupos</h3>
     </div>
 
     <div class="field">
@@ -131,6 +127,18 @@
           </div>
         </div>
       </div>
+
+      <!-- Solo visible al EDITAR -->
+      <div class="field hidden" id="editar-stats-privadas-wrapper">
+        <label class="switch">
+          <input type="checkbox" id="edit-grupo-stats-privadas" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Estadísticas privadas</div>
+            <div class="switch__hint">Si activas, solo los miembros verán las stats del grupo</div>
+          </div>
+        </label>
+      </div>
     </div>
 
     <div class="modal__footer">
@@ -165,35 +173,90 @@
       <button class="btn btn--ghost" data-cerrar-modal="modal-gestionar-grupo">Cerrar</button>
     </div>
   </div>
-  <!-- ================= MODAL: EDITAR STATS (compartido) ================= -->
-<div class="modal-backdrop" id="modal-editar-stats">
+</div>
+
+<!-- ================= MODAL: EDITAR STATS DEL GRUPO ================= -->
+<div class="modal-backdrop" id="modal-grupo-stats">
   <div class="modal" style="max-width: 420px;">
     <div class="modal__header">
-      <h3 class="modal__title">Editar estadísticas</h3>
-      <button class="modal__close" data-cerrar-modal="modal-editar-stats">✕</button>
+      <h3 class="modal__title" id="grupo-stats-titulo">Editar estadísticas</h3>
+      <button class="modal__close" data-cerrar-modal="modal-grupo-stats">✕</button>
     </div>
 
     <div class="modal__body">
       <div class="field">
-        <label class="field__label" for="edit-stats-partidos">Partidos jugados</label>
-        <input type="number" id="edit-stats-partidos" class="field__input" min="0" value="0" />
+        <label class="field__label" for="gs-victorias">Victorias</label>
+        <input type="number" id="gs-victorias" class="field__input" min="0" value="0" />
       </div>
 
       <div class="field">
-        <label class="field__label" for="edit-stats-goles">Goles / Anotaciones</label>
-        <input type="number" id="edit-stats-goles" class="field__input" min="0" value="0" />
+        <label class="field__label" for="gs-empates">Empates</label>
+        <input type="number" id="gs-empates" class="field__input" min="0" value="0" />
       </div>
 
       <div class="field">
-        <label class="field__label" for="edit-stats-mvps">MVPs</label>
-        <input type="number" id="edit-stats-mvps" class="field__input" min="0" value="0" />
+        <label class="field__label" for="gs-derrotas">Derrotas</label>
+        <input type="number" id="gs-derrotas" class="field__input" min="0" value="0" />
       </div>
     </div>
 
     <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats">Cancelar</button>
-      <button class="btn btn--primary" id="btn-guardar-stats">Guardar cambios</button>
+      <button class="btn btn--ghost" data-cerrar-modal="modal-grupo-stats">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-grupo-stats">Guardar cambios</button>
     </div>
   </div>
 </div>
+
+<!-- ================= MODAL: CREAR HILO ================= -->
+<div class="modal-backdrop" id="modal-crear-hilo">
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="crear-hilo-titulo">Crear publicación</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-hilo">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="field">
+        <label class="field__label" for="hilo-contenido">¿Qué quieres compartir?</label>
+        <textarea
+          id="hilo-contenido"
+          class="textarea"
+          placeholder="Escribe algo para la comunidad..."
+          maxlength="600"
+        ></textarea>
+        <div class="text-xs text-muted mt-4" style="text-align:right">
+          <span id="hilo-contador">0</span>/600
+        </div>
+      </div>
+
+      <!-- Preview de imagen/video -->
+      <div class="field hidden" id="hilo-preview-wrapper">
+        <label class="field__label">Vista previa</label>
+        <div id="hilo-preview" style="border-radius:var(--radius-md); overflow:hidden; max-height:300px; background:var(--color-surface-2)"></div>
+      </div>
+
+      <!-- Adjuntos -->
+      <div class="field">
+        <label class="field__label">Adjuntos</label>
+        <div class="flex gap-2" style="flex-wrap:wrap">
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer">
+            📷 Imagen
+            <input type="file" id="hilo-input-imagen" accept="image/*" style="display:none" />
+          </label>
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer">
+            🎥 Video
+            <input type="file" id="hilo-input-video" accept="video/*" style="display:none" />
+          </label>
+          <button class="btn btn--ghost btn--sm" id="hilo-btn-quitar-adjunto" style="display:none">
+            🗑️ Quitar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-hilo">Cancelar</button>
+      <button class="btn btn--primary" id="btn-publicar-hilo">Publicar</button>
+    </div>
+  </div>
 </div>

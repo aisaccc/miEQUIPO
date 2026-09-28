@@ -15,13 +15,23 @@
 
 <!-- ================= PANEL: DISPONIBLES ================= -->
 <div class="subpanel subpanel--active" id="panel-disponibles">
-  <div class="toolbar mb-4">
-    <div class="toolbar__filters">
-      <button class="chip chip--active" data-filtro="todos">Todos</button>
-      <button class="chip" data-filtro="abiertos">Abiertos</button>
-      <button class="chip" data-filtro="llenos">Llenos</button>
+  <div class="toolbar mb-4" style="flex-direction:column; align-items:stretch; gap:var(--space-3)">
+    <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
+      <div class="toolbar__filters" id="filtros-estado">
+        <button class="chip chip--active" data-filtro="todos">Todos</button>
+        <button class="chip" data-filtro="abiertos">Disponibles</button>
+        <button class="chip" data-filtro="llenos">Llenos</button>
+      </div>
+      <button class="btn btn--primary" id="btn-crear-partido">+ Crear partido</button>
     </div>
-    <button class="btn btn--primary" id="btn-crear-partido">+ Crear partido</button>
+
+    <div class="toolbar__filters" id="filtros-tipo">
+      <button class="chip chip--active" data-filtro-tipo="todos">🌐 Todos</button>
+      <button class="chip" data-filtro-tipo="jugador">👤 De jugadores</button>
+      <button class="chip" data-filtro-tipo="equipo">🛡️ De equipos</button>
+      <button class="chip" data-filtro-tipo="publico">Públicos</button>
+      <button class="chip" data-filtro-tipo="privado">🔒 Privados</button>
+    </div>
   </div>
 
   <div id="lista-partidos" class="card-grid"></div>
@@ -46,13 +56,36 @@
 
 <!-- ================= MODAL: CREAR PARTIDO ================= -->
 <div class="modal-backdrop" id="modal-crear-partido">
-  <div class="modal" style="max-width: 600px;">
+  <div class="modal" style="max-width: 620px;">
     <div class="modal__header">
       <h3 class="modal__title">Crear partido</h3>
       <button class="modal__close" data-cerrar-modal="modal-crear-partido">✕</button>
     </div>
 
     <div class="modal__body">
+
+      <!-- Toggle: Partido como jugador o como equipo -->
+      <div class="field" id="campo-tipo-partido">
+        <label class="field__label">¿Cómo publicás este partido?</label>
+        <div class="nivel-grid" style="grid-template-columns:1fr 1fr">
+          <div class="nivel-opcion active" data-tipo-partido="jugador">
+            <div class="nivel-opcion__label">👤 Como jugador</div>
+            <div class="nivel-opcion__desc">Se inscriben jugadores individuales</div>
+          </div>
+          <div class="nivel-opcion" data-tipo-partido="equipo" style="display:none">
+            <div class="nivel-opcion__label">🛡️ Como equipo</div>
+            <div class="nivel-opcion__desc">Solo se postulan otros equipos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector de equipo organizador (solo si es como equipo) -->
+      <div class="field hidden" id="campo-equipo-organizador">
+        <label class="field__label" for="partido-equipo-organizador">¿Con cuál de tus equipos?</label>
+        <select id="partido-equipo-organizador" class="field__input">
+          <option value="">Selecciona un equipo...</option>
+        </select>
+      </div>
 
       <div class="field">
         <label class="field__label" for="partido-deporte">Deporte *</label>
@@ -83,8 +116,9 @@
       </div>
 
       <div class="field">
-        <label class="field__label" for="partido-cupos">Cupos totales *</label>
+        <label class="field__label" for="partido-cupos" id="label-partido-cupos">Cupos totales *</label>
         <input type="number" id="partido-cupos" class="field__input" min="2" max="50" value="14" />
+        <p class="text-xs text-muted mt-4" id="hint-partido-cupos"></p>
       </div>
 
       <div class="field">
@@ -107,7 +141,6 @@
         <label class="field__label">Nivel del partido *</label>
         <div class="nivel-grid" id="nivel-grid" style="grid-template-columns:repeat(3, 1fr)"></div>
 
-        <!-- Aviso: siempre requiere aprobación (Profesional) -->
         <div class="aviso-aprobacion mt-4" id="aviso-aprobacion">
           <span class="aviso-aprobacion__icon">⚠️</span>
           <div>
@@ -118,7 +151,6 @@
           </div>
         </div>
 
-        <!-- Elección libre (Semi-profesional) -->
         <div class="mt-4 hidden" id="eleccion-aprobacion">
           <label class="switch">
             <input type="checkbox" id="partido-requiere-aprobacion" />
@@ -158,6 +190,22 @@
     <div class="modal__footer">
       <button class="btn btn--ghost" data-cerrar-modal="modal-crear-partido">Cancelar</button>
       <button class="btn btn--primary" id="btn-guardar-partido">Publicar partido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: GESTIONAR POSTULANTES (equipos) ================= -->
+<div class="modal-backdrop" id="modal-postulantes">
+  <div class="modal" style="max-width: 640px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Gestionar postulantes</h3>
+      <button class="modal__close" data-cerrar-modal="modal-postulantes">✕</button>
+    </div>
+
+    <div class="modal__body" id="postulantes-body"></div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-postulantes">Cerrar</button>
     </div>
   </div>
 </div>
