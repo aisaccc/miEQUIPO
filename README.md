@@ -7,5 +7,5 @@ Promesa:* La plataforma web/movil que centraliza la conexión entre deportistas 
 * Benjamín Reyes (@Benjaminreyes51)
 
 ## Enlaces
-* [Documento del Proyecto](./docs/Hito 1 proyecto MiEquipo.pdf)
+* [Documento del Proyecto](docs\Hito 1 proyecto MiEquipo.pdf)
 * [Video de presentación]()
