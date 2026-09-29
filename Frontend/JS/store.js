@@ -145,106 +145,14 @@ export function eliminarEquipo(id) {
    ========================================================= */
 
 function seedPartidos() {
-  return [
-    {
-      id: 1, deporte: 'Fútbol', emoji: '⚽',
-      titulo: 'Fútbol 7 - Cancha Sur',
-      fecha: '2026-10-05T18:00:00', lugar: 'Santiago',
-      cupos: 14, estado: 'abierto',
-      precio: 0, nivel: 'amistoso',
-      tipoPartido: 'jugador',
-      pedirPosiciones: false, posiciones: [],
-      aprobacionRequerida: false,
-      descripcion: '',
-      organizador: { id: 2, nombre: 'María González', avatar: 'https://i.pravatar.cc/100?img=45' },
-      inscritos: [2, 3, 4, 5, 6, 7, 8, 9, 10],
-      postulantes: [],
-      equiposPostulantes: [],
-      equiposInscritos: []
-    },
-    {
-      id: 2, deporte: 'Básquetbol', emoji: '🏀',
-      titulo: 'Básquet 3v3',
-      fecha: '2026-10-06T20:00:00', lugar: 'Providencia',
-      cupos: 6, estado: 'abierto',
-      precio: 3000, nivel: 'semiprofesional',
-      tipoPartido: 'jugador',
-      pedirPosiciones: true,
-      posiciones: ['Base', 'Alero'],
-      aprobacionRequerida: true,
-      descripcion: 'Nivel competitivo, buscamos jugadores con experiencia.',
-      organizador: { id: 1, nombre: 'Juan Pérez', avatar: 'https://i.pravatar.cc/100?img=12' },
-      inscritos: [1, 13, 14, 15, 16],
-      postulantes: [
-        { userId: 45, nombre: 'María González', avatar: 'https://i.pravatar.cc/100?img=45', posicion: 'Base', estado: 'pendiente' }
-      ],
-      equiposPostulantes: [],
-      equiposInscritos: []
-    },
-    {
-      id: 3, deporte: 'Tenis', emoji: '🎾',
-      titulo: 'Tenis dobles - Cancha 2',
-      fecha: '2026-10-07T19:30:00', lugar: 'Ñuñoa',
-      cupos: 4, estado: 'lleno',
-      precio: 8000, nivel: 'profesional',
-      tipoPartido: 'jugador',
-      pedirPosiciones: false, posiciones: [],
-      aprobacionRequerida: true,
-      descripcion: '',
-      organizador: { id: 5, nombre: 'Camila Torres', avatar: 'https://i.pravatar.cc/100?img=47' },
-      inscritos: [5, 20, 21, 22],
-      postulantes: [],
-      equiposPostulantes: [],
-      equiposInscritos: []
-    },
-    {
-      id: 4, deporte: 'Fútbol', emoji: '⚽',
-      titulo: 'Amistoso entre clubes - Sábado',
-      fecha: '2026-10-12T16:00:00', lugar: 'Maipú',
-      cupos: 2, estado: 'abierto',       // ← 2 equipos
-      precio: 0, nivel: 'amateur',
-      tipoPartido: 'equipo',              // ← ¡NUEVO!
-      pedirPosiciones: false, posiciones: [],
-      aprobacionRequerida: true,
-      descripcion: 'Buscamos un club para amistoso. Nivel intermedio.',
-      organizador: { id: 1, nombre: 'Juan Pérez', avatar: 'https://i.pravatar.cc/100?img=12' },
-      organizadorEquipo: {
-        id: 1, nombre: 'Los Galácticos FC', escudo: '🛡️', capitanId: 1
-      },
-      inscritos: [],
-      postulantes: [],
-      equiposPostulantes: [],
-      equiposInscritos: [
-        { id: 1, nombre: 'Los Galácticos FC', escudo: '🛡️', capitanId: 1, jugadores: [1, 13, 14, 15, 16] }
-      ]
-    }
-  ];
+  return [];   // ← sin datos por defecto
 }
-
 /* =========================================================
    SEED EQUIPOS
    ========================================================= */
 
 function seedEquipos() {
-  return [
-    {
-      id: 1,
-      nombre: 'Los Galácticos FC',
-      deporte: 'Fútbol',
-      escudo: '🛡️',
-      ciudad: 'Santiago',
-      descripcion: 'Equipo amateur de fútbol 7',
-      capitanId: 1,
-      jugadores: [
-        { id: 1, nombre: 'Juan Pérez',       avatar: 'https://i.pravatar.cc/100?img=12', posicion: 'Delantero',     dorsal: 9 },
-        { id: 13, nombre: 'Carlos Ruiz',     avatar: 'https://i.pravatar.cc/100?img=13', posicion: 'Mediocampista', dorsal: 10 },
-        { id: 14, nombre: 'Andrés Soto',     avatar: 'https://i.pravatar.cc/100?img=14', posicion: 'Defensa',       dorsal: 4 },
-        { id: 15, nombre: 'Diego Fernández', avatar: 'https://i.pravatar.cc/100?img=15', posicion: 'Portero',       dorsal: 1 },
-        { id: 16, nombre: 'Matías López',    avatar: 'https://i.pravatar.cc/100?img=16', posicion: 'Delantero',     dorsal: 11 }
-      ],
-      stats: { victorias: 10, empates: 3, derrotas: 2 }
-    }
-  ];
+  return [];
 }
 
 /* =========================================================
@@ -326,16 +234,7 @@ export function estoyEnEquipo(equipoId, usuarioId) {
    ========================================================= */
 
 function seedClubes() {
-  return [
-    { id: 101, nombre: 'Los Tigres FC',      escudo: '🐯', deporte: 'Fútbol',     ciudad: 'Santiago',     miembros: 18, tipo: 'publico', descripcion: 'Equipo amateur de fútbol 7',      capitanId: 30 },
-    { id: 102, nombre: 'Cóndores Básquet',   escudo: '🦅', deporte: 'Básquetbol', ciudad: 'Valparaíso',   miembros: 12, tipo: 'publico', descripcion: 'Básquet mixto los martes',        capitanId: 31 },
-    { id: 103, nombre: 'Halcones Vóley',     escudo: '🏐', deporte: 'Vóleibol',   ciudad: 'Concepción',   miembros: 15, tipo: 'privado', descripcion: 'Solo por invitación',             capitanId: 32 },
-    { id: 104, nombre: 'Racquet Club Pádel', escudo: '🎾', deporte: 'Pádel',      ciudad: 'Las Condes',   miembros: 24, tipo: 'publico', descripcion: 'Pádel nivel intermedio-avanzado', capitanId: 33 },
-    { id: 105, nombre: 'Titanes Rugby',      escudo: '🏉', deporte: 'Rugby',      ciudad: 'Santiago',     miembros: 30, tipo: 'privado', descripcion: 'Rugby XV, competimos en liga',    capitanId: 34 },
-    { id: 106, nombre: 'Águilas Tenis',      escudo: '🎾', deporte: 'Tenis',      ciudad: 'Ñuñoa',        miembros: 8,  tipo: 'publico', descripcion: 'Tenis singles y dobles',          capitanId: 35 },
-    { id: 107, nombre: 'Lobos Handball',     escudo: '🐺', deporte: 'Handball',   ciudad: 'Maipú',        miembros: 14, tipo: 'publico', descripcion: 'Handball mixto',                  capitanId: 36 },
-    { id: 108, nombre: 'Dragones Hockey',    escudo: '🏒', deporte: 'Hockey',     ciudad: 'Punta Arenas', miembros: 16, tipo: 'privado', descripcion: 'Hockey sobre patines',            capitanId: 37 }
-  ];
+  return [];
 }
 
 /* =========================================================
@@ -609,46 +508,7 @@ export function puedeEscribirEnChatTorneo(torneo, userId) {
    ========================================================= */
 
 function seedTorneos() {
-  return [
-    {
-      id: 1,
-      nombre: 'Copa Verano 2026',
-      deporte: 'Fútbol',
-      emoji: '⚽',
-      fechaInicio: '2026-12-01',
-      fechaFin: '2026-12-20',
-      lugar: 'Santiago',
-      cuposEquipos: 8,
-      precio: 20000,
-      descripcion: 'Torneo de fútbol 7 con fase de grupos y eliminación directa.',
-      estado: 'inscripcion',
-      organizador: { id: 2, nombre: 'María González', avatar: 'https://i.pravatar.cc/100?img=45' },
-      equipos: [],
-      listaEspera: [],
-      invitaciones: [],
-      canalChatId: 'torneo-1',
-      creado: new Date().toISOString()
-    },
-    {
-      id: 2,
-      nombre: 'Liga Fútbol 7',
-      deporte: 'Fútbol',
-      emoji: '⚽',
-      fechaInicio: '2026-10-15',
-      fechaFin: '2026-11-30',
-      lugar: 'Providencia',
-      cuposEquipos: 12,
-      precio: 0,
-      descripcion: 'Liga regular todos los miércoles.',
-      estado: 'en_curso',
-      organizador: { id: 3, nombre: 'Carlos Ruiz', avatar: 'https://i.pravatar.cc/100?img=13' },
-      equipos: [],
-      listaEspera: [],
-      invitaciones: [],
-      canalChatId: 'torneo-2',
-      creado: new Date().toISOString()
-    }
-  ];
+  return [];
 }
 /* =========================================================
    CHATS DE GRUPO/TORNEO (integrados con Mensajes)
@@ -955,94 +815,7 @@ export function quitarAdmin(grupoId, userId) {
    ========================================================= */
 
 function seedGrupos() {
-  return [
-    {
-      id: 1,
-      tipo: 'equipo',
-      nombre: 'Los Galácticos FC',
-      deporte: 'Fútbol',
-      escudo: '🛡️',
-      ciudad: 'Santiago',
-      descripcion: 'Equipo amateur de fútbol 7',
-      tipoAcceso: 'publico',
-      capitanId: 1,
-      admins: [],
-      solicitudes: [],
-      statsPrivadas: false,
-      jugadores: [
-        { id: 1,  nombre: 'Juan Pérez',       avatar: 'https://i.pravatar.cc/100?img=12', posicion: 'Delantero',     dorsal: 9 },
-        { id: 13, nombre: 'Carlos Ruiz',      avatar: 'https://i.pravatar.cc/100?img=13', posicion: 'Mediocampista', dorsal: 10 },
-        { id: 14, nombre: 'Andrés Soto',      avatar: 'https://i.pravatar.cc/100?img=14', posicion: 'Defensa',       dorsal: 4 },
-        { id: 15, nombre: 'Diego Fernández',  avatar: 'https://i.pravatar.cc/100?img=15', posicion: 'Portero',       dorsal: 1 },
-        { id: 16, nombre: 'Matías López',     avatar: 'https://i.pravatar.cc/100?img=16', posicion: 'Delantero',     dorsal: 11 }
-      ],
-      stats: { victorias: 10, empates: 3, derrotas: 2 }
-    },
-    {
-      id: 101,
-      tipo: 'comunidad',
-      nombre: 'Futboleros Santiago',
-      deporte: 'Fútbol',
-      escudo: '⚽',
-      ciudad: 'Santiago',
-      descripcion: 'Comunidad abierta para armar partidos en la semana',
-      tipoAcceso: 'publico',
-      capitanId: 30,
-      admins: [],
-      solicitudes: [],
-      statsPrivadas: false,
-      jugadores: [],
-      stats: { victorias: 0, empates: 0, derrotas: 0 }
-    },
-    {
-      id: 102,
-      tipo: 'comunidad',
-      nombre: 'Básquet Nocturno',
-      deporte: 'Básquetbol',
-      escudo: '🏀',
-      ciudad: 'Providencia',
-      descripcion: 'Partidos de básquet los martes y jueves',
-      tipoAcceso: 'publico',
-      capitanId: 31,
-      admins: [],
-      solicitudes: [],
-      statsPrivadas: false,
-      jugadores: [],
-      stats: { victorias: 0, empates: 0, derrotas: 0 }
-    },
-    {
-      id: 103,
-      tipo: 'comunidad',
-      nombre: 'Pádel Weekend',
-      deporte: 'Pádel',
-      escudo: '🎾',
-      ciudad: 'Las Condes',
-      descripcion: 'Pádel los sábados por la mañana',
-      tipoAcceso: 'publico',
-      capitanId: 33,
-      admins: [],
-      solicitudes: [],
-      statsPrivadas: false,
-      jugadores: [],
-      stats: { victorias: 0, empates: 0, derrotas: 0 }
-    },
-    {
-      id: 104,
-      tipo: 'comunidad',
-      nombre: 'Titanes Rugby',
-      deporte: 'Rugby',
-      escudo: '🏉',
-      ciudad: 'Santiago',
-      descripcion: 'Comunidad privada, solo por invitación',
-      tipoAcceso: 'privado',
-      capitanId: 34,
-      admins: [],
-      solicitudes: [],
-      statsPrivadas: true,
-      jugadores: [],
-      stats: { victorias: 0, empates: 0, derrotas: 0 }
-    }
-  ];
+  return [];
 }
 /* =========================================================
    PUBLICACIONES (feed del inicio)

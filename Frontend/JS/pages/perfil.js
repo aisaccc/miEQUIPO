@@ -250,15 +250,20 @@ export async function init() {
   /* ---------- Helper: icono por deporte ---------- */
   function iconoDeporte(deporte) {
     const map = {
-      'Fútbol': '⚽', 'Básquetbol': '🏀', 'Tenis': '🎾', 'Vóleibol': '🏐',
-      'Pádel': '🎾', 'Golf': '⛳', 'Béisbol': '⚾', 'Hockey': '🏒',
-      'Boxeo': '🥊', 'Bádminton': '🏸', 'Rugby': '🏉', 'Ciclismo': '🚴',
-      'Natación': '🏊', 'Atletismo': '🏃', 'Tenis de mesa': '🏓',
-      'Squash': '🎾', 'Handball': '🤾', 'Balonmano': '🤾',
-      'Fútbol americano': '🏈', 'Surf': '🏄', 'Escalada': '🧗'
+      'Fútbol': 'assets/icons/balon-de-futbol (2).png', 'Básquetbol': 'assets/icons/balocensto.svg', 'Tenis': 'pelota-de-tenis.png', 'Vóleibol': 'assets/icons/voleibol.svg',
+      'Pádel': 'assets/icons/raqueta-de-padel.png', 'Golf': 'assets/icons/golf.png', 'Béisbol': 'assets/icons/beisbol.png', 'Hockey': 'assets/icons/disco.png',
+      'Boxeo': 'assets/icons/guantes-de-boxeo.png', 'Bádminton': 'assets/icons/volante.png', 'Rugby': 'assets/icons/rugby.png', 'Ciclismo': 'assets/icons/bicicleta.svg',
+      'Natación': 'assets/icons/natacion.svg', 'Atletismo': 'assets/icons/corriendo.png', 'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+      'Squash': 'assets/icons/tenis-de-squash.png', 'Handball': 'assets/icons/balonmano.png', 
+      'Fútbol americano': 'assets/icons/deporte.svg', 'Surf': 'assets/icons/tabla-de-surf.png', 'Escalada': 'assets/icons/escalada.png'
     };
-    return map[deporte] || '🏅';
+    const valor = map[deporte] || '🏅';
+    if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
+      return `<img src="${valor}" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+    }
+    return valor;
   }
+    
 
   /* =========================================================
      MODAL EDITAR PERFIL

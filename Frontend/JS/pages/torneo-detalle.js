@@ -939,7 +939,7 @@ export async function init(params = {}) {
     // 1) Primero pintar el HTML
     document.getElementById('ver-equipo-body').innerHTML = `
       <div class="ver-equipo__header">
-        <div class="ver-equipo__escudo">${equipo.escudo || '🛡️'}</div>
+        <div class="ver-equipo__escudo">${equipo.escudo || 'assets/icons/escudo-de-seguridad.png'}</div>
         <div>
           <div class="ver-equipo__nombre">${equipo.nombre}</div>
           <div class="ver-equipo__meta">

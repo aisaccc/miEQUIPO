@@ -3,16 +3,16 @@
 <!-- ================= SUB-PESTAÑAS ================= -->
 <div class="subtabs mb-4">
   <button class="subtab subtab--active" data-tab-equipo="equipo">
-    🛡️ Mi Equipo
+    <img src="assets/icons/escudo-de-seguridad.png" alt="" style="width:23px; height:23px; object-fit:contain; vertical-align:middle; margin-right:4px" /> Mi Equipo
   </button>
   <button class="subtab" data-tab-equipo="comunidad">
-    🌐 Mi Comunidad
+    <img src="assets/icons/translation_314263.png" alt="" style="width:23px; height:23px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Mi Comunidad
   </button>
   <button class="subtab" data-tab-equipo="chat">
-    💬 Chat
+    <img src="assets/icons/icons8-charla-48.png" alt="" style="width:34px; height:34px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Chat
   </button>
   <button class="subtab" data-tab-equipo="buscar">
-    🔍 Buscar
+    <img src="assets/icons/icons8-buscar-96.png" alt="" style="width:35px; height:35px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Buscar
   </button>
 </div>
 
@@ -38,7 +38,7 @@
 
     <section class="chat-layout__panel">
       <div class="chat-empty">
-        <div style="font-size:48px">💬</div>
+        <div style="font-size:48px"><img src="assets/icons/icons8-charla-48(1).png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /></div>
         <p class="text-muted mt-4">Selecciona un canal</p>
       </div>
     </section>
@@ -49,7 +49,7 @@
 <div class="subpanel" id="panel-buscar">
   <div class="card mb-4">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="card__title" style="margin:0">🔍 Buscar grupos</h3>
+      <h3 class="card__title" style="margin:0"><img src="assets/icons/icons8-buscar-96.png" alt="" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Buscar grupos</h3>
     </div>
 
     <div class="field">
@@ -63,10 +63,10 @@
 
     <div class="toolbar__filters" style="margin-top:var(--space-3)">
       <button class="chip chip--active" data-filtro-clubes="todos">Todos</button>
-      <button class="chip" data-filtro-clubes="equipo">🛡️ Equipos</button>
-      <button class="chip" data-filtro-clubes="comunidad">🌐 Comunidades</button>
-      <button class="chip" data-filtro-clubes="publico">🌐 Públicos</button>
-      <button class="chip" data-filtro-clubes="privado">🔒 Privados</button>
+      <button class="chip" data-filtro-clubes="equipo"><img src="assets/icons/escudo-de-seguridad.png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Equipos</button>
+      <button class="chip" data-filtro-clubes="comunidad"><img src="assets/icons/translation_314263.png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Comunidades</button>
+      <button class="chip" data-filtro-clubes="publico"><img src="assets/icons/icons8-comunidad-64.png" alt="" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Públicos</button>
+      <button class="chip" data-filtro-clubes="privado"><img src="assets/icons/bloqueado.png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" /> Privados</button>
     </div>
   </div>
 
@@ -118,11 +118,15 @@
         <label class="field__label">Visibilidad</label>
         <div class="nivel-grid" style="grid-template-columns:1fr 1fr">
           <div class="nivel-opcion active" data-tipo-com="publico">
-            <div class="nivel-opcion__label">🌐 Público</div>
+            <h3 class="card__title mb-4">
+             <img src="assets/icons/icons8-comunidad-64.png" alt="" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" />Publico
+            </h3>
             <div class="nivel-opcion__desc">Cualquiera puede unirse</div>
           </div>
           <div class="nivel-opcion" data-tipo-com="privado">
-            <div class="nivel-opcion__label">🔒 Privado</div>
+            <h3 class="card__title mb-4">
+             <img src="assets/icons/icons8-candado.gif" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" />Privado
+            </h3>
             <div class="nivel-opcion__desc">Solo con aprobación</div>
           </div>
         </div>

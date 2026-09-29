@@ -106,7 +106,7 @@ export async function init(params = {}) {
         const pendientes = equiposPostulantes.filter(e => e.estado === 'pendiente').length;
         botonAccion = `
           <button class="btn btn--primary" id="btn-gestionar-equipos">
-            🛡️ Equipos postulantes ${pendientes > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientes}</span>` : ''}
+            'assets/icons/escudo-de-seguridad.png' Equipos postulantes ${pendientes > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientes}</span>` : ''}
           </button>
           <button class="btn btn--ghost" id="btn-editar-partido">✏️ Editar partido</button>
           <button class="btn btn--ghost" id="btn-eliminar-partido" style="color:var(--color-danger)">🗑️ Eliminar</button>
@@ -177,6 +177,13 @@ export async function init(params = {}) {
           ✅ Inscribirme (${cuposDisponibles} cupos disponibles)
         </button>`;
     }
+    function renderEmoji(emoji, size = 32) {
+  if (!emoji) return '🏅';
+  if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
+    return `<img src="${emoji}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
+  }
+  return emoji;
+}
 
     /* =========================================================
        RENDER
@@ -188,7 +195,7 @@ export async function init(params = {}) {
       </div>
 
       <div class="detalle__hero">
-        <div class="detalle__hero-emoji">${partido.emoji}</div>
+        <div class="detalle__hero-emoji">${renderEmoji(partido.emoji, 52)}</div>
         <h1 class="detalle__hero-title">${partido.titulo}</h1>
         <div class="detalle__hero-meta">
           <span>📅 ${formatearFecha(partido.fecha)}</span>

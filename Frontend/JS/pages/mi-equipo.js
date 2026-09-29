@@ -20,6 +20,21 @@ export async function init() {
 
   if (!contenedorEquipo) return null;
 
+  /* ---------- RUTA DEL ESCUDO PERSONALIZADO ---------- */
+  const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
+
+  /* ---------- HELPERS DE ICONOS ---------- */
+  function esIconoImagen(valor) {
+    return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
+  }
+
+  function renderIconoHtml(valor, size = 20) {
+    if (esIconoImagen(valor)) {
+      return `<img src="${valor}" alt="icono" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+    }
+    return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor}</span>`;
+  }
+
   /* ---------- REFS ---------- */
   const subtabs        = document.querySelectorAll('[data-tab-equipo]');
   const panelEquipo    = document.getElementById('panel-equipo');
@@ -36,8 +51,7 @@ export async function init() {
 
   function misEquipos()     { return misGruposDeTipo('equipo'); }
   function misComunidades() { return misGruposDeTipo('comunidad'); }
-
-  /* =========================================================
+    /* =========================================================
      RENDER GENÉRICO DE UN GRUPO
      ========================================================= */
   function renderGrupo(grupo, contenedor, esComunidad) {
@@ -47,14 +61,14 @@ export async function init() {
     const miembrosCount = (grupo.jugadores || []).length;
     const solicitudesCount = (grupo.solicitudes || []).length;
 
-    const iconoTipo = esComunidad ? '🌐' : '🛡️';
+    const iconoTipo = esComunidad ? '🌐' : renderIconoHtml(RUTA_ESCUDO, 16);
     const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
     const labelMiembros = esComunidad ? 'miembros' : 'jugadores';
 
     contenedor.innerHTML = `
       <div class="card mb-4">
         <div class="team-header">
-          <div class="team-header__crest">${grupo.escudo}</div>
+          <div class="team-header__crest">${renderIconoHtml(grupo.escudo, 48)}</div>
           <div style="flex:1; min-width:0">
             <div class="flex items-center gap-2" style="flex-wrap:wrap">
               <h2 class="card__title" style="font-size:var(--fs-xl); margin:0">${grupo.nombre}</h2>
@@ -237,7 +251,6 @@ export async function init() {
       });
       document.getElementById('btn-buscar-equipos')?.addEventListener('click', () => {
         cambiarTab('buscar');
-        // Dejar el filtro en "equipo"
         setTimeout(() => {
           const chipEquipo = document.querySelector('[data-filtro-clubes="equipo"]');
           chipEquipo?.click();
@@ -251,7 +264,6 @@ export async function init() {
       });
       document.getElementById('btn-buscar-comunidades')?.addEventListener('click', () => {
         cambiarTab('buscar');
-        // Dejar el filtro en "comunidad"
         setTimeout(() => {
           const chipComunidad = document.querySelector('[data-filtro-clubes="comunidad"]');
           chipComunidad?.click();
@@ -266,12 +278,13 @@ export async function init() {
   function renderPanelEquipo() {
     const equipos = misEquipos();
 
-    // Header siempre visible con botón crear
     let html = `
       <div class="card mb-4" style="background:var(--color-primary-light); border:none">
         <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
           <div>
-            <div style="font-weight:700; font-size:var(--fs-base)">🛡️ Tus equipos (${equipos.length})</div>
+            <div style="font-weight:700; font-size:var(--fs-base)">
+              ${renderIconoHtml(RUTA_ESCUDO, 18)} Tus equipos (${equipos.length})
+            </div>
             <div class="text-xs text-muted">
               ${equipos.length === 0
                 ? 'Aún no perteneces a ningún equipo'
@@ -290,7 +303,7 @@ export async function init() {
       html += `
         <div class="card">
           <div class="empty-state">
-            <div class="empty-state__icon">🛡️</div>
+            <div class="empty-state__icon">${renderIconoHtml(RUTA_ESCUDO, 48)}</div>
             <p>No perteneces a ningún equipo todavía.</p>
             <p class="text-sm text-muted mt-4">Crea uno o busca uno existente para unirte</p>
           </div>
@@ -300,7 +313,6 @@ export async function init() {
       return;
     }
 
-    // Renderizar cada equipo con separador
     equipos.forEach(e => {
       html += `<div id="equipo-${e.id}" style="margin-bottom:var(--space-5)"></div>`;
     });
@@ -321,7 +333,6 @@ export async function init() {
   function renderPanelComunidad() {
     const comunidades = misComunidades();
 
-    // Header siempre visible con botón crear
     let html = `
       <div class="card mb-4" style="background:var(--color-primary-light); border:none">
         <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
@@ -355,7 +366,6 @@ export async function init() {
       return;
     }
 
-    // Renderizar cada comunidad con separador
     comunidades.forEach(c => {
       html += `<div id="comunidad-${c.id}" style="margin-bottom:var(--space-5)"></div>`;
     });
@@ -421,7 +431,7 @@ export async function init() {
           ${c.icono}
         </div>
         <div class="conversation__info">
-          <div class="conversation__name">${c.grupo.escudo} ${c.grupo.nombre} · ${c.nombre}</div>
+          <div class="conversation__name">${renderIconoHtml(c.grupo.escudo, 18)} ${c.grupo.nombre} · ${c.nombre}</div>
           <div class="conversation__preview">${c.sub}</div>
         </div>
       </div>
@@ -442,7 +452,7 @@ export async function init() {
         <div class="chat-header">
           <div class="chat-header__icon">${canal.icono}</div>
           <div class="chat-header__info">
-            <div class="chat-header__name">${canal.grupo.escudo} ${canal.grupo.nombre} · ${canal.nombre}</div>
+            <div class="chat-header__name">${renderIconoHtml(canal.grupo.escudo, 20)} ${canal.grupo.nombre} · ${canal.nombre}</div>
             <div class="chat-header__sub">${canal.sub}</div>
           </div>
         </div>
@@ -541,8 +551,7 @@ export async function init() {
     const d = new Date(iso);
     return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   }
-
-  /* =========================================================
+    /* =========================================================
      RENDER: BUSCAR (equipos + comunidades)
      ========================================================= */
   function renderBuscar() {
@@ -598,7 +607,7 @@ export async function init() {
             const esPrivado = g.tipoAcceso === 'privado';
             const esComunidad = g.tipo === 'comunidad';
 
-            const iconoTipo = esComunidad ? '🌐' : '🛡️';
+            const iconoTipo = esComunidad ? '🌐' : renderIconoHtml(RUTA_ESCUDO, 16);
             const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
 
             const yaSoyMiembro = estoyEn(g);
@@ -617,7 +626,7 @@ export async function init() {
             return `
               <article class="match-card" data-grupo="${g.id}">
                 <div class="match-card__header">
-                  <div class="match-card__sport" style="font-size:36px">${g.escudo}</div>
+                  <div class="match-card__sport">${renderIconoHtml(g.escudo, 36)}</div>
                   <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
                     <span class="badge badge--primary">${iconoTipo} ${labelTipo}</span>
                     <span class="badge ${esPrivado ? 'badge--warning' : 'badge--success'}">
@@ -699,22 +708,75 @@ export async function init() {
       });
     });
 
-
     pintar();
   }
 
   /* =========================================================
-     MODAL: CREAR GRUPO
+     ICONOS DISPONIBLES PARA GRUPOS
      ========================================================= */
   const ICONOS_GRUPO = [
-    '⚽','🏀','🎾','🏐','🏈','⚾','🏒','🥊','🏸','🏉',
-    '🚴','🏊','🏃','🏓','🤾','🏄','🧗','🌐','🔥','⭐',
-    '🛡️','🦁','🐯','🦅','🐺','👑','⚡','💪','🏆','🎯'
+   'assets/icons/balon-de-futbol (2).png',
+   'assets/icons/balocensto.svg',
+   'assets/icons/pelota-de-tenis.png',
+   'assets/icons/voleibol.svg',
+   'assets/icons/raqueta-de-padel.png',
+   'assets/icons/golf.png',
+   'assets/icons/beisbol.png',
+   'assets/icons/disco.png',
+   'assets/icons/guantes-de-boxeo.png',
+   'assets/icons/volante.png',
+   'assets/icons/rugby.png',
+   'assets/icons/bicicleta.svg',
+   'assets/icons/natacion.svg',
+   'assets/icons/corriendo.png',
+   'assets/icons/raqueta-de-tenis-de-mesa.png',
+   'assets/icons/tenis-de-squash.png',
+   'assets/icons/balonmano.png',
+   'assets/icons/deporte.svg',
+   'assets/icons/tabla-de-surf.png',
+   'assets/icons/escalada.png',
+   'assets/icons/mundo.png',
+   'assets/icons/mundo (1).png',
+   'assets/icons/mundo (2).png',
+   'assets/icons/mundo (3).png',
+   'assets/icons/mundo (4).png',
+   'assets/icons/mundo (5).png',
+   'assets/icons/mundo (6).png',
+   'assets/icons/mundo (7).png',
+   'assets/icons/mundo (8).png',
+   'assets/icons/mundo (9).png',
+   'assets/icons/mundo (10).png',
+   'assets/icons/mundo (11).png',
+   'assets/icons/mundo (12).png',   
+   'assets/icons/redondo (1).png',
+   'assets/icons/redondo (2).png',
+   'assets/icons/redondo (3).png',
+   'assets/icons/redondo (4).png',
+   'assets/icons/redondo (5).png',
+   'assets/icons/redondo (6).png',
+   'assets/icons/redondo (7).png',
+   'assets/icons/redondo (8).png',
+   'assets/icons/redondo (9).png',
+   'assets/icons/redondo (10).png',
+   'assets/icons/redondo (11).png',
+   'assets/icons/redondo (12).png',
+   'assets/icons/redondo (13).png',
+   'assets/icons/redondo (14).png',
+   'assets/icons/redondo (15).png',
+   'assets/icons/redondo (16).png',
+   'assets/icons/redondo (17).png',
+   'assets/icons/redondo (18).png',
+   'assets/icons/redondo (19).png',
+   'assets/icons/redondo (20).png',
+   'assets/icons/redondo.png',                                                            
   ];
 
   let tipoGrupoSeleccionado = 'equipo';
 
-   function abrirModalCrearGrupo(tipo = 'equipo') {
+  /* =========================================================
+     MODAL: CREAR GRUPO
+     ========================================================= */
+  function abrirModalCrearGrupo(tipo = 'equipo') {
     const modal = document.getElementById('modal-crear-comunidad');
     if (!modal) return;
 
@@ -729,7 +791,7 @@ export async function init() {
       wrapper.classList.remove('hidden');
       label.innerHTML = tipo === 'comunidad'
         ? '<span style="font-size:20px">🌐</span> Comunidad — grupo abierto para compartir y charlar'
-        : '<span style="font-size:20px">🛡️</span> Equipo — para competir con otros';
+        : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo — para competir con otros`;
     }
 
     document.getElementById('com-nombre').value = '';
@@ -745,7 +807,9 @@ export async function init() {
       <button type="button"
               class="posicion-chip ${i === 0 ? 'active' : ''}"
               data-com-icono="${ic}"
-              style="font-size:18px">${ic}</button>
+              style="display:inline-flex; align-items:center; justify-content:center">
+        ${renderIconoHtml(ic, 20)}
+      </button>
     `).join('');
 
     let iconoSel = ICONOS_GRUPO[0];
@@ -768,7 +832,6 @@ export async function init() {
       };
     });
 
-    // Ocultar toggle de stats privadas al crear
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
@@ -782,7 +845,6 @@ export async function init() {
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
-      // Evitar nombres duplicados del mismo usuario y tipo
       const yaExiste = getGrupos().some(g =>
         g.nombre.toLowerCase() === nombre.toLowerCase() &&
         g.tipo === tipoGrupoSeleccionado &&
@@ -792,7 +854,6 @@ export async function init() {
         return toast('Ya tienes un grupo con ese nombre', 'error');
       }
 
-      // ID único (evita colisiones al crear varios seguidos)
       const nuevo = {
         id: Date.now() + Math.floor(Math.random() * 100000),
         tipo: tipoGrupoSeleccionado,
@@ -821,13 +882,11 @@ export async function init() {
         creado: new Date().toISOString()
       };
 
-      // Guardar
       guardarGrupo(nuevo);
       cerrarModal('modal-crear-comunidad');
 
       toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} "${nombre}" creado!`, 'success');
 
-      // Cambiar a la pestaña correcta y recargar
       cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
       recargarPaneles();
     };
@@ -841,7 +900,7 @@ export async function init() {
 
     abrirModal('modal-crear-comunidad');
   }
-  /* =========================================================
+    /* =========================================================
      MODAL: EDITAR GRUPO
      ========================================================= */
   function abrirModalEditarGrupo(grupo) {
@@ -857,7 +916,7 @@ export async function init() {
       wrapper.classList.remove('hidden');
       label.innerHTML = grupo.tipo === 'comunidad'
         ? '<span style="font-size:20px">🌐</span> Comunidad'
-        : '<span style="font-size:20px">🛡️</span> Equipo';
+        : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo`;
     }
 
     document.getElementById('com-nombre').value = grupo.nombre;
@@ -874,7 +933,9 @@ export async function init() {
       <button type="button"
               class="posicion-chip ${ic === grupo.escudo ? 'active' : ''}"
               data-com-icono="${ic}"
-              style="font-size:18px">${ic}</button>
+              style="display:inline-flex; align-items:center; justify-content:center">
+        ${renderIconoHtml(ic, 20)}
+      </button>
     `).join('');
 
     let iconoSel = grupo.escudo;
@@ -897,8 +958,6 @@ export async function init() {
       };
     });
 
-    // Toggle de stats privadas (SOLO visible al editar)
-    // Toggle de stats privadas (SOLO visible al editar Y solo si es EQUIPO)
     const wrapperPriv = document.getElementById('editar-stats-privadas-wrapper');
     const chkPriv = document.getElementById('edit-grupo-stats-privadas');
     if (wrapperPriv && chkPriv) {
@@ -910,6 +969,7 @@ export async function init() {
         chkPriv.checked = false;
       }
     }
+
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = 'Guardar cambios';
     btnGuardar.onclick = () => {
@@ -923,12 +983,12 @@ export async function init() {
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
       const cambios = [];
-      if (nombre !== grupo.nombre)                cambios.push('nombre');
-      if (deporte !== grupo.deporte)              cambios.push('deporte');
-      if (ciudad !== (grupo.ciudad || ''))        cambios.push('ciudad');
-      if (descripcion !== (grupo.descripcion || '')) cambios.push('descripción');
-      if (iconoSel !== grupo.escudo)              cambios.push('ícono');
-      if (tipoAccesoSel !== grupo.tipoAcceso)     cambios.push('visibilidad');
+      if (nombre !== grupo.nombre)                    cambios.push('nombre');
+      if (deporte !== grupo.deporte)                  cambios.push('deporte');
+      if (ciudad !== (grupo.ciudad || ''))            cambios.push('ciudad');
+      if (descripcion !== (grupo.descripcion || ''))  cambios.push('descripción');
+      if (iconoSel !== grupo.escudo)                  cambios.push('ícono');
+      if (tipoAccesoSel !== grupo.tipoAcceso)         cambios.push('visibilidad');
       if (statsPrivadasNueva !== grupo.statsPrivadas) cambios.push('privacidad de stats');
 
       if (cambios.length === 0) {
@@ -970,7 +1030,8 @@ export async function init() {
 
     abrirModal('modal-crear-comunidad');
   }
-    /* =========================================================
+
+  /* =========================================================
      MODAL: GESTIONAR MIEMBROS
      ========================================================= */
   function abrirModalGestionar(grupo) {
@@ -980,7 +1041,6 @@ export async function init() {
     const modal = document.getElementById('modal-gestionar-grupo');
     if (!modal) return;
 
-    // Conectar cierre
     modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
       btn.onclick = () => cerrarModal('modal-gestionar-grupo');
     });
@@ -1153,16 +1213,15 @@ export async function init() {
       if (grupo) renderGestionMiembros(grupo, tab.dataset.tabGestion);
     });
   });
-
-  /* =========================================================
-     MODAL: EDITAR STATS DEL GRUPO (nuevo, exclusivo)
+    /* =========================================================
+     MODAL: EDITAR STATS DEL GRUPO
      ========================================================= */
   function abrirModalStats(grupo) {
     const modal = document.getElementById('modal-grupo-stats');
     if (!modal) return;
 
-    document.getElementById('grupo-stats-titulo').textContent =
-      `📊 Stats de ${grupo.escudo} ${grupo.nombre}`;
+    document.getElementById('grupo-stats-titulo').innerHTML =
+      `📊 Stats de ${renderIconoHtml(grupo.escudo, 20)} ${grupo.nombre}`;
 
     document.getElementById('gs-victorias').value = grupo.stats?.victorias || 0;
     document.getElementById('gs-empates').value   = grupo.stats?.empates || 0;
@@ -1334,7 +1393,6 @@ export async function init() {
   }
 
   function conectarEventosHilos(contenedor, grupo) {
-    // Like
     contenedor.querySelectorAll('[data-accion-hilo="like"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const postEl = btn.closest('[data-hilo-id]');
@@ -1343,7 +1401,6 @@ export async function init() {
       });
     });
 
-    // Comentarios (toggle)
     contenedor.querySelectorAll('[data-accion-hilo="comentarios"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const postEl = btn.closest('[data-hilo-id]');
@@ -1351,7 +1408,6 @@ export async function init() {
       });
     });
 
-    // Eliminar
     contenedor.querySelectorAll('[data-accion-hilo="eliminar"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const postEl = btn.closest('[data-hilo-id]');
@@ -1366,7 +1422,6 @@ export async function init() {
       });
     });
 
-    // Formulario de comentarios
     contenedor.querySelectorAll('[data-form-comentario-hilo]').forEach(form => {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -1386,7 +1441,6 @@ export async function init() {
       });
     });
 
-    // Click en autor → ver perfil
     contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1396,7 +1450,6 @@ export async function init() {
       });
     });
 
-    // Click en "+ Crear publicación"
     contenedor.parentElement?.querySelector('[data-nuevo-hilo]')?.addEventListener('click', () => {
       abrirModalCrearHilo(grupo);
     });
@@ -1454,8 +1507,7 @@ export async function init() {
     div.textContent = str;
     return div.innerHTML;
   }
-
-  /* =========================================================
+    /* =========================================================
      MODAL: CREAR HILO
      ========================================================= */
   let hiloGrupoActual = null;
@@ -1474,7 +1526,8 @@ export async function init() {
     document.getElementById('hilo-preview').innerHTML = '';
     document.getElementById('hilo-btn-quitar-adjunto').style.display = 'none';
 
-    document.getElementById('crear-hilo-titulo').textContent = `Publicar en ${grupo.escudo} ${grupo.nombre}`;
+    document.getElementById('crear-hilo-titulo').innerHTML =
+      `Publicar en ${renderIconoHtml(grupo.escudo, 20)} ${grupo.nombre}`;
 
     const textarea = document.getElementById('hilo-contenido');
     const contador = document.getElementById('hilo-contador');

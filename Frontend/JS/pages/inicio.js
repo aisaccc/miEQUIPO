@@ -45,11 +45,11 @@ export async function init() {
 
   function renderPost(p) {
     const iconoTipo = {
-      post: '📝',
-      partido: '⚽',
-      torneo: '🏆',
-      grupo: '👥'
-    }[p.tipo] || '📝';
+      post: 'assets/icons/agregar-publicacion.png',
+      partido: 'assets/icons/balon-de-futbol (2).png',
+      torneo: 'assets/icons/trofeo.svg',
+      grupo: 'assets/icons/gente.png'
+    }[p.tipo] || 'assets/icons/agregar-publicacion.png';
 
     const etiquetaTipo = {
       post: 'publicó',
@@ -401,7 +401,7 @@ export async function init() {
      ========================================================= */
   const comunidades = [
     { id: 1, nombre: 'Futboleros Santiago', miembros: 42, icono: '⚽', deporte: 'Fútbol',      ciudad: 'Santiago' },
-    { id: 2, nombre: 'Básquet Nocturno',    miembros: 28, icono: '🏀', deporte: 'Básquetbol',  ciudad: 'Providencia' },
+    { id: 2, nombre: 'Básquet Nocturno',    miembros: 28, icono: '<img src="assets/icons/balocensto.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', deporte: 'Básquetbol',  ciudad: 'Providencia' },
     { id: 3, nombre: 'Pádel Weekend',       miembros: 15, icono: '🎾', deporte: 'Pádel',       ciudad: 'Las Condes' },
   ];
 
@@ -442,7 +442,7 @@ export async function init() {
   const torneos = [
     { id: 1, nombre: 'Copa Verano 2026', equipos: 8,  icono: '🏆' },
     { id: 2, nombre: 'Liga Fútbol 7',    equipos: 12, icono: '🥇' },
-    { id: 3, nombre: 'Copa Basket 3v3',  equipos: 6,  icono: '🏀' },
+    { id: 3, nombre: 'Copa Basket 3v3',  equipos: 6,  icono: 'assets\icons\balocensto.svg' },
   ];
 
   const torneosEl = document.getElementById('torneos-abiertos');

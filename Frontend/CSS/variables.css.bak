@@ -1,0 +1,88 @@
+/* =========================================================
+   variables.css — Paleta MiEquipo (naranjo + grises)
+   ========================================================= */
+
+:root {
+  /* ---------- NARANJO (acento principal) ---------- */
+  --color-primary:        #E8836A;   /* naranjo suave, coral */
+  --color-primary-hover:  #D56F55;
+  --color-primary-light:  #FBE9E3;   /* tinte muy suave para fondos */
+  --color-primary-dark:   #B85339;   /* para texto sobre light */
+
+  /* ---------- GRISES ---------- */
+  --gray-50:  #FAFBFC;
+  --gray-100: #F2F3F4;   /* fondo general */
+  --gray-200: #EBECEE;   /* secundarios */
+  --gray-300: #E5E7EA;   /* bordes */
+  --gray-400: #D1D5DB;   /* borde fuerte */
+  --gray-500: #9CA3AF;   /* texto soft */
+  --gray-600: #6B7280;   /* texto muted */
+  --gray-700: #4B5563;
+  --gray-800: #2D3748;
+  --gray-900: #1F2937;   /* texto principal */
+
+  /* ---------- FONDOS ---------- */
+  --color-bg:             var(--gray-100);
+  --color-surface:        #FFFFFF;
+  --color-surface-2:      var(--gray-200);
+  --color-border:         var(--gray-300);
+  --color-border-strong:  var(--gray-400);
+
+  /* ---------- TEXTO ---------- */
+  --color-text:           var(--gray-900);
+  --color-text-muted:     var(--gray-600);
+  --color-text-soft:      var(--gray-500);
+  --color-text-invert:    #FFFFFF;
+
+  /* ---------- ESTADOS ---------- */
+  --color-success:        #16A34A;
+  --color-warning:        #F59E0B;
+  --color-danger:         #DC2626;
+  --color-info:           #2563EB;
+
+  /* ---------- ALIASES (por compatibilidad con código previo) ---------- */
+  --color-mint:           var(--color-primary);
+  --color-mint-dark:      var(--color-primary-dark);
+  --color-mint-light:     var(--color-primary-light);
+  --color-mint-lighter:   #FDF5F1;   /* hover muy sutil con tinte naranjo */
+
+  /* ---------- SOMBRAS ---------- */
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 4px 12px rgba(17, 24, 39, 0.06);
+  --shadow-lg: 0 12px 32px rgba(17, 24, 39, 0.10);
+
+  /* ---------- RADIOS ---------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* ---------- ESPACIADO ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ---------- TIPOGRAFÍA ---------- */
+  --font-main: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 15px;
+  --fs-lg:   18px;
+  --fs-xl:   22px;
+  --fs-2xl:  28px;
+  --fs-3xl:  36px;
+
+  /* ---------- LAYOUT ---------- */
+  --header-h:  72px;
+  --sidebar-w: 220px;
+  --content-max: 1040px;
+
+  /* ---------- TRANSICIONES ---------- */
+  --t-fast: 0.15s ease;
+  --t-base: 0.25s ease;
+}

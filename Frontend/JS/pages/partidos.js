@@ -35,13 +35,13 @@ export async function init() {
   }
 
 const emojiDeporte = {
-  'Fútbol': '<img src="assets/icons/futbol2.png" alt="Fútbol" style="width:32px; height:32px; object-fit:contain; display:block" />',
-  'Básquetbol': '🏀', 'Tenis': '🎾', 'Vóleibol': '🏐',
-  'Pádel': '🎾', 'Golf': '⛳', 'Béisbol': '⚾', 'Hockey': '🏒',
-  'Boxeo': '🥊', 'Bádminton': '🏸', 'Rugby': '🏉', 'Ciclismo': '🚴',
-  'Natación': '🏊', 'Atletismo': '🏃', 'Tenis de mesa': '🏓',
-  'Squash': '🎾', 'Handball': '🤾', 'Balonmano': '🤾',
-  'Fútbol americano': '🏈', 'Surf': '🏄', 'Escalada': '🧗'
+  'Fútbol': '<img src="assets/icons/balon-de-futbol (2).png" alt="Fútbol" style="width:32px; height:32px; object-fit:contain; display:block" />',
+  'Básquetbol': '<img src="assets/icons/balocensto.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Tenis': '<img src="assets/icons/pelota-de-tenis.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Vóleibol': '<img src="assets/icons/voleibol.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
+  'Pádel': '<img src="assets/icons/raqueta-de-padel.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Golf': '<img src="assets/icons/golf.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Béisbol': '<img src="assets/icons/beisbol.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Hockey': '<img src="assets/icons/disco.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
+  'Boxeo': '<img src="assets/icons/guantes-de-boxeo.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Bádminton': '<img src="assets/icons/volante.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Rugby': '<img src="assets/icons/rugby.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Ciclismo': '<img src="assets/icons/bicicleta.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
+  'Natación': '<img src="assets/icons/natacion.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Atletismo': '<img src="assets/icons/corriendo.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Tenis de mesa': '<img src="assets/icons/raqueta-de-tenis-de-mesa.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
+  'Squash': '<img src="assets/icons/tenis-de-squash.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Handball': '<img src="assets/icons/balonmano.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
+  'Fútbol americano': '<img src="assets/icons/deporte.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Surf': '<img src="assets/icons/tabla-de-surf.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Escalada': '<img src="assets/icons/escalada.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />'
 };
   function cantidadInscritos(p) {
     return Array.isArray(p.inscritos) ? p.inscritos.length : (p.inscritos || 0);
@@ -56,6 +56,15 @@ const emojiDeporte = {
       ? (p.equiposInscritos || []).length
       : cantidadInscritos(p);
   }
+  function renderEmoji(emoji) {
+  if (!emoji) return '🏅';
+  // Si es una ruta de imagen
+  if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
+    return `<img src="${emoji}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
+  }
+  // Si es emoji normal
+  return emoji;
+}
 
   /* =========================================================
      RENDER DE UNA CARD DE PARTIDO
@@ -120,7 +129,7 @@ const emojiDeporte = {
     return `
       <article class="match-card" data-id="${p.id}">
         <div class="match-card__header">
-          <div class="match-card__sport">${p.emoji}</div>
+          <div class="match-card__sport">${renderEmoji(p.emoji)}</div>
           <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
             ${badgeRolHtml}
             <span class="badge ${badgeClase}">${badgeTexto}</span>
