@@ -1,5 +1,6 @@
+import { mismoId } from '../utils/id.js';
 import { getSesion } from '../auth.js';
-import { toast, abrirModal, cerrarModal } from '../components.js';
+import { toast, abrirModal, cerrarModal, formatearFecha } from '../components.js';
 import {
   deportes as todosLosDeportes,
   posicionesPorDeporte
@@ -8,9 +9,14 @@ import { statsPorDeporte } from '../stats-por-deporte.js';
 import {
   getPartidos,
   publicacionesDe,
-  actualizarUsuario,
   migrarTodosLosUsuarios
 } from '../store.js';
+import {
+  obtenerMiPerfil,
+  actualizarMiPerfil,
+  actualizarMisDeportes,
+} from '../services/usuarios.service.js';
+import { obtenerHistorialPartidos } from '../services/partidos.service.js';
 
 /* ---------- LISTA DE PAÍSES ---------- */
 const PAISES = [
@@ -26,7 +32,13 @@ export async function init() {
   if (!user) return null;
 
   migrarTodosLosUsuarios();
-  user = getSesion();
+
+  try {
+    user = await obtenerMiPerfil();
+  } catch (err) {
+    console.warn('[perfil] No se pudo obtener el perfil desde el backend:', err.message);
+    user = getSesion();
+  }
 
   /* ---------- REFS ---------- */
   const elAvatar          = document.getElementById('perfil-avatar');
@@ -41,14 +53,44 @@ export async function init() {
   const elPublicaciones   = document.getElementById('perfil-publicaciones');
   const elActividad       = document.getElementById('perfil-actividad');
 
+  /* ---------- REFS HISTORIAL ---------- */
+  const elHistorial       = document.getElementById('perfil-historial');
+  const elHistorialCount  = document.getElementById('historial-count');
+  const elHistorialCargar = document.getElementById('historial-cargar-mas-wrapper');
+  const chipsHistRol      = document.querySelectorAll('[data-hist-rol]');
+  const selHistDeporte    = document.getElementById('historial-deporte');
+  const inputHistDesde    = document.getElementById('historial-desde');
+  const inputHistHasta    = document.getElementById('historial-hasta');
+  const btnHistLimpiar    = document.getElementById('btn-limpiar-filtros');
+  const btnHistCargarMas  = document.getElementById('btn-historial-cargar-mas');
+
   /* ---------- AVATARES MOCK ---------- */
   const AVATARES = Array.from({ length: 20 }, (_, i) => `https://i.pravatar.cc/150?img=${i + 1}`);
+
+  /* ---------- ESTADO DEL HISTORIAL ---------- */
+  let histFiltros = {
+    rol: 'todos',
+    deporte: '',
+    desde: '',
+    hasta: '',
+  };
+  let histPagina = 1;
+  let histPartidos = [];
+  let histCargando = false;
 
   /* =========================================================
      RENDER PRINCIPAL
      ========================================================= */
-  function render() {
-    const u = getSesion();
+  async function render() {
+    let u;
+
+    try {
+      u = await obtenerMiPerfil();
+    } catch (err) {
+      console.warn('[perfil] Fallback a sesión local:', err.message);
+      u = getSesion();
+    }
+
     if (!u) return;
 
     if (elAvatar) elAvatar.src = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
@@ -176,9 +218,12 @@ export async function init() {
         });
       }
     }
-  }
 
-  /* ---------- Render de stats por deporte ---------- */
+    // ⚡ Historial de partidos
+    await cargarHistorial(true);
+    poblarSelectDeportesHistorial();
+  }
+    /* ---------- Render de stats por deporte ---------- */
   function renderStatsDeportes(u) {
     const misDeportes = u.deportes || [];
 
@@ -250,12 +295,26 @@ export async function init() {
   /* ---------- Helper: icono por deporte ---------- */
   function iconoDeporte(deporte) {
     const map = {
-      'Fútbol': 'assets/icons/balon-de-futbol (2).png', 'Básquetbol': 'assets/icons/balocensto.svg', 'Tenis': 'pelota-de-tenis.png', 'Vóleibol': 'assets/icons/voleibol.svg',
-      'Pádel': 'assets/icons/raqueta-de-padel.png', 'Golf': 'assets/icons/golf.png', 'Béisbol': 'assets/icons/beisbol.png', 'Hockey': 'assets/icons/disco.png',
-      'Boxeo': 'assets/icons/guantes-de-boxeo.png', 'Bádminton': 'assets/icons/volante.png', 'Rugby': 'assets/icons/rugby.png', 'Ciclismo': 'assets/icons/bicicleta.svg',
-      'Natación': 'assets/icons/natacion.svg', 'Atletismo': 'assets/icons/corriendo.png', 'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
-      'Squash': 'assets/icons/tenis-de-squash.png', 'Handball': 'assets/icons/balonmano.png', 
-      'Fútbol americano': 'assets/icons/deporte.svg', 'Surf': 'assets/icons/tabla-de-surf.png', 'Escalada': 'assets/icons/escalada.png'
+      'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+      'Básquetbol': 'assets/icons/balocensto.svg',
+      'Tenis': 'assets/icons/pelota-de-tenis.png',
+      'Vóleibol': 'assets/icons/voleibol.svg',
+      'Pádel': 'assets/icons/raqueta-de-padel.png',
+      'Golf': 'assets/icons/golf.png',
+      'Béisbol': 'assets/icons/beisbol.png',
+      'Hockey': 'assets/icons/disco.png',
+      'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+      'Bádminton': 'assets/icons/volante.png',
+      'Rugby': 'assets/icons/rugby.png',
+      'Ciclismo': 'assets/icons/bicicleta.svg',
+      'Natación': 'assets/icons/natacion.svg',
+      'Atletismo': 'assets/icons/corriendo.png',
+      'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+      'Squash': 'assets/icons/tenis-de-squash.png',
+      'Handball': 'assets/icons/balonmano.png',
+      'Fútbol americano': 'assets/icons/deporte.svg',
+      'Surf': 'assets/icons/tabla-de-surf.png',
+      'Escalada': 'assets/icons/escalada.png'
     };
     const valor = map[deporte] || '🏅';
     if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
@@ -263,9 +322,238 @@ export async function init() {
     }
     return valor;
   }
-    
 
   /* =========================================================
+     HISTORIAL DE PARTIDOS
+     ========================================================= */
+  function iconoDeporteHistorial(deporte) {
+    const map = {
+      'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+      'Básquetbol': 'assets/icons/balocensto.svg',
+      'Tenis': 'assets/icons/pelota-de-tenis.png',
+      'Vóleibol': 'assets/icons/voleibol.svg',
+      'Pádel': 'assets/icons/raqueta-de-padel.png',
+      'Golf': 'assets/icons/golf.png',
+      'Béisbol': 'assets/icons/beisbol.png',
+      'Hockey': 'assets/icons/disco.png',
+      'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+      'Bádminton': 'assets/icons/volante.png',
+      'Rugby': 'assets/icons/rugby.png',
+      'Ciclismo': 'assets/icons/bicicleta.svg',
+      'Natación': 'assets/icons/natacion.svg',
+      'Atletismo': 'assets/icons/corriendo.png',
+      'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+      'Squash': 'assets/icons/tenis-de-squash.png',
+      'Handball': 'assets/icons/balonmano.png',
+      'Fútbol americano': 'assets/icons/deporte.svg',
+      'Surf': 'assets/icons/tabla-de-surf.png',
+      'Escalada': 'assets/icons/escalada.png'
+    };
+    const valor = map[deporte] || '🏅';
+    if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
+      return `<img src="${valor}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
+    }
+    return valor;
+  }
+
+  /* ---------- Cargar historial desde el backend ---------- */
+  async function cargarHistorial(reset = false) {
+    if (!elHistorial) return;
+    if (histCargando) return;
+
+    if (reset) {
+      histPagina = 1;
+      histPartidos = [];
+    }
+
+    histCargando = true;
+
+    if (reset) {
+      elHistorial.innerHTML = `
+        <div class="page-loader">
+          <div class="spinner"></div>
+          <span>Cargando historial...</span>
+        </div>`;
+    }
+
+    try {
+      const filtrosBackend = {
+        page: histPagina,
+        limit: 10,
+      };
+
+      if (histFiltros.deporte) filtrosBackend.deporte = histFiltros.deporte;
+      if (histFiltros.desde)   filtrosBackend.desde = histFiltros.desde;
+      if (histFiltros.hasta)   filtrosBackend.hasta = histFiltros.hasta;
+      if (histFiltros.rol === 'jugador' || histFiltros.rol === 'equipo') {
+        filtrosBackend.tipo = histFiltros.rol;
+      }
+
+      const resultado = await obtenerHistorialPartidos(filtrosBackend);
+      const data = resultado.data || [];
+      const meta = resultado.meta || { total: 0, totalPages: 1 };
+
+      let filtrados = data;
+      if (histFiltros.rol && histFiltros.rol !== 'todos') {
+        filtrados = data.filter(p => p.rol === histFiltros.rol);
+      }
+
+      if (reset) {
+        histPartidos = filtrados;
+      } else {
+        histPartidos = [...histPartidos, ...filtrados];
+      }
+
+      if (elHistorialCount) {
+        elHistorialCount.textContent = `${meta.total} partido${meta.total !== 1 ? 's' : ''} jugado${meta.total !== 1 ? 's' : ''}`;
+      }
+
+      renderHistorial();
+
+      if (elHistorialCargar) {
+        const hayMas = histPagina < meta.totalPages;
+        elHistorialCargar.style.display = hayMas ? '' : 'none';
+      }
+
+    } catch (err) {
+      console.error('[perfil] Error al cargar historial:', err);
+      elHistorial.innerHTML = `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">⚠️</div>
+          <p class="text-sm text-muted">No se pudo cargar el historial</p>
+          <p class="text-xs text-muted mt-2">${err.message || ''}</p>
+        </div>`;
+    } finally {
+      histCargando = false;
+    }
+  }
+
+  /* ---------- Render del historial ---------- */
+  function renderHistorial() {
+    if (!elHistorial) return;
+
+    if (histPartidos.length === 0) {
+      elHistorial.innerHTML = `
+        <div class="empty-state--sm" style="padding:var(--space-5)">
+          <div class="empty-state__icon" style="font-size:36px">📅</div>
+          <p class="text-sm text-muted">Aún no tenés partidos jugados</p>
+          <p class="text-xs text-muted mt-2">Los partidos aparecen acá cuando se finalizan</p>
+        </div>`;
+      return;
+    }
+
+    elHistorial.innerHTML = `
+      <div class="card-grid">
+        ${histPartidos.map(p => renderCardHistorial(p)).join('')}
+      </div>
+    `;
+
+    elHistorial.querySelectorAll('.match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.hash = `#/partido/${card.dataset.id}`;
+      });
+    });
+  }
+
+  /* ---------- Card individual del historial ---------- */
+  function renderCardHistorial(p) {
+    const rolLabel = {
+      organizador: '👑 Organizador',
+      jugador:     '👤 Jugador',
+      equipo:      '🛡️ Equipo',
+    }[p.rol] || '—';
+
+    const rolBadgeClase = {
+      organizador: 'badge--primary',
+      jugador:     'badge--info',
+      equipo:      'badge--warning',
+    }[p.rol] || 'badge--neutral';
+
+    const tipoLabel = p.tipoPartido === 'equipo' ? '🛡️ De equipos' : '👤 De jugadores';
+
+    return `
+      <article class="match-card" data-id="${p.id}" style="cursor:pointer">
+        <div class="match-card__header">
+          <div class="match-card__sport">${iconoDeporteHistorial(p.deporte)}</div>
+          <span class="badge ${rolBadgeClase}">${rolLabel}</span>
+        </div>
+
+        <h3 class="match-card__title">${p.titulo}</h3>
+
+        <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+          <span class="badge badge--neutral">${tipoLabel}</span>
+          <span class="badge badge--success">✅ Finalizado</span>
+        </div>
+
+        <div class="match-card__info">
+          <span>🏅 ${p.deporte}</span>
+          <span>📅 ${formatearFecha(p.fecha)}</span>
+          ${p.lugar ? `<span>📍 ${p.lugar}</span>` : ''}
+          ${p.organizador?.nombre ? `<span>👤 ${p.organizador.nombre}</span>` : ''}
+        </div>
+      </article>
+    `;
+  }
+
+  /* ---------- Poblar el select de deportes del historial ---------- */
+  function poblarSelectDeportesHistorial() {
+    if (!selHistDeporte) return;
+
+    const deportesUnicos = [...new Set(histPartidos.map(p => p.deporte).filter(Boolean))].sort();
+
+    selHistDeporte.innerHTML = '<option value="">Todos los deportes</option>' +
+      deportesUnicos.map(d => `<option value="${d}">${d}</option>`).join('');
+  }
+
+  /* ---------- Conectar eventos del historial ---------- */
+  function conectarEventosHistorial() {
+    chipsHistRol.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chipsHistRol.forEach(c => c.classList.remove('chip--active'));
+        chip.classList.add('chip--active');
+        histFiltros.rol = chip.dataset.histRol;
+        cargarHistorial(true);
+      });
+    });
+
+    selHistDeporte?.addEventListener('change', () => {
+      histFiltros.deporte = selHistDeporte.value;
+      cargarHistorial(true);
+    });
+
+    inputHistDesde?.addEventListener('change', () => {
+      histFiltros.desde = inputHistDesde.value;
+      cargarHistorial(true);
+    });
+
+    inputHistHasta?.addEventListener('change', () => {
+      histFiltros.hasta = inputHistHasta.value;
+      cargarHistorial(true);
+    });
+
+    btnHistLimpiar?.addEventListener('click', () => {
+      histFiltros = { rol: 'todos', deporte: '', desde: '', hasta: '' };
+
+      chipsHistRol.forEach(c => c.classList.remove('chip--active'));
+      chipsHistRol[0]?.classList.add('chip--active');
+
+      if (selHistDeporte) selHistDeporte.value = '';
+      if (inputHistDesde) inputHistDesde.value = '';
+      if (inputHistHasta) inputHistHasta.value = '';
+
+      cargarHistorial(true);
+    });
+
+    btnHistCargarMas?.addEventListener('click', async () => {
+      histPagina++;
+      btnHistCargarMas.disabled = true;
+      btnHistCargarMas.textContent = 'Cargando...';
+      await cargarHistorial(false);
+      btnHistCargarMas.disabled = false;
+      btnHistCargarMas.textContent = 'Cargar más';
+    });
+  }
+    /* =========================================================
      MODAL EDITAR PERFIL
      ========================================================= */
   function abrirModalEditar() {
@@ -278,11 +566,9 @@ export async function init() {
     document.getElementById('edit-perf-bio').value = u.bio || '';
     document.getElementById('edit-perf-ciudad').value = u.ciudad || '';
 
-    // Edad
     const inputEdad = document.getElementById('edit-perf-edad');
     if (inputEdad) inputEdad.value = u.edad || '';
 
-    // País
     const selPais = document.getElementById('edit-perf-pais');
     if (selPais) {
       selPais.innerHTML = '<option value="">Selecciona un país...</option>' +
@@ -419,7 +705,6 @@ export async function init() {
         `;
       }).join('');
 
-      // Quitar deporte
       contDeportes.querySelectorAll('[data-quitar-deporte]').forEach(btn => {
         btn.addEventListener('click', () => {
           const idx = Number(btn.dataset.quitarDeporte);
@@ -429,7 +714,6 @@ export async function init() {
         });
       });
 
-      // Toggle de posiciones
       contDeportes.querySelectorAll('[data-pos-idx]').forEach(btn => {
         btn.addEventListener('click', () => {
           const idx = Number(btn.dataset.posIdx);
@@ -450,7 +734,6 @@ export async function init() {
     renderDeportesElegidos();
     refrescarSelectDeportes();
 
-    // Agregar deporte
     document.getElementById('edit-perf-add-deporte').onclick = () => {
       const dep = selNuevoDeporte.value;
       if (!dep) return;
@@ -470,7 +753,7 @@ export async function init() {
     };
 
     /* ---------- Guardar ---------- */
-    document.getElementById('btn-guardar-perfil').onclick = () => {
+    document.getElementById('btn-guardar-perfil').onclick = async () => {
       const nombre = document.getElementById('edit-perf-nombre').value.trim();
       const username = document.getElementById('edit-perf-username').value.trim();
       const bio = document.getElementById('edit-perf-bio').value.trim();
@@ -483,36 +766,46 @@ export async function init() {
         return toast('El usuario debe tener 3-20 caracteres (letras, números, _)', 'error');
       }
 
-      // 🔥 Leer sesión ACTUAL para no perder deportes agregados
-      const usuarioActual = getSesion();
-      const deportesPrevios = usuarioActual.deportes || [];
+      const btn = document.getElementById('btn-guardar-perfil');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
 
-      // Construir array final preservando stats existentes
-      const deportesFinales = deportesActuales.map(d => {
-        const anterior = deportesPrevios.find(x => x.deporte === d.deporte);
-        return {
-          deporte: d.deporte,
-          posiciones: d.posiciones || [],
-          stats: anterior?.stats || {}
-        };
-      });
+      try {
+        await actualizarMiPerfil({
+          nombre,
+          username,
+          bio: bio || null,
+          ciudad: ciudad || null,
+          edad,
+          pais: pais || null,
+          avatar: avatarSel || null,
+        });
 
-      console.log('[perfil] Guardando deportes:', deportesFinales.map(d => d.deporte));
+        const usuarioActual = getSesion();
+        const deportesPrevios = usuarioActual.deportes || [];
 
-      actualizarUsuario(usuarioActual.id, {
-        nombre,
-        username,
-        bio,
-        ciudad,
-        edad,
-        pais,
-        avatar: avatarSel,
-        deportes: deportesFinales
-      });
+        const deportesFinales = deportesActuales.map(d => {
+          const anterior = deportesPrevios.find(x => x.deporte === d.deporte);
+          return {
+            deporte: d.deporte,
+            posiciones: d.posiciones || [],
+            stats: anterior?.stats || {}
+          };
+        });
 
-      cerrarModal('modal-editar-perfil');
-      toast('Perfil actualizado', 'success');
-      setTimeout(() => render(), 100);
+        await actualizarMisDeportes(deportesFinales);
+
+        cerrarModal('modal-editar-perfil');
+        toast('Perfil actualizado', 'success');
+
+        await render();
+      } catch (err) {
+        console.error('[perfil] Error al guardar:', err);
+        toast(err.message || 'No se pudo guardar el perfil', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
+      }
     };
 
     /* ---------- Cerrar ---------- */
@@ -575,7 +868,7 @@ export async function init() {
       }).join('');
     }
 
-    document.getElementById('btn-guardar-stats-deporte').onclick = () => {
+    document.getElementById('btn-guardar-stats-deporte').onclick = async () => {
       const nuevasStats = {};
 
       statsDisponibles.forEach(s => {
@@ -589,7 +882,6 @@ export async function init() {
         };
       });
 
-      // 🔥 Leer sesión ACTUAL y modificar SOLO el deporte que estamos editando
       const usuarioActual = getSesion();
       const deportesActuales = usuarioActual.deportes || [];
 
@@ -599,14 +891,23 @@ export async function init() {
           : d
       );
 
-      console.log('[stats] Guardando:', nombreDeporte);
-      console.log('[stats] Total deportes:', deportesActualizados.map(d => d.deporte));
+      const btn = document.getElementById('btn-guardar-stats-deporte');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
 
-      actualizarUsuario(usuarioActual.id, { deportes: deportesActualizados });
+      try {
+        await actualizarMisDeportes(deportesActualizados);
 
-      cerrarModal('modal-editar-stats-deporte');
-      toast(`Stats de ${nombreDeporte} actualizadas`, 'success');
-      setTimeout(() => render(), 100);
+        cerrarModal('modal-editar-stats-deporte');
+        toast(`Stats de ${nombreDeporte} actualizadas`, 'success');
+        await render();
+      } catch (err) {
+        console.error('[perfil] Error al guardar stats:', err);
+        toast(err.message || 'No se pudieron guardar las stats', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+      }
     };
 
     document.querySelectorAll('#modal-editar-stats-deporte [data-cerrar-modal]').forEach(btn => {
@@ -624,10 +925,13 @@ export async function init() {
      ========================================================= */
   document.getElementById('btn-editar-perfil')?.addEventListener('click', abrirModalEditar);
 
+  // ⚡ Conectar eventos del historial
+  conectarEventosHistorial();
+
   /* =========================================================
      INIT
      ========================================================= */
-  render();
+  await render();
 
   return null;
 }

@@ -14,23 +14,29 @@ const RUTAS = {
   '#/mensajes':  { html: 'pages/mensajes.html',  script: 'mensajes',  titulo: 'Mensajes' },
   '#/perfil':    { html: 'pages/perfil.html',    script: 'perfil',    titulo: 'Perfil' },
 };
+
 // Rutas dinámicas (con parámetros)
+// Acepta UUIDs completos: 8-4-4-4-12 caracteres hex con guiones
+const REGEX_UUID = /^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
+
 const RUTAS_DINAMICAS = [
   {
-    regex: /^#\/partido\/(\d+)$/,
+    // Acepta UUIDs Y números (compatibilidad con datos viejos)
+    regex: /^#\/partido\/([a-zA-Z0-9-]+)$/,
     html: 'pages/partido-detalle.html',
     script: 'partido-detalle',
     tituloFn: () => 'Detalle del partido',
-    params: (m) => ({ id: Number(m[1]) })
+    params: (m) => ({ id: m[1] })
   },
   {
-    regex: /^#\/torneo\/(\d+)$/,
+    regex: /^#\/torneo\/([a-zA-Z0-9-]+)$/,
     html: 'pages/torneo-detalle.html',
     script: 'torneo-detalle',
     tituloFn: () => 'Detalle del torneo',
-    params: (m) => ({ id: Number(m[1]) })
+    params: (m) => ({ id: m[1] })
   },
 ];
+
 // Módulos ya cargados (cache)
 const modulosCargados = {};
 
@@ -86,7 +92,7 @@ export async function navegar(hash) {
 
     let modulo = modulosCargados[ruta.script];
     if (!modulo) {
-      modulo = await import(`./pages/${ruta.script}.js`);
+      modulo = await import(`./pages/${ruta.script}.js?v=5`);
       modulosCargados[ruta.script] = modulo;
     }
 

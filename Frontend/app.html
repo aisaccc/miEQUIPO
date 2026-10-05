@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MiEquipo — Inicio</title>
-  <link rel="icon" type="image/svg+xml" href="Captura de pantalla 2026-09-28 205752-Photoroom.png" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -154,19 +154,19 @@
             </div>
 
             <button class="user-menu__item" data-action="perfil">
-              <span><img src="assets\icons\usuario.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Ver perfil
+              <span><img src="assets/icons/usuario.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Ver perfil
             </button>
             <button class="user-menu__item" data-action="config">
-              <span><img src="assets\icons\ajustes.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Configuración
+              <span><img src="assets/icons/ajustes.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Configuración
             </button>
             <button class="user-menu__item" data-action="ayuda">
-              <span><img src="assets\icons\asistencia-de-ayuda.png" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Ayuda
+              <span><img src="assets/icons/asistencia-de-ayuda.png" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Ayuda
             </button>
 
             <div class="user-menu__divider"></div>
 
             <button class="user-menu__item user-menu__item--danger" data-action="logout">
-              <span><img src="assets\icons\salida.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Cerrar sesión
+              <span><img src="assets/icons/salida.svg" alt="" style="width:18px; height:18px; object-fit:contain" /></span> Cerrar sesión
             </button>
           </div>
         </div>
@@ -176,38 +176,44 @@
 
     <!-- ================= SIDEBAR ================= -->
     <aside class="app-sidebar">
+
       <nav class="sidebar-nav">
         <a href="#/inicio" class="sidebar-nav__item">
-          <img src="assets\icons\hogar.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Inicio
+          <img src="assets/icons/hogar.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Inicio
         </a>
         <a href="#/partidos" class="sidebar-nav__item">
-          <img src="assets\icons\cancha-de-baloncesto.png" alt="" style="width:18px; height:18px; object-fit:contain" /> Partidos
+          <img src="assets/icons/cancha-de-baloncesto.png" alt="" style="width:18px; height:18px; object-fit:contain" /> Partidos
         </a>
         <a href="#/torneos" class="sidebar-nav__item">
-          <img src="assets\icons\trofeo.svg" alt="" style="width:18px; height:18px; object-fit:contain" />Torneos
+          <img src="assets/icons/trofeo.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Torneos
         </a>
         <a href="#/mi-equipo" class="sidebar-nav__item">
-          <img src="assets\icons\grupo.png" alt="" style="width:18px; height:18px; object-fit:contain" /> Mi Equipo
+          <img src="assets/icons/grupo.png" alt="" style="width:18px; height:18px; object-fit:contain" /> Mi Equipo
         </a>
         <a href="#/mensajes" class="sidebar-nav__item">
-          <img src="assets\icons\sobre.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Mensajes
+          <img src="assets/icons/sobre.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Mensajes
         </a>
         <a href="#/perfil" class="sidebar-nav__item">
-          <img src="assets\icons\usuario.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Perfil
+          <img src="assets/icons/usuario.svg" alt="" style="width:18px; height:18px; object-fit:contain" /> Perfil
         </a>
       </nav>
+
+      <!-- Logout fuera del <a> para que no navegue -->
+      <button id="btn-logout" class="btn btn--ghost btn--block btn--sm" style="margin-top: 12px;">
+        Cerrar sesión
+      </button>
+
     </aside>
 
     <!-- ================= MAIN ================= -->
     <main class="app-main">
-      <div class="container" id="page-content">
-        <!-- El router carga aquí las páginas -->
-      </div>
+      <!-- Solo UN #page-content, y SIN la clase container -->
+      <div id="page-content"></div>
     </main>
 
   </div>
 
-  <!-- ================= MODAL: VER PERFIL DE USUARIO ================= -->
+  <!-- ================= MODAL: VER PERFIL ================= -->
   <div class="modal-backdrop" id="modal-ver-perfil">
     <div class="modal" style="max-width: 480px;">
       <div class="modal__header">
@@ -227,7 +233,7 @@
   <div class="modal-backdrop" id="modal-configuracion">
     <div class="modal" style="max-width: 460px;">
       <div class="modal__header">
-        <h3 class="modal__title">'assets/icons/ajustes.svg' Configuración</h3>
+        <h3 class="modal__title">Configuración</h3>
         <button class="modal__close" data-cerrar-modal="modal-configuracion">✕</button>
       </div>
 
@@ -284,7 +290,7 @@
         </div>
         <div class="field">
           <label class="field__label" for="pass-nueva">Nueva contraseña *</label>
-          <input type="password" id="pass-nueva" class="field__input" placeholder="Mínimo 6 caracteres" />
+          <input type="password" id="pass-nueva" class="field__input" placeholder="Mínimo 8 caracteres" />
         </div>
         <div class="field">
           <label class="field__label" for="pass-confirmar">Confirmar nueva contraseña *</label>
@@ -300,28 +306,7 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module">
-    import { getSesion } from './js/auth.js';
-    import { iniciarRouter } from './js/router.js';
-    import { migrarTodosLosUsuarios } from './js/store.js';
-    import {
-      initHeader,
-      initDropdowns,
-      initNotificaciones,
-      initConfiguracion
-    } from './js/components.js';
-
-    const user = getSesion();
-    if (!user) {
-      window.location.href = 'index.html';
-    } else {
-      migrarTodosLosUsuarios();
-      initHeader();
-      initDropdowns();
-      initNotificaciones();
-      initConfiguracion();
-      iniciarRouter();
-    }
-  </script>
+  <!-- Único script: main.js hace TODO -->
+  <script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

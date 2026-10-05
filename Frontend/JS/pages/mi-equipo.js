@@ -2,15 +2,28 @@ import { getSesion } from '../auth.js';
 import { toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes } from '../data-mock.js';
 import {
-  getGrupos, getGrupoPorId, guardarGrupo, eliminarGrupo,
-  esCapitan, esAdmin, esMiembro,
-  agregarSolicitud, aceptarSolicitud, rechazarSolicitud,
-  agregarMiembroDirecto, expulsarMiembro, salirDeGrupo,
-  nombrarAdmin, quitarAdmin,
-  agregarNotificacion,
-  getMensajesDeCanal, agregarMensaje
-} from '../store.js';
+  listarGrupos,
+  obtenerGrupo,
+  crearGrupo as crearGrupoAPI,
+  editarGrupo as editarGrupoAPI,
+  editarStats as editarStatsAPI,
+  eliminarGrupo as eliminarGrupoAPI,
+  unirseAGrupo as unirseAGrupoAPI,
+  salirDeGrupo as salirDeGrupoAPI,
+  cancelarMiSolicitud as cancelarMiSolicitudAPI,
+  expulsarMiembro as expulsarMiembroAPI,
+  cambiarRolMiembro as cambiarRolMiembroAPI,
+  listarSolicitudes as listarSolicitudesAPI,
+  gestionarSolicitud as gestionarSolicitudAPI,
+} from '../services/grupos.service.js';
 
+/* ---------- CONSTANTES ---------- */
+const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
+const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
+
+/* =========================================================
+   INIT
+   ========================================================= */
 export async function init() {
   const user = getSesion();
   if (!user) return null;
@@ -20,20 +33,9 @@ export async function init() {
 
   if (!contenedorEquipo) return null;
 
-  /* ---------- RUTA DEL ESCUDO PERSONALIZADO ---------- */
-  const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
-
-  /* ---------- HELPERS DE ICONOS ---------- */
-  function esIconoImagen(valor) {
-    return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
-  }
-
-  function renderIconoHtml(valor, size = 20) {
-    if (esIconoImagen(valor)) {
-      return `<img src="${valor}" alt="icono" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
-    }
-    return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor}</span>`;
-  }
+  /* ---------- ESTADO ---------- */
+  let misEquipos = [];
+  let misComunidades = [];
 
   /* ---------- REFS ---------- */
   const subtabs        = document.querySelectorAll('[data-tab-equipo]');
@@ -43,23 +45,44 @@ export async function init() {
   const panelBuscar    = document.getElementById('panel-buscar');
 
   /* ---------- HELPERS ---------- */
-  function misGruposDeTipo(tipo) {
-    return getGrupos().filter(g =>
-      g.tipo === tipo && (g.capitanId === user.id || esMiembro(g, user.id))
-    );
+  function esIconoImagen(valor) {
+    return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
   }
 
-  function misEquipos()     { return misGruposDeTipo('equipo'); }
-  function misComunidades() { return misGruposDeTipo('comunidad'); }
-    /* =========================================================
+  function renderIconoHtml(valor, size = 20) {
+    if (esIconoImagen(valor)) {
+      return `<img src="${valor}" alt="icono" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+    }
+    return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || '🛡️'}</span>`;
+  }
+
+  /* ---------- CARGAR DESDE EL BACKEND ---------- */
+  async function recargarGrupos() {
+    try {
+      const [resEquipos, resComunidades] = await Promise.all([
+        listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 }),
+        listarGrupos({ tipo: 'comunidad', soloMios: 'true', limit: 50 }),
+      ]);
+
+      misEquipos = resEquipos.data || [];
+      misComunidades = resComunidades.data || [];
+    } catch (err) {
+      console.error('[mi-equipo] Error al cargar grupos:', err);
+      toast('No se pudieron cargar tus grupos', 'error');
+      misEquipos = [];
+      misComunidades = [];
+    }
+  }
+
+  /* =========================================================
      RENDER GENÉRICO DE UN GRUPO
      ========================================================= */
   function renderGrupo(grupo, contenedor, esComunidad) {
-    const capitan = esCapitan(grupo, user.id);
-    const admin   = esAdmin(grupo, user.id);
+    const capitan = grupo.esCapitan;
+    const admin   = grupo.esAdmin;
     const puedeEditarEste = capitan || admin;
-    const miembrosCount = (grupo.jugadores || []).length;
-    const solicitudesCount = (grupo.solicitudes || []).length;
+    const miembrosCount = grupo.totalMiembros || 0;
+    const solicitudesCount = grupo.totalSolicitudes || 0;
 
     const iconoTipo = esComunidad ? '🌐' : renderIconoHtml(RUTA_ESCUDO, 16);
     const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
@@ -83,7 +106,7 @@ export async function init() {
             ${grupo.descripcion ? `<p class="text-sm text-muted mt-4">${grupo.descripcion}</p>` : ''}
 
             ${!esComunidad ? (
-              (!grupo.statsPrivadas || puedeEditarEste || esMiembro(grupo, user.id)) ? `
+              (!grupo.statsPrivadas || puedeEditarEste || grupo.esMiembro) ? `
                 <div class="stats-grid mt-4" style="grid-template-columns:repeat(3, 1fr); max-width:420px">
                   <div class="stat-box">
                     <div class="stat-box__value" style="color:var(--color-success)">${grupo.stats?.victorias || 0}</div>
@@ -110,23 +133,23 @@ export async function init() {
         <div class="detalle__acciones mt-4"
              style="padding-top:var(--space-4); border-top:1px solid var(--color-border); margin-bottom:0; flex-wrap:wrap">
           ${capitan ? `
-            <button class="btn btn--primary btn--sm" data-accion-grupo="editar">✏️ Editar</button>
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar">
+            <button class="btn btn--primary btn--sm" data-accion-grupo="editar" data-id="${grupo.id}">✏️ Editar</button>
+            <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar" data-id="${grupo.id}">
               👥 Gestionar ${solicitudesCount > 0 ? `<span class="badge badge--primary" style="margin-left:4px">${solicitudesCount}</span>` : ''}
             </button>
             ${!esComunidad ? `
-              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats" data-id="${grupo.id}">📊 Stats</button>
             ` : ''}
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="eliminar" style="color:var(--color-danger)">🗑️ Eliminar</button>
+            <button class="btn btn--ghost btn--sm" data-accion-grupo="eliminar" data-id="${grupo.id}" style="color:var(--color-danger)">🗑️ Eliminar</button>
           ` : puedeEditarEste ? `
             <span class="badge badge--warning" style="padding:8px 12px">⭐ Eres admin</span>
-            <button class="btn btn--primary btn--sm" data-accion-grupo="editar">✏️ Editar</button>
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar">👥 Gestionar</button>
+            <button class="btn btn--primary btn--sm" data-accion-grupo="editar" data-id="${grupo.id}">✏️ Editar</button>
+            <button class="btn btn--ghost btn--sm" data-accion-grupo="gestionar" data-id="${grupo.id}">👥 Gestionar</button>
             ${!esComunidad ? `
-              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats">📊 Stats</button>
+              <button class="btn btn--ghost btn--sm" data-accion-grupo="stats" data-id="${grupo.id}">📊 Stats</button>
             ` : ''}
           ` : `
-            <button class="btn btn--ghost btn--sm" data-accion-grupo="salir" style="color:var(--color-danger)">🚪 Salir</button>
+            <button class="btn btn--ghost btn--sm" data-accion-grupo="salir" data-id="${grupo.id}" style="color:var(--color-danger)">🚪 Salir</button>
           `}
         </div>
       </div>
@@ -135,114 +158,223 @@ export async function init() {
         <h3 class="card__title mb-4">
           ${esComunidad ? '👥 Miembros' : '👥 Plantilla'} (${miembrosCount})
         </h3>
-        ${miembrosCount === 0 ? `
-          <div class="empty-state--sm">
-            <div class="empty-state__icon">👤</div>
-            <p>Aún no hay ${labelMiembros}</p>
+        <div id="miembros-grupo-${grupo.id}" class="player-list">
+          <div class="empty-state--sm" style="padding:var(--space-4)">
+            <p class="text-sm text-muted">Cargando miembros...</p>
           </div>
-        ` : `
-          <div class="player-list">
-            ${(grupo.jugadores || []).map(j => {
-              const esElCapitan = j.id === grupo.capitanId;
-              const esAdminJugador = (grupo.admins || []).includes(j.id);
-              const puedeExpulsar = (capitan || admin) && !esElCapitan && j.id !== user.id;
-
-              return `
-                <div class="player-row">
-                  <div class="player-row__pos">
-                    ${j.posicion ? j.posicion.slice(0, 3).toUpperCase() : '—'}
-                  </div>
-                  <img src="${j.avatar}" class="avatar avatar--md" alt="" data-autor-id="${j.id}" style="cursor:pointer" />
-                  <div style="flex:1; min-width:0">
-                    <div class="feed-item__title" data-autor-id="${j.id}" style="cursor:pointer">
-                      ${j.nombre}
-                      ${esElCapitan ? '<span class="badge badge--primary" style="margin-left:6px">👑 Capitán</span>' : ''}
-                      ${esAdminJugador && !esElCapitan ? '<span class="badge badge--warning" style="margin-left:6px">⭐ Admin</span>' : ''}
-                    </div>
-                    <div class="feed-item__subtitle">
-                      ${j.posicion || 'Sin posición'}${j.dorsal ? ' · #' + j.dorsal : ''}
-                    </div>
-                  </div>
-                  ${puedeExpulsar ? `
-                    <button class="btn btn--ghost btn--sm" data-expulsar="${j.id}" style="color:var(--color-danger)">Echar</button>
-                  ` : ''}
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `}
-      </div>
-
-      ${esComunidad ? `
-        <div class="card mt-4">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="card__title" style="margin:0">📌 Publicaciones</h3>
-            ${esMiembro(grupo, user.id) || capitan || admin ? `
-              <button class="btn btn--primary btn--sm" data-nuevo-hilo="${grupo.id}">
-                + Crear publicación
-              </button>
-            ` : ''}
-          </div>
-
-          <div id="hilos-grupo-${grupo.id}" class="feed-list"></div>
         </div>
-      ` : ''}
+      </div>
     `;
 
-    if (esComunidad) {
-      renderHilosGrupo(grupo, contenedor);
-    }
-
+    // Cargar miembros de forma asíncrona
+    cargarMiembrosDeGrupo(grupo.id, contenedor);
     conectarEventosGrupo(grupo, contenedor, esComunidad);
   }
 
-  /* ---------- Conectar eventos del grupo ---------- */
+  async function cargarMiembrosDeGrupo(grupoId, contenedor) {
+    const cont = contenedor.querySelector(`#miembros-grupo-${grupoId}`);
+    if (!cont) return;
+
+    try {
+      const grupoCompleto = await obtenerGrupo(grupoId);
+      const miembros = grupoCompleto.miembros || [];
+
+      if (miembros.length === 0) {
+        cont.innerHTML = `
+          <div class="empty-state--sm">
+            <div class="empty-state__icon">👤</div>
+            <p>Aún no hay miembros</p>
+          </div>`;
+        return;
+      }
+
+      const soyCapitan = grupoCompleto.esCapitan;
+      const soyAdmin = grupoCompleto.esAdmin;
+
+      cont.innerHTML = miembros.map(j => {
+        const esElCapitan = j.rol === 'capitan';
+        const esAdminJugador = j.rol === 'admin';
+        const puedeExpulsar = (soyCapitan || soyAdmin) && !esElCapitan && String(j.id) !== String(user.id);
+
+        return `
+          <div class="player-row">
+            <div class="player-row__pos">
+              ${j.posicion ? j.posicion.slice(0, 3).toUpperCase() : '—'}
+            </div>
+            <img src="${j.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" data-autor-id="${j.id}" style="cursor:pointer" />
+            <div style="flex:1; min-width:0">
+              <div class="feed-item__title" data-autor-id="${j.id}" style="cursor:pointer">
+                ${j.nombre}
+                ${esElCapitan ? '<span class="badge badge--primary" style="margin-left:6px">👑 Capitán</span>' : ''}
+                ${esAdminJugador && !esElCapitan ? '<span class="badge badge--warning" style="margin-left:6px">⭐ Admin</span>' : ''}
+              </div>
+              <div class="feed-item__subtitle">
+                ${j.posicion || 'Sin posición'}${j.dorsal ? ' · #' + j.dorsal : ''}
+              </div>
+            </div>
+            ${puedeExpulsar ? `
+              <button class="btn btn--ghost btn--sm" data-expulsar="${j.id}" style="color:var(--color-danger)">Echar</button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Conectar expulsar
+      cont.querySelectorAll('[data-expulsar]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const uid = btn.dataset.expulsar;
+          if (!confirm('¿Expulsar a este miembro?')) return;
+          try {
+            await expulsarMiembroAPI(grupoId, uid);
+            toast('Miembro expulsado', 'info');
+            await recargarPaneles();
+          } catch (err) {
+            toast(err.message || 'Error al expulsar', 'error');
+          }
+        });
+      });
+
+      // Conectar click en autor
+      cont.querySelectorAll('[data-autor-id]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          import('../components.js').then(({ verPerfilUsuario }) => {
+            verPerfilUsuario(el.dataset.autorId);
+          });
+        });
+      });
+    } catch (err) {
+      console.error('[mi-equipo] Error al cargar miembros:', err);
+      cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudieron cargar los miembros</p>`;
+    }
+  }
+  
+  /* =========================================================
+     CONECTAR EVENTOS DEL GRUPO
+     ========================================================= */
   function conectarEventosGrupo(grupo, contenedor, esComunidad) {
     contenedor.querySelectorAll('[data-accion-grupo]').forEach(btn => {
       btn.addEventListener('click', () => {
         const accion = btn.dataset.accionGrupo;
-        if (accion === 'editar')     abrirModalEditarGrupo(grupo);
+        if (accion === 'editar')     abrirModalEditarGrupo(grupo, esComunidad);
         if (accion === 'gestionar')  abrirModalGestionar(grupo);
         if (accion === 'stats')      abrirModalStats(grupo);
-        if (accion === 'eliminar')   confirmarEliminarGrupo(grupo);
-        if (accion === 'salir')      confirmarSalirGrupo(grupo);
-      });
-    });
-
-    contenedor.querySelectorAll('[data-expulsar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const userId = Number(btn.dataset.expulsar);
-        if (!confirm('¿Expulsar a este miembro?')) return;
-        expulsarMiembro(grupo.id, userId);
-
-        agregarNotificacion({
-          para: userId,
-          tipo: 'expulsado',
-          mensaje: `Fuiste expulsado de "${grupo.nombre}"`,
-          link: '#/mi-equipo'
-        });
-
-        toast('Miembro expulsado', 'info');
-        recargarPaneles();
-      });
-    });
-
-    contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(Number(el.dataset.autorId));
-        });
+        if (accion === 'eliminar')   confirmarEliminarGrupo(grupo, esComunidad);
+        if (accion === 'salir')      confirmarSalirGrupo(grupo, esComunidad);
       });
     });
   }
 
-  function recargarPaneles() {
-    renderPanelEquipo();
-    renderPanelComunidad();
+  async function recargarPaneles() {
+    await recargarGrupos();
+    await renderPanelEquipo();
+    await renderPanelComunidad();
   }
-    /* =========================================================
-     CONECTAR BOTONES DE LOS PANELES (crear + buscar)
+
+  /* =========================================================
+     RENDER: PANEL MI EQUIPO
+     ========================================================= */
+  async function renderPanelEquipo() {
+    contenedorEquipo.innerHTML = `
+      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
+          <div>
+            <div style="font-weight:700; font-size:var(--fs-base)">
+              ${renderIconoHtml(RUTA_ESCUDO, 18)} Tus equipos (${misEquipos.length})
+            </div>
+            <div class="text-xs text-muted">
+              ${misEquipos.length === 0
+                ? 'Aún no perteneces a ningún equipo'
+                : 'Puedes estar en tantos equipos como quieras'}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn--primary btn--sm" id="btn-crear-equipo">+ Crear equipo</button>
+            <button class="btn btn--ghost btn--sm" id="btn-buscar-equipos">🔍 Buscar</button>
+          </div>
+        </div>
+      </div>
+      <div id="equipos-lista"></div>
+    `;
+
+    const lista = document.getElementById('equipos-lista');
+
+    if (misEquipos.length === 0) {
+      lista.innerHTML = `
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-state__icon">${renderIconoHtml(RUTA_ESCUDO, 48)}</div>
+            <p>No perteneces a ningún equipo todavía.</p>
+            <p class="text-sm text-muted mt-4">Crea uno o busca uno existente para unirte</p>
+          </div>
+        </div>`;
+    } else {
+      // Crear contenedores individuales
+      lista.innerHTML = misEquipos.map(e =>
+        `<div id="equipo-${e.id}" style="margin-bottom:var(--space-5)"></div>`
+      ).join('');
+
+      // Render cada grupo
+      for (const e of misEquipos) {
+        const cont = document.getElementById(`equipo-${e.id}`);
+        if (cont) renderGrupo(e, cont, false);
+      }
+    }
+
+    conectarBotonesPanel('equipo');
+  }
+
+  /* =========================================================
+     RENDER: PANEL MI COMUNIDAD
+     ========================================================= */
+  async function renderPanelComunidad() {
+    contenedorComunidad.innerHTML = `
+      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
+        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
+          <div>
+            <div style="font-weight:700; font-size:var(--fs-base)">🌐 Tus comunidades (${misComunidades.length})</div>
+            <div class="text-xs text-muted">
+              ${misComunidades.length === 0
+                ? 'Aún no perteneces a ninguna comunidad'
+                : 'Puedes estar en tantas comunidades como quieras'}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn--primary btn--sm" id="btn-crear-comunidad">+ Crear comunidad</button>
+            <button class="btn btn--ghost btn--sm" id="btn-buscar-comunidades">🔍 Buscar</button>
+          </div>
+        </div>
+      </div>
+      <div id="comunidades-lista"></div>
+    `;
+
+    const lista = document.getElementById('comunidades-lista');
+
+    if (misComunidades.length === 0) {
+      lista.innerHTML = `
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-state__icon">🌐</div>
+            <p>No perteneces a ninguna comunidad todavía.</p>
+            <p class="text-sm text-muted mt-4">Crea una o busca una existente para unirte</p>
+          </div>
+        </div>`;
+    } else {
+      lista.innerHTML = misComunidades.map(c =>
+        `<div id="comunidad-${c.id}" style="margin-bottom:var(--space-5)"></div>`
+      ).join('');
+
+      for (const c of misComunidades) {
+        const cont = document.getElementById(`comunidad-${c.id}`);
+        if (cont) renderGrupo(c, cont, true);
+      }
+    }
+
+    conectarBotonesPanel('comunidad');
+  }
+
+  /* =========================================================
+     CONECTAR BOTONES DE PANELES
      ========================================================= */
   function conectarBotonesPanel(tipo) {
     if (tipo === 'equipo') {
@@ -273,509 +405,34 @@ export async function init() {
   }
 
   /* =========================================================
-     RENDER: PANEL MI EQUIPO
-     ========================================================= */
-  function renderPanelEquipo() {
-    const equipos = misEquipos();
-
-    let html = `
-      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
-        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
-          <div>
-            <div style="font-weight:700; font-size:var(--fs-base)">
-              ${renderIconoHtml(RUTA_ESCUDO, 18)} Tus equipos (${equipos.length})
-            </div>
-            <div class="text-xs text-muted">
-              ${equipos.length === 0
-                ? 'Aún no perteneces a ningún equipo'
-                : 'Puedes estar en tantos equipos como quieras'}
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn--primary btn--sm" id="btn-crear-equipo">+ Crear equipo</button>
-            <button class="btn btn--ghost btn--sm" id="btn-buscar-equipos">🔍 Buscar</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    if (equipos.length === 0) {
-      html += `
-        <div class="card">
-          <div class="empty-state">
-            <div class="empty-state__icon">${renderIconoHtml(RUTA_ESCUDO, 48)}</div>
-            <p>No perteneces a ningún equipo todavía.</p>
-            <p class="text-sm text-muted mt-4">Crea uno o busca uno existente para unirte</p>
-          </div>
-        </div>`;
-      contenedorEquipo.innerHTML = html;
-      conectarBotonesPanel('equipo');
-      return;
-    }
-
-    equipos.forEach(e => {
-      html += `<div id="equipo-${e.id}" style="margin-bottom:var(--space-5)"></div>`;
-    });
-
-    contenedorEquipo.innerHTML = html;
-
-    equipos.forEach(e => {
-      const cont = document.getElementById(`equipo-${e.id}`);
-      if (cont) renderGrupo(e, cont, false);
-    });
-
-    conectarBotonesPanel('equipo');
-  }
-
-  /* =========================================================
-     RENDER: PANEL MI COMUNIDAD
-     ========================================================= */
-  function renderPanelComunidad() {
-    const comunidades = misComunidades();
-
-    let html = `
-      <div class="card mb-4" style="background:var(--color-primary-light); border:none">
-        <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
-          <div>
-            <div style="font-weight:700; font-size:var(--fs-base)">🌐 Tus comunidades (${comunidades.length})</div>
-            <div class="text-xs text-muted">
-              ${comunidades.length === 0
-                ? 'Aún no perteneces a ninguna comunidad'
-                : 'Puedes estar en tantas comunidades como quieras'}
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn--primary btn--sm" id="btn-crear-comunidad">+ Crear comunidad</button>
-            <button class="btn btn--ghost btn--sm" id="btn-buscar-comunidades">🔍 Buscar</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    if (comunidades.length === 0) {
-      html += `
-        <div class="card">
-          <div class="empty-state">
-            <div class="empty-state__icon">🌐</div>
-            <p>No perteneces a ninguna comunidad todavía.</p>
-            <p class="text-sm text-muted mt-4">Crea una o busca una existente para unirte</p>
-          </div>
-        </div>`;
-      contenedorComunidad.innerHTML = html;
-      conectarBotonesPanel('comunidad');
-      return;
-    }
-
-    comunidades.forEach(c => {
-      html += `<div id="comunidad-${c.id}" style="margin-bottom:var(--space-5)"></div>`;
-    });
-
-    contenedorComunidad.innerHTML = html;
-
-    comunidades.forEach(c => {
-      const cont = document.getElementById(`comunidad-${c.id}`);
-      if (cont) renderGrupo(c, cont, true);
-    });
-
-    conectarBotonesPanel('comunidad');
-  }
-    /* =========================================================
-     RENDER: CHAT
-     ========================================================= */
-  function renderChat() {
-    const listaCanales = document.getElementById('lista-canales');
-    const panelChat    = document.querySelector('.chat-layout__panel');
-    if (!listaCanales || !panelChat) return;
-
-    const misGrupos = [
-      ...misEquipos().map(e => ({ ...e, _tipo: 'equipo' })),
-      ...misComunidades().map(c => ({ ...c, _tipo: 'comunidad' }))
-    ];
-
-    if (misGrupos.length === 0) {
-      listaCanales.innerHTML = `
-        <p class="text-muted text-sm text-center" style="padding:var(--space-5)">
-          Únete a un equipo o comunidad para usar el chat.
-        </p>`;
-      panelChat.innerHTML = `
-        <div class="chat-empty">
-          <div style="font-size:48px">💬</div>
-          <p class="text-muted mt-4">Sin canales disponibles</p>
-        </div>`;
-      return;
-    }
-
-    const canales = misGrupos.flatMap(g => [
-      {
-        id: `general-${g.id}`,
-        nombre: 'General',
-        icono: '💬',
-        sub: `${(g.jugadores || []).length} miembros`,
-        soloLectura: false,
-        grupo: g
-      },
-      {
-        id: `avisos-${g.id}`,
-        nombre: 'Avisos',
-        icono: '📢',
-        sub: 'Solo capitán/admin escribe',
-        soloLectura: true,
-        grupo: g
-      }
-    ]);
-
-    listaCanales.innerHTML = canales.map(c => `
-      <div class="conversation" data-canal="${c.id}">
-        <div class="avatar avatar--md"
-             style="background:var(--color-primary-light); display:grid; place-items:center; font-size:18px">
-          ${c.icono}
-        </div>
-        <div class="conversation__info">
-          <div class="conversation__name">${renderIconoHtml(c.grupo.escudo, 18)} ${c.grupo.nombre} · ${c.nombre}</div>
-          <div class="conversation__preview">${c.sub}</div>
-        </div>
-      </div>
-    `).join('');
-
-    let intervaloRefresco = null;
-
-    function abrirCanal(canal) {
-      listaCanales.querySelectorAll('.conversation').forEach(el => {
-        el.classList.toggle('active', el.dataset.canal === canal.id);
-      });
-
-      const puedeEscribir = !canal.soloLectura ||
-        esCapitan(canal.grupo, user.id) ||
-        esAdmin(canal.grupo, user.id);
-
-      panelChat.innerHTML = `
-        <div class="chat-header">
-          <div class="chat-header__icon">${canal.icono}</div>
-          <div class="chat-header__info">
-            <div class="chat-header__name">${renderIconoHtml(canal.grupo.escudo, 20)} ${canal.grupo.nombre} · ${canal.nombre}</div>
-            <div class="chat-header__sub">${canal.sub}</div>
-          </div>
-        </div>
-
-        <div class="chat-mensajes" id="chat-mensajes"></div>
-
-        ${puedeEscribir ? `
-          <form class="chat-input" id="chat-form">
-            <input type="text" id="chat-input-texto" placeholder="Escribe un mensaje..." maxlength="300" autocomplete="off" />
-            <button type="submit" class="chat-input__btn">➤</button>
-          </form>
-        ` : `
-          <div class="chat-solo-lectura">📢 Solo el capitán o admin puede escribir</div>
-        `}
-      `;
-
-      refrescar(canal);
-
-      document.getElementById('chat-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const input = document.getElementById('chat-input-texto');
-        const texto = input.value.trim();
-        if (!texto) return;
-
-        agregarMensaje(canal.id, {
-          id: Date.now(),
-          autorId: user.id,
-          autorNombre: user.nombre,
-          avatar: user.avatar,
-          texto,
-          fecha: new Date().toISOString()
-        });
-
-        input.value = '';
-        refrescar(canal);
-      });
-
-      if (intervaloRefresco) clearInterval(intervaloRefresco);
-      intervaloRefresco = setInterval(() => refrescar(canal), 3000);
-    }
-
-    function refrescar(canal) {
-      const cont = document.getElementById('chat-mensajes');
-      if (!cont) return;
-
-      const mensajes = getMensajesDeCanal(canal.id);
-
-      if (mensajes.length === 0) {
-        cont.innerHTML = `
-          <div class="chat-mensajes__empty">
-            <div class="chat-mensajes__empty-icon">💬</div>
-            <p>Aún no hay mensajes.</p>
-          </div>`;
-        return;
-      }
-
-      const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
-      cont.innerHTML = mensajes.map(m => {
-        const esMio = m.autorId === user.id;
-        return `
-          <div class="msg ${esMio ? 'msg--yo' : ''}">
-            ${!esMio ? `<img src="${m.avatar}" class="msg__avatar" alt="" />` : ''}
-            <div class="msg__burbuja">
-              ${!esMio ? `<div class="msg__autor">${m.autorNombre}</div>` : ''}
-              <div class="msg__texto">${escapeHtmlChat(m.texto)}</div>
-              <div class="msg__hora">${horaCortaChat(m.fecha)}</div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
-    }
-
-    listaCanales.querySelectorAll('.conversation').forEach(el => {
-      el.addEventListener('click', () => {
-        const canal = canales.find(c => c.id === el.dataset.canal);
-        if (canal) abrirCanal(canal);
-      });
-    });
-
-    abrirCanal(canales[0]);
-
-    window.__chatCleanup = () => {
-      if (intervaloRefresco) clearInterval(intervaloRefresco);
-    };
-  }
-
-  function escapeHtmlChat(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  function horaCortaChat(iso) {
-    const d = new Date(iso);
-    return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  }
-    /* =========================================================
-     RENDER: BUSCAR (equipos + comunidades)
-     ========================================================= */
-  function renderBuscar() {
-    const input = document.getElementById('input-buscar-clubes');
-    const resultados = document.getElementById('resultados-busqueda');
-    const chipsFiltro = document.querySelectorAll('[data-filtro-clubes]');
-    if (!input || !resultados) return;
-
-    let filtroTipo = 'todos';
-    let textoBusqueda = '';
-
-    function estoyEn(grupo) {
-      return grupo.capitanId === user.id || esMiembro(grupo, user.id);
-    }
-
-    function tengoSolicitudPendiente(grupo) {
-      return (grupo.solicitudes || []).some(s => s.userId === user.id);
-    }
-
-    function pintar() {
-      const f = textoBusqueda.toLowerCase().trim();
-
-      let lista = getGrupos();
-
-      if (filtroTipo === 'equipo')     lista = lista.filter(g => g.tipo === 'equipo');
-      if (filtroTipo === 'comunidad')  lista = lista.filter(g => g.tipo === 'comunidad');
-      if (filtroTipo === 'publico')    lista = lista.filter(g => g.tipoAcceso === 'publico');
-      if (filtroTipo === 'privado')    lista = lista.filter(g => g.tipoAcceso === 'privado');
-
-      if (f) {
-        lista = lista.filter(g =>
-          g.nombre.toLowerCase().includes(f) ||
-          (g.deporte || '').toLowerCase().includes(f) ||
-          (g.ciudad || '').toLowerCase().includes(f)
-        );
-      }
-
-      if (lista.length === 0) {
-        resultados.innerHTML = `
-          <div class="card">
-            <div class="empty-state">
-              <div class="empty-state__icon">🔍</div>
-              <p>No se encontraron resultados con esos filtros.</p>
-            </div>
-          </div>`;
-        return;
-      }
-
-      resultados.innerHTML = `
-        <div class="card-grid">
-          ${lista.map(g => {
-            const yaSolicite = tengoSolicitudPendiente(g);
-            const esPrivado = g.tipoAcceso === 'privado';
-            const esComunidad = g.tipo === 'comunidad';
-
-            const iconoTipo = esComunidad ? '🌐' : renderIconoHtml(RUTA_ESCUDO, 16);
-            const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
-
-            const yaSoyMiembro = estoyEn(g);
-
-            let botonHtml = '';
-            if (yaSoyMiembro) {
-              botonHtml = `<button class="btn btn--ghost btn--sm" disabled>✓ Ya eres miembro</button>`;
-            } else if (yaSolicite) {
-              botonHtml = `<button class="btn btn--ghost btn--sm" disabled>⏳ Solicitud enviada</button>`;
-            } else if (esPrivado) {
-              botonHtml = `<button class="btn btn--primary btn--sm" data-unirse="${g.id}">Solicitar unirme</button>`;
-            } else {
-              botonHtml = `<button class="btn btn--primary btn--sm" data-unirse="${g.id}">Unirme</button>`;
-            }
-
-            return `
-              <article class="match-card" data-grupo="${g.id}">
-                <div class="match-card__header">
-                  <div class="match-card__sport">${renderIconoHtml(g.escudo, 36)}</div>
-                  <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
-                    <span class="badge badge--primary">${iconoTipo} ${labelTipo}</span>
-                    <span class="badge ${esPrivado ? 'badge--warning' : 'badge--success'}">
-                      ${esPrivado ? '🔒' : '🌐'}
-                    </span>
-                  </div>
-                </div>
-
-                <h3 class="match-card__title">${g.nombre}</h3>
-                <p class="text-xs text-muted mb-4">${g.descripcion || ''}</p>
-
-                <div class="match-card__info">
-                  <span>🏅 ${g.deporte}</span>
-                  ${g.ciudad ? `<span>📍 ${g.ciudad}</span>` : ''}
-                  <span>👥 ${(g.jugadores || []).length} miembros</span>
-                </div>
-
-                <div class="match-card__footer" style="justify-content:flex-end">
-                  ${botonHtml}
-                </div>
-              </article>
-            `;
-          }).join('')}
-        </div>`;
-
-      resultados.querySelectorAll('[data-unirse]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const grupoId = Number(btn.dataset.unirse);
-          const grupo = getGrupoPorId(grupoId);
-          if (!grupo) return;
-
-          if (estoyEn(grupo)) {
-            return toast('Ya perteneces a este grupo', 'error');
-          }
-
-          if (grupo.tipoAcceso === 'privado') {
-            agregarSolicitud(grupoId, user);
-
-            agregarNotificacion({
-              para: grupo.capitanId,
-              tipo: 'postulacion',
-              mensaje: `${user.nombre} quiere unirse a "${grupo.nombre}"`,
-              link: '#/mi-equipo'
-            });
-
-            toast(`Solicitud enviada a "${grupo.nombre}"`, 'success');
-            pintar();
-            return;
-          }
-
-          agregarMiembroDirecto(grupoId, user);
-
-          agregarNotificacion({
-            para: grupo.capitanId,
-            tipo: 'inscripcion',
-            mensaje: `${user.nombre} se unió a "${grupo.nombre}"`,
-            link: '#/mi-equipo'
-          });
-
-          toast(`¡Te uniste a "${grupo.nombre}"!`, 'success');
-          pintar();
-          recargarPaneles();
-        });
-      });
-    }
-
-    input.addEventListener('input', () => {
-      textoBusqueda = input.value;
-      pintar();
-    });
-
-    chipsFiltro.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chipsFiltro.forEach(c => c.classList.remove('chip--active'));
-        chip.classList.add('chip--active');
-        filtroTipo = chip.dataset.filtroClubes;
-        pintar();
-      });
-    });
-
-    pintar();
-  }
-
-  /* =========================================================
-     ICONOS DISPONIBLES PARA GRUPOS
+     MODAL: CREAR GRUPO
      ========================================================= */
   const ICONOS_GRUPO = [
-   'assets/icons/balon-de-futbol (2).png',
-   'assets/icons/balocensto.svg',
-   'assets/icons/pelota-de-tenis.png',
-   'assets/icons/voleibol.svg',
-   'assets/icons/raqueta-de-padel.png',
-   'assets/icons/golf.png',
-   'assets/icons/beisbol.png',
-   'assets/icons/disco.png',
-   'assets/icons/guantes-de-boxeo.png',
-   'assets/icons/volante.png',
-   'assets/icons/rugby.png',
-   'assets/icons/bicicleta.svg',
-   'assets/icons/natacion.svg',
-   'assets/icons/corriendo.png',
-   'assets/icons/raqueta-de-tenis-de-mesa.png',
-   'assets/icons/tenis-de-squash.png',
-   'assets/icons/balonmano.png',
-   'assets/icons/deporte.svg',
-   'assets/icons/tabla-de-surf.png',
-   'assets/icons/escalada.png',
-   'assets/icons/mundo.png',
-   'assets/icons/mundo (1).png',
-   'assets/icons/mundo (2).png',
-   'assets/icons/mundo (3).png',
-   'assets/icons/mundo (4).png',
-   'assets/icons/mundo (5).png',
-   'assets/icons/mundo (6).png',
-   'assets/icons/mundo (7).png',
-   'assets/icons/mundo (8).png',
-   'assets/icons/mundo (9).png',
-   'assets/icons/mundo (10).png',
-   'assets/icons/mundo (11).png',
-   'assets/icons/mundo (12).png',   
-   'assets/icons/redondo (1).png',
-   'assets/icons/redondo (2).png',
-   'assets/icons/redondo (3).png',
-   'assets/icons/redondo (4).png',
-   'assets/icons/redondo (5).png',
-   'assets/icons/redondo (6).png',
-   'assets/icons/redondo (7).png',
-   'assets/icons/redondo (8).png',
-   'assets/icons/redondo (9).png',
-   'assets/icons/redondo (10).png',
-   'assets/icons/redondo (11).png',
-   'assets/icons/redondo (12).png',
-   'assets/icons/redondo (13).png',
-   'assets/icons/redondo (14).png',
-   'assets/icons/redondo (15).png',
-   'assets/icons/redondo (16).png',
-   'assets/icons/redondo (17).png',
-   'assets/icons/redondo (18).png',
-   'assets/icons/redondo (19).png',
-   'assets/icons/redondo (20).png',
-   'assets/icons/redondo.png',                                                            
+    'assets/icons/balon-de-futbol (2).png',
+    'assets/icons/balocensto.svg',
+    'assets/icons/pelota-de-tenis.png',
+    'assets/icons/voleibol.svg',
+    'assets/icons/raqueta-de-padel.png',
+    'assets/icons/golf.png',
+    'assets/icons/beisbol.png',
+    'assets/icons/disco.png',
+    'assets/icons/guantes-de-boxeo.png',
+    'assets/icons/volante.png',
+    'assets/icons/rugby.png',
+    'assets/icons/bicicleta.svg',
+    'assets/icons/natacion.svg',
+    'assets/icons/corriendo.png',
+    'assets/icons/raqueta-de-tenis-de-mesa.png',
+    'assets/icons/tenis-de-squash.png',
+    'assets/icons/balonmano.png',
+    'assets/icons/deporte.svg',
+    'assets/icons/tabla-de-surf.png',
+    'assets/icons/escalada.png',
+    'assets/icons/escudo-de-seguridad.png',
   ];
 
   let tipoGrupoSeleccionado = 'equipo';
 
-  /* =========================================================
-     MODAL: CREAR GRUPO
-     ========================================================= */
   function abrirModalCrearGrupo(tipo = 'equipo') {
     const modal = document.getElementById('modal-crear-comunidad');
     if (!modal) return;
@@ -836,7 +493,7 @@ export async function init() {
 
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
-    btnGuardar.onclick = () => {
+    btnGuardar.onclick = async () => {
       const nombre = document.getElementById('com-nombre').value.trim();
       const deporte = document.getElementById('com-deporte').value;
       const ciudad = document.getElementById('com-ciudad').value.trim();
@@ -845,50 +502,32 @@ export async function init() {
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
-      const yaExiste = getGrupos().some(g =>
-        g.nombre.toLowerCase() === nombre.toLowerCase() &&
-        g.tipo === tipoGrupoSeleccionado &&
-        g.capitanId === user.id
-      );
-      if (yaExiste) {
-        return toast('Ya tienes un grupo con ese nombre', 'error');
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Creando...';
+
+      try {
+        await crearGrupoAPI({
+          tipo: tipoGrupoSeleccionado,
+          nombre,
+          escudo: iconoSel,
+          deporte,
+          ciudad: ciudad || null,
+          descripcion: descripcion || null,
+          tipoAcceso: tipoAccesoSel,
+        });
+
+        cerrarModal('modal-crear-comunidad');
+        toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} "${nombre}" creado!`, 'success');
+
+        cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
+        await recargarPaneles();
+      } catch (err) {
+        console.error('[mi-equipo] Error al crear grupo:', err);
+        toast(err.message || 'No se pudo crear el grupo', 'error');
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
       }
-
-      const nuevo = {
-        id: Date.now() + Math.floor(Math.random() * 100000),
-        tipo: tipoGrupoSeleccionado,
-        nombre,
-        escudo: iconoSel,
-        deporte,
-        ciudad,
-        descripcion,
-        tipoAcceso: tipoAccesoSel,
-        capitanId: user.id,
-        admins: [],
-        solicitudes: [],
-        jugadores: [
-          {
-            id: user.id,
-            nombre: user.nombre,
-            avatar: user.avatar,
-            posicion: '',
-            dorsal: null,
-            fechaUnion: new Date().toISOString()
-          }
-        ],
-        stats: { victorias: 0, empates: 0, derrotas: 0 },
-        statsPrivadas: false,
-        hilos: [],
-        creado: new Date().toISOString()
-      };
-
-      guardarGrupo(nuevo);
-      cerrarModal('modal-crear-comunidad');
-
-      toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} "${nombre}" creado!`, 'success');
-
-      cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
-      recargarPaneles();
     };
 
     modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
@@ -900,10 +539,11 @@ export async function init() {
 
     abrirModal('modal-crear-comunidad');
   }
-    /* =========================================================
+  
+  /* =========================================================
      MODAL: EDITAR GRUPO
      ========================================================= */
-  function abrirModalEditarGrupo(grupo) {
+  function abrirModalEditarGrupo(grupo, esComunidad) {
     const modal = document.getElementById('modal-crear-comunidad');
     if (!modal) return;
 
@@ -972,7 +612,7 @@ export async function init() {
 
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = 'Guardar cambios';
-    btnGuardar.onclick = () => {
+    btnGuardar.onclick = async () => {
       const nombre = document.getElementById('com-nombre').value.trim();
       const deporte = document.getElementById('com-deporte').value;
       const ciudad = document.getElementById('com-ciudad').value.trim();
@@ -982,43 +622,30 @@ export async function init() {
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
-      const cambios = [];
-      if (nombre !== grupo.nombre)                    cambios.push('nombre');
-      if (deporte !== grupo.deporte)                  cambios.push('deporte');
-      if (ciudad !== (grupo.ciudad || ''))            cambios.push('ciudad');
-      if (descripcion !== (grupo.descripcion || ''))  cambios.push('descripción');
-      if (iconoSel !== grupo.escudo)                  cambios.push('ícono');
-      if (tipoAccesoSel !== grupo.tipoAcceso)         cambios.push('visibilidad');
-      if (statsPrivadasNueva !== grupo.statsPrivadas) cambios.push('privacidad de stats');
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando...';
 
-      if (cambios.length === 0) {
-        cerrarModal('modal-crear-comunidad');
-        return toast('No hay cambios que guardar', 'info');
-      }
-
-      grupo.nombre = nombre;
-      grupo.escudo = iconoSel;
-      grupo.deporte = deporte;
-      grupo.ciudad = ciudad;
-      grupo.descripcion = descripcion;
-      grupo.tipoAcceso = tipoAccesoSel;
-      grupo.statsPrivadas = statsPrivadasNueva;
-
-      guardarGrupo(grupo);
-
-      (grupo.jugadores || []).forEach(j => {
-        if (j.id === user.id) return;
-        agregarNotificacion({
-          para: j.id,
-          tipo: 'edicion',
-          mensaje: `"${grupo.nombre}" fue modificado (${cambios.join(', ')})`,
-          link: '#/mi-equipo'
+      try {
+        await editarGrupoAPI(grupo.id, {
+          nombre,
+          escudo: iconoSel,
+          deporte,
+          ciudad: ciudad || null,
+          descripcion: descripcion || null,
+          tipoAcceso: tipoAccesoSel,
+          statsPrivadas: statsPrivadasNueva,
         });
-      });
 
-      cerrarModal('modal-crear-comunidad');
-      toast(`Grupo actualizado (${cambios.join(', ')})`, 'success');
-      recargarPaneles();
+        cerrarModal('modal-crear-comunidad');
+        toast('Grupo actualizado', 'success');
+        await recargarPaneles();
+      } catch (err) {
+        console.error('[mi-equipo] Error al editar:', err);
+        toast(err.message || 'No se pudo actualizar el grupo', 'error');
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar cambios';
+      }
     };
 
     modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
@@ -1034,9 +661,11 @@ export async function init() {
   /* =========================================================
      MODAL: GESTIONAR MIEMBROS
      ========================================================= */
-  function abrirModalGestionar(grupo) {
-    window.__grupoEditando = grupo.id;
-    renderGestionMiembros(grupo, 'miembros');
+  let grupoEnGestion = null;
+
+  async function abrirModalGestionar(grupo) {
+    grupoEnGestion = grupo;
+    await renderGestionMiembros(grupo, 'miembros');
 
     const modal = document.getElementById('modal-gestionar-grupo');
     if (!modal) return;
@@ -1051,7 +680,7 @@ export async function init() {
     abrirModal('modal-gestionar-grupo');
   }
 
-  function renderGestionMiembros(grupo, tab) {
+  async function renderGestionMiembros(grupo, tab) {
     const cont = document.getElementById('lista-gestion-grupo');
     if (!cont) return;
 
@@ -1059,188 +688,193 @@ export async function init() {
       el.classList.toggle('active', el.dataset.tabGestion === tab);
     });
 
-    const miembros = grupo.jugadores || [];
-    const solicitudes = grupo.solicitudes || [];
+    cont.innerHTML = '<p class="text-sm text-muted text-center">Cargando...</p>';
 
-    document.getElementById('count-gestion-miembros').textContent = miembros.length;
-    document.getElementById('count-gestion-solicitudes').textContent = solicitudes.length;
+    try {
+      const grupoCompleto = await obtenerGrupo(grupo.id);
+      const miembros = grupoCompleto.miembros || [];
+      const solicitudes = grupoCompleto.solicitudes || [];
 
-    const lista = tab === 'miembros' ? miembros : solicitudes;
+      document.getElementById('count-gestion-miembros').textContent = miembros.length;
+      document.getElementById('count-gestion-solicitudes').textContent = solicitudes.length;
 
-    if (lista.length === 0) {
-      cont.innerHTML = `
-        <div class="empty-state--sm">
-          <div class="empty-state__icon">📭</div>
-          <p>Sin ${tab === 'miembros' ? 'miembros' : 'solicitudes'}</p>
-        </div>`;
-      return;
-    }
+      const lista = tab === 'miembros' ? miembros : solicitudes;
 
-    if (tab === 'miembros') {
-      const soyCapitan = esCapitan(grupo, user.id);
+      if (lista.length === 0) {
+        cont.innerHTML = `
+          <div class="empty-state--sm">
+            <div class="empty-state__icon">📭</div>
+            <p>Sin ${tab === 'miembros' ? 'miembros' : 'solicitudes'}</p>
+          </div>`;
+        return;
+      }
 
-      cont.innerHTML = miembros.map(m => {
-        const esElCapitan = m.id === grupo.capitanId;
-        const esAdminJugador = (grupo.admins || []).includes(m.id);
-        const puedoHacerAlgo = soyCapitan && !esElCapitan;
+      if (tab === 'miembros') {
+        const soyCapitan = grupoCompleto.esCapitan;
 
-        return `
-          <div class="solicitud-item">
-            <img src="${m.avatar}" class="avatar avatar--md" alt="" />
-            <div class="solicitud-item__info">
-              <div class="solicitud-item__nombre">
-                ${m.nombre}
-                ${esElCapitan ? '<span class="badge badge--primary" style="margin-left:6px">👑</span>' : ''}
-                ${esAdminJugador && !esElCapitan ? '<span class="badge badge--warning" style="margin-left:6px">⭐ Admin</span>' : ''}
+        cont.innerHTML = miembros.map(m => {
+          const esElCapitan = m.rol === 'capitan';
+          const esAdminJugador = m.rol === 'admin';
+          const puedoHacerAlgo = soyCapitan && !esElCapitan;
+
+          return `
+            <div class="solicitud-item">
+              <img src="${m.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" />
+              <div class="solicitud-item__info">
+                <div class="solicitud-item__nombre">
+                  ${m.nombre}
+                  ${esElCapitan ? '<span class="badge badge--primary" style="margin-left:6px">👑</span>' : ''}
+                  ${esAdminJugador && !esElCapitan ? '<span class="badge badge--warning" style="margin-left:6px">⭐ Admin</span>' : ''}
+                </div>
+                <div class="solicitud-item__meta">${m.posicion || 'Sin posición'}</div>
               </div>
-              <div class="solicitud-item__meta">${m.posicion || 'Sin posición'}</div>
+              <div class="solicitud-item__actions">
+                ${puedoHacerAlgo && !esAdminJugador ? `
+                  <button class="btn btn--ghost btn--sm" data-nombrar-admin="${m.id}" title="Nombrar admin">⭐</button>
+                ` : ''}
+                ${puedoHacerAlgo && esAdminJugador ? `
+                  <button class="btn btn--ghost btn--sm" data-quitar-admin="${m.id}" title="Quitar admin">✕⭐</button>
+                ` : ''}
+                ${puedoHacerAlgo ? `
+                  <button class="btn btn--ghost btn--sm" data-expulsar-miembro="${m.id}" style="color:var(--color-danger)" title="Expulsar">🚫</button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Conectar acciones
+        cont.querySelectorAll('[data-expulsar-miembro]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.expulsarMiembro;
+            if (!confirm('¿Expulsar a este miembro?')) return;
+            try {
+              await expulsarMiembroAPI(grupo.id, uid);
+              toast('Miembro expulsado', 'info');
+              await renderGestionMiembros(grupo, tab);
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al expulsar', 'error');
+            }
+          });
+        });
+
+        cont.querySelectorAll('[data-nombrar-admin]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.nombrarAdmin;
+            try {
+              await cambiarRolMiembroAPI(grupo.id, uid, 'admin');
+              toast('Admin nombrado', 'success');
+              await renderGestionMiembros(grupo, tab);
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al nombrar admin', 'error');
+            }
+          });
+        });
+
+        cont.querySelectorAll('[data-quitar-admin]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.quitarAdmin;
+            try {
+              await cambiarRolMiembroAPI(grupo.id, uid, 'miembro');
+              toast('Admin removido', 'info');
+              await renderGestionMiembros(grupo, tab);
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al quitar admin', 'error');
+            }
+          });
+        });
+
+      } else {
+        // Solicitudes
+        cont.innerHTML = solicitudes.map(s => `
+          <div class="solicitud-item">
+            <img src="${s.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" />
+            <div class="solicitud-item__info">
+              <div class="solicitud-item__nombre">${s.nombre}</div>
+              <div class="solicitud-item__meta">
+                Solicitó unirse · ${new Date(s.fecha).toLocaleDateString('es-CL')}
+              </div>
             </div>
             <div class="solicitud-item__actions">
-              ${puedoHacerAlgo && !esAdminJugador ? `
-                <button class="btn btn--ghost btn--sm" data-nombrar-admin="${m.id}" title="Nombrar admin">⭐</button>
-              ` : ''}
-              ${puedoHacerAlgo && esAdminJugador ? `
-                <button class="btn btn--ghost btn--sm" data-quitar-admin="${m.id}" title="Quitar admin">✕⭐</button>
-              ` : ''}
-              ${puedoHacerAlgo ? `
-                <button class="btn btn--ghost btn--sm" data-expulsar-miembro="${m.id}" style="color:var(--color-danger)" title="Expulsar">🚫</button>
-              ` : ''}
+              <button class="btn btn--primary btn--sm" data-aceptar-sol="${s.id_usuario}">Aceptar</button>
+              <button class="btn btn--ghost btn--sm" data-rechazar-sol="${s.id_usuario}">✕</button>
             </div>
           </div>
-        `;
-      }).join('');
+        `).join('');
 
-      cont.querySelectorAll('[data-expulsar-miembro]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const uid = Number(btn.dataset.expulsarMiembro);
-          if (!confirm('¿Expulsar a este miembro?')) return;
-          expulsarMiembro(grupo.id, uid);
-
-          agregarNotificacion({
-            para: uid,
-            tipo: 'expulsado',
-            mensaje: `Fuiste expulsado de "${grupo.nombre}"`,
-            link: '#/mi-equipo'
+        cont.querySelectorAll('[data-aceptar-sol]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.aceptarSol;
+            try {
+              await gestionarSolicitudAPI(grupo.id, uid, 'aprobar');
+              toast('Solicitud aceptada', 'success');
+              await renderGestionMiembros(grupo, tab);
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al aceptar', 'error');
+            }
           });
-
-          toast('Miembro expulsado', 'info');
-          renderGestionMiembros(getGrupoPorId(grupo.id), tab);
-          recargarPaneles();
         });
-      });
 
-      cont.querySelectorAll('[data-nombrar-admin]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const uid = Number(btn.dataset.nombrarAdmin);
-          nombrarAdmin(grupo.id, uid);
-
-          agregarNotificacion({
-            para: uid,
-            tipo: 'admin',
-            mensaje: `¡Eres admin de "${grupo.nombre}"!`,
-            link: '#/mi-equipo'
+        cont.querySelectorAll('[data-rechazar-sol]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.dataset.rechazarSol;
+            try {
+              await gestionarSolicitudAPI(grupo.id, uid, 'rechazar');
+              toast('Solicitud rechazada', 'info');
+              await renderGestionMiembros(grupo, tab);
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al rechazar', 'error');
+            }
           });
-
-          toast('Admin nombrado', 'success');
-          renderGestionMiembros(getGrupoPorId(grupo.id), tab);
-          recargarPaneles();
         });
-      });
-
-      cont.querySelectorAll('[data-quitar-admin]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const uid = Number(btn.dataset.quitarAdmin);
-          quitarAdmin(grupo.id, uid);
-          toast('Admin removido', 'info');
-          renderGestionMiembros(getGrupoPorId(grupo.id), tab);
-          recargarPaneles();
-        });
-      });
-
-    } else {
-      cont.innerHTML = solicitudes.map(s => `
-        <div class="solicitud-item">
-          <img src="${s.avatar}" class="avatar avatar--md" alt="" />
-          <div class="solicitud-item__info">
-            <div class="solicitud-item__nombre">${s.nombre}</div>
-            <div class="solicitud-item__meta">
-              Solicitó unirse · ${new Date(s.fecha).toLocaleDateString('es-CL')}
-            </div>
-          </div>
-          <div class="solicitud-item__actions">
-            <button class="btn btn--primary btn--sm" data-aceptar-sol="${s.userId}">Aceptar</button>
-            <button class="btn btn--ghost btn--sm" data-rechazar-sol="${s.userId}">✕</button>
-          </div>
-        </div>
-      `).join('');
-
-      cont.querySelectorAll('[data-aceptar-sol]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const uid = Number(btn.dataset.aceptarSol);
-          aceptarSolicitud(grupo.id, uid);
-
-          agregarNotificacion({
-            para: uid,
-            tipo: 'aprobado',
-            mensaje: `¡Fuiste aceptado en "${grupo.nombre}"!`,
-            link: '#/mi-equipo'
-          });
-
-          toast('Solicitud aceptada', 'success');
-          renderGestionMiembros(getGrupoPorId(grupo.id), tab);
-          recargarPaneles();
-        });
-      });
-
-      cont.querySelectorAll('[data-rechazar-sol]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const uid = Number(btn.dataset.rechazarSol);
-          rechazarSolicitud(grupo.id, uid);
-          toast('Solicitud rechazada', 'info');
-          renderGestionMiembros(getGrupoPorId(grupo.id), tab);
-          recargarPaneles();
-        });
-      });
+      }
+    } catch (err) {
+      console.error('[mi-equipo] Error al cargar gestión:', err);
+      cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudo cargar la lista</p>`;
     }
   }
 
   // Tabs dentro del modal de gestión
   document.querySelectorAll('[data-tab-gestion]').forEach(tab => {
     tab.addEventListener('click', () => {
-      const grupoId = window.__grupoEditando || null;
-      if (!grupoId) return;
-      const grupo = getGrupoPorId(grupoId);
-      if (grupo) renderGestionMiembros(grupo, tab.dataset.tabGestion);
+      if (grupoEnGestion) renderGestionMiembros(grupoEnGestion, tab.dataset.tabGestion);
     });
   });
-    /* =========================================================
-     MODAL: EDITAR STATS DEL GRUPO
+
+  /* =========================================================
+     MODAL: EDITAR STATS
      ========================================================= */
   function abrirModalStats(grupo) {
     const modal = document.getElementById('modal-grupo-stats');
     if (!modal) return;
 
     document.getElementById('grupo-stats-titulo').innerHTML =
-      `📊 Stats de ${renderIconoHtml(grupo.escudo, 20)} ${grupo.nombre}`;
+      `📊 Stats de ${renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 20)} ${grupo.nombre}`;
 
     document.getElementById('gs-victorias').value = grupo.stats?.victorias || 0;
     document.getElementById('gs-empates').value   = grupo.stats?.empates || 0;
     document.getElementById('gs-derrotas').value  = grupo.stats?.derrotas || 0;
 
-    document.getElementById('btn-guardar-grupo-stats').onclick = () => {
-      const grupoActual = getGrupoPorId(grupo.id);
-      if (!grupoActual) return;
-
-      grupoActual.stats = {
+    document.getElementById('btn-guardar-grupo-stats').onclick = async () => {
+      const stats = {
         victorias: Math.max(0, Number(document.getElementById('gs-victorias').value) || 0),
         empates:   Math.max(0, Number(document.getElementById('gs-empates').value) || 0),
-        derrotas:  Math.max(0, Number(document.getElementById('gs-derrotas').value) || 0)
+        derrotas:  Math.max(0, Number(document.getElementById('gs-derrotas').value) || 0),
       };
 
-      guardarGrupo(grupoActual);
-      cerrarModal('modal-grupo-stats');
-      toast('Stats del grupo actualizadas', 'success');
-      recargarPaneles();
+      try {
+        await editarStatsAPI(grupo.id, stats);
+        cerrarModal('modal-grupo-stats');
+        toast('Stats actualizadas', 'success');
+        await recargarPaneles();
+      } catch (err) {
+        toast(err.message || 'Error al guardar stats', 'error');
+      }
     };
 
     modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
@@ -1256,401 +890,167 @@ export async function init() {
   /* =========================================================
      CONFIRMAR ELIMINAR / SALIR
      ========================================================= */
-  function confirmarEliminarGrupo(grupo) {
-    if (!confirm(`¿Eliminar "${grupo.nombre}"? Se notificará a todos los miembros.`)) return;
+  async function confirmarEliminarGrupo(grupo, esComunidad) {
+    if (!confirm(`¿Eliminar "${grupo.nombre}"? Esta acción no se puede deshacer.`)) return;
 
-    (grupo.jugadores || []).forEach(j => {
-      if (j.id === user.id) return;
-      agregarNotificacion({
-        para: j.id,
-        tipo: 'equipo_eliminado',
-        mensaje: `El grupo "${grupo.nombre}" fue eliminado por el capitán`,
-        link: '#/mi-equipo'
-      });
-    });
-
-    eliminarGrupo(grupo.id);
-    toast('Grupo eliminado', 'info');
-    recargarPaneles();
+    try {
+      await eliminarGrupoAPI(grupo.id);
+      toast('Grupo eliminado', 'info');
+      await recargarPaneles();
+    } catch (err) {
+      toast(err.message || 'Error al eliminar', 'error');
+    }
   }
 
-  function confirmarSalirGrupo(grupo) {
+  async function confirmarSalirGrupo(grupo, esComunidad) {
     if (!confirm(`¿Salir de "${grupo.nombre}"?`)) return;
 
-    salirDeGrupo(grupo.id, user.id);
-
-    if (grupo.capitanId && grupo.capitanId !== user.id) {
-      agregarNotificacion({
-        para: grupo.capitanId,
-        tipo: 'jugador_salio',
-        mensaje: `${user.nombre} salió de "${grupo.nombre}"`,
-        link: '#/mi-equipo'
-      });
+    try {
+      await salirDeGrupoAPI(grupo.id);
+      toast('Saliste del grupo', 'info');
+      await recargarPaneles();
+    } catch (err) {
+      toast(err.message || 'Error al salir', 'error');
     }
-
-    toast('Saliste del grupo', 'info');
-    recargarPaneles();
   }
-
+  
   /* =========================================================
-     HILOS DE COMUNIDAD
+     RENDER: BUSCAR GRUPOS (equipos + comunidades)
      ========================================================= */
-  function renderHilosGrupo(grupo, contenedor) {
-    const contenedorHilos = contenedor.querySelector(`#hilos-grupo-${grupo.id}`);
-    if (!contenedorHilos) return;
+  async function renderBuscar() {
+    const input = document.getElementById('input-buscar-clubes');
+    const resultados = document.getElementById('resultados-busqueda');
+    const chipsFiltro = document.querySelectorAll('[data-filtro-clubes]');
+    if (!input || !resultados) return;
 
-    const hilos = grupo.hilos || [];
+    let filtroTipo = 'todos';
+    let textoBusqueda = '';
 
-    if (hilos.length === 0) {
-      contenedorHilos.innerHTML = `
-        <div class="empty-state--sm">
-          <div class="empty-state__icon">📝</div>
-          <p>Aún no hay publicaciones en esta comunidad.</p>
-          ${esMiembro(grupo, user.id) || esCapitan(grupo, user.id) || esAdmin(grupo, user.id) ? `
-            <p class="text-xs text-muted mt-2">¡Sé el primero en publicar!</p>
-          ` : ''}
-        </div>`;
-      return;
-    }
+    async function pintar() {
+      resultados.innerHTML = '<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Buscando...</p>';
 
-    contenedorHilos.innerHTML = hilos.map(h => renderHilo(h, grupo)).join('');
-    conectarEventosHilos(contenedorHilos, grupo);
-  }
+      try {
+        const filtros = { limit: 50 };
 
-  function renderHilo(h, grupo) {
-    const esMio = h.autor.id === user.id;
-    const esAdminOGrupo = esCapitan(grupo, user.id) || esAdmin(grupo, user.id);
-    const puedeBorrar = esMio || esAdminOGrupo;
+        if (filtroTipo === 'equipo')     filtros.tipo = 'equipo';
+        if (filtroTipo === 'comunidad')  filtros.tipo = 'comunidad';
+        if (filtroTipo === 'publico')    filtros.tipoAcceso = 'publico';
+        if (filtroTipo === 'privado')    filtros.tipoAcceso = 'privado';
+        if (textoBusqueda)               filtros.busqueda = textoBusqueda;
 
-    return `
-      <article class="post" data-hilo-id="${h.id}">
-        <header class="post__header">
-          <img
-            src="${h.autor.avatar}"
-            alt=""
-            class="avatar avatar--md"
-            data-autor-id="${h.autor.id}"
-            style="cursor:pointer"
-          />
-          <div class="post__author">
-            <div class="post__author-name"
-                 data-autor-id="${h.autor.id}"
-                 style="cursor:pointer">
-              ${h.autor.nombre}
-            </div>
-            <div class="post__meta">
-              <span class="post__tipo-icono">📝</span>
-              publicó · ${tiempoRelativoHilo(h.fecha)}
-            </div>
-          </div>
-          ${puedeBorrar ? `
-            <button class="post__menu" data-menu-hilo="${h.id}" title="Opciones">⋯</button>
-          ` : ''}
-        </header>
+        const { data: lista } = await listarGrupos(filtros);
 
-        ${h.contenido ? `<div class="post__body">${escapeHtmlHilo(h.contenido)}</div>` : ''}
-
-        ${h.imagen ? `<img src="${h.imagen}" alt="" class="post__image" loading="lazy" />` : ''}
-        ${h.video ? `<video src="${h.video}" controls class="post__image" style="max-height:400px; width:100%"></video>` : ''}
-
-        <div class="post__stats">
-          <button class="post__action post__action--like ${h.yoLikee ? 'activo' : ''}" data-accion-hilo="like">
-            <span class="post__action-icon">${h.yoLikee ? '❤️' : '🤍'}</span>
-            <span class="contador-likes">${h.likes || 0}</span>
-          </button>
-
-          <button class="post__action" data-accion-hilo="comentarios">
-            <span class="post__action-icon">💬</span>
-            <span class="contador-comentarios">${(h.comentarios || []).length}</span>
-          </button>
-
-          ${puedeBorrar ? `
-            <button class="post__action" data-accion-hilo="eliminar" style="margin-left:auto; color:var(--color-danger)">
-              <span class="post__action-icon">🗑️</span>
-            </button>
-          ` : ''}
-        </div>
-
-        <div class="post__comentarios">
-          ${(h.comentarios || []).map(c => `
-            <div class="comentario">
-              <img src="${c.avatar}" alt="" class="avatar avatar--sm" />
-              <div class="comentario__cuerpo">
-                <div class="comentario__autor">${c.autor}</div>
-                <div class="comentario__texto">${escapeHtmlHilo(c.texto)}</div>
-                <div class="comentario__fecha">${c.fecha}</div>
+        if (lista.length === 0) {
+          resultados.innerHTML = `
+            <div class="card">
+              <div class="empty-state">
+                <div class="empty-state__icon">🔍</div>
+                <p>No se encontraron resultados con esos filtros.</p>
               </div>
-            </div>
-          `).join('')}
-
-          <form class="comentario-form" data-form-comentario-hilo>
-            <input type="text" placeholder="Escribe un comentario..." maxlength="200" />
-            <button type="submit" class="btn btn--primary btn--sm">Enviar</button>
-          </form>
-        </div>
-      </article>
-    `;
-  }
-
-  function conectarEventosHilos(contenedor, grupo) {
-    contenedor.querySelectorAll('[data-accion-hilo="like"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const postEl = btn.closest('[data-hilo-id]');
-        const hiloId = Number(postEl.dataset.hiloId);
-        toggleLikeHilo(grupo, hiloId, postEl);
-      });
-    });
-
-    contenedor.querySelectorAll('[data-accion-hilo="comentarios"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const postEl = btn.closest('[data-hilo-id]');
-        postEl.querySelector('.post__comentarios')?.classList.toggle('abierto');
-      });
-    });
-
-    contenedor.querySelectorAll('[data-accion-hilo="eliminar"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const postEl = btn.closest('[data-hilo-id]');
-        const hiloId = Number(postEl.dataset.hiloId);
-        if (!confirm('¿Eliminar esta publicación?')) return;
-
-        import('../store.js').then(({ eliminarHilo }) => {
-          eliminarHilo(grupo.id, hiloId);
-          toast('Publicación eliminada', 'info');
-          renderHilosGrupo(getGrupoPorId(grupo.id), contenedor);
-        });
-      });
-    });
-
-    contenedor.querySelectorAll('[data-form-comentario-hilo]').forEach(form => {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const input = form.querySelector('input');
-        const texto = input.value.trim();
-        if (!texto) return;
-
-        const postEl = form.closest('[data-hilo-id]');
-        const hiloId = Number(postEl.dataset.hiloId);
-
-        agregarComentarioHilo(grupo, hiloId, texto);
-        input.value = '';
-        renderHilosGrupo(getGrupoPorId(grupo.id), contenedor);
-
-        const nuevo = contenedor.querySelector(`[data-hilo-id="${hiloId}"]`);
-        nuevo?.querySelector('.post__comentarios')?.classList.add('abierto');
-      });
-    });
-
-    contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(Number(el.dataset.autorId));
-        });
-      });
-    });
-
-    contenedor.parentElement?.querySelector('[data-nuevo-hilo]')?.addEventListener('click', () => {
-      abrirModalCrearHilo(grupo);
-    });
-  }
-
-  function toggleLikeHilo(grupo, hiloId, postEl) {
-    const hilo = (grupo.hilos || []).find(h => h.id === hiloId);
-    if (!hilo) return;
-
-    hilo.yoLikee = !hilo.yoLikee;
-    hilo.likes = (hilo.likes || 0) + (hilo.yoLikee ? 1 : -1);
-
-    import('../store.js').then(({ actualizarHilo }) => {
-      actualizarHilo(grupo.id, hiloId, {
-        yoLikee: hilo.yoLikee,
-        likes: hilo.likes
-      });
-
-      const btn = postEl.querySelector('[data-accion-hilo="like"]');
-      btn.classList.toggle('activo', hilo.yoLikee);
-      btn.querySelector('.post__action-icon').textContent = hilo.yoLikee ? '❤️' : '🤍';
-      btn.querySelector('.contador-likes').textContent = hilo.likes;
-    });
-  }
-
-  function agregarComentarioHilo(grupo, hiloId, texto) {
-    const hilo = (grupo.hilos || []).find(h => h.id === hiloId);
-    if (!hilo) return;
-
-    hilo.comentarios = hilo.comentarios || [];
-    hilo.comentarios.push({
-      id: Date.now(),
-      autor: user.nombre,
-      avatar: user.avatar,
-      texto,
-      fecha: 'ahora'
-    });
-
-    import('../store.js').then(({ actualizarHilo }) => {
-      actualizarHilo(grupo.id, hiloId, { comentarios: hilo.comentarios });
-    });
-  }
-
-  function tiempoRelativoHilo(iso) {
-    const dif = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (dif < 60) return 'hace unos segundos';
-    if (dif < 3600) return `hace ${Math.floor(dif / 60)} min`;
-    if (dif < 86400) return `hace ${Math.floor(dif / 3600)} h`;
-    if (dif < 604800) return `hace ${Math.floor(dif / 86400)} d`;
-    return new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
-  }
-
-  function escapeHtmlHilo(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-    /* =========================================================
-     MODAL: CREAR HILO
-     ========================================================= */
-  let hiloGrupoActual = null;
-  let hiloAdjunto = null;
-
-  function abrirModalCrearHilo(grupo) {
-    const modal = document.getElementById('modal-crear-hilo');
-    if (!modal) return;
-
-    hiloGrupoActual = grupo;
-    hiloAdjunto = null;
-
-    document.getElementById('hilo-contenido').value = '';
-    document.getElementById('hilo-contador').textContent = '0';
-    document.getElementById('hilo-preview-wrapper').classList.add('hidden');
-    document.getElementById('hilo-preview').innerHTML = '';
-    document.getElementById('hilo-btn-quitar-adjunto').style.display = 'none';
-
-    document.getElementById('crear-hilo-titulo').innerHTML =
-      `Publicar en ${renderIconoHtml(grupo.escudo, 20)} ${grupo.nombre}`;
-
-    const textarea = document.getElementById('hilo-contenido');
-    const contador = document.getElementById('hilo-contador');
-    textarea.oninput = () => {
-      contador.textContent = textarea.value.length;
-    };
-
-    const inputImg = document.getElementById('hilo-input-imagen');
-    inputImg.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) return toast('Imagen muy grande (máx 5 MB)', 'error');
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        hiloAdjunto = { tipo: 'imagen', dataUrl: ev.target.result };
-        mostrarPreviewHilo();
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    };
-
-    const inputVid = document.getElementById('hilo-input-video');
-    inputVid.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) return toast('Video muy grande (máx 5 MB)', 'error');
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        hiloAdjunto = { tipo: 'video', dataUrl: ev.target.result };
-        mostrarPreviewHilo();
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    };
-
-    document.getElementById('hilo-btn-quitar-adjunto').onclick = () => {
-      hiloAdjunto = null;
-      mostrarPreviewHilo();
-    };
-
-    document.getElementById('btn-publicar-hilo').onclick = () => {
-      const contenido = textarea.value.trim();
-
-      if (!contenido && !hiloAdjunto) {
-        return toast('Escribe algo o adjunta una imagen/video', 'error');
-      }
-
-      const nuevo = {
-        id: Date.now(),
-        autor: {
-          id: user.id,
-          nombre: user.nombre,
-          avatar: user.avatar
-        },
-        tipo: 'post',
-        contenido,
-        imagen: hiloAdjunto?.tipo === 'imagen' ? hiloAdjunto.dataUrl : null,
-        video:  hiloAdjunto?.tipo === 'video'  ? hiloAdjunto.dataUrl : null,
-        fecha: new Date().toISOString(),
-        likes: 0,
-        yoLikee: false,
-        comentarios: []
-      };
-
-      import('../store.js').then(({ agregarHilo }) => {
-        agregarHilo(grupo.id, nuevo);
-
-        cerrarModal('modal-crear-hilo');
-        toast('¡Publicación creada!', 'success');
-
-        const contenedor = document.getElementById(
-          grupo.tipo === 'comunidad' ? 'comunidad-contenido' : 'equipo-contenido'
-        );
-        if (contenedor) {
-          renderGrupo(getGrupoPorId(grupo.id), contenedor, grupo.tipo === 'comunidad');
+            </div>`;
+          return;
         }
-        recargarPaneles();
-      });
-    };
 
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-crear-hilo');
+        resultados.innerHTML = `
+          <div class="card-grid">
+            ${lista.map(g => {
+              const esPrivado = g.tipoAcceso === 'privado';
+              const esComunidad = g.tipo === 'comunidad';
+              const iconoTipo = esComunidad ? '🌐' : renderIconoHtml(RUTA_ESCUDO, 16);
+              const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
+              const yaSoyMiembro = g.esMiembro || g.esCapitan;
+
+              let botonHtml = '';
+              if (yaSoyMiembro) {
+                botonHtml = `<button class="btn btn--ghost btn--sm" disabled>✓ Ya eres miembro</button>`;
+              } else if (esPrivado) {
+                botonHtml = `<button class="btn btn--primary btn--sm" data-unirse="${g.id}">Solicitar unirme</button>`;
+              } else {
+                botonHtml = `<button class="btn btn--primary btn--sm" data-unirse="${g.id}">Unirme</button>`;
+              }
+
+              return `
+                <article class="match-card" data-grupo="${g.id}">
+                  <div class="match-card__header">
+                    <div class="match-card__sport">${renderIconoHtml(g.escudo || RUTA_ESCUDO, 36)}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end">
+                      <span class="badge badge--primary">${iconoTipo} ${labelTipo}</span>
+                      <span class="badge ${esPrivado ? 'badge--warning' : 'badge--success'}">
+                        ${esPrivado ? '🔒' : '🌐'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 class="match-card__title">${g.nombre}</h3>
+                  <p class="text-xs text-muted mb-4">${g.descripcion || ''}</p>
+
+                  <div class="match-card__info">
+                    <span>🏅 ${g.deporte}</span>
+                    ${g.ciudad ? `<span>📍 ${g.ciudad}</span>` : ''}
+                    <span>👥 ${g.totalMiembros} miembros</span>
+                  </div>
+
+                  <div class="match-card__footer" style="justify-content:flex-end">
+                    ${botonHtml}
+                  </div>
+                </article>
+              `;
+            }).join('')}
+          </div>`;
+
+        resultados.querySelectorAll('[data-unirse]').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const grupoId = btn.dataset.unirse;
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            try {
+              const res = await unirseAGrupoAPI(grupoId);
+
+              if (res.tipo === 'solicitud') {
+                toast('Solicitud enviada al capitán', 'success');
+              } else {
+                toast('¡Te uniste al grupo!', 'success');
+              }
+
+              await pintar();
+              await recargarPaneles();
+            } catch (err) {
+              toast(err.message || 'Error al unirse', 'error');
+              btn.disabled = false;
+              btn.textContent = 'Unirme';
+            }
+          });
+        });
+      } catch (err) {
+        console.error('[mi-equipo] Error al buscar:', err);
+        resultados.innerHTML = `<p class="text-sm text-muted text-center">Error al buscar</p>`;
+      }
+    }
+
+    input.addEventListener('input', () => {
+      textoBusqueda = input.value;
+      pintar();
     });
-    modal.onclick = (e) => {
-      if (e.target === modal) cerrarModal('modal-crear-hilo');
-    };
 
-    abrirModal('modal-crear-hilo');
-  }
+    chipsFiltro.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chipsFiltro.forEach(c => c.classList.remove('chip--active'));
+        chip.classList.add('chip--active');
+        filtroTipo = chip.dataset.filtroClubes;
+        pintar();
+      });
+    });
 
-  function mostrarPreviewHilo() {
-    const wrapper = document.getElementById('hilo-preview-wrapper');
-    const preview = document.getElementById('hilo-preview');
-    const btnQuitar = document.getElementById('hilo-btn-quitar-adjunto');
-
-    if (!hiloAdjunto) {
-      wrapper.classList.add('hidden');
-      preview.innerHTML = '';
-      btnQuitar.style.display = 'none';
-      return;
-    }
-
-    wrapper.classList.remove('hidden');
-    btnQuitar.style.display = '';
-
-    if (hiloAdjunto.tipo === 'imagen') {
-      preview.innerHTML = `<img src="${hiloAdjunto.dataUrl}" style="width:100%; display:block" />`;
-    } else {
-      preview.innerHTML = `<video src="${hiloAdjunto.dataUrl}" controls style="width:100%; display:block"></video>`;
-    }
+    pintar();
   }
 
   /* =========================================================
      CAMBIAR SUB-PESTAÑA
      ========================================================= */
   function cambiarTab(tab) {
-    if (tab !== 'chat' && window.__chatCleanup) {
-      try { window.__chatCleanup(); } catch (e) {}
-      window.__chatCleanup = null;
-    }
-
     subtabs.forEach(st => {
       st.classList.toggle('subtab--active', st.dataset.tabEquipo === tab);
     });
@@ -1662,8 +1062,8 @@ export async function init() {
 
     if (tab === 'equipo')     renderPanelEquipo();
     if (tab === 'comunidad')  renderPanelComunidad();
-    if (tab === 'chat')       renderChat();
     if (tab === 'buscar')     renderBuscar();
+    // El chat queda para después (todavía no está migrado al backend)
   }
 
   subtabs.forEach(st => {
@@ -1673,7 +1073,10 @@ export async function init() {
   /* =========================================================
      INIT
      ========================================================= */
-  renderPanelEquipo();
+  await recargarGrupos();
+  await renderPanelEquipo();
 
   return () => {};
 }
+
+

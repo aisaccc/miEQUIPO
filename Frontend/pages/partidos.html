@@ -21,6 +21,7 @@
         <button class="chip chip--active" data-filtro="todos">Todos</button>
         <button class="chip" data-filtro="abiertos">Disponibles</button>
         <button class="chip" data-filtro="llenos">Llenos</button>
+        <button class="chip" data-filtro="organizando">Organizado</button>
       </div>
       <button class="btn btn--primary" id="btn-crear-partido">+ Crear partido</button>
     </div>
@@ -63,29 +64,74 @@
     </div>
 
     <div class="modal__body">
+            <!-- ============================================== -->
+      <!-- MODO ORGANIZAR PARTIDO (nuevo)                 -->
+      <!-- ============================================== -->
+      <div class="field">
+        <label class="switch mb-4">
+          <input type="checkbox" id="partido-modo-organizar" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">📢 Modo Organizar partido</div>
+            <div class="switch__hint">
+              Publicá sin fecha ni lugar. Los interesados marcan "Me interesa"
+              y cuando llegues a un acuerdo con uno, confirmás el partido.
+            </div>
+          </div>
+        </label>
 
+        <div class="aviso-aprobacion" id="aviso-modo-organizar">
+          <span class="aviso-aprobacion__icon">📢</span>
+          <div>
+            <strong>Modo Organizar activado.</strong>
+            No hace falta cargar fecha, hora, lugar ni precio.
+            Los interesados verán el partido con el botón <strong>"🙋 Me interesa"</strong>.
+            Cuando llegues a un acuerdo con uno por chat, confirmás el partido.
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggle: Partido como jugador o como equipo -->
       <!-- Toggle: Partido como jugador o como equipo -->
       <div class="field" id="campo-tipo-partido">
         <label class="field__label">¿Cómo publicás este partido?</label>
         <div class="nivel-grid" style="grid-template-columns:1fr 1fr">
-          <div class="nivel-opcion active" data-tipo-partido="jugador">
-            <div class="nivel-opcion__label">👤 Como jugador</div>
+          <div class="tipo-partido-opcion active" data-tipo-partido="jugador">
+            <h3 class="card__title mb-4">
+              <img src="assets/icons/usuario.svg" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" />
+              Como jugador
+            </h3>
             <div class="nivel-opcion__desc">Se inscriben jugadores individuales</div>
           </div>
-          <div class="nivel-opcion" data-tipo-partido="equipo" style="display:none">
-            <div class="nivel-opcion__label">🛡️ Como equipo</div>
+          <div class="tipo-partido-opcion" data-tipo-partido="equipo" style="display:none">
+            <h3 class="card__title mb-4">
+              <img src="assets/icons/escudo-de-seguridad.png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" />
+              Como equipo
+            </h3>
             <div class="nivel-opcion__desc">Solo se postulan otros equipos</div>
           </div>
         </div>
       </div>
 
       <!-- Selector de equipo organizador (solo si es como equipo) -->
-      <div class="field hidden" id="campo-equipo-organizador">
-        <label class="field__label" for="partido-equipo-organizador">¿Con cuál de tus equipos?</label>
-        <select id="partido-equipo-organizador" class="field__input">
-          <option value="">Selecciona un equipo...</option>
-        </select>
-      </div>
+        <div class="field hidden" id="campo-equipo-organizador">
+          <label class="field__label">¿Con cuál de tus equipos?</label>
+
+          <div class="equipo-dropdown" id="equipo-dropdown">
+            <!-- Botón que muestra el seleccionado -->
+            <button type="button" class="equipo-dropdown__trigger" id="equipo-dropdown-trigger">
+              <span class="equipo-dropdown__content" id="equipo-dropdown-content">
+                <span class="equipo-dropdown__placeholder">Selecciona un equipo...</span>
+              </span>
+              <span class="equipo-dropdown__arrow">▼</span>
+            </button>
+
+            <!-- Lista desplegable (oculta por defecto) -->
+            <div class="equipo-dropdown__panel" id="equipo-dropdown-panel">
+              <!-- Se llena dinámicamente con partidos.js -->
+            </div>
+          </div>
+        </div>
 
       <div class="field">
         <label class="field__label" for="partido-deporte">Deporte *</label>

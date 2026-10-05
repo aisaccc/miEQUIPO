@@ -20,6 +20,9 @@ import {
   schemaAprobarEquipo,
   schemaListarPartidos,
   schemaUuidParam,
+  schemaInteresarse,
+  schemaConfirmarPartido,
+  schemaHistorialPartidos,
 } from '../validators/partidos.schema.js';
 
 /* =========================================================
@@ -253,6 +256,178 @@ export async function gestionarEquipoPostulante(req, res, next) {
       accion
     );
 
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   DELETE /api/partidos/:id/equipos-postulantes/:equipoId
+   =========================================================
+   Requiere auth.
+   Cancela la postulación del propio equipo.
+*/
+export async function cancelarPostulacionEquipo(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+    const equipoId = validar(schemaUuidParam, req.params.equipoId);
+
+    const resultado = await partidosService.cancelarPostulacionEquipo(
+      partidoId,
+      req.usuario.id,
+      equipoId
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+/* =========================================================
+   MODO "ORGANIZAR PARTIDO" — Interesados
+   ========================================================= */
+
+/* ---------- POST /api/partidos/:id/interesarse ---------- */
+export async function interesarse(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const { mensaje } = validar(schemaInteresarse, req.body || {});
+
+    const partido = await partidosService.interesarse(id, req.usuario.id, mensaje);
+
+    res.json({
+      mensaje: 'Te marcaste como interesado',
+      partido,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- DELETE /api/partidos/:id/interesarse ---------- */
+export async function cancelarInteres(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await partidosService.cancelarInteres(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- GET /api/partidos/:id/interesados ---------- */
+export async function listarInteresados(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const interesados = await partidosService.listarInteresados(id, req.usuario.id);
+    res.json({ interesados });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- PATCH /api/partidos/:id/confirmar ---------- */
+export async function confirmar(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const datos = validar(schemaConfirmarPartido, req.body);
+
+    const partido = await partidosService.confirmarPartido(id, req.usuario.id, datos);
+
+    res.json({
+      mensaje: 'Partido confirmado correctamente',
+      partido,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+/* =========================================================
+   FLUJO DE DOBLE CONFIRMACIÓN (modo Organizar)
+   =========================================================
+   Cuando el organizador propone confirmar, se crea una
+   propuesta que el interesado debe aprobar o rechazar.
+   */
+
+/* ---------- POST /api/partidos/:id/confirmaciones/:propuestaId/aprobar ---------- */
+export async function aprobarConfirmacion(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+    const propuestaId = validar(schemaUuidParam, req.params.propuestaId);
+
+    const resultado = await partidosService.aprobarConfirmacion(
+      partidoId,
+      req.usuario.id,
+      propuestaId
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- POST /api/partidos/:id/confirmaciones/:propuestaId/rechazar ---------- */
+export async function rechazarConfirmacion(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+    const propuestaId = validar(schemaUuidParam, req.params.propuestaId);
+
+    const resultado = await partidosService.rechazarConfirmacion(
+      partidoId,
+      req.usuario.id,
+      propuestaId
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- DELETE /api/partidos/:id/confirmaciones/:propuestaId ---------- */
+export async function cancelarConfirmacion(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+    const propuestaId = validar(schemaUuidParam, req.params.propuestaId);
+
+    const resultado = await partidosService.cancelarConfirmacion(
+      partidoId,
+      req.usuario.id,
+      propuestaId
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- GET /api/partidos/:id/confirmacion-pendiente ---------- */
+export async function obtenerConfirmacionPendiente(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+
+    const confirmacion = await partidosService.obtenerConfirmacionPendiente(
+      partidoId,
+      req.usuario.id
+    );
+
+    res.json({ confirmacion });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ---------- GET /api/usuarios/me/historial-partidos ---------- */
+export async function obtenerHistorialPartidos(req, res, next) {
+  try {
+    const filtros = validar(schemaHistorialPartidos, req.query);
+    const resultado = await partidosService.obtenerHistorialPartidos(
+      req.usuario.id,
+      filtros
+    );
     res.json(resultado);
   } catch (err) {
     next(err);

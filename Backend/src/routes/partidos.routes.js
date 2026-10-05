@@ -84,6 +84,68 @@ router.delete('/:id/postularse', partidosController.cancelarPostulacion);
 router.patch('/:id/postulantes/:usuarioId', partidosController.gestionarPostulante);
 
 /* =========================================================
+   MODO "ORGANIZAR PARTIDO" — Interesados
+   =========================================================
+   Cuando un partido está en estado_partido='buscando_jugadores',
+   los usuarios marcan "Me interesa" en vez de inscribirse.
+   ========================================================= */
+
+/* POST /api/partidos/:id/interesarse
+   Marca "Me interesa" al usuario autenticado.
+   Body opcional: { mensaje } */
+router.post('/:id/interesarse', partidosController.interesarse);
+
+/* DELETE /api/partidos/:id/interesarse
+   Cancela el "Me interesa" del usuario autenticado. */
+router.delete('/:id/interesarse', partidosController.cancelarInteres);
+
+/* GET /api/partidos/:id/interesados
+   Lista de interesados (solo organizador). */
+router.get('/:id/interesados', partidosController.listarInteresados);
+
+/* PATCH /api/partidos/:id/confirmar
+   El organizador PROPONE confirmar el partido con un interesado.
+   ⚡ AHORA NO cierra el partido: crea una propuesta.
+   Body: { interesadoId, interesadoTipo, equipoId?, lugar, fecha, precio, mensaje? } */
+router.patch('/:id/confirmar', partidosController.confirmar);
+
+/* =========================================================
+   FLUJO DE DOBLE CONFIRMACIÓN
+   =========================================================
+   El interesado debe aprobar la propuesta para que el partido
+   se cierre definitivamente.
+   ========================================================= */
+
+/* POST /api/partidos/:id/confirmaciones/:propuestaId/aprobar
+   El interesado aprueba la propuesta. */
+router.post(
+  '/:id/confirmaciones/:propuestaId/aprobar',
+  partidosController.aprobarConfirmacion
+);
+
+/* POST /api/partidos/:id/confirmaciones/:propuestaId/rechazar
+   El interesado rechaza la propuesta. */
+router.post(
+  '/:id/confirmaciones/:propuestaId/rechazar',
+  partidosController.rechazarConfirmacion
+);
+
+/* DELETE /api/partidos/:id/confirmaciones/:propuestaId
+   El organizador cancela la propuesta. */
+router.delete(
+  '/:id/confirmaciones/:propuestaId',
+  partidosController.cancelarConfirmacion
+);
+
+/* GET /api/partidos/:id/confirmacion-pendiente
+   Devuelve la propuesta pendiente (si existe) para el usuario actual. */
+router.get(
+  '/:id/confirmacion-pendiente',
+  partidosController.obtenerConfirmacionPendiente
+);
+
+
+/* =========================================================
    EQUIPOS POSTULANTES (partido de equipos)
    ========================================================= */
 
@@ -92,9 +154,20 @@ router.patch('/:id/postulantes/:usuarioId', partidosController.gestionarPostulan
    Body: { equipoId: "uuid" } */
 router.post('/:id/equipos-postulantes', partidosController.postularEquipo);
 
+/* DELETE /api/partidos/:id/equipos-postulantes/:equipoId
+   Cancela la postulación del propio equipo. */
+router.delete('/:id/equipos-postulantes/:equipoId', partidosController.cancelarPostulacionEquipo);
+
 /* PATCH /api/partidos/:id/equipos-postulantes/:equipoId
    Aprobar o rechazar un equipo (solo organizador).
    Body: { accion: "aprobar" | "rechazar" } */
 router.patch('/:id/equipos-postulantes/:equipoId', partidosController.gestionarEquipoPostulante);
 
 export default router;
+/* =========================================================
+   HISTORIAL DE PARTIDOS (aunque técnicamente es de usuarios,
+   lo dejamos acá porque usa datos de partidos)
+   =========================================================
+   Se registra bajo /api/usuarios/me/historial-partidos
+   pero físicamente vive en este router.
+   */

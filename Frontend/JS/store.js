@@ -1,6 +1,4 @@
-/* =========================================================
-   store.js — Estado compartido en localStorage
-   ========================================================= */
+import { mismoId, incluyeId, filtrarPorId, indicePorId } from './utils/id.js';
 
 const KEY_PARTIDOS = 'miejquipo_partidos';
 const KEY_NOTIFS   = 'miejquipo_notificaciones';
@@ -57,19 +55,19 @@ export function guardarPartidos(lista) {
 }
 
 export function getPartidoPorId(id) {
-  return getPartidos().find(p => p.id === Number(id));
+  return getPartidos().find(p => mismoId(p.id, id));
 }
 
 export function guardarPartido(partido) {
   const lista = getPartidos();
-  const idx = lista.findIndex(p => p.id === partido.id);
+  const idx = indicePorId(lista, partido.id);
   if (idx >= 0) lista[idx] = partido;
   else lista.unshift(partido);
   guardarPartidos(lista);
 }
 
 export function eliminarPartido(id) {
-  const lista = getPartidos().filter(p => p.id !== Number(id));
+  const lista = filtrarPorId(getPartidos(), id);
   guardarPartidos(lista);
 }
 
@@ -97,18 +95,18 @@ export function agregarNotificacion({ para, tipo, mensaje, link }) {
 }
 
 export function notificacionesDe(userId) {
-  return getNotificaciones().filter(n => n.para === Number(userId));
+  return getNotificaciones().filter(n => mismoId(n.para, userId));
 }
 
 export function marcarNotifLeida(id) {
   const lista = getNotificaciones().map(n =>
-    n.id === id ? { ...n, leida: true } : n
+    mismoId(n.id, id) ? { ...n, leida: true } : n
   );
   localStorage.setItem(KEY_NOTIFS, JSON.stringify(lista));
 }
 
 /* =========================================================
-   EQUIPOS
+   EQUIPOS (legacy — se mantiene por compatibilidad)
    ========================================================= */
 
 export function getEquipos() {
@@ -124,19 +122,19 @@ export function guardarEquipos(lista) {
 }
 
 export function getEquipoPorId(id) {
-  return getEquipos().find(e => e.id === Number(id));
+  return getEquipos().find(e => mismoId(e.id, id));
 }
 
 export function guardarEquipo(equipo) {
   const lista = getEquipos();
-  const idx = lista.findIndex(e => e.id === equipo.id);
+  const idx = indicePorId(lista, equipo.id);
   if (idx >= 0) lista[idx] = equipo;
   else lista.unshift(equipo);
   guardarEquipos(lista);
 }
 
 export function eliminarEquipo(id) {
-  const lista = getEquipos().filter(e => e.id !== Number(id));
+  const lista = filtrarPorId(getEquipos(), id);
   guardarEquipos(lista);
 }
 
@@ -147,6 +145,7 @@ export function eliminarEquipo(id) {
 function seedPartidos() {
   return [];   // ← sin datos por defecto
 }
+
 /* =========================================================
    SEED EQUIPOS
    ========================================================= */
@@ -154,7 +153,6 @@ function seedPartidos() {
 function seedEquipos() {
   return [];
 }
-
 /* =========================================================
    CLUBES DISPONIBLES (catálogo para unirse)
    ========================================================= */
@@ -176,7 +174,7 @@ export function guardarClubesDisponibles(lista) {
 
 export function agregarJugadorAEquipo(club, usuario) {
   const equipos = getEquipos();
-  const idx = equipos.findIndex(e => e.id === club.id);
+  const idx = indicePorId(equipos, club.id);
 
   const jugador = {
     id: usuario.id,
@@ -187,7 +185,7 @@ export function agregarJugadorAEquipo(club, usuario) {
   };
 
   if (idx >= 0) {
-    if (!equipos[idx].jugadores.some(j => j.id === usuario.id)) {
+    if (!equipos[idx].jugadores.some(j => mismoId(j.id, usuario.id))) {
       equipos[idx].jugadores.push(jugador);
       guardarEquipos(equipos);
     }
@@ -212,10 +210,10 @@ export function agregarJugadorAEquipo(club, usuario) {
 
 export function quitarJugadorDeEquipo(equipoId, usuarioId) {
   const equipos = getEquipos();
-  const idx = equipos.findIndex(e => e.id === equipoId);
+  const idx = indicePorId(equipos, equipoId);
   if (idx < 0) return;
 
-  equipos[idx].jugadores = equipos[idx].jugadores.filter(j => j.id !== usuarioId);
+  equipos[idx].jugadores = equipos[idx].jugadores.filter(j => !mismoId(j.id, usuarioId));
 
   if (equipos[idx].jugadores.length === 0) {
     equipos.splice(idx, 1);
@@ -224,9 +222,9 @@ export function quitarJugadorDeEquipo(equipoId, usuarioId) {
 }
 
 export function estoyEnEquipo(equipoId, usuarioId) {
-  const eq = getEquipos().find(e => e.id === equipoId);
+  const eq = getEquipos().find(e => mismoId(e.id, equipoId));
   if (!eq) return false;
-  return eq.jugadores.some(j => j.id === usuarioId);
+  return eq.jugadores.some(j => mismoId(j.id, usuarioId));
 }
 
 /* =========================================================
@@ -265,6 +263,7 @@ export function limpiarMensajesCanal(canalId) {
   delete todos[canalId];
   localStorage.setItem(KEY_MENSAJES, JSON.stringify(todos));
 }
+
 /* =========================================================
    CONVERSACIONES PRIVADAS (chat 1 a 1)
    ========================================================= */
@@ -294,7 +293,7 @@ export function guardarConversaciones(obj) {
 
 /** Genera un ID estable para la conversación entre 2 usuarios */
 export function idConversacion(idA, idB) {
-  const [a, b] = [Number(idA), Number(idB)].sort((x, y) => x - y);
+  const [a, b] = [String(idA), String(idB)].sort();
   return `conv-${a}-${b}`;
 }
 
@@ -306,7 +305,7 @@ export function obtenerOCrearConversacion(idA, idB) {
   if (!convs[id]) {
     convs[id] = {
       id,
-      participantes: [Number(idA), Number(idB)].sort((x, y) => x - y),
+      participantes: [String(idA), String(idB)].sort(),
       creada: new Date().toISOString(),
       ultimaActividad: new Date().toISOString()
     };
@@ -319,7 +318,7 @@ export function obtenerOCrearConversacion(idA, idB) {
 export function conversacionesDe(userId) {
   const convs = getConversaciones();
   return Object.values(convs)
-    .filter(c => c.participantes.includes(Number(userId)))
+    .filter(c => c.participantes.some(p => mismoId(p, userId)))
     .sort((a, b) => new Date(b.ultimaActividad) - new Date(a.ultimaActividad));
 }
 
@@ -359,7 +358,7 @@ export function marcarMensajesLeidos(convId, userId) {
   if (!todos[convId]) return;
 
   todos[convId] = todos[convId].map(m =>
-    m.autorId !== Number(userId) ? { ...m, leido: true } : m
+    !mismoId(m.autorId, userId) ? { ...m, leido: true } : m
   );
   localStorage.setItem(KEY_MENSAJES_PRIV, JSON.stringify(todos));
 }
@@ -367,7 +366,7 @@ export function marcarMensajesLeidos(convId, userId) {
 /** Cuenta mensajes no leídos de un usuario en una conversación */
 export function contarNoLeidos(convId, userId) {
   const msgs = getMensajesPrivados(convId);
-  return msgs.filter(m => m.autorId !== Number(userId) && !m.leido).length;
+  return msgs.filter(m => !mismoId(m.autorId, userId) && !m.leido).length;
 }
 
 /** Total de no leídos del usuario en todas sus conversaciones */
@@ -375,8 +374,9 @@ export function totalNoLeidos(userId) {
   const convs = conversacionesDe(userId);
   return convs.reduce((sum, c) => sum + contarNoLeidos(c.id, userId), 0);
 }
+
 /* =========================================================
-   ACTUALIZAR USUARIO (perfil)
+   ACTUALIZAR USUARIO (perfil) — FIX CRÍTICO
    ========================================================= */
 
 const KEY_USUARIOS = 'miejquipo_usuarios';
@@ -393,29 +393,32 @@ export function guardarUsuariosRegistrados(lista) {
 /**
  * Actualiza un usuario por ID.
  * También actualiza la sesión activa si es el mismo usuario.
+ * FIX: acepta UUID (string) o number.
  */
 export function actualizarUsuario(id, cambios) {
   const usuarios = getUsuariosRegistrados();
-  const idx = usuarios.findIndex(u => u.id === Number(id));
+  const idx = usuarios.findIndex(u => mismoId(u.id, id));
 
   if (idx >= 0) {
     usuarios[idx] = { ...usuarios[idx], ...cambios };
     guardarUsuariosRegistrados(usuarios);
   }
 
-  // Actualizar SIEMPRE la sesión activa, aunque no exista en usuarios registrados
+  // Actualizar SIEMPRE la sesión activa (aunque no exista en usuarios registrados)
   const KEY_SESSION = 'miejquipo_session';
   const raw = localStorage.getItem(KEY_SESSION);
   if (raw) {
     const sesion = JSON.parse(raw);
-    if (sesion.id === Number(id)) {
+    if (mismoId(sesion.id, id)) {
       const actualizado = { ...sesion, ...cambios };
       delete actualizado.password;
+      delete actualizado.password_hash;
       localStorage.setItem(KEY_SESSION, JSON.stringify(actualizado));
+      console.log('[store] Sesión actualizada:', Object.keys(cambios).join(', '));
     }
   }
 
-  return usuarios[idx];
+  return idx >= 0 ? usuarios[idx] : null;
 }
 
 /**
@@ -423,7 +426,7 @@ export function actualizarUsuario(id, cambios) {
  */
 export function cambiarPassword(id, passwordActual, passwordNueva) {
   const usuarios = getUsuariosRegistrados();
-  const idx = usuarios.findIndex(u => u.id === Number(id));
+  const idx = usuarios.findIndex(u => mismoId(u.id, id));
   if (idx < 0) return { ok: false, error: 'Usuario no encontrado' };
 
   if (usuarios[idx].password !== passwordActual) {
@@ -434,6 +437,7 @@ export function cambiarPassword(id, passwordActual, passwordNueva) {
   guardarUsuariosRegistrados(usuarios);
   return { ok: true };
 }
+
 /* =========================================================
    TORNEOS
    ========================================================= */
@@ -453,19 +457,19 @@ export function guardarTorneos(lista) {
 }
 
 export function getTorneoPorId(id) {
-  return getTorneos().find(t => t.id === Number(id));
+  return getTorneos().find(t => mismoId(t.id, id));
 }
 
 export function guardarTorneo(torneo) {
   const lista = getTorneos();
-  const idx = lista.findIndex(t => t.id === torneo.id);
+  const idx = indicePorId(lista, torneo.id);
   if (idx >= 0) lista[idx] = { ...torneo, actualizado: new Date().toISOString() };
   else lista.unshift(torneo);
   guardarTorneos(lista);
 }
 
 export function eliminarTorneo(id) {
-  const lista = getTorneos().filter(t => t.id !== Number(id));
+  const lista = getTorneos().filter(t => String(t.id) !== String(id));
   guardarTorneos(lista);
 }
 
@@ -473,9 +477,9 @@ export function eliminarTorneo(id) {
 
 /** ¿El equipo está en el torneo? (oficial, en lista o invitado) */
 export function equipoEnTorneo(torneo, equipoId) {
-  const enEquipos = (torneo.equipos || []).some(e => e.id === equipoId);
-  const enLista = (torneo.listaEspera || []).some(l => l.equipo.id === equipoId && l.estado === 'pendiente');
-  const conInvitacion = (torneo.invitaciones || []).some(i => i.equipoId === equipoId && i.estado === 'pendiente');
+  const enEquipos = (torneo.equipos || []).some(e => mismoId(e.id, equipoId));
+  const enLista = (torneo.listaEspera || []).some(l => mismoId(l.equipo.id, equipoId) && l.estado === 'pendiente');
+  const conInvitacion = (torneo.invitaciones || []).some(i => mismoId(i.equipoId, equipoId) && i.estado === 'pendiente');
   return enEquipos || enLista || conInvitacion;
 }
 
@@ -496,10 +500,11 @@ export function cuposTorneoDisponibles(torneo) {
 /** ¿Este usuario puede escribir en el chat del torneo? */
 export function puedeEscribirEnChatTorneo(torneo, userId) {
   // Organizador siempre puede
-  if (torneo.organizador?.id === userId) return true;
+  if (mismoId(torneo.organizador?.id, userId)) return true;
   // Algún equipo inscrito tiene al user como capitán o jugador
   return (torneo.equipos || []).some(e =>
-    e.capitanId === userId || (e.jugadores || []).includes(userId)
+    mismoId(e.capitanId, userId) ||
+    (e.jugadores || []).some(j => mismoId(j, userId))
   );
 }
 
@@ -510,6 +515,7 @@ export function puedeEscribirEnChatTorneo(torneo, userId) {
 function seedTorneos() {
   return [];
 }
+
 /* =========================================================
    CHATS DE GRUPO/TORNEO (integrados con Mensajes)
    ========================================================= */
@@ -521,9 +527,9 @@ const KEY_CHATS_GRUPO = 'miejquipo_chats_grupo';
  * {
  *   [chatId]: {
  *     id, tipo: 'torneo' | 'equipo' | 'grupo',
- *     nombre, icono, refId,           // refId = id del torneo/equipo
- *     participantes: [userIds],        // quiénes pueden verlo
- *     adminId,                         // organizador
+ *     nombre, icono, refId,
+ *     participantes: [userIds],
+ *     adminId,
  *     creado
  *   }
  * }
@@ -552,7 +558,7 @@ export function getChatGrupoPorId(id) {
 export function actualizarParticipantesChat(chatId, participantes) {
   const chats = getChatsGrupo();
   if (!chats[chatId]) return;
-  chats[chatId].participantes = [...new Set(participantes)];
+  chats[chatId].participantes = [...new Set(participantes.map(String))];
   guardarChatsGrupo(chats);
 }
 
@@ -560,14 +566,17 @@ export function actualizarParticipantesChat(chatId, participantes) {
 export function chatsGrupoDe(userId) {
   const chats = getChatsGrupo();
   return Object.values(chats)
-    .filter(c => (c.participantes || []).includes(Number(userId)))
+    .filter(c => (c.participantes || []).some(p => mismoId(p, userId)))
     .sort((a, b) => new Date(b.actualizado || b.creado) - new Date(a.actualizado || a.creado));
 }
 
 /** Cuenta mensajes no leídos de un usuario en un chat de grupo */
 export function contarNoLeidosGrupo(chatId, userId) {
   const msgs = getMensajesDeCanal(chatId);
-  return msgs.filter(m => m.autorId !== Number(userId) && !m.leidoPor?.includes(Number(userId))).length;
+  return msgs.filter(m =>
+    !mismoId(m.autorId, userId) &&
+    !(m.leidoPor || []).some(p => mismoId(p, userId))
+  ).length;
 }
 
 /** Total de no leídos en chats de grupo */
@@ -588,9 +597,9 @@ export function marcarLeidoGrupo(chatId, userId) {
   if (!todos[chatId]) return;
 
   todos[chatId] = todos[chatId].map(m => {
-    const leidoPor = m.leidoPor || [];
-    if (!leidoPor.includes(Number(userId))) {
-      leidoPor.push(Number(userId));
+    const leidoPor = (m.leidoPor || []).map(String);
+    if (!leidoPor.some(id => mismoId(id, userId))) {
+      leidoPor.push(String(userId));
     }
     return { ...m, leidoPor };
   });
@@ -601,13 +610,10 @@ export function marcarLeidoGrupo(chatId, userId) {
 export function totalNoLeidosTodo(userId) {
   return totalNoLeidos(userId) + totalNoLeidosGrupo(userId);
 }
+
 /* =========================================================
    GRUPOS UNIFICADOS (equipos + comunidades)
-   =========================================================
-   Reemplaza el concepto de "equipo" y "club" por uno solo
-   que puede ser tipo: 'equipo' | 'comunidad'.
-   Migra automáticamente los equipos existentes.
-*/
+   ========================================================= */
 
 const KEY_GRUPOS = 'miejquipo_grupos';
 
@@ -654,19 +660,19 @@ export function guardarGrupos(lista) {
 }
 
 export function getGrupoPorId(id) {
-  return getGrupos().find(g => g.id === Number(id));
+  return getGrupos().find(g => mismoId(g.id, id));
 }
 
 export function guardarGrupo(grupo) {
   const lista = getGrupos();
-  const idx = lista.findIndex(g => g.id === grupo.id);
+  const idx = indicePorId(lista, grupo.id);
   if (idx >= 0) lista[idx] = { ...grupo, actualizado: new Date().toISOString() };
   else lista.unshift(grupo);
   guardarGrupos(lista);
 }
 
 export function eliminarGrupo(id) {
-  const lista = getGrupos().filter(g => g.id !== Number(id));
+  const lista = filtrarPorId(getGrupos(), id);
   guardarGrupos(lista);
 }
 
@@ -680,14 +686,16 @@ export function getComunidades() {
   return getGrupos().filter(g => g.tipo === 'comunidad');
 }
 
-/* ---------- HELPERS DE ROL ---------- */
+/* =========================================================
+   HELPERS DE ROL — FIX CRÍTICO PARA BOTONES ADMIN
+   ========================================================= */
 
 export function esCapitan(grupo, userId) {
-  return grupo.capitanId === Number(userId);
+  return mismoId(grupo.capitanId, userId);
 }
 
 export function esAdmin(grupo, userId) {
-  return (grupo.admins || []).includes(Number(userId));
+  return (grupo.admins || []).some(a => mismoId(a, userId));
 }
 
 export function puedeEditar(grupo, userId) {
@@ -695,21 +703,23 @@ export function puedeEditar(grupo, userId) {
 }
 
 export function esMiembro(grupo, userId) {
-  return (grupo.jugadores || []).some(j => j.id === Number(userId));
+  return (grupo.jugadores || []).some(j => mismoId(j.id, userId));
 }
 
 export function puedoGestionar(grupo, userId) {
   return puedeEditar(grupo, userId);
 }
 
-/* ---------- SOLICITUDES ---------- */
+/* =========================================================
+   SOLICITUDES
+   ========================================================= */
 
 export function agregarSolicitud(grupoId, usuario) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
   grupo.solicitudes = grupo.solicitudes || [];
 
-  if (grupo.solicitudes.some(s => s.userId === usuario.id)) return;
+  if (grupo.solicitudes.some(s => mismoId(s.userId, usuario.id))) return;
   if (esMiembro(grupo, usuario.id)) return;
 
   grupo.solicitudes.push({
@@ -725,10 +735,10 @@ export function aceptarSolicitud(grupoId, userId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
 
-  const solicitud = (grupo.solicitudes || []).find(s => s.userId === userId);
+  const solicitud = (grupo.solicitudes || []).find(s => mismoId(s.userId, userId));
   if (!solicitud) return;
 
-  grupo.solicitudes = grupo.solicitudes.filter(s => s.userId !== userId);
+  grupo.solicitudes = grupo.solicitudes.filter(s => !mismoId(s.userId, userId));
   grupo.jugadores = grupo.jugadores || [];
   grupo.jugadores.push({
     id: solicitud.userId,
@@ -744,17 +754,19 @@ export function aceptarSolicitud(grupoId, userId) {
 export function rechazarSolicitud(grupoId, userId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
-  grupo.solicitudes = (grupo.solicitudes || []).filter(s => s.userId !== userId);
+  grupo.solicitudes = (grupo.solicitudes || []).filter(s => !mismoId(s.userId, userId));
   guardarGrupo(grupo);
 }
 
-/* ---------- MIEMBROS ---------- */
+/* =========================================================
+   MIEMBROS
+   ========================================================= */
 
 export function agregarMiembroDirecto(grupoId, usuario) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
   grupo.jugadores = grupo.jugadores || [];
-  if (grupo.jugadores.some(j => j.id === usuario.id)) return;
+  if (grupo.jugadores.some(j => mismoId(j.id, usuario.id))) return;
 
   grupo.jugadores.push({
     id: usuario.id,
@@ -772,32 +784,34 @@ export function expulsarMiembro(grupoId, userId) {
   if (!grupo) return;
 
   // No se puede expulsar al capitán
-  if (grupo.capitanId === userId) return;
+  if (mismoId(grupo.capitanId, userId)) return;
 
-  grupo.jugadores = (grupo.jugadores || []).filter(j => j.id !== userId);
-  grupo.admins = (grupo.admins || []).filter(a => a !== userId);
+  grupo.jugadores = (grupo.jugadores || []).filter(j => !mismoId(j.id, userId));
+  grupo.admins = (grupo.admins || []).filter(a => !mismoId(a, userId));
   guardarGrupo(grupo);
 }
 
 export function salirDeGrupo(grupoId, userId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
-  if (grupo.capitanId === userId) return; // capitán debe eliminar el grupo
+  if (mismoId(grupo.capitanId, userId)) return; // capitán debe eliminar el grupo
 
-  grupo.jugadores = (grupo.jugadores || []).filter(j => j.id !== userId);
-  grupo.admins = (grupo.admins || []).filter(a => a !== userId);
+  grupo.jugadores = (grupo.jugadores || []).filter(j => !mismoId(j.id, userId));
+  grupo.admins = (grupo.admins || []).filter(a => !mismoId(a, userId));
   guardarGrupo(grupo);
 }
 
-/* ---------- ADMINS ---------- */
+/* =========================================================
+   ADMINS
+   ========================================================= */
 
 export function nombrarAdmin(grupoId, userId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
-  if (grupo.capitanId === userId) return; // capitán ya tiene todos los permisos
+  if (mismoId(grupo.capitanId, userId)) return; // capitán ya tiene todos los permisos
 
   grupo.admins = grupo.admins || [];
-  if (!grupo.admins.includes(userId)) {
+  if (!grupo.admins.some(a => mismoId(a, userId))) {
     grupo.admins.push(userId);
     guardarGrupo(grupo);
   }
@@ -806,7 +820,7 @@ export function nombrarAdmin(grupoId, userId) {
 export function quitarAdmin(grupoId, userId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
-  grupo.admins = (grupo.admins || []).filter(a => a !== userId);
+  grupo.admins = (grupo.admins || []).filter(a => !mismoId(a, userId));
   guardarGrupo(grupo);
 }
 
@@ -840,21 +854,23 @@ export function agregarPublicacion(pub) {
 
 export function actualizarPublicacion(id, cambios) {
   const lista = getPublicaciones() || [];
-  const idx = lista.findIndex(p => p.id === Number(id));
+  const idx = indicePorId(lista, id);
   if (idx >= 0) {
     lista[idx] = { ...lista[idx], ...cambios };
     guardarPublicaciones(lista);
   }
-  return lista[idx];
+  return idx >= 0 ? lista[idx] : null;
 }
 
 export function eliminarPublicacion(id) {
-  const lista = (getPublicaciones() || []).filter(p => p.id !== Number(id));
+  const lista = filtrarPorId(getPublicaciones() || [], id);
   guardarPublicaciones(lista);
 }
 
 export function publicacionesDe(userId) {
-  return (getPublicaciones() || []).filter(p => p.autor?.id === Number(userId));
+  return (getPublicaciones() || []).filter(p =>
+    mismoId(p.autor?.id, userId)
+  );
 }
 
 /** Inicializa el feed con las publicaciones mock la primera vez */
@@ -865,36 +881,37 @@ export function inicializarPublicaciones(mockPublicaciones) {
   guardarPublicaciones(mockPublicaciones);
   return mockPublicaciones;
 }
+
 /* =========================================================
    ELIMINAR CUENTA
    ========================================================= */
 
 export function eliminarCuenta(userId) {
   // Eliminar de usuarios registrados
-  const usuarios = getUsuariosRegistrados().filter(u => u.id !== Number(userId));
+  const usuarios = getUsuariosRegistrados().filter(u => !mismoId(u.id, userId));
   guardarUsuariosRegistrados(usuarios);
 
   // Limpiar sesión
   localStorage.removeItem('miejquipo_session');
 
-  // Otras limpiezas opcionales:
-  // - quitarlo de grupos
+  // Quitarlo de grupos
   const grupos = getGrupos();
   grupos.forEach(g => {
-    g.jugadores = (g.jugadores || []).filter(j => j.id !== Number(userId));
-    g.admins = (g.admins || []).filter(a => a !== Number(userId));
-    g.solicitudes = (g.solicitudes || []).filter(s => s.userId !== Number(userId));
+    g.jugadores = (g.jugadores || []).filter(j => !mismoId(j.id, userId));
+    g.admins = (g.admins || []).filter(a => !mismoId(a, userId));
+    g.solicitudes = (g.solicitudes || []).filter(s => !mismoId(s.userId, userId));
   });
   guardarGrupos(grupos);
 
-  // - quitarlo de partidos
+  // Quitarlo de partidos
   const partidos = getPartidos();
   partidos.forEach(p => {
-    p.inscritos = (p.inscritos || []).filter(uid => uid !== Number(userId));
-    p.postulantes = (p.postulantes || []).filter(pp => pp.userId !== Number(userId));
+    p.inscritos = (p.inscritos || []).filter(uid => !mismoId(uid, userId));
+    p.postulantes = (p.postulantes || []).filter(pp => !mismoId(pp.userId, userId));
   });
   guardarPartidos(partidos);
 }
+
 /* =========================================================
    HILOS DE COMUNIDAD (posts dentro de cada grupo)
    ========================================================= */
@@ -935,7 +952,7 @@ export function actualizarHilo(grupoId, hiloId, cambios) {
   if (!grupo) return;
 
   grupo.hilos = (grupo.hilos || []).map(h =>
-    h.id === hiloId ? { ...h, ...cambios } : h
+    mismoId(h.id, hiloId) ? { ...h, ...cambios } : h
   );
   guardarGrupo(grupo);
 }
@@ -944,7 +961,7 @@ export function eliminarHilo(grupoId, hiloId) {
   const grupo = getGrupoPorId(grupoId);
   if (!grupo) return;
 
-  grupo.hilos = (grupo.hilos || []).filter(h => h.id !== hiloId);
+  grupo.hilos = (grupo.hilos || []).filter(h => !mismoId(h.id, hiloId));
   guardarGrupo(grupo);
 }
 
@@ -969,17 +986,9 @@ export function getTodosLosHilos() {
 }
 
 /* =========================================================
-   HELPER: ¿un usuario puede estar en varios grupos?
-   =========================================================
-   Regla nueva: SÍ puede estar en varios, PERO:
-   - Solo UN equipo (por deporte)
-   - Múltiples comunidades
-*/
-
-/* =========================================================
    HELPER: ¿un usuario puede unirse a un grupo?
    =========================================================
-   Regla nueva: SÍ puede estar en MÚLTIPLES equipos Y comunidades.
+   Regla: SÍ puede estar en MÚLTIPLES equipos Y comunidades.
    Solo se bloquea si YA es miembro.
 */
 
@@ -989,6 +998,7 @@ export function puedeUnirseAGrupo(grupo, userId) {
   }
   return { ok: true };
 }
+
 /* =========================================================
    MIGRACIÓN DE PERFIL: multi-deporte
    =========================================================
@@ -1113,6 +1123,7 @@ export function getStatsPublicasDeDeporte(deporteData) {
     .filter(([, v]) => v && v.publico)
     .map(([clave, v]) => ({ clave, valor: v.valor }));
 }
+
 /* =========================================================
    PARTIDOS DE EQUIPO (extensión)
    ========================================================= */
@@ -1134,12 +1145,12 @@ export function equiposPostulantesPendientes(partido) {
 
 /** ¿Este equipo ya se postuló? */
 export function equipoYaSePostulo(partido, equipoId) {
-  return (partido.equiposPostulantes || []).some(e => e.equipoId === equipoId);
+  return (partido.equiposPostulantes || []).some(e => mismoId(e.equipoId, equipoId));
 }
 
 /** ¿Este equipo ya está inscrito? */
 export function equipoYaEstaInscrito(partido, equipoId) {
-  return (partido.equiposInscritos || []).some(e => e.equipoId === equipoId);
+  return (partido.equiposInscritos || []).some(e => mismoId(e.equipoId, equipoId));
 }
 
 /** Agregar un equipo como postulante */
@@ -1172,14 +1183,13 @@ export function aceptarEquipoPostulante(partidoId, equipoId) {
   const partido = getPartidoPorId(partidoId);
   if (!partido) return;
 
-  const post = (partido.equiposPostulantes || []).find(e => e.equipoId === equipoId);
+  const post = (partido.equiposPostulantes || []).find(e => mismoId(e.equipoId, equipoId));
   if (!post) return;
 
   post.estado = 'aceptado';
   partido.equiposInscritos = partido.equiposInscritos || [];
   partido.equiposInscritos.push(post.equipo);
 
-  // Si el partido tiene "cupos" como cupos de equipos, ajustar
   if (partido.equiposInscritos.length >= partido.cupos) {
     partido.estado = 'lleno';
   }
@@ -1192,7 +1202,7 @@ export function rechazarEquipoPostulante(partidoId, equipoId) {
   const partido = getPartidoPorId(partidoId);
   if (!partido) return;
 
-  const post = (partido.equiposPostulantes || []).find(e => e.equipoId === equipoId);
+  const post = (partido.equiposPostulantes || []).find(e => mismoId(e.equipoId, equipoId));
   if (!post) return;
 
   post.estado = 'rechazado';
@@ -1225,11 +1235,12 @@ export function getVinculoConversacion(convId) {
 export function obtenerOCrearConversacionVinculada(idA, idB, vinculo) {
   const conv = obtenerOCrearConversacion(idA, idB);
   // Si no tiene vínculo, o el vínculo es diferente, actualizar
-  if (!conv.vinculadaA || conv.vinculadaA.id !== vinculo.id || conv.vinculadaA.tipo !== vinculo.tipo) {
+  if (!conv.vinculadaA || !mismoId(conv.vinculadaA.id, vinculo.id) || conv.vinculadaA.tipo !== vinculo.tipo) {
     vincularConversacion(conv.id, vinculo);
   }
   return conv;
 }
+
 /* =========================================================
    BORRAR CHATS (solo del lado del usuario)
    =========================================================
@@ -1243,8 +1254,8 @@ const KEY_CHATS_OCULTOS = 'miejquipo_chats_ocultos';
  * Estructura:
  * {
  *   [userId]: {
- *     conversaciones: [convId1, convId2],   // privadas borradas
- *     canales: [canalId1, canalId2]         // chats de grupo silenciados
+ *     conversaciones: [convId1, convId2],
+ *     canales: [canalId1, canalId2]
  *   }
  * }
  */
@@ -1259,36 +1270,40 @@ export function guardarChatsOcultos(obj) {
 
 export function ocultarConversacion(userId, convId) {
   const todos = getChatsOcultos();
-  if (!todos[userId]) todos[userId] = { conversaciones: [], canales: [] };
-  if (!todos[userId].conversaciones.includes(convId)) {
-    todos[userId].conversaciones.push(convId);
+  const key = String(userId);
+  if (!todos[key]) todos[key] = { conversaciones: [], canales: [] };
+  if (!todos[key].conversaciones.some(c => mismoId(c, convId))) {
+    todos[key].conversaciones.push(convId);
   }
   guardarChatsOcultos(todos);
 }
 
 export function ocultarCanal(userId, canalId) {
   const todos = getChatsOcultos();
-  if (!todos[userId]) todos[userId] = { conversaciones: [], canales: [] };
-  if (!todos[userId].canales.includes(canalId)) {
-    todos[userId].canales.push(canalId);
+  const key = String(userId);
+  if (!todos[key]) todos[key] = { conversaciones: [], canales: [] };
+  if (!todos[key].canales.some(c => mismoId(c, canalId))) {
+    todos[key].canales.push(canalId);
   }
   guardarChatsOcultos(todos);
 }
 
 export function estaOculto(userId, convId) {
   const todos = getChatsOcultos();
-  const user = todos[userId];
+  const user = todos[String(userId)];
   if (!user) return false;
-  return (user.conversaciones || []).includes(convId) || (user.canales || []).includes(convId);
+  return (user.conversaciones || []).some(c => mismoId(c, convId)) ||
+         (user.canales || []).some(c => mismoId(c, convId));
 }
 
 /** Cuando llega un mensaje nuevo, el chat vuelve a aparecer */
 export function mostrarConversacion(userId, convId) {
   const todos = getChatsOcultos();
-  if (!todos[userId]) return;
+  const key = String(userId);
+  if (!todos[key]) return;
 
-  todos[userId].conversaciones = (todos[userId].conversaciones || []).filter(c => c !== convId);
-  todos[userId].canales = (todos[userId].canales || []).filter(c => c !== convId);
+  todos[key].conversaciones = (todos[key].conversaciones || []).filter(c => !mismoId(c, convId));
+  todos[key].canales = (todos[key].canales || []).filter(c => !mismoId(c, convId));
 
   guardarChatsOcultos(todos);
 }

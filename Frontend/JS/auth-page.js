@@ -2,10 +2,10 @@
    auth-page.js — Controlador del login/registro (index.html)
    ========================================================= */
 
-import { login, registro, getSesion } from './auth.js';
+import { login, registro, getSesion, estaAutenticado } from './auth.js';
 
 /* ---------- SI YA HAY SESIÓN, REDIRIGIR A LA APP ---------- */
-if (getSesion()) {
+if (estaAutenticado()) {
   window.location.href = 'app.html';
 }
 
@@ -94,7 +94,11 @@ formReg.addEventListener('submit', async (e) => {
   if (nombre.value.trim().length < 2)      { marcarError(nombre); valido = false; }
   if (!esEmailValido(email.value.trim()))  { marcarError(email);  valido = false; }
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(user.value.trim())) { marcarError(user); valido = false; }
-  if (pass.value.length < 6)               { marcarError(pass);   valido = false; }
+  const passwordOk = pass.value.length >= 8
+  && /[a-z]/.test(pass.value)
+  && /[A-Z]/.test(pass.value)
+  && /[0-9]/.test(pass.value);
+  if (!passwordOk) { marcarError(pass); valido = false; }
   if (!valido) return;
 
   const btn = formReg.querySelector('button[type="submit"]');

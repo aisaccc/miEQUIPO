@@ -91,25 +91,51 @@ const posicionesValidas = z
    ========================================================= */
 
 /* ---------- POST /api/partidos ---------- */
+/* ---------- POST /api/partidos ---------- */
 export const schemaCrearPartido = z.object({
   titulo: tituloValido,
   deporte: deporteValido,
   emoji: emojiValido,
   descripcion: descripcionValida,
-  lugar: lugarValido,
-  fecha: fechaValida,
+
+  // ⚡ AHORA OPCIONALES (para modo "Organizar partido")
+  lugar: z
+    .string()
+    .min(2, 'Mínimo 2 caracteres')
+    .max(120, 'Máximo 120 caracteres')
+    .transform(v => v.trim())
+    .nullable()
+    .optional(),
+  fecha: z
+    .string()
+    .refine(val => !val || !isNaN(Date.parse(val)), { message: 'Fecha inválida' })
+    .transform(val => val ? new Date(val).toISOString() : null)
+    .nullable()
+    .optional(),
+  precio: z
+    .number()
+    .int('Debe ser un número entero')
+    .min(0, 'El precio no puede ser negativo')
+    .max(10_000_000, 'Precio demasiado alto')
+    .default(0)
+    .optional(),
+
   cupos: cuposValidos,
-  precio: precioValido,
   nivel: nivelValido,
   tipoPartido: tipoPartidoValido,
   organizadorEquipoId: z
-  .string()
-  .max(100, 'ID de equipo demasiado largo')
-  .nullable()
-  .optional(),
+    .string()
+    .max(100, 'ID de equipo demasiado largo')
+    .nullable()
+    .optional(),
   aprobacionRequerida: z.boolean().default(false),
   pedirPosiciones: z.boolean().default(false),
   posiciones: posicionesValidas,
+
+  // ⚡ NUEVO: modo del partido
+  estadoPartido: z
+    .enum(['buscando_jugadores', 'confirmado'])
+    .default('confirmado'),
 }).strict();
 
 /* ---------- PATCH /api/partidos/:id ---------- */
@@ -166,3 +192,61 @@ export const schemaListarPartidos = z.object({
 
 /* ---------- Param :id ---------- */
 export const schemaUuidParam = uuidValido;
+/* ---------- POST /api/partidos/:id/interesarse ---------- */
+export const schemaInteresarse = z.object({
+  mensaje: z
+    .string()
+    .max(300, 'Máximo 300 caracteres')
+    .transform(v => v.trim())
+    .nullable()
+    .optional(),
+}).strict();
+
+/* ---------- PATCH /api/partidos/:id/confirmar ---------- */
+export const schemaConfirmarPartido = z.object({
+  // ⚡ NUEVOS: hay que indicar con quién se confirma
+  interesadoId: z.string().uuid('El ID del interesado debe ser un UUID válido'),
+  interesadoTipo: z
+    .enum(['usuario', 'equipo'], {
+      errorMap: () => ({ message: 'Tipo inválido. Debe ser "usuario" o "equipo"' })
+    })
+    .default('usuario'),
+  equipoId: z
+    .string()
+    .uuid('El ID del equipo debe ser un UUID válido')
+    .nullable()
+    .optional(),
+
+  // Datos del partido propuestos
+  lugar: lugarValido,
+  fecha: fechaValida,
+  precio: z
+    .number()
+    .int('Debe ser un número entero')
+    .min(0, 'El precio no puede ser negativo')
+    .max(10_000_000, 'Precio demasiado alto')
+    .default(0),
+
+  // Mensaje opcional al interesado
+  mensaje: z
+    .string()
+    .max(300, 'Máximo 300 caracteres')
+    .transform(v => v.trim())
+    .nullable()
+    .optional(),
+}).strict();
+/* ---------- GET /api/usuarios/me/historial-partidos ---------- */
+export const schemaHistorialPartidos = z.object({
+  deporte: z.string().max(50).optional(),
+  tipo: z.enum(['jugador', 'equipo']).optional(),
+  desde: z
+    .string()
+    .refine(val => !val || !isNaN(Date.parse(val)), { message: 'Fecha inválida' })
+    .optional(),
+  hasta: z
+    .string()
+    .refine(val => !val || !isNaN(Date.parse(val)), { message: 'Fecha inválida' })
+    .optional(),
+  page: z.coerce.number().int().min(1).max(1000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+}).strict();

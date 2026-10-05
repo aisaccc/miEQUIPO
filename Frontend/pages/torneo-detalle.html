@@ -112,6 +112,7 @@
     </div>
   </div>
 </div>
+
 <!-- ================= MODAL: VER DETALLES DE EQUIPO ================= -->
 <div class="modal-backdrop" id="modal-ver-equipo">
   <div class="modal" style="max-width: 500px;">
@@ -126,6 +127,387 @@
 
     <div class="modal__footer">
       <button class="btn btn--ghost" data-cerrar-modal="modal-ver-equipo">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: TABLA DE POSICIONES ================= -->
+<div class="modal-backdrop" id="modal-tabla-posiciones">
+  <div class="modal" style="max-width: 900px;">
+    <div class="modal__header">
+      <h3 class="modal__title">📊 Tabla de posiciones</h3>
+      <button class="modal__close" data-cerrar-modal="modal-tabla-posiciones">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div id="tabla-posiciones-body">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-tabla-posiciones">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: RESULTADOS (LIGA) ================= -->
+<div class="modal-backdrop" id="modal-resultados">
+  <div class="modal" style="max-width: 900px;">
+    <div class="modal__header">
+      <h3 class="modal__title">📅 Resultados</h3>
+      <button class="modal__close" data-cerrar-modal="modal-resultados">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div id="resultados-body">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-resultados">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CREAR PARTIDO ================= -->
+<div class="modal-backdrop" id="modal-crear-partido">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="crear-partido-titulo">➕ Crear partido</h3>
+      <button class="modal__close" data-cerrar-modal="modal-crear-partido">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Jornada (solo liga) -->
+      <div class="field" id="crear-partido-jornada-wrapper">
+        <label class="field__label" for="crear-partido-jornada">Jornada</label>
+        <select id="crear-partido-jornada" class="field__input">
+          <option value="">Seleccioná una jornada...</option>
+        </select>
+        <button type="button" class="btn btn--ghost btn--sm mt-4" id="btn-nueva-jornada">
+          + Nueva jornada
+        </button>
+      </div>
+
+      <!-- Local -->
+      <div class="field">
+        <label class="field__label" for="crear-partido-local">Local *</label>
+        <select id="crear-partido-local" class="field__input">
+          <option value="">Seleccioná el local...</option>
+        </select>
+      </div>
+
+      <!-- Visitante -->
+      <div class="field">
+        <label class="field__label" for="crear-partido-visitante">Visitante *</label>
+        <select id="crear-partido-visitante" class="field__input">
+          <option value="">Seleccioná el visitante...</option>
+        </select>
+      </div>
+
+      <!-- Fecha -->
+      <div class="field">
+        <label class="field__label" for="crear-partido-fecha">Fecha (opcional)</label>
+        <input type="datetime-local" id="crear-partido-fecha" class="field__input" />
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-partido">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-partido">Crear partido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CARGAR RESULTADO ================= -->
+<!-- ================= MODAL: CARGAR RESULTADO ================= -->
+<div class="modal-backdrop" id="modal-cargar-resultado">
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="cargar-resultado-titulo">Cargar resultado</h3>
+      <button class="modal__close" data-cerrar-modal="modal-cargar-resultado">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Info del partido -->
+      <div class="card mb-4" style="background:var(--color-bg-alt); border:none">
+        <div class="flex" style="justify-content:space-between; align-items:center; gap:var(--space-4)">
+          <div style="flex:1; text-align:center">
+            <div id="cargar-resultado-local-escudo" style="font-size:32px">🛡️</div>
+            <div id="cargar-resultado-local-nombre" class="text-sm" style="font-weight:600">Local</div>
+          </div>
+          <div class="text-muted" style="font-weight:700">VS</div>
+          <div style="flex:1; text-align:center">
+            <div id="cargar-resultado-visitante-escudo" style="font-size:32px">🛡️</div>
+            <div id="cargar-resultado-visitante-nombre" class="text-sm" style="font-weight:600">Visitante</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- MODO SIMPLE (local | visitante)                       -->
+      <!-- ===================================================== -->
+      <div id="cargar-resultado-modo-simple">
+        <div class="form-row" style="grid-template-columns:1fr auto 1fr; gap:var(--space-3); align-items:center">
+          <div class="field" style="margin:0">
+            <label class="field__label" id="cargar-resultado-local-label">Local</label>
+            <input type="number" id="cargar-resultado-local" class="field__input" min="0" value="0" />
+          </div>
+          <div style="font-size:24px; font-weight:700; padding-top:20px">-</div>
+          <div class="field" style="margin:0">
+            <label class="field__label" id="cargar-resultado-visitante-label">Visitante</label>
+            <input type="number" id="cargar-resultado-visitante" class="field__input" min="0" value="0" />
+          </div>
+        </div>
+
+        <!-- ⚡ Desempate (penales / tie break) — solo si empatan -->
+        <div id="cargar-resultado-desempate-wrapper" class="hidden mt-4">
+          <div class="aviso-aprobacion show">
+            <span class="aviso-aprobacion__icon">⚖️</span>
+            <div>
+              El marcador está <strong>empatado</strong>.
+              Cargá el resultado de <strong id="cargar-resultado-desempate-label">penales</strong>.
+            </div>
+          </div>
+
+          <div class="form-row mt-4" style="grid-template-columns:1fr auto 1fr; gap:var(--space-3); align-items:center">
+            <div class="field" style="margin:0">
+              <label class="field__label">Local</label>
+              <input type="number" id="cargar-resultado-desempate-local" class="field__input" min="0" value="0" />
+            </div>
+            <div style="font-size:24px; font-weight:700; padding-top:20px">-</div>
+            <div class="field" style="margin:0">
+              <label class="field__label">Visitante</label>
+              <input type="number" id="cargar-resultado-desempate-visitante" class="field__input" min="0" value="0" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- MODO SETS                                             -->
+      <!-- ===================================================== -->
+      <div id="cargar-resultado-modo-sets" class="hidden">
+        <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:var(--space-3)">
+          <div class="detalle__seccion-titulo" style="margin:0">Resultado de cada set</div>
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-agregar-set">
+            + Agregar set
+          </button>
+        </div>
+
+        <p class="text-xs text-muted mb-3" id="cargar-resultado-sets-hint">
+          Ingresá los puntos de cada set.
+        </p>
+
+        <div id="cargar-resultado-sets-lista">
+          <!-- Se llena dinámicamente -->
+        </div>
+
+        <div class="card mt-4" style="background:var(--color-bg-alt); border:none; padding:var(--space-3)">
+          <div class="flex" style="justify-content:space-between; align-items:center">
+            <span class="text-sm text-muted">Sets ganados</span>
+            <span class="text-lg" style="font-weight:700" id="cargar-resultado-sets-ganados">0 - 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- ⚡ MODO TIEMPO/PUNTOS (D.5)                            -->
+      <!-- ===================================================== -->
+      <div id="cargar-resultado-modo-tiempo-puntos" class="hidden">
+        <p class="text-xs text-muted mb-3" id="cargar-resultado-tp-hint">
+          Cargá el resultado de cada participante.
+        </p>
+
+        <div id="cargar-resultado-tp-lista">
+          <!-- Se llena dinámicamente -->
+        </div>
+
+        <div class="card mt-4" style="background:var(--color-bg-alt); border:none; padding:var(--space-3)">
+          <div class="flex" style="justify-content:space-between; align-items:center">
+            <span class="text-sm text-muted">Ganando</span>
+            <span class="text-lg" style="font-weight:700" id="cargar-resultado-tp-ganador">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div class="field mt-4">
+        <label class="field__label" for="cargar-resultado-estado">Estado del partido</label>
+        <select id="cargar-resultado-estado" class="field__input">
+          <option value="finalizado">Finalizado</option>
+          <option value="en_curso">En curso</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-cargar-resultado">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-resultado">Guardar resultado</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: FIXTURE (ELIMINACIÓN) ================= -->
+<div class="modal-backdrop" id="modal-fixture">
+  <div class="modal" style="max-width: 1200px;">
+    <div class="modal__header">
+      <h3 class="modal__title">🏆 Fixture</h3>
+      <button class="modal__close" data-cerrar-modal="modal-fixture">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div id="fixture-acciones" class="mb-4" style="display:flex; gap:var(--space-2); flex-wrap:wrap"></div>
+
+      <div id="fixture-body" style="overflow-x:auto;">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-fixture">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ARMAR FIXTURE MANUAL ================= -->
+<div class="modal-backdrop" id="modal-armar-fixture">
+  <div class="modal" style="max-width: 700px;">
+    <div class="modal__header">
+      <h3 class="modal__title">🛠️ Armar fixture manual</h3>
+      <button class="modal__close" data-cerrar-modal="modal-armar-fixture">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <p class="text-sm text-muted mb-4">
+        Elegí los cruces de la primera fase. Podés dejar un visitante vacío para dar un <strong>bye</strong>.
+      </p>
+
+      <div id="armar-fixture-body">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-armar-fixture">Cancelar</button>
+      <button class="btn btn--primary" id="btn-confirmar-armado">Armar fixture</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EDITAR JORNADA ================= -->
+<div class="modal-backdrop" id="modal-editar-jornada">
+  <div class="modal" style="max-width: 800px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="editar-jornada-titulo">✏️ Editar jornada</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-jornada">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Nombre de la jornada -->
+      <div class="field mb-4">
+        <label class="field__label" for="editar-jornada-nombre">Nombre de la jornada</label>
+        <input type="text" id="editar-jornada-nombre" class="field__input" maxlength="60" />
+      </div>
+
+      <!-- Lista de partidos de la jornada -->
+      <div class="detalle__seccion-titulo mb-4">Partidos</div>
+      <div id="editar-jornada-partidos">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <!-- Botones al pie de la lista -->
+      <div class="flex gap-2 mt-4" style="flex-wrap:wrap">
+        <button type="button" class="btn btn--ghost btn--sm" id="btn-jornada-agregar-partido">
+          + Agregar partido
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" id="btn-jornada-borrar-todos" style="color:var(--color-danger)">
+          🗑️ Borrar todos los partidos
+        </button>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-jornada">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-jornada">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EDITAR CRUCE (ELIMINACIÓN) ================= -->
+<div class="modal-backdrop" id="modal-editar-cruce">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="editar-cruce-titulo">✏️ Editar cruce</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-cruce">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <p class="text-sm text-muted mb-4" id="editar-cruce-descripcion">
+        Cambiá los participantes de este cruce.
+      </p>
+
+      <!-- Local -->
+      <div class="field">
+        <label class="field__label" for="editar-cruce-local">Local</label>
+        <select id="editar-cruce-local" class="field__input">
+          <option value="">— Vacío (bye) —</option>
+        </select>
+      </div>
+
+      <!-- Visitante -->
+      <div class="field">
+        <label class="field__label" for="editar-cruce-visitante">Visitante</label>
+        <select id="editar-cruce-visitante" class="field__input">
+          <option value="">— Vacío (bye) —</option>
+        </select>
+      </div>
+
+      <!-- Info de fases -->
+      <div class="aviso-aprobacion show mt-4" id="editar-cruce-info">
+        <span class="aviso-aprobacion__icon">ℹ️</span>
+        <div>
+          Solo se pueden editar cruces de la <strong>primera fase</strong>.
+          Los cruces de fases siguientes se llenan automáticamente con el ganador.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-cruce">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-cruce">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: VER DETALLE DEL PARTIDO ================= -->
+<div class="modal-backdrop" id="modal-ver-detalle-partido">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="ver-detalle-partido-titulo">Detalle del partido</h3>
+      <button class="modal__close" data-cerrar-modal="modal-ver-detalle-partido">✕</button>
+    </div>
+
+    <div class="modal__body" id="ver-detalle-partido-body">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-ver-detalle-partido">Cerrar</button>
+      <button class="btn btn--primary" id="btn-editar-resultado-desde-detalle">
+        ✏️ Editar resultado
+      </button>
     </div>
   </div>
 </div>

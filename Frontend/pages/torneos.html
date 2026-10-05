@@ -16,6 +16,8 @@
   <div class="toolbar mb-4">
     <div class="toolbar__filters">
       <button class="chip chip--active" data-filtro-torneo="todos">Todos</button>
+      <button class="chip" data-filtro-torneo="individual">👤 Individual</button>
+      <button class="chip" data-filtro-torneo="equipo">👥 Equipos</button>
       <button class="chip" data-filtro-torneo="inscripcion">Inscripción abierta</button>
       <button class="chip" data-filtro-torneo="en_curso">En curso</button>
       <button class="chip" data-filtro-torneo="gratis">Gratis</button>
@@ -53,6 +55,168 @@
 
     <div class="modal__body">
 
+      <!-- ============================================== -->
+      <!-- TIPO DE PARTICIPACIÓN (equipos o individual)   -->
+      <!-- ============================================== -->
+      <div class="field">
+        <label class="field__label">Tipo de participación *</label>
+
+        <div class="nivel-grid" style="grid-template-columns:repeat(2, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion active" data-tipo-participacion="equipo">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👥 Por equipos</h3>
+            <div class="nivel-opcion__desc">Se inscriben equipos (Fútbol, Básquetbol, etc.)</div>
+          </div>
+          <div class="tipo-partido-opcion" data-tipo-participacion="individual">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👤 Individual</h3>
+            <div class="nivel-opcion__desc">Se inscriben personas (Tenis, Boxeo, etc.)</div>
+          </div>
+        </div>
+
+        <p class="text-xs text-muted mt-4" id="hint-tipo-participacion">
+          Elegí "Individual" para deportes donde cada persona compite sola.
+        </p>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- MODALIDAD DEL TORNEO                            -->
+      <!-- ============================================== -->
+      <div class="field">
+        <label class="field__label">Modalidad del torneo *</label>
+
+        <div class="nivel-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion active" data-modalidad="liga">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⚽ Liga</h3>
+            <div class="nivel-opcion__desc">Tabla de puntos</div>
+          </div>
+          <div class="tipo-partido-opcion" data-modalidad="eliminacion">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏆 Eliminación</h3>
+            <div class="nivel-opcion__desc">Bracket directo</div>
+          </div>
+          <div class="tipo-partido-opcion" data-modalidad="custom">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🔧 Custom</h3>
+            <div class="nivel-opcion__desc">Vos organizás</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- ⚡ AUTO-FIXTURE (solo eliminación)              -->
+      <!-- ============================================== -->
+      <div class="field hidden" id="auto-fixture-wrapper">
+        <label class="switch">
+          <input type="checkbox" id="torneo-auto-fixture" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Armar cruces automáticamente</div>
+            <div class="switch__hint">
+              Si activás, al cerrar las inscripciones se arma el bracket
+              automáticamente con los participantes inscriptos.
+              Si desactivás, vas a poder armar los cruces manualmente.
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- NIVEL DEL TORNEO                                -->
+      <!-- ============================================== -->
+      <div class="field">
+        <label class="field__label">Nivel del torneo *</label>
+
+        <div class="nivel-grid" id="nivel-grid-torneo" style="grid-template-columns:repeat(3, 1fr)"></div>
+
+        <!-- ⚡ Switch "libre inscripción" (aparece según nivel/precio) -->
+        <div class="mt-4 hidden" id="libre-inscripcion-wrapper">
+          <label class="switch">
+            <input type="checkbox" id="torneo-libre-inscripcion" checked />
+            <span class="switch__slider"></span>
+            <div>
+              <div class="switch__label">Libre inscripción</div>
+              <div class="switch__hint">
+                Si activás, los equipos se inscriben directo. Si desactivás, van a lista de espera para que vos los apruebes.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="aviso-aprobacion mt-4" id="aviso-pago">
+          <span class="aviso-aprobacion__icon">💰</span>
+          <div>
+            <strong>Torneo de pago.</strong>
+            Todas las inscripciones van a lista de espera. Coordiná el pago con el capitán por chat antes de aprobarlas.
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- CONFIGURACIÓN AVANZADA (colapsable)            -->
+      <!-- ============================================== -->
+      <div class="field">
+        <details>
+          <summary style="cursor:pointer; font-weight:600; font-size:var(--fs-sm); padding:var(--space-2) 0; user-select:none">
+            ⚙️ Configuración avanzada
+          </summary>
+
+          <div style="padding:var(--space-3) 0 0 0; display:flex; flex-direction:column; gap:var(--space-3)">
+
+            <!-- Solo para liga -->
+            <div id="config-liga-wrapper">
+              <label class="field__label" style="font-size:var(--fs-xs)">Puntos por partido</label>
+              <div class="form-row" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-victoria" style="font-size:var(--fs-xs)">Victoria</label>
+                  <input type="number" id="torneo-puntos-victoria" class="field__input" min="0" max="10" value="3" />
+                </div>
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-empate" style="font-size:var(--fs-xs)">Empate</label>
+                  <input type="number" id="torneo-puntos-empate" class="field__input" min="0" max="10" value="1" />
+                </div>
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-derrota" style="font-size:var(--fs-xs)">Derrota</label>
+                  <input type="number" id="torneo-puntos-derrota" class="field__input" min="0" max="10" value="0" />
+                </div>
+              </div>
+
+              <label class="switch mt-4">
+                <input type="checkbox" id="torneo-permite-empate" checked />
+                <span class="switch__slider"></span>
+                <div>
+                  <div class="switch__label">Permitir empates</div>
+                  <div class="switch__hint">Si desactivás, los partidos deben tener un ganador</div>
+                </div>
+              </label>
+
+              <label class="switch mt-4">
+                <input type="checkbox" id="torneo-ida-vuelta" />
+                <span class="switch__slider"></span>
+                <div>
+                  <div class="switch__label">Ida y vuelta</div>
+                  <div class="switch__hint">Duplica las jornadas (cada equipo juega de local y visitante)</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Equipos que clasifican -->
+            <div class="field" style="margin:0">
+              <label class="field__label" for="torneo-equipos-clasifican" style="font-size:var(--fs-xs)">Equipos que clasifican (opcional)</label>
+              <input type="number" id="torneo-equipos-clasifican" class="field__input" min="0" max="64" placeholder="Ej: 4" />
+              <p class="text-xs text-muted mt-4">Dejar vacío si no aplica</p>
+            </div>
+
+            <!-- Estadísticas -->
+            <label class="switch">
+              <input type="checkbox" id="torneo-incluye-estadisticas" />
+              <span class="switch__slider"></span>
+              <div>
+                <div class="switch__label">Incluir estadísticas por jugador</div>
+                <div class="switch__hint">Los organizadores podrán cargar goles, asistencias, etc.</div>
+              </div>
+            </label>
+
+          </div>
+        </details>
+      </div>
+
       <div class="field">
         <label class="field__label" for="torneo-nombre">Nombre del torneo *</label>
         <input type="text" id="torneo-nombre" class="field__input" placeholder="Ej: Copa Verano 2026" maxlength="80" />
@@ -65,6 +229,37 @@
         </select>
       </div>
 
+      <!-- ============================================== -->
+      <!-- ⚡ NUEVO D.5: SISTEMA DE CLASIFICACIÓN          -->
+      <!-- ============================================== -->
+      <!-- Solo se muestra cuando el deporte es de tiempo  -->
+      <!-- (natación, atletismo, ciclismo) o de puntos     -->
+      <!-- (escalada, surf, boxeo). El usuario puede       -->
+      <!-- cambiarlo manualmente.                          -->
+      <!-- ============================================== -->
+      <div class="field hidden" id="sistema-clasificacion-wrapper">
+        <label class="field__label">Sistema de clasificación *</label>
+
+        <div class="nivel-grid" id="sistema-clasificacion-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion active" data-sistema-clasificacion="simple">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🎯 Simple</h3>
+            <div class="nivel-opcion__desc">Goles, puntos o sets</div>
+          </div>
+          <div class="tipo-partido-opcion" data-sistema-clasificacion="tiempo">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⏱️ Tiempo</h3>
+            <div class="nivel-opcion__desc">Menor tiempo gana</div>
+          </div>
+          <div class="tipo-partido-opcion" data-sistema-clasificacion="puntos">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏅 Puntos</h3>
+            <div class="nivel-opcion__desc">Mayor puntaje gana</div>
+          </div>
+        </div>
+
+        <p class="text-xs text-muted mt-4" id="sistema-clasificacion-hint">
+          Elegí cómo se define al ganador en cada partido.
+        </p>
+      </div>
+
       <div class="form-row">
         <div class="field">
           <label class="field__label" for="torneo-fecha-inicio">Fecha de inicio *</label>
@@ -74,6 +269,15 @@
           <label class="field__label" for="torneo-fecha-fin">Fecha de término</label>
           <input type="date" id="torneo-fecha-fin" class="field__input" />
         </div>
+      </div>
+
+      <!-- Fecha límite de inscripción -->
+      <div class="field">
+        <label class="field__label" for="torneo-fecha-limite">Fecha límite de inscripción</label>
+        <input type="date" id="torneo-fecha-limite" class="field__input" />
+        <p class="text-xs text-muted mt-4">
+          Después de esta fecha, no se aceptan más inscripciones. Dejar vacío si no aplica.
+        </p>
       </div>
 
       <div class="field">

@@ -78,7 +78,6 @@ const nivelValido = z
   })
   .default('amistoso');
 
-// ⚡ NUEVO: tipo de participación
 const tipoParticipacionValido = z
   .enum(['equipo', 'individual'], {
     errorMap: () => ({ message: 'Tipo de participación inválido. Debe ser "equipo" o "individual"' })
@@ -90,6 +89,20 @@ const permisosValidos = z
     errorMap: () => ({ message: 'Permisos inválidos. Debe ser "resultados" o "completo"' })
   })
   .default('resultados');
+
+const faseValida = z.enum(
+  ['32avos', '16avos', '8vos', 'cuartos', 'semis', 'final', 'tercer_puesto'],
+  { errorMap: () => ({ message: 'Fase inválida' }) }
+);
+
+/* ⚡ NUEVO: sistema de clasificación */
+const sistemaClasificacionValido = z
+  .enum(['simple', 'tiempo', 'puntos'], {
+    errorMap: () => ({
+      message: 'Sistema inválido. Debe ser "simple", "tiempo" o "puntos"'
+    })
+  })
+  .default('simple');
 
 /* =========================================================
    SCHEMAS
@@ -111,9 +124,14 @@ export const schemaCrearTorneo = z.object({
   modalidad: modalidadValida,
   nivel: nivelValido,
   libreInscripcion: z.boolean().default(true),
-
-  // ⚡ NUEVO: tipo de participación (equipo o individual)
   tipoParticipacion: tipoParticipacionValido,
+  idaYVuelta: z.boolean().default(false),
+
+  // Auto-fixture para eliminación
+  autoFixture: z.boolean().default(false),
+
+  // ⚡ NUEVO: sistema de clasificación
+  sistemaClasificacion: sistemaClasificacionValido,
 
   puntosVictoria: z.number().int().min(0).max(10).default(3),
   puntosEmpate: z.number().int().min(0).max(10).default(1),
@@ -139,9 +157,13 @@ export const schemaEditarTorneo = z.object({
   modalidad: modalidadValida.optional(),
   nivel: nivelValido.optional(),
   libreInscripcion: z.boolean().optional(),
-
-  // ⚡ NUEVO: se puede editar el tipo de participación
   tipoParticipacion: tipoParticipacionValido.optional(),
+  idaYVuelta: z.boolean().optional(),
+
+  autoFixture: z.boolean().optional(),
+
+  // ⚡ NUEVO
+  sistemaClasificacion: sistemaClasificacionValido.optional(),
 
   puntosVictoria: z.number().int().min(0).max(10).optional(),
   puntosEmpate: z.number().int().min(0).max(10).optional(),
@@ -152,13 +174,6 @@ export const schemaEditarTorneo = z.object({
 }).strict();
 
 /* ---------- POST /api/torneos/:id/inscribir ---------- */
-/*
-  En torneos de EQUIPO:
-    - equipoId es obligatorio y debe ser UUID válido.
-  En torneos INDIVIDUALES:
-    - equipoId puede venir null, undefined o ausente.
-    - El backend ignora ese valor y usa el usuario autenticado.
-*/
 export const schemaInscribirEquipo = z.object({
   equipoId: z
     .union([
@@ -177,10 +192,6 @@ export const schemaAprobarSolicitud = z.object({
 }).strict();
 
 /* ---------- POST /api/torneos/:id/invitaciones ---------- */
-/*
-  Solo aplica a torneos de EQUIPO.
-  Los torneos individuales no permiten invitar equipos.
-*/
 export const schemaInvitarEquipo = z.object({
   equipoId: z
     .string({ required_error: 'El ID del equipo es obligatorio' })
@@ -193,32 +204,43 @@ export const schemaAgregarOrganizador = z.object({
   permisos: permisosValidos,
 }).strict();
 
-/* ---------- POST /api/torneos/:id/partidos ---------- */
+/* =========================================================
+   FIXTURE / CRUCES
+   ========================================================= */
+
 export const schemaCrearPartidoTorneo = z.object({
   ronda: z.string().min(1).max(30).transform(v => v.trim()),
   orden: z.number().int().min(0).max(1000).default(0),
   equipoLocalId: z.string().max(100).nullable().optional(),
   equipoVisitanteId: z.string().max(100).nullable().optional(),
   fecha: fechaOpcional,
+  jornadaId: uuidValido.nullable().optional(),
 }).strict();
 
-/* ---------- PATCH /api/torneos/:id/partidos/:partidoId ---------- */
+/* ---------- PATCH /api/torneos/:id/partidos/:partidoId/resultado ---------- */
 export const schemaCargarResultado = z.object({
   resultado: z.record(z.any()),
   estadisticas: z.record(z.any()).nullable().optional(),
   estado: z.enum(['pendiente', 'en_curso', 'finalizado', 'cancelado']).optional(),
 }).strict();
 
-/* ---------- PATCH /api/torneos/:id/cerrar ---------- */
+export const schemaEditarPartidoTorneo = z.object({
+  equipoLocalId: z.string().max(100).nullable().optional(),
+  equipoVisitanteId: z.string().max(100).nullable().optional(),
+  fecha: fechaOpcional,
+  jornadaId: uuidValido.nullable().optional(),
+  orden: z.number().int().min(0).max(1000).optional(),
+}).strict();
+
 export const schemaCerrarTorneo = z.object({}).strict();
 
-/* ---------- GET /api/torneos ---------- */
 export const schemaListarTorneos = z.object({
   deporte: z.string().max(50).optional(),
   estado: z.enum(['inscripcion', 'en_curso', 'finalizado']).optional(),
   modalidad: z.enum(['liga', 'eliminacion', 'custom']).optional(),
   nivel: z.enum(['amistoso', 'semiprofesional', 'profesional']).optional(),
   tipoParticipacion: z.enum(['equipo', 'individual']).optional(),
+  sistemaClasificacion: z.enum(['simple', 'tiempo', 'puntos']).optional(),
   soloMios: z.enum(['true', 'false']).optional(),
   soloInscritos: z.enum(['true', 'false']).optional(),
   busqueda: z.string().max(100).optional(),
@@ -226,7 +248,87 @@ export const schemaListarTorneos = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 }).strict();
 
-/* ---------- Params ---------- */
+/* =========================================================
+   JORNADAS (liga)
+   ========================================================= */
+
+export const schemaCrearJornada = z.object({
+  nombre: z.string().min(1).max(60).transform(v => v.trim()),
+  fecha: fechaOpcional,
+}).strict();
+
+export const schemaEditarJornada = z.object({
+  nombre: z.string().min(1).max(60).transform(v => v.trim()).optional(),
+  fecha: fechaOpcional,
+}).strict();
+
+/* =========================================================
+   GUARDAR JORNADA BULK
+   ========================================================= */
+const schemaPartidoBulk = z.object({
+  id: uuidValido,
+  fecha: z
+    .union([
+      z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Fecha inválida' })
+        .transform(val => new Date(val).toISOString()),
+      z.null(),
+    ])
+    .optional(),
+  resultado: z.record(z.any()).nullable().optional(),
+  estado: z.enum(['pendiente', 'en_curso', 'finalizado', 'cancelado']).optional(),
+}).strict();
+
+export const schemaGuardarJornadaBulk = z.object({
+  jornada: z
+    .object({
+      nombre: z.string().min(1).max(60).transform(v => v.trim()).optional(),
+      fecha: z
+        .union([
+          z.string().refine(val => !isNaN(Date.parse(val)), { message: 'Fecha inválida' })
+            .transform(val => new Date(val).toISOString()),
+          z.null(),
+        ])
+        .optional(),
+    })
+    .strict()
+    .optional(),
+  partidos: z.array(schemaPartidoBulk).optional(),
+  partidosEliminar: z.array(uuidValido).optional(),
+}).strict();
+
+/* =========================================================
+   FIXTURE AUTOMÁTICO — LIGA
+   ========================================================= */
+export const schemaGenerarFixtureLiga = z.object({}).strict();
+
+/* =========================================================
+   FIXTURE — ELIMINACIÓN
+   ========================================================= */
+
+export const schemaArmarFixtureAleatorio = z.object({}).strict();
+
+export const schemaArmarFixtureManual = z.object({
+  cruces: z.array(
+    z.object({
+      localId: z.string().uuid('ID local inválido'),
+      visitanteId: z.string().uuid('ID visitante inválido').nullable(),
+    })
+  ).min(1, 'Mínimo 1 cruce'),
+}).strict();
+
+export const schemaConfirmarFixture = z.object({}).strict();
+
+/* =========================================================
+   EDITAR CRUCE INDIVIDUAL
+   ========================================================= */
+export const schemaEditarCruce = z.object({
+  equipoLocalId: z.string().max(100).nullable().optional(),
+  equipoVisitanteId: z.string().max(100).nullable().optional(),
+}).strict();
+
+/* =========================================================
+   PARAMS
+   ========================================================= */
 export const schemaUuidParam = uuidValido;
 
 export const schemaEquipoIdParam = z

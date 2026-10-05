@@ -27,6 +27,57 @@
 <!-- ================= ESTADÍSTICAS POR DEPORTE ================= -->
 <div id="perfil-stats-deportes"></div>
 
+<!-- ================= HISTORIAL DE PARTIDOS ================= -->
+<div class="card mb-4" id="card-historial">
+  <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-3)">
+    <h3 class="card__title" style="margin:0">
+      <img src="assets/icons/reloj.png" alt="" style="width:18px; height:18px; object-fit:contain; vertical-align:middle; display:inline-block; margin-right:6px" />
+      Historial de partidos
+    </h3>
+    <span class="text-xs text-muted" id="historial-count">0 partidos jugados</span>
+  </div>
+
+  <!-- Filtros -->
+  <div class="mb-4" style="display:flex; flex-direction:column; gap:var(--space-3)">
+
+    <!-- Filtro por rol -->
+    <div class="toolbar__filters" id="historial-filtros-rol">
+      <button class="chip chip--active" data-hist-rol="todos">Todos</button>
+      <button class="chip" data-hist-rol="organizador">👑 Como organizador</button>
+      <button class="chip" data-hist-rol="jugador">👤 Como jugador</button>
+      <button class="chip" data-hist-rol="equipo">🛡️ Como equipo</button>
+    </div>
+
+    <!-- Filtros avanzados -->
+    <div class="form-row" style="gap:var(--space-2)">
+      <div class="field" style="margin:0">
+        <select id="historial-deporte" class="field__input">
+          <option value="">Todos los deportes</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <input type="date" id="historial-desde" class="field__input" placeholder="Desde" />
+      </div>
+      <div class="field" style="margin:0">
+        <input type="date" id="historial-hasta" class="field__input" placeholder="Hasta" />
+      </div>
+      <button class="btn btn--ghost btn--sm" id="btn-limpiar-filtros" title="Limpiar filtros">
+        🗑️ Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista -->
+  <div id="perfil-historial"></div>
+
+  <!-- Botón "Cargar más" -->
+  <div id="historial-cargar-mas-wrapper" class="mt-4" style="text-align:center; display:none">
+    <button class="btn btn--ghost" id="btn-historial-cargar-mas">
+      Cargar más
+    </button>
+  </div>
+</div>
+
 <!-- ================= MIS PUBLICACIONES ================= -->
 <div class="card mb-4">
 <h3 class="card__title mb-4">

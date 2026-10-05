@@ -56,9 +56,46 @@ router.post('/:id/organizadores', torneosController.agregarOrganizador);
 router.delete('/:id/organizadores/:usuarioId', torneosController.quitarOrganizador);
 
 /* =========================================================
-   FIXTURE / CRUCES
+   FIXTURE — CRUD de partidos
    ========================================================= */
 router.post('/:id/partidos', torneosController.crearPartidoTorneo);
+router.patch('/:id/partidos/:partidoId', torneosController.editarPartidoTorneo);
+router.delete('/:id/partidos/:partidoId', torneosController.eliminarPartidoTorneo);
 router.patch('/:id/partidos/:partidoId/resultado', torneosController.cargarResultado);
+
+/* =========================================================
+   ⚡ FIXTURE — EDITAR CRUCE INDIVIDUAL (eliminación)
+   =========================================================
+   Permite cambiar local/visitante de un cruce existente
+   mientras el fixture NO esté confirmado.
+   ========================================================= */
+router.patch('/:id/cruces/:partidoId', torneosController.editarCruce);
+
+/* =========================================================
+   FIXTURE AUTOMÁTICO — LIGA
+   ========================================================= */
+router.post('/:id/fixture/liga', torneosController.generarFixtureLiga);
+
+/* =========================================================
+   FIXTURE — ELIMINACIÓN
+   ========================================================= */
+router.post('/:id/fixture/aleatorio', torneosController.armarFixtureAleatorio);
+router.post('/:id/fixture/manual', torneosController.armarFixtureManual);
+router.post('/:id/fixture/confirmar', torneosController.confirmarFixture);
+
+/* =========================================================
+   JORNADAS (liga)
+   ========================================================= */
+router.post('/:id/jornadas', torneosController.crearJornada);
+router.patch('/:id/jornadas/:jornadaId', torneosController.editarJornada);
+router.delete('/:id/jornadas/:jornadaId', torneosController.eliminarJornada);
+
+/* =========================================================
+   GUARDAR JORNADA BULK
+   =========================================================
+   IMPORTANTE: va DESPUÉS de las rutas de jornadas normales
+   para no confundirse con /jornadas/:jornadaId.
+   ========================================================= */
+router.patch('/:id/jornadas/:jornadaId/bulk', torneosController.guardarJornadaBulk);
 
 export default router;

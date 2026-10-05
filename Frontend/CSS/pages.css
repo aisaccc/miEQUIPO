@@ -2331,3 +2331,1282 @@ select.field__input {
   font-size: 40px;
   vertical-align: middle;
 }
+/* =========================================================
+   DROPDOWN DE EQUIPOS (para el modal crear partido)
+   ========================================================= */
+.equipo-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.equipo-dropdown__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  transition: all 0.15s ease;
+}
+
+.equipo-dropdown__trigger:hover {
+  border-color: var(--color-border-strong);
+}
+
+.equipo-dropdown__trigger.open {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.12);
+}
+
+.equipo-dropdown__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.equipo-dropdown__placeholder {
+  color: var(--color-text-soft);
+}
+
+.equipo-dropdown__selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.equipo-dropdown__selected-nombre {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.equipo-dropdown__arrow {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.equipo-dropdown__trigger.open .equipo-dropdown__arrow {
+  transform: rotate(180deg);
+}
+
+/* Panel desplegable */
+.equipo-dropdown__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  padding: 4px;
+}
+
+.equipo-dropdown__panel.open {
+  display: block;
+}
+
+/* Opciones dentro del panel */
+.equipo-opcion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  width: 100%;
+}
+
+.equipo-opcion:hover {
+  background: var(--color-surface-2);
+}
+
+.equipo-opcion.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.equipo-opcion__icono {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+}
+
+.equipo-opcion__icono--emoji {
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  background: var(--color-surface-2);
+}
+
+.equipo-opcion__nombre {
+  flex: 1;
+  min-width: 0;
+}
+
+.equipo-opcion__nombre-principal {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.equipo-opcion__deporte {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.equipo-opcion.active .equipo-opcion__deporte {
+  color: var(--color-primary-dark);
+  opacity: 0.8;
+}
+/* ---------- TIPO DE PARTIDO (jugador/equipo) ---------- */
+.tipo-partido-opcion {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--color-surface);
+}
+
+.tipo-partido-opcion:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.tipo-partido-opcion.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.15);
+}
+
+.tipo-partido-opcion.active .nivel-opcion__label {
+  color: var(--color-primary-dark);
+}
+/* ---------- TIPO DE PARTIDO (jugador/equipo) ---------- */
+.tipo-partido-opcion {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--color-surface);
+}
+
+.tipo-partido-opcion:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.tipo-partido-opcion.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.15);
+}
+
+.tipo-partido-opcion.active .card__title {
+  color: var(--color-primary-dark);
+}
+.notif-item {
+  position: relative;
+}
+
+.notif-item__del {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.notif-item:hover .notif-item__del {
+  opacity: 0.6;
+}
+
+.notif-item__del:hover {
+  opacity: 1;
+  background: var(--color-danger-light, rgba(232, 131, 106, 0.15));
+}
+/* =========================================================
+   ⚡ TABLA DE POSICIONES
+   ========================================================= */
+.tabla-posiciones-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md, 8px);
+}
+
+.tabla-posiciones {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm, 14px);
+  min-width: 640px;
+}
+
+.tabla-posiciones thead {
+  background: var(--color-bg-alt, #f5f5f5);
+}
+
+.tabla-posiciones th {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: var(--fs-xs, 12px);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.tabla-posiciones td {
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabla-posiciones tbody tr:hover {
+  background: var(--color-primary-light, rgba(232, 131, 106, 0.08));
+}
+
+.tabla-posiciones__fila--alt {
+  background: var(--color-bg-alt, #fafafa);
+}
+
+.tabla-posiciones tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =========================================================
+   ⚡ RESULTADOS (partidos por jornada)
+   ========================================================= */
+.resultado-item {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s ease;
+}
+
+.resultado-item:last-child {
+  border-bottom: none;
+}
+
+.resultado-item:hover {
+  background: var(--color-bg-alt, #fafafa);
+}
+
+.resultado-item__equipo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.resultado-item__equipo--local {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.resultado-item__equipo--visitante {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.resultado-item__nombre {
+  font-size: var(--fs-sm, 14px);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultado-item__marcador {
+  background: var(--color-primary, #E8836A);
+  color: white;
+  font-weight: 700;
+  font-size: var(--fs-md, 16px);
+  padding: 6px 16px;
+  border-radius: var(--radius-sm, 6px);
+  min-width: 70px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1, 4px);
+}
+
+.resultado-item__marcador--pendiente {
+  background: var(--color-bg-alt, #eee);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs, 12px);
+}
+
+.resultado-item__fecha {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding-top: var(--space-1, 4px);
+}
+
+/* =========================================================
+   ⚡ FIXTURE (bracket)
+   ========================================================= */
+.fixture-bracket {
+  display: flex;
+  gap: var(--space-5, 24px);
+  padding: var(--space-4);
+  min-width: max-content;
+}
+
+.fixture-bracket__fase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  min-width: 220px;
+}
+
+.fixture-bracket__fase-titulo {
+  font-size: var(--fs-sm, 14px);
+  font-weight: 700;
+  text-align: center;
+  padding: var(--space-2) 0;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: var(--space-3);
+}
+
+.fixture-bracket__fase-partidos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  justify-content: space-around;
+  flex: 1;
+}
+
+/* ---------- Cruce individual ---------- */
+.fixture-cruce {
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2);
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+}
+
+.fixture-cruce--finalizado {
+  border-color: var(--color-primary, #E8836A);
+}
+
+.fixture-cruce--clickeable {
+  cursor: pointer;
+}
+
+.fixture-cruce--clickeable:hover {
+  border-color: var(--color-primary, #E8836A);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.fixture-cruce__equipo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--fs-sm, 14px);
+  position: relative;
+}
+
+.fixture-cruce__equipo--ganador {
+  background: var(--color-primary-light, rgba(232, 131, 106, 0.15));
+  font-weight: 700;
+}
+
+.fixture-cruce__nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fixture-cruce__check {
+  color: var(--color-primary, #E8836A);
+  font-weight: 700;
+}
+
+.fixture-cruce__marcador {
+  text-align: center;
+  font-size: var(--fs-xs, 12px);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.fixture-cruce__fecha {
+  text-align: center;
+  padding-top: 4px;
+  border-top: 1px dashed var(--color-border);
+  margin-top: 2px;
+}
+
+/* =========================================================
+   ⚡ MODALES GRANDES (tabla/resultados/fixture)
+   ========================================================= */
+
+/* En móvil, los modales muy anchos se achican */
+@media (max-width: 640px) {
+  .tabla-posiciones {
+    font-size: var(--fs-xs, 12px);
+  }
+
+  .tabla-posiciones th,
+  .tabla-posiciones td {
+    padding: 6px 4px;
+  }
+
+  .fixture-bracket {
+    gap: var(--space-3);
+  }
+
+  .fixture-bracket__fase {
+    min-width: 180px;
+  }
+
+  .resultado-item {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .resultado-item__nombre {
+    font-size: var(--fs-xs, 12px);
+  }
+
+  .resultado-item__marcador {
+    padding: 4px 10px;
+    min-width: 55px;
+    font-size: var(--fs-sm, 14px);
+  }
+}
+
+/* =========================================================
+   ⚡ BOTÓN 🗑️ de notificaciones (por si no lo agregaste)
+   ========================================================= */
+.notif-item {
+  position: relative;
+}
+
+.notif-item__del {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.notif-item:hover .notif-item__del {
+  opacity: 0.6;
+}
+
+.notif-item__del:hover {
+  opacity: 1;
+  background: var(--color-danger-light, rgba(232, 131, 106, 0.15));
+}
+/* =========================================================
+   ⚡ JORNADA CARD (modal Resultados)
+   ========================================================= */
+.jornada-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.jornada-card__titulo {
+  font-weight: 600;
+  font-size: var(--fs-md, 16px);
+}
+
+.jornada-card__fecha {
+  margin-top: 2px;
+}
+
+.jornada-card__acciones {
+  display: flex;
+  gap: 4px;
+}
+
+/* =========================================================
+   ⚡ PARTIDO EDITABLE (modal Editar Jornada)
+   ========================================================= */
+.partido-editable {
+  background: var(--color-bg-alt, #fafafa);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.partido-editable__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.partido-editable__equipos {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  flex: 1;
+  font-size: var(--fs-sm, 14px);
+}
+
+.partido-editable__campos {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+/* =========================================================
+   ⚡ MODAL EDITAR JORNADA (arriba del modal Resultados)
+   ========================================================= */
+#modal-editar-jornada {
+  z-index: 110;
+}
+/* Resultado mostrado (solo lectura) en el modal editar jornada */
+.partido-editable__resultado {
+  padding: var(--space-2) 0;
+  margin-bottom: var(--space-2);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.partido-editable__campos {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+/* =========================================================
+   ⚡ BRACKET NUEVO (con líneas, tipo FASE FINAL)
+   =========================================================
+   Estructura:
+   .fixture-bracket-nuevo
+     └── .fixture-bracket-nuevo__columna   (una por fase)
+          ├── .fixture-bracket-nuevo__titulo
+          └── .fixture-bracket-nuevo__cruces
+               └── .bracket-cruce            (cada cruce)
+                    ├── .bracket-cruce__equipo (x2)
+                    ├── .bracket-cruce__marcador
+                    └── .bracket-cruce__icono (✏️ si editable)
+   ========================================================= */
+
+.fixture-bracket-nuevo {
+  display: flex;
+  gap: 0;
+  padding: var(--space-4);
+  min-width: max-content;
+  align-items: stretch;
+}
+
+.fixture-bracket-nuevo__columna {
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  position: relative;
+}
+
+/* ---------- Título de la fase ---------- */
+.fixture-bracket-nuevo__titulo {
+  font-size: var(--fs-sm, 14px);
+  font-weight: 700;
+  text-align: center;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+/* ---------- Contenedor de cruces ---------- */
+.fixture-bracket-nuevo__cruces {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  gap: var(--space-5, 24px);
+  padding: var(--space-2) var(--space-4);
+  position: relative;
+}
+
+/* =========================================================
+   CRUCE INDIVIDUAL
+   ========================================================= */
+.bracket-cruce {
+  position: relative;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2);
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.bracket-cruce--clickeable {
+  cursor: pointer;
+}
+
+.bracket-cruce--clickeable:hover {
+  border-color: var(--color-primary, #E8836A);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 131, 106, 0.15);
+}
+
+.bracket-cruce--finalizado {
+  border-color: var(--color-primary, #E8836A);
+  background: linear-gradient(135deg, #fff 0%, #fff8f5 100%);
+}
+
+.bracket-cruce--bye {
+  border-style: dashed;
+  border-color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
+/* ---------- Icono de editar ---------- */
+.bracket-cruce__icono {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 12px;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.bracket-cruce--clickeable:hover .bracket-cruce__icono {
+  opacity: 1;
+}
+
+/* ---------- Equipos ---------- */
+.bracket-cruce__equipo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm, 14px);
+  transition: background 0.15s ease;
+}
+
+.bracket-cruce__equipo--ganador {
+  background: var(--color-primary-light, rgba(232, 131, 106, 0.15));
+  font-weight: 700;
+}
+
+.bracket-cruce__nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bracket-cruce__check {
+  color: var(--color-primary, #E8836A);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ---------- Marcador ---------- */
+.bracket-cruce__marcador {
+  text-align: center;
+  font-size: var(--fs-sm, 14px);
+  font-weight: 700;
+  color: var(--color-primary-dark, #c9520d);
+  padding: 2px 0;
+  border-top: 1px dashed var(--color-border);
+  border-bottom: 1px dashed var(--color-border);
+  margin: 2px 0;
+}
+
+.bracket-cruce--finalizado .bracket-cruce__marcador {
+  color: var(--color-primary, #E8836A);
+}
+
+/* =========================================================
+   LÍNEAS CONECTORAS HORIZONTALES
+   =========================================================
+   Cada cruce PAR conecta al siguiente impar.
+   Se dibuja con un ::after que va hacia la derecha.
+   ========================================================= */
+
+/* Línea de cada cruce impar hacia la derecha (sale del centro) */
+.bracket-cruce--impar::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  background: var(--color-border);
+  transform: translateY(-50%);
+}
+
+/* Línea que conecta los dos cruces pares (la mitad baja) */
+.bracket-cruce--impar:nth-child(odd)::before {
+  content: '';
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  background: var(--color-border);
+}
+
+/* Para el segundo cruce del par (par), dibujamos una línea vertical
+   que baja del cruce anterior y sube al siguiente */
+.bracket-cruce--par::before {
+  content: '';
+  position: absolute;
+  right: -24px;
+  top: -50%;
+  height: calc(100% + var(--space-5, 24px) + 4px);
+  width: 2px;
+  background: var(--color-border);
+}
+
+.bracket-cruce--par::after {
+  content: '';
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  background: var(--color-border);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 640px) {
+  .fixture-bracket-nuevo__columna {
+    min-width: 200px;
+  }
+
+  .bracket-cruce {
+    min-width: 180px;
+  }
+
+  .bracket-cruce__nombre {
+    font-size: var(--fs-xs, 12px);
+  }
+
+  .bracket-cruce__equipo {
+    padding: 4px var(--space-1);
+  }
+
+  /* Ocultar líneas en mobile para no complicar */
+  .bracket-cruce--impar::after,
+  .bracket-cruce--par::before,
+  .bracket-cruce--par::after {
+    display: none;
+  }
+}
+
+/* =========================================================
+   MODAL EDITAR CRUCE (estilos chicos)
+   ========================================================= */
+#modal-editar-cruce .modal__body {
+  padding: var(--space-5);
+}
+
+#modal-editar-cruce .field {
+  margin-bottom: var(--space-4);
+}
+/* Cargar resultado debe quedar arriba del fixture */
+#modal-cargar-resultado {
+  z-index: 120;
+}
+
+#modal-editar-jornada {
+  z-index: 110;
+}
+
+#modal-editar-cruce {
+  z-index: 115;
+}
+/* =========================================================
+   ⚡ MODAL CARGAR RESULTADO (z-index arriba del fixture)
+   =========================================================
+   Cargar resultado debe quedar ENCIMA del modal fixture cuando
+   se abre desde ahí.
+   ========================================================= */
+#modal-cargar-resultado {
+  z-index: 120;
+}
+
+#modal-editar-jornada {
+  z-index: 110;
+}
+
+#modal-editar-cruce {
+  z-index: 115;
+}
+
+#modal-ver-detalle-partido {
+  z-index: 120;
+}
+
+/* =========================================================
+   ⚡ SET-ITEM (dentro del modal cargar resultado, modo sets)
+   ========================================================= */
+.set-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-border);
+}
+
+.set-item__label {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.set-item__inputs {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.set-item__input {
+  width: 70px !important;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--fs-base);
+}
+
+.set-item__sep {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.set-item__del {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   ⚡ MODAL VER DETALLE DEL PARTIDO
+   ========================================================= */
+.ver-detalle__cabecera {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ver-detalle__equipo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  min-width: 0;
+}
+
+.ver-detalle__equipo-nombre {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ver-detalle__vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ver-detalle__marcador {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ver-detalle__vs-txt {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* ---------- Sets ---------- */
+.ver-detalle__sets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.ver-detalle__set {
+  display: grid;
+  grid-template-columns: 60px 1fr 30px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.ver-detalle__set-num {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ver-detalle__set-marcador {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  justify-content: center;
+}
+
+.ver-detalle__set-marcador > span {
+  min-width: 30px;
+  text-align: center;
+}
+
+.ver-detalle__set-sep {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.ver-detalle__set-ganador {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+
+.ver-detalle__set-check {
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.ver-detalle__resumen-sets {
+  text-align: center;
+  padding: var(--space-3);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-4);
+}
+
+.ver-detalle__resumen-sets strong {
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+/* ---------- Penales ---------- */
+.ver-detalle__penales {
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.ver-detalle__penales .badge {
+  font-size: var(--fs-sm);
+  padding: 8px 16px;
+}
+
+/* ---------- Info final (ganador / fecha) ---------- */
+.ver-detalle__footer-info {
+  text-align: center;
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.ver-detalle__footer-info .badge {
+  font-size: var(--fs-sm);
+  padding: 8px 16px;
+}
+
+/* =========================================================
+   ⚡ RESPONSIVE
+   ========================================================= */
+@media (max-width: 500px) {
+  .ver-detalle__marcador {
+    font-size: 20px;
+  }
+
+  .ver-detalle__set {
+    grid-template-columns: 50px 1fr 24px;
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .ver-detalle__set-num {
+    font-size: 10px;
+  }
+
+  .ver-detalle__set-marcador {
+    font-size: var(--fs-sm);
+  }
+
+  .set-item__input {
+    width: 55px !important;
+  }
+}
+/* =========================================================
+   ⚡ D.5 — SISTEMA POR TIEMPO / PUNTOS
+   =========================================================
+   Estilos para:
+   - Selector de sistema en el modal crear torneo (ya usa
+     nivel-grid y tipo-partido-opcion, no necesita nada nuevo).
+   - Filas de tiempo/puntos en el modal cargar resultado.
+   - Tabla de tiempo/puntos en el modal ver detalle.
+   ========================================================= */
+
+/* ---------- Fila de tiempo/puntos en MODAL CARGAR RESULTADO ---------- */
+.tp-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.tp-fila:hover {
+  border-color: var(--color-border);
+}
+
+.tp-fila__escudo {
+  text-align: center;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.tp-fila__nombre {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 64px;
+}
+
+.tp-fila__inputs {
+  flex: 1;
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
+.tp-fila__inputs .field {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-fila__inputs .field__input {
+  text-align: center;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+/* En modo puntos hay un solo input, más ancho */
+.tp-fila__inputs--puntos .field {
+  flex: 1;
+}
+
+/* ---------- Tabla de tiempo/puntos en MODAL VER DETALLE ---------- */
+.ver-detalle__tp {
+  margin-top: var(--space-4);
+}
+
+.ver-detalle__tp-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.ver-detalle__tp-fila--ganador {
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 6%, var(--color-bg-alt));
+}
+
+.ver-detalle__tp-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.ver-detalle__tp-nombre {
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ver-detalle__tp-valor {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-left: var(--space-3);
+}
+
+.ver-detalle__tp-valor--ganador {
+  color: var(--color-success);
+}
+
+.ver-detalle__tp-badge {
+  margin-top: 4px;
+}
+
+/* ---------- Hint de sistema en el modal crear torneo ---------- */
+#sistema-clasificacion-hint {
+  min-height: 1em;
+}
+
+/* Cuando el wrapper está oculto, no ocupa espacio */
+#sistema-clasificacion-wrapper.hidden {
+  display: none;
+}
+
+/* ---------- Ajustes responsive ---------- */
+@media (max-width: 520px) {
+  .tp-fila {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tp-fila__escudo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: left;
+    min-width: 0;
+  }
+
+  .tp-fila__nombre {
+    margin-top: 0;
+    max-width: none;
+    white-space: normal;
+  }
+
+  .ver-detalle__tp-fila {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .ver-detalle__tp-valor {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+}
+
+/* =========================================================
+   ⚡ D.5 — BADGE DE SISTEMA EN CARDS / HERO
+   =========================================================
+   Los badges ya usan la clase .badge existente, no hace
+   falta nada extra. Si querés diferenciar visualmente
+   "Por tiempo" y "Por puntos" del resto, descomentá:
+   ========================================================= */
+
+
+.badge--sistema-tiempo {
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  color: #1e40af;
+}
+
+.badge--sistema-puntos {
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: #92400e;
+}

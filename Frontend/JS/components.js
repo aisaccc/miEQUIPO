@@ -4,12 +4,14 @@
 
 import { getSesion, cerrarSesion } from './auth.js';
 import { mockUsuarios } from './data-mock.js';
+import { contarNoLeidos } from './services/mensajes.service.js';
 import {
-  notificacionesDe,
-  marcarNotifLeida,
-  getNotificaciones,
-  totalNoLeidosTodo
-} from './store.js';
+  listarNotificaciones,
+  contarNoLeidas as contarNoLeidasAPI,
+  marcarLeida as marcarLeidaAPI,
+  marcarTodasLeidas as marcarTodasLeidasAPI,
+  eliminarNotificacion as eliminarNotificacionAPI,
+} from './services/notificaciones.service.js';
 
 /* =========================================================
    HEADER
@@ -19,7 +21,7 @@ export function initHeader() {
   if (!user) return;
 
   const avatar = document.getElementById('avatar-header');
-  if (avatar) avatar.src = user.avatar;
+  if (avatar) avatar.src = user.avatar || 'assets/icons/usuario.svg';
 
   const trigger = document.getElementById('user-trigger');
   const menu = document.getElementById('user-menu');
@@ -180,7 +182,6 @@ export function initDropdowns() {
 /* =========================================================
    NOTIFICACIONES
    ========================================================= */
-const KEY_NOTIFS = 'miejquipo_notificaciones';
 
 function iconoNotif(tipo) {
   return {
@@ -196,7 +197,13 @@ function iconoNotif(tipo) {
     expulsado:     '🚫',
     jugador_salio: '👋',
     invitacion:    '📨',
-    torneo_eliminado: '⚠️'
+    torneo_eliminado: '⚠️',
+    // ⚡ Confirmaciones de partido
+    confirmacion_partido:    '🎯',
+    confirmacion_aceptada:   '✅',
+    confirmacion_rechazada:  '❌',
+    partido_confirmado:      '🏆',
+    partido_revertido:       '🔁',
   }[tipo] || '🔔';
 }
 
@@ -209,31 +216,53 @@ function tiempoRelativoNotif(iso) {
   return new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
-export function renderNotificaciones() {
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- RENDER LISTA DE NOTIFICACIONES ---------- */
+export async function renderNotificaciones() {
   const lista = document.getElementById('lista-notificaciones');
   const badge = document.getElementById('badge-notif');
   const btnMarcar = document.getElementById('btn-marcar-leidas');
   if (!lista) return;
 
-  const user = JSON.parse(localStorage.getItem('miejquipo_session') || 'null');
-  if (!user) return;
+  let notificaciones = [];
+  let noLeidas = 0;
 
-  const notifs = notificacionesDe(user.id).sort(
-    (a, b) => new Date(b.fecha) - new Date(a.fecha)
-  );
+  try {
+    const [resultadoLista, totalNoLeidas] = await Promise.all([
+      listarNotificaciones({ limit: 30 }),
+      contarNoLeidasAPI(),
+    ]);
 
-  const noLeidas = notifs.filter(n => !n.leida).length;
+    notificaciones = resultadoLista.data || [];
+    noLeidas = totalNoLeidas;
+  } catch (err) {
+    console.error('[components] Error al cargar notificaciones:', err);
+    lista.innerHTML = `
+      <div class="empty-state" style="padding:var(--space-5)">
+        <div class="empty-state__icon" style="font-size:36px">⚠️</div>
+        <p class="text-sm text-muted">No se pudieron cargar las notificaciones</p>
+      </div>`;
+    return;
+  }
 
+  // Actualizar badge
   if (badge) {
     badge.textContent = noLeidas;
     badge.classList.toggle('hidden', noLeidas === 0);
   }
 
+  // Mostrar/ocultar botón "Marcar leídas"
   if (btnMarcar) {
     btnMarcar.style.display = noLeidas > 0 ? '' : 'none';
   }
 
-  if (notifs.length === 0) {
+  // Empty state
+  if (notificaciones.length === 0) {
     lista.innerHTML = `
       <div class="empty-state" style="padding:var(--space-5)">
         <div class="empty-state__icon" style="font-size:36px">🔔</div>
@@ -242,48 +271,88 @@ export function renderNotificaciones() {
     return;
   }
 
-  lista.innerHTML = notifs.map(n => `
+  // Render lista
+  lista.innerHTML = notificaciones.map(n => `
     <div class="notif-item ${n.leida ? '' : 'notif-item--no-leida'}"
          data-notif-id="${n.id}"
          data-link="${n.link || ''}">
       <div class="notif-item__icon">${iconoNotif(n.tipo)}</div>
       <div class="notif-item__info">
-        <div class="notif-item__text">${n.mensaje}</div>
-        <div class="notif-item__time">${tiempoRelativoNotif(n.fecha)}</div>
+        <div class="notif-item__text">${escapeHtml(n.mensaje)}</div>
+        <div class="notif-item__time">${tiempoRelativoNotif(n.createdAt)}</div>
       </div>
       ${!n.leida ? `<span class="notif-item__dot"></span>` : ''}
+      <button class="notif-item__del"
+              data-del-notif="${n.id}"
+              title="Eliminar notificación"
+              aria-label="Eliminar notificación">🗑️</button>
     </div>
   `).join('');
 
+  // Click en la notificación (marcar leída + navegar)
   lista.querySelectorAll('.notif-item').forEach(el => {
-    el.addEventListener('click', (e) => {
+    el.addEventListener('click', async (e) => {
+      // Si clickeó el botón de eliminar, lo maneja el otro handler
+      if (e.target.closest('[data-del-notif]')) return;
+
       e.stopPropagation();
       const id = el.dataset.notifId;
       const link = el.dataset.link;
+      const eraNoLeida = el.classList.contains('notif-item--no-leida');
 
-      marcarNotifLeida(Number(id));
-      renderNotificaciones();
+      // Marcar como leída en el backend
+      if (eraNoLeida) {
+        try {
+          await marcarLeidaAPI(id);
+        } catch (err) {
+          console.warn('[components] No se pudo marcar como leída:', err.message);
+        }
+      }
 
+      // Cerrar dropdown
       document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
 
+      // Refrescar la lista
+      await renderNotificaciones();
+
+      // Navegar al link si corresponde
       if (link && link.startsWith('#/')) {
         window.location.hash = link;
       }
     });
   });
+
+  // ⚡ Click en el botón 🗑️ (eliminar)
+  lista.querySelectorAll('[data-del-notif]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.delNotif;
+
+      try {
+        await eliminarNotificacionAPI(id);
+        // Refrescar lista (la notif ya no debería aparecer)
+        await renderNotificaciones();
+      } catch (err) {
+        console.error('[components] Error al eliminar notificación:', err);
+        toast(err.message || 'No se pudo eliminar la notificación', 'error');
+      }
+    });
+  });
 }
 
-export function marcarTodasLeidas() {
-  const user = JSON.parse(localStorage.getItem('miejquipo_session') || 'null');
-  if (!user) return;
-
-  const todas = getNotificaciones().map(n =>
-    n.para === user.id ? { ...n, leida: true } : n
-  );
-  localStorage.setItem(KEY_NOTIFS, JSON.stringify(todas));
-  renderNotificaciones();
+/* ---------- MARCAR TODAS COMO LEÍDAS ---------- */
+export async function marcarTodasLeidas() {
+  try {
+    const resultado = await marcarTodasLeidasAPI();
+    toast(resultado.mensaje || 'Notificaciones marcadas como leídas', 'info');
+    await renderNotificaciones();
+  } catch (err) {
+    console.error('[components] Error al marcar todas:', err);
+    toast(err.message || 'No se pudo marcar las notificaciones', 'error');
+  }
 }
 
+/* ---------- INIT NOTIFICACIONES ---------- */
 export function initNotificaciones() {
   const btnMarcar = document.getElementById('btn-marcar-leidas');
   const btnVerTodas = document.getElementById('btn-ver-todas-notif');
@@ -297,16 +366,20 @@ export function initNotificaciones() {
   btnVerTodas?.addEventListener('click', (e) => {
     e.stopPropagation();
     document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+    // TODO: ir a una página de notificaciones completa si la creamos
   });
 
   btnCampana?.addEventListener('click', () => {
+    // Al abrir el dropdown, refrescamos
     renderNotificaciones();
   });
 
+  // Polling cada 15 segundos
   setInterval(renderNotificaciones, 15000);
+
+  // Render inicial
   renderNotificaciones();
 }
-
 /* =========================================================
    VER PERFIL DE OTRO USUARIO
    ========================================================= */
@@ -314,12 +387,12 @@ export function verPerfilUsuario(usuario) {
   let u = usuario;
 
   if (typeof usuario === 'number' || typeof usuario === 'string') {
-    u = mockUsuarios.find(x => x.id === Number(usuario));
+    u = mockUsuarios.find(x => String(x.id) === String(usuario));
     if (!u) {
       u = {
-        id: Number(usuario),
-        nombre: 'Usuario #' + usuario,
-        username: 'user' + usuario,
+        id: usuario,
+        nombre: 'Usuario',
+        username: 'usuario',
         avatar: `https://i.pravatar.cc/150?u=${usuario}`,
         bio: '',
         deporte_favorito: '',
@@ -338,9 +411,9 @@ export function verPerfilUsuario(usuario) {
 
   body.innerHTML = `
     <div style="text-align:center; margin-bottom:var(--space-5)">
-      <img src="${u.avatar}" alt="" class="avatar avatar--xl" style="margin:0 auto var(--space-3)" />
-      <h3 style="font-size:var(--fs-lg); font-weight:700">${u.nombre}</h3>
-      <p class="text-sm text-muted">@${u.username}</p>
+      <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--xl" style="margin:0 auto var(--space-3)" />
+      <h3 style="font-size:var(--fs-lg); font-weight:700">${u.nombre || 'Usuario'}</h3>
+      <p class="text-sm text-muted">@${u.username || 'usuario'}</p>
       ${u.bio ? `<p class="text-sm" style="margin-top:var(--space-3)">${u.bio}</p>` : ''}
     </div>
 
@@ -377,17 +450,22 @@ export function verPerfilUsuario(usuario) {
     </div>
   `;
 
-  document.getElementById('btn-perfil-mensaje')?.addEventListener('click', () => {
-    import('./store.js').then(({ obtenerOCrearConversacion }) => {
-      const user = getSesion();
-      if (!user) return;
-      const conv = obtenerOCrearConversacion(user.id, u.id);
-      document.getElementById('modal-ver-perfil').classList.remove('open');
+  // Botón "Enviar mensaje"
+  document.getElementById('btn-perfil-mensaje')?.addEventListener('click', async () => {
+    try {
+      const { crearConversacion } = await import('./services/mensajes.service.js');
+      const conv = await crearConversacion(u.id);
+
+      document.getElementById('modal-ver-perfil')?.classList.remove('open');
       window.location.hash = '#/mensajes';
+
       setTimeout(() => {
         document.querySelector(`[data-conv="${conv.id}"]`)?.click();
-      }, 300);
-    });
+      }, 400);
+    } catch (err) {
+      console.error('[components] Error al crear conversación:', err);
+      toast(err.message || 'No se pudo crear la conversación', 'error');
+    }
   });
 
   document.getElementById('btn-perfil-agregar')?.addEventListener('click', () => {
@@ -400,7 +478,7 @@ export function verPerfilUsuario(usuario) {
   });
 
   document.querySelectorAll('#modal-ver-perfil [data-cerrar-modal]').forEach(btn => {
-    btn.onclick = () => document.getElementById('modal-ver-perfil').classList.remove('open');
+    btn.onclick = () => document.getElementById('modal-ver-perfil')?.classList.remove('open');
   });
   document.getElementById('modal-ver-perfil').onclick = (e) => {
     if (e.target.id === 'modal-ver-perfil') e.target.classList.remove('open');
@@ -412,24 +490,28 @@ export function verPerfilUsuario(usuario) {
 /* =========================================================
    BADGE DE MENSAJES
    ========================================================= */
-export function actualizarBadgeMensajes() {
-  const user = JSON.parse(localStorage.getItem('miejquipo_session') || 'null');
+export async function actualizarBadgeMensajes() {
+  const user = getSesion();
   if (!user) return;
 
   const badge = document.getElementById('badge-mensajes');
   if (!badge) return;
 
-  const total = totalNoLeidosTodo(user.id);
-  badge.textContent = total;
-  badge.classList.toggle('hidden', total === 0);
+  try {
+    const total = await contarNoLeidos();
+    badge.textContent = total;
+    badge.classList.toggle('hidden', total === 0);
+  } catch (err) {
+    console.warn('[components] No se pudo actualizar badge mensajes:', err.message);
+  }
 }
 
-export function initBadgeMensajes() {
+export async function initBadgeMensajes() {
   document.getElementById('btn-header-mensajes')?.addEventListener('click', () => {
     window.location.hash = '#/mensajes';
   });
 
-  actualizarBadgeMensajes();
+  await actualizarBadgeMensajes();
   setInterval(actualizarBadgeMensajes, 5000);
 
   window.addEventListener('hashchange', () => {
@@ -485,22 +567,13 @@ export function initConfiguracion() {
         if (!confirm('⚠️ ¿Eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
         if (!confirm('⚠️ Última confirmación: ¿estás seguro?')) return;
 
-        const user = getSesion();
-        if (!user) return;
-
-        import('./store.js').then(({ eliminarCuenta }) => {
-          eliminarCuenta(user.id);
-          toast('Cuenta eliminada', 'info');
-          setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 800);
-        });
+        toast('Eliminar cuenta: próximamente', 'info');
       }
     });
   });
 
   document.querySelectorAll('#modal-cambiar-pass [data-cerrar-modal]').forEach(btn => {
-    btn.onclick = () => document.getElementById('modal-cambiar-pass').classList.remove('open');
+    btn.onclick = () => document.getElementById('modal-cambiar-pass')?.classList.remove('open');
   });
 
   document.getElementById('btn-confirmar-pass')?.addEventListener('click', () => {
@@ -512,18 +585,13 @@ export function initConfiguracion() {
     if (!user) return;
 
     if (!actual) return toast('Ingresa tu contraseña actual', 'error');
-    if (nueva.length < 6) return toast('La nueva debe tener al menos 6 caracteres', 'error');
+    if (nueva.length < 8) return toast('La nueva debe tener al menos 8 caracteres', 'error');
     if (nueva !== confirmar) return toast('Las contraseñas no coinciden', 'error');
 
-    import('./store.js').then(({ cambiarPassword }) => {
-      const res = cambiarPassword(user.id, actual, nueva);
-      if (!res.ok) return toast(res.error, 'error');
-      document.getElementById('modal-cambiar-pass').classList.remove('open');
-      toast('Contraseña cambiada', 'success');
-    });
+    toast('Cambiar contraseña: próximamente', 'info');
   });
 
   document.querySelectorAll('#modal-configuracion [data-cerrar-modal]').forEach(btn => {
-    btn.onclick = () => document.getElementById('modal-configuracion').classList.remove('open');
+    btn.onclick = () => document.getElementById('modal-configuracion')?.classList.remove('open');
   });
 }

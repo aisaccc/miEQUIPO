@@ -107,3 +107,57 @@
     </div>
   </div>
 </div>
+<!-- ================= MODAL: CONFIRMAR PARTIDO (modo Organizar) ================= -->
+<div class="modal-backdrop" id="modal-confirmar-partido">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="confirmar-titulo">Confirmar partido</h3>
+      <button class="modal__close" data-cerrar-modal="modal-confirmar-partido">✕</button>
+    </div>
+
+    <div class="modal__body">
+      <div class="aviso-aprobacion show mb-4">
+        <span class="aviso-aprobacion__icon">📢</span>
+        <div>
+          Al confirmar, <strong>se cierra el partido</strong> y el interesado
+          recibirá una notificación para aprobar la confirmación.
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="confirmar-fecha">Fecha *</label>
+          <input type="date" id="confirmar-fecha" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="confirmar-hora">Hora *</label>
+          <input type="time" id="confirmar-hora" class="field__input" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="confirmar-lugar">Lugar *</label>
+        <input type="text" id="confirmar-lugar" class="field__input"
+               placeholder="Ej: Cancha Sur, Santiago" maxlength="120" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="confirmar-precio">Precio por jugador (CLP)</label>
+        <input type="number" id="confirmar-precio" class="field__input"
+               min="0" step="500" value="0" />
+        <p class="text-xs text-muted mt-4">0 = gratis</p>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Mensaje al interesado (opcional)</label>
+        <textarea id="confirmar-mensaje" class="textarea"
+                  placeholder="Ej: ¡Confirmemos para el sábado!" maxlength="200"></textarea>
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-confirmar-partido">Cancelar</button>
+      <button class="btn btn--primary" id="btn-confirmar-partido">✅ Confirmar partido</button>
+    </div>
+  </div>
+</div>

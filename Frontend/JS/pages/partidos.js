@@ -1,15 +1,38 @@
 import { formatearFecha, toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes, posicionesPorDeporte, nivelesPartido } from '../data-mock.js';
 import { getSesion } from '../auth.js';
-import { getPartidos, guardarPartidos, getGrupos } from '../store.js';
+import { listarGrupos } from '../services/grupos.service.js';
+import { api } from '../api.js';
+import {
+  listarPartidos,
+  crearPartido as crearPartidoAPI,
+  eliminarPartido as eliminarPartidoAPI,
+  inscribirse as inscribirseAPI,
+  salirDelPartido as salirDelPartidoAPI,
+  postularse as postularseAPI,
+  cancelarPostulacion as cancelarPostulacionAPI,
+  postularEquipo as postularEquipoAPI,
+  interesarse as interesarseAPI,
+  cancelarInteres as cancelarInteresAPI,
+} from '../services/partidos.service.js';
 
 export async function init() {
   /* ---------- ESTADO ---------- */
-  let partidos = getPartidos();
+  let partidos = [];
   let filtroActual = 'todos';
   let filtroTipoActual = 'todos';
   let tabActual = 'disponibles';
   const user = getSesion();
+
+  /* ---------- CARGAR DESDE EL BACKEND ---------- */
+  try {
+    const { data } = await listarPartidos({ limit: 50 });
+    partidos = data;
+  } catch (err) {
+    console.error('[partidos] Error al cargar:', err);
+    toast('No se pudieron cargar los partidos', 'error');
+    partidos = [];
+  }
 
   /* ---------- REFS ---------- */
   const contDisponibles  = document.getElementById('lista-partidos');
@@ -27,22 +50,39 @@ export async function init() {
   if (!contDisponibles) return null;
 
   /* ---------- HELPERS ---------- */
-  function misEquiposComoCapitanOAdmin() {
-    return getGrupos().filter(g =>
-      g.tipo === 'equipo' &&
-      (g.capitanId === user.id || (g.admins || []).includes(user.id))
-    );
+  async function misEquiposComoCapitanOAdmin() {
+    try {
+      const { data } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 });
+      return data || [];
+    } catch (err) {
+      console.error('[partidos] Error al cargar equipos:', err);
+      return [];
+    }
   }
 
-const emojiDeporte = {
-  'Fútbol': '<img src="assets/icons/balon-de-futbol (2).png" alt="Fútbol" style="width:32px; height:32px; object-fit:contain; display:block" />',
-  'Básquetbol': '<img src="assets/icons/balocensto.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Tenis': '<img src="assets/icons/pelota-de-tenis.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Vóleibol': '<img src="assets/icons/voleibol.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
-  'Pádel': '<img src="assets/icons/raqueta-de-padel.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Golf': '<img src="assets/icons/golf.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Béisbol': '<img src="assets/icons/beisbol.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Hockey': '<img src="assets/icons/disco.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
-  'Boxeo': '<img src="assets/icons/guantes-de-boxeo.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Bádminton': '<img src="assets/icons/volante.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Rugby': '<img src="assets/icons/rugby.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Ciclismo': '<img src="assets/icons/bicicleta.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
-  'Natación': '<img src="assets/icons/natacion.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Atletismo': '<img src="assets/icons/corriendo.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Tenis de mesa': '<img src="assets/icons/raqueta-de-tenis-de-mesa.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
-  'Squash': '<img src="assets/icons/tenis-de-squash.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Handball': '<img src="assets/icons/balonmano.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />',
-  'Fútbol americano': '<img src="assets/icons/deporte.svg" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Surf': '<img src="assets/icons/tabla-de-surf.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />', 'Escalada': '<img src="assets/icons/escalada.png" alt="" style="width:28px; height:28px; object-fit:contain; display:block" />'
-};
+  const emojiDeporte = {
+    'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+    'Básquetbol': 'assets/icons/balocensto.svg',
+    'Tenis': 'assets/icons/pelota-de-tenis.png',
+    'Vóleibol': 'assets/icons/voleibol.svg',
+    'Pádel': 'assets/icons/raqueta-de-padel.png',
+    'Golf': 'assets/icons/golf.png',
+    'Béisbol': 'assets/icons/beisbol.png',
+    'Hockey': 'assets/icons/disco.png',
+    'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+    'Bádminton': 'assets/icons/volante.png',
+    'Rugby': 'assets/icons/rugby.png',
+    'Ciclismo': 'assets/icons/bicicleta.svg',
+    'Natación': 'assets/icons/natacion.svg',
+    'Atletismo': 'assets/icons/corriendo.png',
+    'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+    'Squash': 'assets/icons/tenis-de-squash.png',
+    'Handball': 'assets/icons/balonmano.png',
+    'Fútbol americano': 'assets/icons/deporte.svg',
+    'Surf': 'assets/icons/tabla-de-surf.png',
+    'Escalada': 'assets/icons/escalada.png',
+  };
+
   function cantidadInscritos(p) {
     return Array.isArray(p.inscritos) ? p.inscritos.length : (p.inscritos || 0);
   }
@@ -51,20 +91,28 @@ const emojiDeporte = {
     return p.tipoPartido === 'equipo';
   }
 
+  function esModoOrganizar(p) {
+    return p.estadoPartido === 'buscando_jugadores';
+  }
+
+  function estaConfirmado(p) {
+    return p.estadoPartido === 'confirmado';
+  }
+
   function totalInscritosReal(p) {
-    return esDeEquipo(p)
-      ? (p.equiposInscritos || []).length
-      : cantidadInscritos(p);
+    if (esDeEquipo(p)) {
+      return p.totalEquiposInscritos ?? (p.equiposInscritos || []).length;
+    }
+    return p.totalInscritos ?? cantidadInscritos(p);
   }
+
   function renderEmoji(emoji) {
-  if (!emoji) return '🏅';
-  // Si es una ruta de imagen
-  if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
-    return `<img src="${emoji}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
+    if (!emoji) return '🏅';
+    if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
+      return `<img src="${emoji}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
+    }
+    return emoji;
   }
-  // Si es emoji normal
-  return emoji;
-}
 
   /* =========================================================
      RENDER DE UNA CARD DE PARTIDO
@@ -73,19 +121,43 @@ const emojiDeporte = {
     const { mostrarAcciones = false, mostrarBadgeRol = null } = opciones;
     const totalInsc = totalInscritosReal(p);
     const porcentaje = Math.min(100, Math.round((totalInsc / p.cupos) * 100));
+    const deEquipo = esDeEquipo(p);
+    const enModoOrganizar = esModoOrganizar(p);
+    const confirmado = estaConfirmado(p);
 
+    const soyOrganizador = String(p.organizador?.id) === String(user?.id);
+
+    const yoEstoyInscrito = !!p.yoInscrito;
+    const yoPostule = !!p.yoPostule;
+    const miEquipoInscrito = !!p.miEquipoInscrito;
+    const miEquipoPostulado = !!p.miEquipoPostulado;
+    const yoInteresado = !!p.yoInteresado;
+
+    // ⚡ Badge:
+    // - Modo Organizar → "Organizando"
+    // - Confirmado → "Confirmado"
+    // - Lleno → "Lleno"
+    // - Finalizado → "Finalizado"
+    // - Resto → "Disponible"
     const badgeClase =
+      enModoOrganizar ? 'badge--warning' :
+      confirmado      ? 'badge--primary' :
       p.estado === 'lleno'      ? 'badge--danger'  :
       p.estado === 'finalizado' ? 'badge--neutral' :
                                   'badge--success';
+
     const badgeTexto =
+      enModoOrganizar ? 'Organizando' :
+      confirmado      ? 'Confirmado' :
       p.estado === 'lleno'      ? 'Lleno'      :
       p.estado === 'finalizado' ? 'Finalizado' :
                                   'Disponible';
 
-    const precioHtml = p.precio === 0
-      ? `<span class="match-card__precio match-card__precio--gratis">🎉 Gratis</span>`
-      : `<span class="match-card__precio match-card__precio--pago">💰 $${p.precio.toLocaleString('es-CL')}</span>`;
+    const precioHtml = enModoOrganizar
+      ? `<span class="match-card__precio match-card__precio--gratis">📢 A coordinar</span>`
+      : (p.precio === 0
+        ? `<span class="match-card__precio match-card__precio--gratis">🎉 Gratis</span>`
+        : `<span class="match-card__precio match-card__precio--pago">💰 $${p.precio.toLocaleString('es-CL')}</span>`);
 
     const nivelLabel = {
       amistoso: 'Amistoso',
@@ -95,7 +167,7 @@ const emojiDeporte = {
 
     const nivelHtml = `<span class="nivel-badge nivel-badge--${p.nivel}">${nivelLabel}</span>`;
 
-    const aprobacionHtml = p.aprobacionRequerida
+    const aprobacionHtml = p.aprobacionRequerida && !enModoOrganizar
       ? `<span class="badge badge--warning">🔒 Con aprobación</span>`
       : '';
 
@@ -109,20 +181,114 @@ const emojiDeporte = {
       ? `<span class="badge badge--primary" style="margin-left:auto">${mostrarBadgeRol}</span>`
       : '';
 
-    // Badge de tipo de partido
-    const badgeTipoHtml = esDeEquipo(p)
+    const badgeTipoHtml = deEquipo
       ? `<span class="badge badge--warning">🛡️ De equipos</span>`
       : `<span class="badge badge--info">👤 De jugadores</span>`;
 
-    const contadorTexto = esDeEquipo(p)
+    const badgeModoHtml = enModoOrganizar
+      ? `<span class="badge badge--primary">📢 Organizar partido</span>`
+      : '';
+
+    const contadorTexto = deEquipo
       ? `${totalInsc}/${p.cupos} equipos`
       : `${totalInsc}/${p.cupos} jugadores`;
 
-    const accionesHtml = mostrarAcciones ? `
-      <div class="match-card__acciones" style="display:flex; gap:6px; margin-top:var(--space-3); padding-top:var(--space-3); border-top:1px solid var(--color-border);">
+    const infoFecha = enModoOrganizar
+      ? '<span>📅 A coordinar</span>'
+      : `<span>📅 ${formatearFecha(p.fecha)}</span>`;
+
+    const infoLugar = enModoOrganizar
+      ? '<span>📍 A coordinar</span>'
+      : `<span>📍 ${p.lugar}</span>`;
+
+    /* =========================================================
+       BOTÓN DE ACCIÓN SEGÚN ESTADO
+       ========================================================= */
+    let botonAccion = '';
+
+    if (!user) {
+      botonAccion = '';
+    } else if (soyOrganizador) {
+      // El organizador siempre ve botones de gestión
+      botonAccion = mostrarAcciones ? `
         <button class="btn btn--ghost btn--sm" data-accion="editar" data-id="${p.id}">✏️ Editar</button>
-        <button class="btn btn--ghost btn--sm" data-accion="postulantes" data-id="${p.id}">👥 Postulantes</button>
+        <button class="btn btn--ghost btn--sm" data-accion="postulantes" data-id="${p.id}">👥 ${enModoOrganizar ? 'Interesados' : 'Postulantes'}</button>
         <button class="btn btn--ghost btn--sm" data-accion="eliminar" data-id="${p.id}" style="color:var(--color-danger)">🗑️</button>
+      ` : '';
+    } else if (enModoOrganizar) {
+      // =========================================================
+      // MODO ORGANIZAR — otros usuarios
+      // =========================================================
+      if (yoInteresado) {
+        botonAccion = `
+          <span class="badge badge--warning" style="padding:8px 12px">🙋 Ya te marcaste interesado</span>
+          <button class="btn btn--ghost btn--sm" data-accion="cancelar-interes" data-id="${p.id}" style="color:var(--color-danger)">Cancelar interés</button>
+        `;
+      } else {
+        botonAccion = `<button class="btn btn--primary btn--sm" data-accion="interesarse" data-id="${p.id}">🙋 Me interesa</button>`;
+      }
+    } else if (confirmado) {
+      // =========================================================
+      // PARTIDO CONFIRMADO POR AMBAS PARTES → CERRADO
+      // =========================================================
+      if (deEquipo) {
+        if (miEquipoInscrito) {
+          // Es mi equipo el que quedó inscrito
+          botonAccion = `<span class="badge badge--success" style="padding:8px 12px">✅ Tu equipo está confirmado</span>`;
+        } else {
+          // No es mi equipo, o soy otro equipo → cerrado
+          botonAccion = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 Cerrado</span>`;
+        }
+      } else {
+        if (yoEstoyInscrito) {
+          // Soy el jugador confirmado
+          botonAccion = `<button class="btn btn--ghost btn--sm" data-accion="desinscribirse" data-id="${p.id}" style="color:var(--color-danger)">❌ Salir del partido</button>`;
+        } else {
+          // No soy el confirmado → cerrado para mí
+          botonAccion = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 Cerrado</span>`;
+        }
+      }
+    } else if (deEquipo) {
+      // =========================================================
+      // PARTIDO DE EQUIPOS NORMAL
+      // =========================================================
+      if (miEquipoInscrito) {
+        botonAccion = `<span class="badge badge--success" style="padding:8px 12px">✅ Tu equipo está inscrito</span>`;
+      } else if (miEquipoPostulado) {
+        botonAccion = `
+          <button class="btn btn--ghost btn--sm" disabled>⏳ Postulación pendiente</button>
+          <button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion-equipo" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>
+        `;
+      } else if (p.estado === 'abierto' && totalInsc < p.cupos) {
+        botonAccion = `<button class="btn btn--primary btn--sm" data-accion="postular-equipo" data-id="${p.id}">📝 Postular mi equipo</button>`;
+      } else {
+        botonAccion = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 No disponible</span>`;
+      }
+    } else {
+      // =========================================================
+      // PARTIDO DE JUGADORES NORMAL
+      // =========================================================
+      if (yoEstoyInscrito) {
+        botonAccion = `<button class="btn btn--ghost btn--sm" data-accion="desinscribirse" data-id="${p.id}" style="color:var(--color-danger)">❌ Desinscribirme</button>`;
+      } else if (yoPostule) {
+        botonAccion = `
+          <button class="btn btn--ghost btn--sm" disabled>⏳ Postulación pendiente</button>
+          <button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>
+        `;
+      } else if (p.estado === 'abierto' && totalInsc < p.cupos) {
+        if (p.aprobacionRequerida) {
+          botonAccion = `<button class="btn btn--primary btn--sm" data-accion="postularse" data-id="${p.id}">📝 Postularme</button>`;
+        } else {
+          botonAccion = `<button class="btn btn--primary btn--sm" data-accion="inscribirse" data-id="${p.id}">✅ Inscribirme</button>`;
+        }
+      } else {
+        botonAccion = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 No disponible</span>`;
+      }
+    }
+
+    const accionesHtml = botonAccion ? `
+      <div class="match-card__acciones" style="display:flex; gap:6px; margin-top:var(--space-3); padding-top:var(--space-3); border-top:1px solid var(--color-border); flex-wrap:wrap">
+        ${botonAccion}
       </div>
     ` : '';
 
@@ -140,6 +306,7 @@ const emojiDeporte = {
 
         <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
           ${badgeTipoHtml}
+          ${badgeModoHtml}
           ${nivelHtml}
           ${precioHtml}
           ${aprobacionHtml}
@@ -148,8 +315,8 @@ const emojiDeporte = {
         ${posicionesBuscadasHtml}
 
         <div class="match-card__info">
-          <span>📅 ${formatearFecha(p.fecha)}</span>
-          <span>📍 ${p.lugar}</span>
+          ${infoFecha}
+          ${infoLugar}
         </div>
 
         <div class="match-card__footer">
@@ -163,6 +330,20 @@ const emojiDeporte = {
       </article>
     `;
   }
+    /* =========================================================
+     HELPER: Recargar partidos desde el backend
+     ========================================================= */
+  async function recargarPartidos() {
+    try {
+      const { data } = await listarPartidos({ limit: 50 });
+      partidos = data;
+      renderDisponibles();
+      renderCreados();
+      renderInscritos();
+    } catch (err) {
+      console.warn('[partidos] No se pudo recargar:', err.message);
+    }
+  }
 
   /* =========================================================
      RENDERS DE PANELES
@@ -170,12 +351,12 @@ const emojiDeporte = {
   function renderDisponibles() {
     let lista = partidos;
 
-    // Filtros de estado
-    if (filtroActual === 'abiertos')    lista = lista.filter(p => p.estado === 'abierto');
-    if (filtroActual === 'llenos')      lista = lista.filter(p => p.estado === 'lleno');
-    if (filtroActual === 'finalizados') lista = lista.filter(p => p.estado === 'finalizado');
+    if (filtroActual === 'abiertos')      lista = lista.filter(p => p.estado === 'abierto' && !esModoOrganizar(p));
+    if (filtroActual === 'llenos')        lista = lista.filter(p => p.estado === 'lleno' && !esModoOrganizar(p));
+    if (filtroActual === 'finalizados')   lista = lista.filter(p => p.estado === 'finalizado');
+    if (filtroActual === 'organizando')   lista = lista.filter(p => esModoOrganizar(p));
+    if (filtroActual === 'confirmados')   lista = lista.filter(p => estaConfirmado(p));
 
-    // Filtros de tipo
     if (filtroTipoActual === 'jugador')  lista = lista.filter(p => !esDeEquipo(p));
     if (filtroTipoActual === 'equipo')   lista = lista.filter(p => esDeEquipo(p));
     if (filtroTipoActual === 'publico')  lista = lista.filter(p => !p.aprobacionRequerida);
@@ -194,12 +375,16 @@ const emojiDeporte = {
 
     contDisponibles.innerHTML = lista.map(p => renderCard(p)).join('');
     conectarClicksCards(contDisponibles);
+    conectarAccionesCard(contDisponibles);
   }
 
   function renderCreados() {
-    const misCreados = partidos.filter(p => p.organizador?.id === user?.id);
+    const misCreados = partidos.filter(p =>
+      String(p.organizador?.id) === String(user?.id)
+    );
 
-    document.getElementById('count-creados').textContent = misCreados.length;
+    const countEl = document.getElementById('count-creados');
+    if (countEl) countEl.textContent = misCreados.length;
 
     if (misCreados.length === 0) {
       contCreados.innerHTML = `
@@ -210,7 +395,7 @@ const emojiDeporte = {
             <button class="btn btn--primary mt-4" id="btn-vacio-crear">+ Crear mi primer partido</button>
           </div>
         </div>`;
-      document.getElementById('btn-vacio-crear')?.addEventListener('click', abrirModalCrear);
+      document.getElementById('btn-vacio-crear')?.addEventListener('click', () => abrirModalCrear());
       return;
     }
 
@@ -224,20 +409,17 @@ const emojiDeporte = {
 
   function renderInscritos() {
     const misInscritos = partidos.filter(p => {
-      if (p.organizador?.id === user?.id) return false;
+      if (String(p.organizador?.id) === String(user?.id)) return false;
 
-      // Si es de jugadores
       if (!esDeEquipo(p)) {
-        return (p.inscritos || []).includes(user?.id);
+        return !!p.yoInscrito || !!p.yoPostule;
       }
 
-      // Si es de equipos: estoy en algún equipo inscrito
-      return (p.equiposInscritos || []).some(eq =>
-        eq.capitanId === user?.id || (eq.jugadores || []).includes(user?.id)
-      );
+      return !!p.miEquipoInscrito || !!p.miEquipoPostulado;
     });
 
-    document.getElementById('count-inscritos').textContent = misInscritos.length;
+    const countEl = document.getElementById('count-inscritos');
+    if (countEl) countEl.textContent = misInscritos.length;
 
     if (misInscritos.length === 0) {
       contInscritos.innerHTML = `
@@ -259,49 +441,152 @@ const emojiDeporte = {
     ).join('');
 
     conectarClicksCards(contInscritos);
+    conectarAccionesCard(contInscritos);
   }
 
   /* =========================================================
-     CONECTAR CLICKS
+     CONECTAR CLICKS EN LAS CARDS
      ========================================================= */
   function conectarClicksCards(contenedor) {
     contenedor.querySelectorAll('.match-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion]')) return;
-        const id = Number(card.dataset.id);
+        const id = card.dataset.id;
         window.location.hash = `#/partido/${id}`;
       });
     });
   }
 
+  /* =========================================================
+     CONECTAR BOTONES DE ACCIÓN EN LAS CARDS
+     ========================================================= */
   function conectarAccionesCard(contenedor) {
     contenedor.querySelectorAll('[data-accion]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const id = Number(btn.dataset.id);
+        const id = btn.dataset.id;
         const accion = btn.dataset.accion;
 
-        if (accion === 'editar' || accion === 'postulantes') {
-          window.location.hash = `#/partido/${id}`;
-        }
-        if (accion === 'eliminar') {
-          if (!confirm('¿Eliminar este partido? Se notificará a todos los inscritos.')) return;
-          import('../store.js').then(({ eliminarPartido, agregarNotificacion }) => {
-            const partido = partidos.find(p => p.id === id);
-            (partido?.inscritos || []).forEach(uid => {
-              if (uid === partido.organizador.id) return;
-              agregarNotificacion({
-                para: uid,
-                tipo: 'cancelacion',
-                mensaje: `El partido "${partido.titulo}" fue cancelado por el organizador`,
-                link: '#/partidos'
-              });
-            });
-            eliminarPartido(id);
-            partidos = getPartidos();
+        try {
+          if (accion === 'editar' || accion === 'postulantes') {
+            window.location.hash = `#/partido/${id}`;
+            return;
+          }
+
+          if (accion === 'eliminar') {
+            if (!confirm('¿Eliminar este partido?')) return;
+            await eliminarPartidoAPI(id);
             toast('Partido eliminado', 'info');
-            renderTodo();
-          });
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'inscribirse') {
+            await inscribirseAPI(id);
+            toast('¡Te inscribiste!', 'success');
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'desinscribirse') {
+            if (!confirm('¿Salir del partido?')) return;
+            const resultado = await salirDelPartidoAPI(id);
+            toast(resultado?.mensaje || 'Saliste del partido', 'info');
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'postularse') {
+            const partido = partidos.find(p => String(p.id) === String(id));
+            let posicion = null;
+            if (partido?.pedirPosiciones && partido.posiciones?.length > 0) {
+              const pos = prompt(`Elegí tu posición:\n${partido.posiciones.join(', ')}`);
+              if (!pos) return;
+              posicion = pos;
+            }
+            await postularseAPI(id, posicion);
+            toast('Postulación enviada', 'success');
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'cancelar-postulacion') {
+            if (!confirm('¿Cancelar tu postulación?')) return;
+            await cancelarPostulacionAPI(id);
+            toast('Postulación cancelada', 'info');
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'postular-equipo') {
+            const partido = partidos.find(p => String(p.id) === String(id));
+            const { data: todosEquipos } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 });
+            const misEquipos = (todosEquipos || []).filter(g => g.deporte === partido.deporte);
+
+            if (misEquipos.length === 0) {
+              return toast('No tenés equipos de ' + partido.deporte, 'error');
+            }
+
+            let eqElegido = misEquipos[0];
+            if (misEquipos.length > 1) {
+              const opciones = misEquipos.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
+              const eleccion = prompt(`¿Con qué equipo?\n\n${opciones}\n\nEscribí el número:`);
+              if (!eleccion) return;
+              const idx = Number(eleccion) - 1;
+              if (isNaN(idx) || !misEquipos[idx]) return toast('Opción inválida', 'error');
+              eqElegido = misEquipos[idx];
+            }
+
+            await postularEquipoAPI(id, String(eqElegido.id));
+            toast('Equipo postulado', 'success');
+            await recargarPartidos();
+            return;
+          }
+
+          if (accion === 'cancelar-postulacion-equipo') {
+            if (!confirm('¿Cancelar la postulación del equipo?')) return;
+
+            const partido = partidos.find(p => String(p.id) === String(id));
+            if (!partido) return toast('Partido no encontrado', 'error');
+
+            const equipoId = partido.miEquipoPostuladoId;
+            if (!equipoId) return toast('No hay postulación pendiente para cancelar', 'error');
+
+            await api.delete(`/partidos/${id}/equipos-postulantes/${equipoId}`);
+            toast('Postulación cancelada', 'info');
+            await recargarPartidos();
+            return;
+          }
+
+          /* ⚡ MODO ORGANIZAR */
+          if (accion === 'interesarse') {
+            try {
+              await interesarseAPI(id);
+              toast('¡Te marcaste como interesado!', 'success');
+              await recargarPartidos();
+            } catch (err) {
+              console.error('[partidos] Error al interesarse:', err);
+              toast(err.message || 'No se pudo marcar interés', 'error');
+            }
+            return;
+          }
+
+          if (accion === 'cancelar-interes') {
+            if (!confirm('¿Cancelar tu interés en este partido?')) return;
+            try {
+              await cancelarInteresAPI(id);
+              toast('Interés cancelado', 'info');
+              await recargarPartidos();
+            } catch (err) {
+              console.error('[partidos] Error al cancelar interés:', err);
+              toast(err.message || 'No se pudo cancelar el interés', 'error');
+            }
+            return;
+          }
+
+        } catch (err) {
+          console.error('[partidos] Error en acción:', accion, err);
+          toast(err.message || 'Error al ejecutar la acción', 'error');
         }
       });
     });
@@ -341,19 +626,15 @@ const emojiDeporte = {
     renderDisponibles();
   }
   chipsTipo.forEach(chip => chip.addEventListener('click', handleChipTipo));
-  
-  /* =========================================================
+    /* =========================================================
      MODAL CREAR PARTIDO — SETUP
      ========================================================= */
-
-  // Select de deportes
   const selectDeporte = document.getElementById('partido-deporte');
   if (selectDeporte) {
     selectDeporte.innerHTML = '<option value="">Selecciona un deporte...</option>' +
       deportes.map(d => `<option value="${d}">${d}</option>`).join('');
   }
 
-  // Grid de niveles
   const nivelGrid = document.getElementById('nivel-grid');
   if (nivelGrid) {
     nivelGrid.innerHTML = nivelesPartido.map((n, i) => `
@@ -366,18 +647,17 @@ const emojiDeporte = {
 
   let nivelSeleccionado = 'amistoso';
   let posicionesActivas = [];
+  let modoOrganizar = false;
 
-  // Click en nivel
-  document.querySelectorAll('.nivel-opcion').forEach(op => {
+  document.querySelectorAll('#nivel-grid .nivel-opcion').forEach(op => {
     op.addEventListener('click', () => {
-      document.querySelectorAll('.nivel-opcion').forEach(o => o.classList.remove('active'));
+      document.querySelectorAll('#nivel-grid .nivel-opcion').forEach(o => o.classList.remove('active'));
       op.classList.add('active');
       nivelSeleccionado = op.dataset.nivel;
       actualizarAvisoAprobacion();
     });
   });
 
-  /* ---------- HELPERS DE NIVEL ---------- */
   function nivelRequiereAprobacion() {
     const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
     if (!nivel) return false;
@@ -390,13 +670,17 @@ const emojiDeporte = {
     return nivel.requiereAprobacion === true;
   }
 
-  /* ---------- ACTUALIZAR AVISO / ELECCIÓN DE APROBACIÓN ---------- */
   function actualizarAvisoAprobacion() {
+    if (modoOrganizar) {
+      document.getElementById('aviso-aprobacion')?.classList.remove('show');
+      document.getElementById('eleccion-aprobacion')?.classList.add('hidden');
+      return;
+    }
+
     const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
     const aviso = document.getElementById('aviso-aprobacion');
     const eleccion = document.getElementById('eleccion-aprobacion');
 
-    // 1) Bloque elección (solo semi-pro)
     if (nivel?.eleccionAprobacion) {
       eleccion?.classList.remove('hidden');
     } else {
@@ -405,7 +689,6 @@ const emojiDeporte = {
       if (check) check.checked = false;
     }
 
-    // 2) Aviso naranjo (solo profesional)
     if (nivel?.requiereAprobacion === true) {
       aviso?.classList.add('show');
     } else {
@@ -413,7 +696,6 @@ const emojiDeporte = {
     }
   }
 
-  /* ---------- ACTUALIZAR POSICIONES (según DEPORTE) ---------- */
   function actualizarPosiciones() {
     const deporte = document.getElementById('partido-deporte').value;
     const posiciones = posicionesPorDeporte[deporte] || [];
@@ -452,35 +734,120 @@ const emojiDeporte = {
   }
 
   /* =========================================================
+     MODO ORGANIZAR — Toggle del checkbox
+     ========================================================= */
+  const checkModoOrganizar = document.getElementById('partido-modo-organizar');
+  const avisoModoOrganizar = document.getElementById('aviso-modo-organizar');
+
+  function aplicarModoOrganizar() {
+    const grupos = [
+      document.getElementById('partido-fecha')?.closest('.form-row'),
+      document.getElementById('partido-lugar')?.closest('.field'),
+      document.getElementById('partido-gratis')?.closest('.field'),
+      // ❌ NO ocultamos el nivel-grid (el organizador lo elige igual)
+    ];
+
+    const avisoAprob = document.getElementById('aviso-aprobacion');
+    const eleccionAprob = document.getElementById('eleccion-aprobacion');
+
+    if (modoOrganizar) {
+      grupos.forEach(g => g?.classList.add('hidden'));
+
+      avisoAprob?.classList.remove('show');
+      eleccionAprob?.classList.add('hidden');
+
+      avisoModoOrganizar?.classList.add('show');
+
+      const btnGuardar = document.getElementById('btn-guardar-partido');
+      if (btnGuardar) btnGuardar.textContent = '📢 Publicar convocatoria';
+
+      const labelCupos = document.getElementById('label-partido-cupos');
+      if (labelCupos) labelCupos.textContent = 'Cupos estimados *';
+
+    } else {
+      grupos.forEach(g => g?.classList.remove('hidden'));
+
+      avisoModoOrganizar?.classList.remove('show');
+
+      actualizarAvisoAprobacion();
+
+      const btnGuardar = document.getElementById('btn-guardar-partido');
+      if (btnGuardar) btnGuardar.textContent = 'Publicar partido';
+
+      const labelCupos = document.getElementById('label-partido-cupos');
+      if (labelCupos) labelCupos.textContent = 'Cupos totales *';
+    }
+  }
+
+  checkModoOrganizar?.addEventListener('change', () => {
+    modoOrganizar = checkModoOrganizar.checked;
+    aplicarModoOrganizar();
+  });
+
+  /* =========================================================
      TIPO DE PARTIDO (jugador o equipo)
      ========================================================= */
   let tipoPartidoSeleccionado = 'jugador';
   let equipoOrganizadorSel = null;
 
-  const campoEquipoOrg = document.getElementById('campo-equipo-organizador');
-  const selEquipoOrg = document.getElementById('partido-equipo-organizador');
+  const campoEquipoOrg   = document.getElementById('campo-equipo-organizador');
+  const dropdownTrigger  = document.getElementById('equipo-dropdown-trigger');
+  const dropdownPanel    = document.getElementById('equipo-dropdown-panel');
+  const dropdownContent  = document.getElementById('equipo-dropdown-content');
 
-  function actualizarTipoPartido() {
-    // Toggle visual
+  async function actualizarTipoPartido() {
     document.querySelectorAll('[data-tipo-partido]').forEach(op => {
       op.classList.toggle('active', op.dataset.tipoPartido === tipoPartidoSeleccionado);
     });
 
-    // Mostrar/ocultar selector de equipo
     if (tipoPartidoSeleccionado === 'equipo') {
-      const misEq = misEquiposComoCapitanOAdmin();
+      const misEq = await misEquiposComoCapitanOAdmin();
 
       if (misEq.length === 0) {
         campoEquipoOrg?.classList.add('hidden');
       } else {
         campoEquipoOrg?.classList.remove('hidden');
-        selEquipoOrg.innerHTML = '<option value="">Selecciona un equipo...</option>' +
-          misEq.map(e => `<option value="${e.id}">${e.escudo} ${e.nombre}</option>`).join('');
+
+        equipoOrganizadorSel = null;
+        renderEquipoDropdownPlaceholder();
+
+        dropdownPanel.innerHTML = misEq.map(e => {
+          const esImagen = typeof e.escudo === 'string' && /\.(png|svg|jpg|jpeg|gif|webp)$/i.test(e.escudo);
+          const iconoHtml = esImagen
+            ? `<img src="${e.escudo}" alt="" class="equipo-opcion__icono" />`
+            : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${e.escudo || '🛡️'}</span>`;
+
+          return `
+            <button type="button"
+                    class="equipo-opcion"
+                    data-equipo-id="${e.id}">
+              ${iconoHtml}
+              <div class="equipo-opcion__nombre">
+                <div class="equipo-opcion__nombre-principal">${e.nombre}</div>
+                <div class="equipo-opcion__deporte">${e.deporte}${e.ciudad ? ' · ' + e.ciudad : ''}</div>
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        dropdownPanel.querySelectorAll('[data-equipo-id]').forEach(btn => {
+          btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const id = btn.dataset.equipoId;
+
+            dropdownPanel.querySelectorAll('.equipo-opcion').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+
+            equipoOrganizadorSel = id;
+            renderEquipoDropdownSeleccionado(misEq.find(e => String(e.id) === String(id)));
+            cerrarEquipoDropdown();
+          });
+        });
       }
 
       const labelCupos = document.getElementById('label-partido-cupos');
       const hintCupos = document.getElementById('hint-partido-cupos');
-      if (labelCupos) labelCupos.textContent = 'Cupos de equipos *';
+      if (labelCupos) labelCupos.textContent = modoOrganizar ? 'Cupos estimados de equipos *' : 'Cupos de equipos *';
       if (hintCupos) hintCupos.textContent = 'Ej: 2 equipos (uno es el tuyo, el otro se postula)';
 
       const inputCupos = document.getElementById('partido-cupos');
@@ -488,10 +855,12 @@ const emojiDeporte = {
 
     } else {
       campoEquipoOrg?.classList.add('hidden');
+      equipoOrganizadorSel = null;
+      cerrarEquipoDropdown();
 
       const labelCupos = document.getElementById('label-partido-cupos');
       const hintCupos = document.getElementById('hint-partido-cupos');
-      if (labelCupos) labelCupos.textContent = 'Cupos totales *';
+      if (labelCupos) labelCupos.textContent = modoOrganizar ? 'Cupos estimados *' : 'Cupos totales *';
       if (hintCupos) hintCupos.textContent = '';
 
       const inputCupos = document.getElementById('partido-cupos');
@@ -499,44 +868,93 @@ const emojiDeporte = {
     }
   }
 
-  // Mostrar opción "equipo" solo si el user tiene equipos
+  function renderEquipoDropdownPlaceholder() {
+    dropdownContent.innerHTML = `<span class="equipo-dropdown__placeholder">Selecciona un equipo...</span>`;
+  }
+
+  function renderEquipoDropdownSeleccionado(equipo) {
+    if (!equipo) {
+      renderEquipoDropdownPlaceholder();
+      return;
+    }
+
+    const esImagen = typeof equipo.escudo === 'string' && /\.(png|svg|jpg|jpeg|gif|webp)$/i.test(equipo.escudo);
+    const iconoHtml = esImagen
+      ? `<img src="${equipo.escudo}" alt="" class="equipo-opcion__icono" />`
+      : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${equipo.escudo || '🛡️'}</span>`;
+
+    dropdownContent.innerHTML = `
+      <div class="equipo-dropdown__selected">
+        ${iconoHtml}
+        <span class="equipo-dropdown__selected-nombre">${equipo.nombre}</span>
+      </div>
+    `;
+  }
+
+  function abrirEquipoDropdown() {
+    dropdownTrigger?.classList.add('open');
+    dropdownPanel?.classList.add('open');
+  }
+
+  function cerrarEquipoDropdown() {
+    dropdownTrigger?.classList.remove('open');
+    dropdownPanel?.classList.remove('open');
+  }
+
+  function toggleEquipoDropdown() {
+    if (dropdownPanel?.classList.contains('open')) {
+      cerrarEquipoDropdown();
+    } else {
+      abrirEquipoDropdown();
+    }
+  }
+
+  dropdownTrigger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleEquipoDropdown();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.equipo-dropdown')) {
+      cerrarEquipoDropdown();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cerrarEquipoDropdown();
+    }
+  });
+
   const opcionEquipo = document.querySelector('[data-tipo-partido="equipo"]');
   if (opcionEquipo) {
-    opcionEquipo.style.display = misEquiposComoCapitanOAdmin().length > 0 ? '' : 'none';
+    const misEq = await misEquiposComoCapitanOAdmin();
+    opcionEquipo.style.display = misEq.length > 0 ? '' : 'none';
   }
 
   document.querySelectorAll('[data-tipo-partido]').forEach(op => {
-    op.addEventListener('click', () => {
+    op.addEventListener('click', async () => {
       tipoPartidoSeleccionado = op.dataset.tipoPartido;
-      actualizarTipoPartido();
+      await actualizarTipoPartido();
     });
   });
 
-  selEquipoOrg?.addEventListener('change', () => {
-    equipoOrganizadorSel = Number(selEquipoOrg.value) || null;
-  });
-
   /* ---------- LISTENERS ---------- */
-
-  // Cambio de deporte → actualizar posiciones
   selectDeporte?.addEventListener('change', () => {
     actualizarPosiciones();
   });
 
-  // Switch "Requiere aprobación" (semi-pro)
   const checkRequiereAprob = document.getElementById('partido-requiere-aprobacion');
   checkRequiereAprob?.addEventListener('change', () => {
     actualizarAvisoAprobacion();
   });
 
-  // Switch "Gratis"
   const checkGratis = document.getElementById('partido-gratis');
   const precioWrapper = document.getElementById('precio-wrapper');
   checkGratis?.addEventListener('change', () => {
     precioWrapper?.classList.toggle('hidden', checkGratis.checked);
   });
 
-  // Switch "Pedir posición"
   const checkPedirPos = document.getElementById('partido-pedir-posiciones');
   const selectorPos   = document.getElementById('posiciones-selector');
   checkPedirPos?.addEventListener('change', () => {
@@ -544,11 +962,15 @@ const emojiDeporte = {
   });
 
   /* ---------- RESET FORMULARIO ---------- */
-  function resetearFormulario() {
-    // Reset toggle tipo partido
+  async function resetearFormulario() {
     tipoPartidoSeleccionado = 'jugador';
     equipoOrganizadorSel = null;
-    actualizarTipoPartido();
+    modoOrganizar = false;
+
+    if (checkModoOrganizar) checkModoOrganizar.checked = false;
+    aplicarModoOrganizar();
+
+    await actualizarTipoPartido();
 
     document.getElementById('partido-deporte').value = '';
     document.getElementById('partido-titulo').value = '';
@@ -568,7 +990,7 @@ const emojiDeporte = {
     document.getElementById('eleccion-aprobacion').classList.add('hidden');
 
     nivelSeleccionado = 'amistoso';
-    document.querySelectorAll('.nivel-opcion').forEach((o, i) => {
+    document.querySelectorAll('#nivel-grid .nivel-opcion').forEach((o, i) => {
       o.classList.toggle('active', i === 0);
     });
 
@@ -576,13 +998,13 @@ const emojiDeporte = {
   }
 
   /* ---------- ABRIR MODAL ---------- */
-  function abrirModalCrear() {
-    resetearFormulario();
+  async function abrirModalCrear() {
+    await resetearFormulario();
     abrirModal('modal-crear-partido');
   }
 
-  btnCrear?.addEventListener('click', abrirModalCrear);
-  btnCrear2?.addEventListener('click', abrirModalCrear);
+  btnCrear?.addEventListener('click', () => abrirModalCrear());
+  btnCrear2?.addEventListener('click', () => abrirModalCrear());
 
   document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
     btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));
@@ -595,9 +1017,9 @@ const emojiDeporte = {
   });
 
   /* =========================================================
-     GUARDAR PARTIDO
+     GUARDAR PARTIDO (crear en backend)
      ========================================================= */
-  document.getElementById('btn-guardar-partido')?.addEventListener('click', () => {
+  document.getElementById('btn-guardar-partido')?.addEventListener('click', async () => {
     const deporte     = document.getElementById('partido-deporte').value;
     const titulo      = document.getElementById('partido-titulo').value.trim();
     const fecha       = document.getElementById('partido-fecha').value;
@@ -611,89 +1033,104 @@ const emojiDeporte = {
 
     if (!deporte)   return toast('Selecciona un deporte', 'error');
     if (!titulo)    return toast('Ingresa un título', 'error');
-    if (!fecha)     return toast('Selecciona una fecha', 'error');
-    if (!hora)      return toast('Selecciona una hora', 'error');
-    if (!lugar)     return toast('Ingresa un lugar', 'error');
     if (cupos < 2)  return toast('Los cupos deben ser al menos 2', 'error');
-    if (!esGratis && precio < 0) return toast('El precio no puede ser negativo', 'error');
+
+    if (!modoOrganizar) {
+      if (!fecha)     return toast('Selecciona una fecha', 'error');
+      if (!hora)      return toast('Selecciona una hora', 'error');
+      if (!lugar)     return toast('Ingresa un lugar', 'error');
+      if (!esGratis && precio < 0) return toast('El precio no puede ser negativo', 'error');
+    }
+
     if (pedirPos && posicionesActivas.length === 0) {
       return toast('Selecciona al menos una posición', 'error');
     }
 
-    // Validaciones extra si es partido de equipo
     if (tipoPartidoSeleccionado === 'equipo' && !equipoOrganizadorSel) {
       return toast('Selecciona con qué equipo publicás', 'error');
     }
 
-    // Buscar el equipo organizador si aplica
-    let organizadorEquipo = null;
-    if (tipoPartidoSeleccionado === 'equipo') {
-      const eq = getGrupos().find(g => g.id === equipoOrganizadorSel);
-      if (!eq) return toast('No se encontró el equipo', 'error');
-
-      organizadorEquipo = {
-        id: eq.id,
-        nombre: eq.nombre,
-        escudo: eq.escudo,
-        capitanId: eq.capitanId,
-        jugadores: (eq.jugadores || []).map(j => j.id)
-      };
+    let fechaISO = null;
+    if (!modoOrganizar && fecha && hora) {
+      fechaISO = new Date(`${fecha}T${hora}:00`).toISOString();
     }
 
-    const nuevo = {
-      id: Date.now(),
-      tipoPartido: tipoPartidoSeleccionado,
-      deporte,
-      emoji: emojiDeporte[deporte] || '🏅',
+    const payload = {
       titulo,
-      fecha: `${fecha}T${hora}:00`,
-      lugar,
+      deporte,
+      emoji: emojiDeporte[deporte] || null,
+      descripcion: descripcion || null,
+      lugar: modoOrganizar ? null : lugar,
+      fecha: modoOrganizar ? null : fechaISO,
       cupos,
-      estado: 'abierto',
-      precio,
+      precio: modoOrganizar ? 0 : precio,
       nivel: nivelSeleccionado,
+      tipoPartido: tipoPartidoSeleccionado,
+      organizadorEquipoId: (tipoPartidoSeleccionado === 'equipo' && equipoOrganizadorSel)
+        ? String(equipoOrganizadorSel)
+        : null,
+      aprobacionRequerida: modoOrganizar
+        ? false
+        : (nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo'),
       pedirPosiciones: pedirPos,
       posiciones: pedirPos ? [...posicionesActivas] : [],
-      aprobacionRequerida: nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo',
-      descripcion,
-      organizador: {
-        id: user?.id,
-        nombre: user?.nombre || 'Tú',
-        avatar: user?.avatar
-      },
-      // Estructura para jugador
-      inscritos: (tipoPartidoSeleccionado === 'jugador' && user?.id) ? [user.id] : [],
-      postulantes: [],
-      // Estructura para equipo
-      organizadorEquipo,
-      equiposPostulantes: [],
-      equiposInscritos: organizadorEquipo ? [organizadorEquipo] : []
+      estadoPartido: modoOrganizar ? 'buscando_jugadores' : 'confirmado',
     };
 
-    partidos.unshift(nuevo);
-    guardarPartidos(partidos);
+    const btn = document.getElementById('btn-guardar-partido');
+    btn.disabled = true;
+    const textoOriginal = btn.textContent;
+    btn.textContent = modoOrganizar ? 'Publicando convocatoria...' : 'Publicando...';
 
-    filtroActual = 'todos';
-    filtroTipoActual = 'todos';
-    chips.forEach(c => c.classList.toggle('chip--active', c.dataset.filtro === 'todos'));
-    chipsTipo.forEach(c => c.classList.toggle('chip--active', c.dataset.filtroTipo === 'todos'));
-    renderTodo();
-    cambiarTab('creados');
+    try {
+      await crearPartidoAPI(payload);
+      toast(
+        modoOrganizar
+          ? '¡Convocatoria publicada! Los interesados podrán marcar "Me interesa".'
+          : '¡Partido publicado!',
+        'success'
+      );
 
-    cerrarModal('modal-crear-partido');
-    toast('¡Partido publicado!', 'success');
+      cerrarModal('modal-crear-partido');
+
+      const { data } = await listarPartidos({ limit: 50 });
+      partidos = data;
+
+      filtroActual = 'todos';
+      filtroTipoActual = 'todos';
+      chips.forEach(c => c.classList.toggle('chip--active', c.dataset.filtro === 'todos'));
+      chipsTipo.forEach(c => c.classList.toggle('chip--active', c.dataset.filtroTipo === 'todos'));
+
+      renderDisponibles();
+      renderCreados();
+      renderInscritos();
+      cambiarTab('creados');
+    } catch (err) {
+      console.error('[partidos] Error al crear:', err);
+      toast(err.message || 'No se pudo crear el partido', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
   });
 
   /* =========================================================
      RENDER GLOBAL
      ========================================================= */
-  function renderTodo() {
+  async function renderTodo() {
+    try {
+      const { data } = await listarPartidos({ limit: 50 });
+      partidos = data;
+    } catch (err) {
+      console.warn('[partidos] No se pudo recargar:', err.message);
+    }
+
     renderDisponibles();
     renderCreados();
     renderInscritos();
   }
 
-  renderTodo();
+  await renderTodo();
 
   return () => {
     chips.forEach(chip => chip.removeEventListener('click', handleChip));
