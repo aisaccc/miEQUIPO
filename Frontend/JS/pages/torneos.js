@@ -13,11 +13,10 @@ import {
   expulsarEquipo as expulsarEquipoAPI,
 } from '../services/torneos.service.js';
 
-// ⚡ NUEVO D.5: reglas por deporte
 import { getReglasDeporte, getSistemaEfectivo } from '../utils/reglas-deporte.js';
 
 /* =========================================================
-   MAPA DE EMOJIS
+   MAPA DE EMOJIS / ASSETS
    ========================================================= */
 const emojiDeporte = {
   'Fútbol': 'assets/icons/balon-de-futbol (2).png',
@@ -43,6 +42,38 @@ const emojiDeporte = {
 };
 
 /* =========================================================
+   COLOR ÚNICO POR DEPORTE
+   ========================================================= */
+const COLOR_DEPORTE = {
+  'Fútbol':            { bg: '#FFEDD5', fg: '#C2410C' },
+  'Fútbol americano':  { bg: '#FEE2E2', fg: '#991B1B' },
+  'Básquetbol':        { bg: '#DBEAFE', fg: '#1E40AF' },
+  'Tenis':             { bg: '#DCFCE7', fg: '#166534' },
+  'Tenis de mesa':     { bg: '#FCE7F3', fg: '#9D174D' },
+  'Vóleibol':          { bg: '#FEF3C7', fg: '#92400E' },
+  'Pádel':             { bg: '#E0E7FF', fg: '#3730A3' },
+  'Squash':            { bg: '#CFFAFE', fg: '#155E75' },
+  'Bádminton':         { bg: '#F3E8FF', fg: '#6B21A8' },
+  'Golf':              { bg: '#D1FAE5', fg: '#065F46' },
+  'Béisbol':           { bg: '#FEF9C3', fg: '#854D0E' },
+  'Hockey':            { bg: '#E0F2FE', fg: '#075985' },
+  'Handball':          { bg: '#FFE4E6', fg: '#9F1239' },
+  'Rugby':             { bg: '#EDE9FE', fg: '#5B21B6' },
+  'Boxeo':             { bg: '#FEE2E2', fg: '#7F1D1D' },
+  'Ciclismo':          { bg: '#ECFCCB', fg: '#3F6212' },
+  'Natación':          { bg: '#CFFAFE', fg: '#0E7490' },
+  'Atletismo':         { bg: '#FFE4E6', fg: '#BE123C' },
+  'Surf':              { bg: '#CFFAFE', fg: '#0369A1' },
+  'Escalada':          { bg: '#FEF3C7', fg: '#B45309' },
+};
+
+const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
+
+function colorDeporte(deporte) {
+  return COLOR_DEPORTE[deporte] || COLOR_DEFAULT;
+}
+
+/* =========================================================
    DEPORTES INDIVIDUALES
    ========================================================= */
 const DEPORTES_INDIVIDUALES = new Set([
@@ -52,14 +83,19 @@ const DEPORTES_INDIVIDUALES = new Set([
 ]);
 
 /* =========================================================
-   ⚡ DEPORTES CON SISTEMA SUGERIDO (D.5)
-   =========================================================
-   Cuando el usuario elige uno de estos deportes, se
-   preselecciona el sistema correspondiente y se muestra el
-   selector. Si elige otro deporte, se oculta.
+   DEPORTES CON SISTEMA SUGERIDO (D.5)
    ========================================================= */
 const DEPORTES_TIEMPO = new Set(['Natación', 'Atletismo', 'Ciclismo']);
 const DEPORTES_PUNTOS = new Set(['Escalada', 'Surf', 'Boxeo']);
+
+/* =========================================================
+   ICONOS SVG
+   ========================================================= */
+const ICONOS = {
+  fecha: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  ubicacion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  lapiz: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+};
 
 /* =========================================================
    MODAL EDITAR — EXPORTADA
@@ -84,8 +120,19 @@ export async function init() {
   let modalidadSeleccionada = 'liga';
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
-  let sistemaClasificacionSeleccionado = 'simple';   // ⚡ NUEVO
+  let sistemaClasificacionSeleccionado = 'simple';
   let esEdicion = false;
+
+  /* ---------- FECHA DEL DÍA EN EL HERO ---------- */
+  const eyebrow = document.getElementById('torneos-eyebrow');
+  if (eyebrow) {
+    const hoy = new Date();
+    const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+    const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                   'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    eyebrow.textContent =
+      `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
+  }
 
   /* ---------- CARGAR DESDE EL BACKEND ---------- */
   async function recargarTorneos() {
@@ -120,7 +167,7 @@ export async function init() {
   const panelInscritos  = document.getElementById('panel-torneos-inscritos');
   const subtabs         = document.querySelectorAll('[data-tab-torneos]');
   const chips           = document.querySelectorAll('[data-filtro-torneo]');
-  const btnCrear        = document.getElementById('btn-crear-torneo');
+  const btnCrear        = document.getElementById('btn-crear-torneo-hero');
   const btnCrear2       = document.getElementById('btn-crear-torneo-2');
 
   if (!contDisponibles) return null;
@@ -144,42 +191,13 @@ export async function init() {
     return emoji;
   }
 
-  function renderNivelBadge(nivel) {
-    const map = {
-      amistoso: '<span class="badge badge--success">🟢 Amistoso</span>',
-      semiprofesional: '<span class="badge badge--warning">🟡 Semiprofesional</span>',
-      profesional: '<span class="badge badge--danger">🔴 Profesional</span>',
-    };
-    return map[nivel] || '';
-  }
-
-  function renderTipoParticipacionBadge(tipo) {
-    if (tipo === 'individual') {
-      return '<span class="badge badge--neutral">👤 Individual</span>';
-    }
-    return '<span class="badge badge--neutral">👥 Equipos</span>';
-  }
-
-  /* ⚡ NUEVO: badge de sistema de clasificación (solo si no es 'simple') */
-  function renderSistemaBadge(sistema) {
-    if (!sistema || sistema === 'simple') return '';
-    if (sistema === 'tiempo') {
-      return '<span class="badge badge--info">⏱️ Por tiempo</span>';
-    }
-    if (sistema === 'puntos') {
-      return '<span class="badge badge--info">🏅 Por puntos</span>';
-    }
-    return '';
-  }
-
   /* =========================================================
-     RENDER CARD
+     RENDER CARD (VERTICAL)
      ========================================================= */
   function renderCard(t, opciones = {}) {
-    const { mostrarAcciones = false, mostrarBadgeRol = null } = opciones;
+    const { mostrarBadgeRol = null } = opciones;
 
     const inscritosCount = t.totalEquipos ?? 0;
-    const enEspera = t.totalListaEspera ?? 0;
     const porcentaje = Math.min(100, Math.round((inscritosCount / t.cuposEquipos) * 100));
     const lleno = inscritosCount >= t.cuposEquipos;
 
@@ -187,134 +205,88 @@ export async function init() {
     const cerrado = t.estado !== 'inscripcion' || fechaLimiteVencida;
 
     const soyOrganizador = t.soyOrganizador || String(t.organizador?.id) === String(user?.id);
-    const miEquipoInscrito = t.miEquipoInscrito;
-    const miSolicitudPendiente = t.miSolicitudPendiente;
-    const miInvitacionPendiente = t.miInvitacionPendiente;
 
     const badgeClase = lleno ? 'badge--danger'
+                     : t.estado === 'en_curso' ? 'badge--info'
                      : cerrado ? 'badge--warning'
-                     : t.estado === 'inscripcion' ? 'badge--success'
-                     : t.estado === 'en_curso'    ? 'badge--warning'
-                                                  : 'badge--neutral';
+                     : 'badge--success';
 
     const badgeTexto = lleno ? 'Lleno'
+                     : t.estado === 'en_curso' ? 'En curso'
                      : cerrado && t.estado === 'inscripcion' ? 'Inscripciones cerradas'
                      : t.estado === 'inscripcion' ? 'Inscripción abierta'
-                     : t.estado === 'en_curso'    ? 'En curso'
-                                                  : 'Finalizado';
+                     : 'Finalizado';
 
     const precioHtml = t.precio === 0
-      ? `<span class="match-card__precio match-card__precio--gratis">🎉 Gratis</span>`
-      : `<span class="match-card__precio match-card__precio--pago">💰 $${t.precio.toLocaleString('es-CL')}/${t.tipoParticipacion === 'individual' ? 'persona' : 'equipo'}</span>`;
+      ? 'Gratis'
+      : `$${t.precio.toLocaleString('es-CL')}`;
 
-    const badgeRolHtml = mostrarBadgeRol
-      ? `<span class="badge badge--primary" style="margin-left:auto">${mostrarBadgeRol}</span>`
-      : '';
+    const cuposLibres = t.cuposEquipos - inscritosCount;
+    const cuposTexto = lleno
+      ? '<span style="color:var(--color-danger); font-weight:700">Lleno</span>'
+      : `<span style="color:var(--color-success); font-weight:700">${cuposLibres} cupos</span>`;
 
-    const modalidadBadge = {
-      liga: '<span class="badge badge--info">⚽ Liga</span>',
-      eliminacion: '<span class="badge badge--warning">🏆 Eliminación</span>',
-      custom: '<span class="badge badge--neutral">🔧 Custom</span>',
-    }[t.modalidad] || '';
+    const fechaInicio = t.fechaInicio ? formatearFecha(t.fechaInicio) : '';
+    const fechaFin = t.fechaFin ? formatearFecha(t.fechaFin) : '';
+    const fechaTexto = fechaInicio && fechaFin
+      ? `${fechaInicio} — ${fechaFin}`
+      : fechaInicio || '';
 
-    const nivelBadge = renderNivelBadge(t.nivel);
-    const tipoBadge = renderTipoParticipacionBadge(t.tipoParticipacion);
+    const color = colorDeporte(t.deporte);
+    const iconoDeporte = emojiDeporte[t.deporte];
+    const iconoHtml = iconoDeporte
+      ? `<img src="${iconoDeporte}" alt="" style="width:28px;height:28px;object-fit:contain;display:block" />`
+      : (t.emoji || '🏆');
 
-    // ⚡ NUEVO: badge de sistema
-    const sistemaBadge = renderSistemaBadge(t.sistemaClasificacion);
+    const tipoTexto = t.tipoParticipacion === 'individual' ? 'POR PERSONA' : 'POR EQUIPOS';
+    const deporteUpper = (t.deporte || '').toUpperCase();
 
-    const fechaLimiteHtml = t.fechaLimiteInscripcion
-      ? `<span>⏰ Hasta ${formatearFecha(t.fechaLimiteInscripcion)}</span>`
-      : '';
-
-    /* ---------- BOTÓN DE ACCIÓN ---------- */
-    let botonAccion = '';
-
-    if (!user) {
-      botonAccion = '';
-    } else if (soyOrganizador) {
-      botonAccion = mostrarAcciones ? `
-        <button class="btn btn--ghost btn--sm" data-accion-torneo="editar" data-id="${t.id}">✏️ Editar</button>
-        <button class="btn btn--ghost btn--sm" data-accion-torneo="gestionar" data-id="${t.id}">
-          👥 Gestionar ${enEspera > 0 ? `<span class="badge badge--primary" style="margin-left:4px">${enEspera}</span>` : ''}
-        </button>
-        <button class="btn btn--ghost btn--sm" data-accion-torneo="eliminar" data-id="${t.id}" style="color:var(--color-danger)">🗑️</button>
-      ` : '';
-    } else if (miEquipoInscrito) {
-      botonAccion = `
-        <span class="badge badge--success" style="padding:8px 12px">✅ Ya estás inscrito</span>
-        <button class="btn btn--ghost btn--sm"
-                data-accion-torneo="salir"
-                data-id="${t.id}"
-                style="color:var(--color-danger)">
-          🚪 Salirme
-        </button>
-      `;
-    } else if (miSolicitudPendiente) {
-      botonAccion = `
-        <button class="btn btn--ghost btn--sm" disabled>⏳ Solicitud pendiente</button>
-        <button class="btn btn--ghost btn--sm" data-accion-torneo="cancelar-solicitud" data-id="${t.id}" style="color:var(--color-danger)">Cancelar</button>
-      `;
-    } else if (miInvitacionPendiente) {
-      botonAccion = `
-        <button class="btn btn--primary btn--sm" data-accion-torneo="aceptar-invitacion" data-id="${t.id}">✅ Aceptar invitación</button>
-        <button class="btn btn--ghost btn--sm" data-accion-torneo="rechazar-invitacion" data-id="${t.id}">Rechazar</button>
-      `;
-    } else if (cerrado || lleno) {
-      botonAccion = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 No disponible</span>`;
-    } else {
-      const textoBoton = t.tipoParticipacion === 'individual'
-        ? '📝 Inscribirme'
-        : '📝 Inscribir mi equipo';
-      botonAccion = `<button class="btn btn--primary btn--sm" data-accion-torneo="inscribir" data-id="${t.id}">${textoBoton}</button>`;
-    }
-
-    const accionesHtml = botonAccion ? `
-      <div class="match-card__acciones" style="display:flex; gap:6px; margin-top:var(--space-3); padding-top:var(--space-3); border-top:1px solid var(--color-border); flex-wrap:wrap">
-        ${botonAccion}
-      </div>
+    const lapizHtml = soyOrganizador ? `
+      <button class="tournament-card__edit" data-accion-torneo="editar" data-id="${t.id}" title="Editar torneo">
+        ${ICONOS.lapiz}
+      </button>
     ` : '';
 
+    const badgeRolHtml = mostrarBadgeRol
+      ? `<span class="badge badge--primary">${mostrarBadgeRol}</span>`
+      : '';
+
     return `
-      <article class="match-card" data-id="${t.id}" style="cursor:pointer">
-        <div class="match-card__header">
-          <div class="match-card__sport">${renderEmoji(t.emoji, 36)}</div>
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+      <article class="tournament-card" data-id="${t.id}">
+        <div class="tournament-card__top">
+          <div class="tournament-card__sport" style="background:${color.bg}; color:${color.fg}">
+            ${iconoHtml}
+          </div>
+          <div class="tournament-card__top-right">
             ${badgeRolHtml}
             <span class="badge ${badgeClase}">${badgeTexto}</span>
+            ${lapizHtml}
           </div>
         </div>
 
-        <h3 class="match-card__title">${t.nombre}</h3>
+        <div class="tournament-card__eyebrow">${deporteUpper} · ${tipoTexto}</div>
+        <h3 class="tournament-card__title">${t.nombre}</h3>
 
-        <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
-          ${precioHtml}
-          ${modalidadBadge}
-          ${nivelBadge}
-          ${tipoBadge}
-          ${sistemaBadge}
+        <div class="tournament-card__meta">
+          ${fechaTexto ? `<span>${ICONOS.fecha} ${fechaTexto}</span>` : ''}
+          ${t.lugar ? `<span>${ICONOS.ubicacion} ${t.lugar}</span>` : ''}
         </div>
 
-        <div class="match-card__info">
-          <span>🏅 ${t.deporte}</span>
-          <span>📅 ${formatearFecha(t.fechaInicio)}</span>
-          ${t.lugar ? `<span>📍 ${t.lugar}</span>` : ''}
-          ${fechaLimiteHtml}
-          ${t.organizador?.id ? `
-            <span data-autor-id="${t.organizador.id}" style="cursor:pointer; color:var(--color-primary-dark); text-decoration:underline">
-              👤 ${t.organizador.nombre}
-            </span>
-          ` : ''}
+        <div class="tournament-card__progress-row">
+          <span class="text-xs text-muted">${inscritosCount} / ${t.cuposEquipos} ${t.tipoParticipacion === 'individual' ? 'participantes' : 'equipos'}</span>
+          ${cuposTexto}
         </div>
 
-        <div class="match-card__footer">
-          <div class="match-card__progress">
-            <div class="match-card__progress-bar" style="width:${porcentaje}%"></div>
-          </div>
-          <span class="text-xs text-muted">${inscritosCount}/${t.cuposEquipos} ${t.tipoParticipacion === 'individual' ? 'participantes' : 'equipos'}</span>
+        <div class="tournament-card__progress">
+          <div class="tournament-card__progress-bar" style="width:${porcentaje}%"></div>
         </div>
 
-        ${accionesHtml}
+        <div class="tournament-card__bottom">
+          <div class="tournament-card__price">${precioHtml}</div>
+          <button class="btn btn--ghost btn--sm tournament-card__ver" data-accion-torneo="ver" data-id="${t.id}">
+            Ver detalles
+          </button>
+        </div>
       </article>
     `;
   }
@@ -343,7 +315,6 @@ export async function init() {
     }
 
     contDisponibles.innerHTML = lista.map(t => renderCard(t)).join('');
-    conectarClicksCards(contDisponibles);
     conectarAcciones(contDisponibles);
   }
 
@@ -369,9 +340,8 @@ export async function init() {
     }
 
     contCreados.innerHTML = misCreados.map(t =>
-      renderCard(t, { mostrarAcciones: true, mostrarBadgeRol: '👑 Organizador' })
+      renderCard(t, { mostrarBadgeRol: '👑' })
     ).join('');
-    conectarClicksCards(contCreados);
     conectarAcciones(contCreados);
   }
 
@@ -398,33 +368,9 @@ export async function init() {
     }
 
     contInscritos.innerHTML = misInscritos.map(t =>
-      renderCard(t, { mostrarBadgeRol: '✅ Inscrito' })
+      renderCard(t, { mostrarBadgeRol: '✅' })
     ).join('');
-    conectarClicksCards(contInscritos);
     conectarAcciones(contInscritos);
-  }
-
-  /* =========================================================
-     CONECTAR CLICKS
-     ========================================================= */
-  function conectarClicksCards(contenedor) {
-    contenedor.querySelectorAll('.match-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('[data-accion-torneo]')) return;
-        if (e.target.closest('[data-autor-id]')) return;
-        const id = card.dataset.id;
-        window.location.hash = `#/torneo/${id}`;
-      });
-    });
-
-    contenedor.querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(el.dataset.autorId);
-        });
-      });
-    });
   }
 
   /* =========================================================
@@ -440,12 +386,13 @@ export async function init() {
         if (!torneo) return;
 
         try {
-          if (accion === 'editar') {
-            abrirModalEditar(torneo);
+          if (accion === 'ver') {
+            window.location.hash = `#/torneo/${id}`;
             return;
           }
 
-          if (accion === 'gestionar') {
+          if (accion === 'editar') {
+            sessionStorage.setItem('torneoAEditar', String(id));
             window.location.hash = `#/torneo/${id}`;
             return;
           }
@@ -458,100 +405,6 @@ export async function init() {
             return;
           }
 
-          if (accion === 'inscribir') {
-            if (torneo.tipoParticipacion === 'individual') {
-              await inscribirEquipoAPI(id, null);
-              toast('¡Inscripción exitosa!', 'success');
-              await recargarTorneos();
-              return;
-            }
-
-            const misEq = await misEquiposComoCapitanOAdmin();
-            if (misEq.length === 0) {
-              return toast('No tenés equipos disponibles', 'error');
-            }
-
-            const misEqDelDeporte = misEq.filter(eq => eq.deporte === torneo.deporte);
-            if (misEqDelDeporte.length === 0) {
-              return toast(`No tenés equipos de ${torneo.deporte}`, 'error');
-            }
-
-            let eqElegido = misEqDelDeporte[0];
-            if (misEqDelDeporte.length > 1) {
-              const opciones = misEqDelDeporte.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
-              const eleccion = prompt(`¿Con qué equipo?\n\n${opciones}\n\nEscribí el número:`);
-              if (!eleccion) return;
-              const idx = Number(eleccion) - 1;
-              if (isNaN(idx) || !misEqDelDeporte[idx]) return toast('Opción inválida', 'error');
-              eqElegido = misEqDelDeporte[idx];
-            }
-
-            await inscribirEquipoAPI(id, String(eqElegido.id));
-            toast('¡Inscripción exitosa!', 'success');
-            await recargarTorneos();
-            return;
-          }
-
-          if (accion === 'cancelar-solicitud') {
-            if (!confirm('¿Cancelar tu solicitud?')) return;
-
-            if (torneo.tipoParticipacion === 'individual') {
-              await cancelarInscripcionAPI(id, null);
-              toast('Solicitud cancelada', 'info');
-              await recargarTorneos();
-              return;
-            }
-
-            const misEq = await misEquiposComoCapitanOAdmin();
-            for (const eq of misEq) {
-              try {
-                await cancelarInscripcionAPI(id, String(eq.id));
-              } catch (e) { /* ignora */ }
-            }
-            toast('Solicitud cancelada', 'info');
-            await recargarTorneos();
-            return;
-          }
-
-          if (accion === 'salir') {
-            if (!confirm('¿Salirte de este torneo?')) return;
-
-            if (torneo.tipoParticipacion === 'individual') {
-              await cancelarInscripcionAPI(id, null);
-              toast('Saliste del torneo', 'info');
-              await recargarTorneos();
-              return;
-            }
-
-            const misEq = await misEquiposComoCapitanOAdmin();
-            for (const eq of misEq) {
-              try {
-                await cancelarInscripcionAPI(id, String(eq.id));
-                toast('Saliste del torneo', 'info');
-                await recargarTorneos();
-                return;
-              } catch (e) { /* siguiente */ }
-            }
-            toast('No se pudo salir del torneo', 'error');
-            return;
-          }
-
-          if (accion === 'aceptar-invitacion' || accion === 'rechazar-invitacion') {
-            const aceptar = accion === 'aceptar-invitacion';
-            const misEq = await misEquiposComoCapitanOAdmin();
-            for (const eq of misEq) {
-              try {
-                const { responderInvitacion } = await import('../services/torneos.service.js');
-                await responderInvitacion(id, String(eq.id), aceptar);
-                toast(aceptar ? 'Invitación aceptada' : 'Invitación rechazada', aceptar ? 'success' : 'info');
-                await recargarTorneos();
-                return;
-              } catch (e) { /* siguiente */ }
-            }
-            if (aceptar) toast('No se pudo aceptar la invitación', 'error');
-            return;
-          }
-
         } catch (err) {
           console.error('[torneos] Error en acción:', accion, err);
           toast(err.message || 'Error al ejecutar la acción', 'error');
@@ -559,7 +412,8 @@ export async function init() {
       });
     });
   }
-    /* =========================================================
+
+  /* =========================================================
      SUB-PESTAÑAS Y FILTROS
      ========================================================= */
   function cambiarTab(tab) {
@@ -605,12 +459,10 @@ export async function init() {
   const checkIncluyeEstad   = document.getElementById('torneo-incluye-estadisticas');
   const inputFechaLimite    = document.getElementById('torneo-fecha-limite');
 
-  // ⚡ Fixture
   const checkIdaVuelta      = document.getElementById('torneo-ida-vuelta');
   const autoFixtureWrapper  = document.getElementById('auto-fixture-wrapper');
   const checkAutoFixture    = document.getElementById('torneo-auto-fixture');
 
-  // ⚡ NUEVO D.5: sistema de clasificación
   const sistemaWrapper   = document.getElementById('sistema-clasificacion-wrapper');
   const sistemaGrid      = document.getElementById('sistema-clasificacion-grid');
   const sistemaHint      = document.getElementById('sistema-clasificacion-hint');
@@ -643,9 +495,6 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     AUTO-FIXTURE VISIBILITY
-     ========================================================= */
   function actualizarAutoFixtureVisibility() {
     if (!autoFixtureWrapper) return;
 
@@ -657,52 +506,21 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     ⚡ SISTEMA DE CLASIFICACIÓN (D.5)
-     =========================================================
-     Reglas:
-     - Si el deporte es de tiempo o puntos → mostrar selector,
-       preseleccionar el sistema correspondiente.
-     - Si el deporte es "normal" (fútbol, básquet, vóley, etc.)
-       → ocultar selector y forzar 'simple'.
-     - El usuario igual puede cambiarlo manualmente si el
-       selector está visible.
-     ========================================================= */
-/* =========================================================
-   ⚡ SISTEMA DE CLASIFICACIÓN (D.5)
-   =========================================================
-   Reglas:
-   - El selector SIEMPRE está visible.
-   - Se preselecciona el sistema sugerido según el deporte:
-     * tiempo  → Natación, Atletismo, Ciclismo
-     * puntos  → Escalada, Surf, Boxeo
-     * simple  → el resto
-   - El usuario puede cambiarlo manualmente cuando quiera.
-   ========================================================= */
   function actualizarSistemaClasificacion(deporte) {
     if (!sistemaWrapper || !sistemaGrid) return;
 
-    // Siempre mostrar el wrapper (ya no se oculta por deporte)
     sistemaWrapper.classList.remove('hidden');
 
-    // Determinar el sistema sugerido
     let sistemaSugerido = 'simple';
-
     if (deporte) {
-      if (DEPORTES_TIEMPO.has(deporte)) {
-        sistemaSugerido = 'tiempo';
-      } else if (DEPORTES_PUNTOS.has(deporte)) {
-        sistemaSugerido = 'puntos';
-      }
+      if (DEPORTES_TIEMPO.has(deporte)) sistemaSugerido = 'tiempo';
+      else if (DEPORTES_PUNTOS.has(deporte)) sistemaSugerido = 'puntos';
     }
 
     sistemaClasificacionSeleccionado = sistemaSugerido;
 
     opcionesSistema.forEach(op => {
-      op.classList.toggle(
-        'active',
-        op.dataset.sistemaClasificacion === sistemaSugerido
-      );
+      op.classList.toggle('active', op.dataset.sistemaClasificacion === sistemaSugerido);
     });
 
     actualizarHintSistema();
@@ -710,17 +528,14 @@ export async function init() {
 
   function actualizarHintSistema() {
     if (!sistemaHint) return;
-
     const textos = {
       simple: '🎯 Se juega con marcador (goles, puntos, sets).',
       tiempo: '⏱️ El MENOR tiempo gana. El organizador carga minutos, segundos y centésimas.',
       puntos: '🏅 El MAYOR puntaje gana.',
     };
-
     sistemaHint.textContent = textos[sistemaClasificacionSeleccionado] || '';
   }
 
-  /* ---------- Click en cada opción de sistema ---------- */
   opcionesSistema.forEach(op => {
     op.addEventListener('click', () => {
       opcionesSistema.forEach(o => o.classList.remove('active'));
@@ -730,7 +545,6 @@ export async function init() {
     });
   });
 
-  /* ---------- Cambio de tipo de participación ---------- */
   opcionesTipoParticipacion.forEach(op => {
     op.addEventListener('click', () => {
       opcionesTipoParticipacion.forEach(o => o.classList.remove('active'));
@@ -749,7 +563,6 @@ export async function init() {
     }
   }
 
-  /* ---------- Autoselección por deporte ---------- */
   selectDeporte?.addEventListener('change', () => {
     const deporte = selectDeporte.value;
     if (!deporte) {
@@ -757,7 +570,6 @@ export async function init() {
       return;
     }
 
-    // Auto-seleccionar tipo de participación si el deporte es individual
     if (DEPORTES_INDIVIDUALES.has(deporte)) {
       opcionesTipoParticipacion.forEach(op => {
         op.classList.toggle('active', op.dataset.tipoParticipacion === 'individual');
@@ -766,11 +578,9 @@ export async function init() {
       actualizarHintTipoParticipacion();
     }
 
-    // ⚡ NUEVO: actualizar el selector de sistema
     actualizarSistemaClasificacion(deporte);
   });
 
-  /* ---------- NIVEL DEL TORNEO ---------- */
   const NIVELES_TORNEO = [
     { valor: 'amistoso', label: 'Amistoso', descripcion: 'Sin exigencia' },
     { valor: 'semiprofesional', label: 'Semiprofesional', descripcion: 'Nivel intermedio' },
@@ -795,7 +605,6 @@ export async function init() {
     });
   }
 
-  /* ---------- LIBRE INSCRIPCIÓN ---------- */
   function actualizarLibreInscripcion() {
     const esGratis = checkGratis?.checked ?? true;
     const nivelExigente = nivelTorneoSeleccionado !== 'amistoso';
@@ -837,7 +646,6 @@ export async function init() {
     document.getElementById('torneo-descripcion').value = '';
     document.getElementById('torneo-precio-wrapper').classList.add('hidden');
 
-    // Modalidad (default: liga)
     modalidadSeleccionada = 'liga';
     esEdicion = false;
     opcionesModalidad.forEach(op => {
@@ -846,21 +654,18 @@ export async function init() {
     actualizarConfiguracionPorModalidad();
     actualizarAutoFixtureVisibility();
 
-    // Tipo de participación (default: equipo)
     tipoParticipacionSeleccionado = 'equipo';
     opcionesTipoParticipacion.forEach(op => {
       op.classList.toggle('active', op.dataset.tipoParticipacion === 'equipo');
     });
     actualizarHintTipoParticipacion();
 
-    // ⚡ Sistema de clasificación (default: simple, visible siempre)
     sistemaClasificacionSeleccionado = 'simple';
     opcionesSistema.forEach(op => {
       op.classList.toggle('active', op.dataset.sistemaClasificacion === 'simple');
     });
     sistemaWrapper?.classList.remove('hidden');
 
-    // Nivel (default: amistoso)
     nivelTorneoSeleccionado = 'amistoso';
     if (nivelGridTorneo) {
       nivelGridTorneo.querySelectorAll('[data-nivel-torneo]').forEach(op => {
@@ -870,10 +675,8 @@ export async function init() {
     if (checkLibreInsc) checkLibreInsc.checked = true;
     actualizarLibreInscripcion();
 
-    // AutoFixture (default: false)
     if (checkAutoFixture) checkAutoFixture.checked = false;
 
-    // Configuración avanzada
     if (inputPuntosVictoria) inputPuntosVictoria.value = '3';
     if (inputPuntosEmpate)   inputPuntosEmpate.value = '1';
     if (inputPuntosDerrota)  inputPuntosDerrota.value = '0';
@@ -883,7 +686,6 @@ export async function init() {
     if (checkIncluyeEstad)   checkIncluyeEstad.checked = false;
   }
 
-  /* ---------- Abrir modal crear ---------- */
   function abrirModalCrear() {
     resetearFormulario();
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
@@ -892,7 +694,6 @@ export async function init() {
     abrirModal('modal-crear-torneo');
   }
 
-  /* ---------- Abrir modal editar ---------- */
   function abrirModalEditar(torneo) {
     document.getElementById('torneo-modal-titulo').textContent = 'Editar torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Guardar cambios';
@@ -911,7 +712,6 @@ export async function init() {
     document.getElementById('torneo-precio').value = gratis ? '20000' : torneo.precio;
     document.getElementById('torneo-precio-wrapper').classList.toggle('hidden', gratis);
 
-    // Modalidad
     esEdicion = true;
     modalidadSeleccionada = torneo.modalidad || 'liga';
     opcionesModalidad.forEach(op => {
@@ -919,18 +719,15 @@ export async function init() {
     });
     actualizarConfiguracionPorModalidad();
 
-    // AutoFixture
     if (checkAutoFixture) checkAutoFixture.checked = torneo.autoFixture === true;
     actualizarAutoFixtureVisibility();
 
-    // Tipo de participación
     tipoParticipacionSeleccionado = torneo.tipoParticipacion || 'equipo';
     opcionesTipoParticipacion.forEach(op => {
       op.classList.toggle('active', op.dataset.tipoParticipacion === tipoParticipacionSeleccionado);
     });
     actualizarHintTipoParticipacion();
 
-    // ⚡ Sistema de clasificación: primero sugerido por deporte, después el guardado.
     actualizarSistemaClasificacion(torneo.deporte);
 
     const sistemaGuardado = torneo.sistemaClasificacion || 'simple';
@@ -941,7 +738,6 @@ export async function init() {
     });
     actualizarHintSistema();
 
-    // Nivel
     nivelTorneoSeleccionado = torneo.nivel || 'amistoso';
     if (nivelGridTorneo) {
       nivelGridTorneo.querySelectorAll('[data-nivel-torneo]').forEach(op => {
@@ -951,7 +747,6 @@ export async function init() {
     if (checkLibreInsc) checkLibreInsc.checked = torneo.libreInscripcion !== false;
     actualizarLibreInscripcion();
 
-    // Configuración avanzada
     if (inputPuntosVictoria) inputPuntosVictoria.value = String(torneo.puntosVictoria ?? 3);
     if (inputPuntosEmpate)   inputPuntosEmpate.value = String(torneo.puntosEmpate ?? 1);
     if (inputPuntosDerrota)  inputPuntosDerrota.value = String(torneo.puntosDerrota ?? 0);
@@ -964,7 +759,6 @@ export async function init() {
     abrirModal('modal-crear-torneo');
   }
 
-  /* ---------- Guardar nuevo ---------- */
   async function guardarNuevo() {
     const datos = leerFormulario();
     if (!datos) return;
@@ -994,7 +788,6 @@ export async function init() {
     }
   }
 
-  /* ---------- Guardar edición ---------- */
   async function guardarEdicion(torneo) {
     const datos = leerFormulario();
     if (!datos) return;
@@ -1026,7 +819,6 @@ export async function init() {
     }
   }
 
-  /* ---------- Leer formulario ---------- */
   function leerFormulario() {
     const nombre       = document.getElementById('torneo-nombre').value.trim();
     const deporte      = document.getElementById('torneo-deporte').value;
@@ -1055,18 +847,12 @@ export async function init() {
     const incluyeEstadisticas = checkIncluyeEstad?.checked ?? false;
 
     const libreInscripcion = checkLibreInsc ? checkLibreInsc.checked : true;
-
     const idaYVuelta = checkIdaVuelta ? checkIdaVuelta.checked : false;
     const autoFixture = (modalidadSeleccionada === 'eliminacion' && checkAutoFixture)
       ? checkAutoFixture.checked
       : false;
 
-    // ⚡ Sistema de clasificación
-    // Ahora siempre está visible, usamos lo que tenga seleccionado.
     const sistemaClasificacion = sistemaClasificacionSeleccionado || 'simple';
-
-    // Coherencia: si el deporte es de tiempo, no permitir 'puntos' salvo override explícito
-    // (dejamos override libre, el organizador sabe lo que hace)
 
     return {
       nombre,
@@ -1078,19 +864,13 @@ export async function init() {
       cuposEquipos,
       precio,
       descripcion: descripcion || null,
-
       modalidad: modalidadSeleccionada,
       nivel: nivelTorneoSeleccionado,
       libreInscripcion,
-
       tipoParticipacion: tipoParticipacionSeleccionado,
-
       idaYVuelta,
       autoFixture,
-
-      // ⚡ NUEVO
       sistemaClasificacion,
-
       puntosVictoria,
       puntosEmpate,
       puntosDerrota,
@@ -1114,23 +894,10 @@ export async function init() {
     });
   });
 
-  /* ---------- ESCUCHAR EVENTO PARA ABRIR EDITAR DESDE EL DETALLE ---------- */
   window.addEventListener('abrir-editar-torneo', (e) => {
     const torneo = e.detail;
     if (torneo) abrirModalEditar(torneo);
   });
-
-  /* ---------- SI VENIMOS DEL DETALLE CON TORNEO A EDITAR ---------- */
-  const torneoAEditar = sessionStorage.getItem('torneoAEditar');
-  if (torneoAEditar) {
-    setTimeout(async () => {
-      const torneo = torneos.find(t => String(t.id) === String(torneoAEditar));
-      if (torneo) {
-        sessionStorage.removeItem('torneoAEditar');
-        abrirModalEditar(torneo);
-      }
-    }, 300);
-  }
 
   /* =========================================================
      RENDER INICIAL

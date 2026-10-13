@@ -26,7 +26,8 @@ import {
   guardarJornadaBulk as guardarJornadaBulkAPI,
 } from '../services/torneos.service.js';
 
-// ⚡ Reglas por deporte
+import { deportes } from '../data-mock.js';
+
 import {
   getReglasDeporte,
   esPorSets,
@@ -41,7 +42,7 @@ import {
 } from '../utils/reglas-deporte.js';
 
 /* =========================================================
-   CONFIG: formato de resultado (derivado de reglas-deporte.js)
+   CONFIG: formato de resultado
    ========================================================= */
 function formatoDeDeporte(deporte) {
   const reglas = getReglasDeporte(deporte);
@@ -70,6 +71,42 @@ const FASES_LABEL = {
 
 const FASES_ORDEN = ['64avos', '32avos', '16avos', '8vos', 'cuartos', 'semis', 'final', 'tercer_puesto'];
 
+/* =========================================================
+   DEPORTES INDIVIDUALES / SISTEMAS
+   ========================================================= */
+const DEPORTES_INDIVIDUALES_DET = new Set([
+  'Tenis', 'Pádel', 'Squash', 'Tenis de mesa', 'Bádminton',
+  'Golf', 'Natación', 'Atletismo', 'Ciclismo', 'Surf',
+  'Escalada', 'Boxeo',
+]);
+
+const DEPORTES_TIEMPO_DET = new Set(['Natación', 'Atletismo', 'Ciclismo']);
+const DEPORTES_PUNTOS_DET = new Set(['Escalada', 'Surf', 'Boxeo']);
+
+const NIVELES_TORNEO_DET = [
+  { valor: 'amistoso', label: 'Amistoso', descripcion: 'Sin exigencia' },
+  { valor: 'semiprofesional', label: 'Semiprofesional', descripcion: 'Nivel intermedio' },
+  { valor: 'profesional', label: 'Profesional', descripcion: 'Alto nivel' },
+];
+
+/* =========================================================
+   ICONOS SVG
+   ========================================================= */
+const ICONOS = {
+  fecha: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  ubicacion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  organizador: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  usuarios: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 0 0 7.75"/></svg>`,
+  cupo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  dinero: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`,
+  trofeo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+  modalidad: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  reloj: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  deporte: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/></svg>`,
+  lapiz: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+};
+
 export async function init(params = {}) {
   const id = params.id;
   const user = getSesion();
@@ -91,6 +128,7 @@ export async function init(params = {}) {
   const modalEditarJornada  = document.getElementById('modal-editar-jornada');
   const modalEditarCruce    = document.getElementById('modal-editar-cruce');
   const modalVerDetalle     = document.getElementById('modal-ver-detalle-partido');
+  const modalEditarTorneo   = document.getElementById('modal-editar-torneo-detalle');
 
   /* ---------- ESTADO ---------- */
   let torneo = null;
@@ -98,11 +136,11 @@ export async function init(params = {}) {
   let partidoActual = null;
   let cruceActual = null;
   let partidoDetalleActual = null;
+  let tabActual = 'resumen';
 
   /* =========================================================
      HELPERS
      ========================================================= */
-
   function esOrganizador(t) {
     return t.soyOrganizador || String(t.organizador?.id) === String(user.id);
   }
@@ -131,26 +169,11 @@ export async function init(params = {}) {
     return emoji;
   }
 
-  function renderEscudoParticipante(nombre, escudo, esIndividual) {
-    if (esIndividual) {
-      return `<img src="${escudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" />`;
-    }
-    return escudo || '🛡️';
-  }
-
   function formatearFechaCorta(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('es-CL', {
       day: 'numeric', month: 'short',
     });
-  }
-
-  function formatResultadoPartido(p, formato) {
-    if (!p.resultado || !formato) return '';
-    const r = p.resultado;
-    const local = r[`${formato.campo}_local`] ?? r.goles_local ?? r.puntos_local ?? r.sets_local ?? '-';
-    const visitante = r[`${formato.campo}_visitante`] ?? r.goles_visitante ?? r.puntos_visitante ?? r.sets_visitante ?? '-';
-    return `${local} - ${visitante}`;
   }
 
   function faseInicial(fases) {
@@ -215,9 +238,8 @@ export async function init(params = {}) {
     const miInv = miInvitacionPendiente(t);
 
     const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
-    const aceptaSolicitudes = !(t.precio === 0 && t.libreInscripcion === true);
-    const mostrarBotonSolicitudes = aceptaSolicitudes || pendientesCount > 0;
 
+    /* ---------- BADGES ---------- */
     const badgeClase = cerrado && !lleno ? 'badge--warning'
                      : lleno              ? 'badge--danger'
                      : t.estado === 'inscripcion' ? 'badge--success'
@@ -230,138 +252,6 @@ export async function init(params = {}) {
                      : t.estado === 'en_curso'    ? 'En curso'
                                                   : 'Finalizado';
 
-    const txtParticipante   = esIndividual ? 'participante' : 'equipo';
-    const txtParticipantes  = esIndividual ? 'participantes' : 'equipos';
-    const txtInscribirme    = esIndividual ? '✅ Inscribirme' : `✅ Inscribir mi equipo (${cuposLibres} cupos)`;
-    const txtSeccionLista   = esIndividual ? '👤 Participantes inscritos' : '🏆 Equipos inscritos';
-
-    /* ---------- BOTONES DE ACCIÓN ---------- */
-    let acciones = '';
-
-    if (soyOrg) {
-      const puedeCerrar = !estaCerrado(t);
-
-      acciones = `
-        ${puedeCerrar ? `
-          <button class="btn btn--warning" id="btn-cerrar-torneo">
-            🔒 Cerrar inscripciones
-          </button>
-        ` : ''}
-        ${mostrarBotonSolicitudes ? `
-          <button class="btn btn--primary" id="btn-gestionar-solicitudes">
-            👥 Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}
-          </button>
-        ` : ''}
-        ${!esIndividual ? `
-          <button class="btn btn--ghost" id="btn-invitar-equipo">+ Invitar equipo</button>
-        ` : ''}
-        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat</button>
-        <button class="btn btn--ghost" id="btn-editar-torneo">✏️ Editar</button>
-        <button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">🗑️ Eliminar</button>
-      `;
-    } else if (miEquipo) {
-      const nombreMostrado = esIndividual
-        ? miEquipo.nombre
-        : `${miEquipo.escudo || '🛡️'} ${miEquipo.nombre}`;
-      acciones = `
-        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat del torneo</button>
-        <span class="badge badge--success" style="padding:10px 16px; font-size:var(--fs-sm)">
-          ✅ Ya estás inscrito: ${nombreMostrado}
-        </span>
-        <button class="btn btn--ghost" id="btn-salir-torneo" style="color:var(--color-danger)">
-          🚪 Salirme del torneo
-        </button>
-      `;
-    } else if (miInv) {
-      acciones = `
-        <div class="card" style="width:100%; background:var(--color-primary-light); border:none">
-          <p class="text-sm" style="margin:0 0 var(--space-3) 0">
-            📨 <strong>¡Te invitaron!</strong> El organizador quiere que
-            ${miInv.equipoEscudo || '🛡️'} <strong>${miInv.equipoNombre}</strong> participe.
-          </p>
-          <div class="flex gap-2">
-            <button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button>
-            <button class="btn btn--ghost btn--sm" id="btn-rechazar-invitacion">Rechazar</button>
-          </div>
-        </div>
-      `;
-    } else if (miSol) {
-      acciones = `
-        <span class="badge badge--warning" style="padding:10px 16px; font-size:var(--fs-sm)">
-          ⏳ Tu solicitud está en espera de aprobación
-        </span>
-        <button class="btn btn--ghost btn--sm" id="btn-cancelar-solicitud">Cancelar solicitud</button>
-      `;
-    } else if (cerrado || lleno) {
-      acciones = `
-        <span class="badge badge--danger" style="padding:10px 16px; font-size:var(--fs-sm)">
-          🔒 Inscripciones cerradas
-        </span>
-      `;
-    } else {
-      if (esIndividual) {
-        acciones = `
-          <button class="btn btn--primary" id="btn-inscribir-equipo">
-            ${txtInscribirme}
-          </button>
-        `;
-      } else {
-        const misEq = misEquiposComoCapitan();
-        if (misEq.length === 0) {
-          acciones = `
-            <span class="badge badge--neutral" style="padding:10px 16px; font-size:var(--fs-sm)">
-              ⚠️ Necesitas ser capitán de un equipo para participar
-            </span>
-          `;
-        } else {
-          acciones = `
-            <button class="btn btn--primary" id="btn-inscribir-equipo">
-              ${txtInscribirme}
-            </button>
-          `;
-        }
-      }
-    }
-
-    /* ---------- BOTONES DE FIXTURE ---------- */
-    let botonesFixture = '';
-    if (t.modalidad === 'liga') {
-      botonesFixture = `
-        <button class="btn btn--primary" id="btn-ver-tabla">
-          📊 Tabla de posiciones
-        </button>
-        <button class="btn btn--ghost" id="btn-ver-resultados">
-          📅 Resultados
-        </button>
-        ${puedeGest ? `
-          <button class="btn btn--primary" id="btn-abrir-crear-partido">
-            ➕ Crear partido
-          </button>
-        ` : ''}
-      `;
-    } else if (t.modalidad === 'eliminacion') {
-      botonesFixture = `
-        <button class="btn btn--primary" id="btn-ver-fixture">
-          🏆 Ver fixture
-        </button>
-      `;
-    }
-
-    /* ---------- BARRA DE PROGRESO ---------- */
-    const progreso = Math.min(100, Math.round((inscritos / t.cuposEquipos) * 100));
-    const progresoHtml = `
-      <div class="torneo-progreso">
-        <div class="torneo-progreso__labels">
-          <span>Inscripciones</span>
-          <span>${inscritos} / ${t.cuposEquipos} ${txtParticipantes}</span>
-        </div>
-        <div class="torneo-progreso__bar">
-          <div class="torneo-progreso__fill" style="width:${progreso}%"></div>
-        </div>
-      </div>
-    `;
-
-    /* ---------- BADGES ---------- */
     const modalidadBadge = {
       liga: '<span class="badge badge--info">⚽ Liga</span>',
       eliminacion: '<span class="badge badge--warning">🏆 Eliminación</span>',
@@ -374,11 +264,6 @@ export async function init(params = {}) {
       profesional: '<span class="badge badge--danger">🔴 Profesional</span>',
     }[t.nivel] || '';
 
-    const tipoBadge = esIndividual
-      ? '<span class="badge badge--neutral">👤 Individual</span>'
-      : '<span class="badge badge--neutral">👥 Equipos</span>';
-
-    // ⚡ NUEVO D.5: badge de sistema de clasificación
     const sistema = t.sistemaClasificacion || 'simple';
     const sistemaBadge = sistema === 'simple'
       ? ''
@@ -390,39 +275,12 @@ export async function init(params = {}) {
       ? '<span class="badge badge--info">🔁 Ida y vuelta</span>'
       : '';
 
-    const fechaLimiteHtml = t.fechaLimiteInscripcion
-      ? `<span>⏰ Inscripciones hasta ${formatearFecha(t.fechaLimiteInscripcion)}</span>`
-      : '';
-
-    /* ---------- PARTICIPANTES INSCRITOS ---------- */
-    const equiposHtml = (t.equipos || []).length > 0
-      ? `<div class="equipos-grid">
-          ${t.equipos.map(e => `
-            <div class="equipo-card">
-              <div class="equipo-card__escudo">
-                ${renderEscudoParticipante(e.nombre, e.escudo, esIndividual)}
-              </div>
-              <div class="equipo-card__info">
-                <div class="equipo-card__nombre">${e.nombre}</div>
-                <div class="equipo-card__sub">
-                  ${esIndividual ? 'Participante' : `${e.totalJugadores || 0} jugadores`}
-                </div>
-              </div>
-              ${soyOrg ? `
-                <button class="btn btn--ghost btn--sm"
-                        data-expulsar-equipo="${e.id}"
-                        title="Sacar del torneo"
-                        style="color:var(--color-danger); margin-left:auto">
-                  ✕
-                </button>
-              ` : ''}
-            </div>
-          `).join('')}
-        </div>`
-      : `<div class="empty-state--sm">
-          <div class="empty-state__icon">🏅</div>
-          <p>Aún no hay ${txtParticipantes} inscritos.</p>
-        </div>`;
+    /* ---------- FECHAS HERO ---------- */
+    const fechaIni = t.fechaInicio ? formatearFecha(t.fechaInicio) : '';
+    const fechaFin = t.fechaFin ? formatearFecha(t.fechaFin) : '';
+    const fechaHeroTexto = fechaIni && fechaFin
+      ? `${fechaIni} — ${fechaFin}`
+      : fechaIni;
 
     /* =========================================================
        RENDER
@@ -433,109 +291,848 @@ export async function init(params = {}) {
         <h2 class="page-title" style="margin:0; font-size:var(--fs-lg)">Detalle del torneo</h2>
       </div>
 
-      <div class="detalle-torneo__hero">
-        <div class="detalle-torneo__hero-emoji">${renderEmoji(t.emoji, 64)}</div>
-        <h1 class="detalle-torneo__hero-title">${t.nombre}</h1>
-        <div class="detalle-torneo__hero-meta">
-          <span>🏅 ${t.deporte}</span>
-          <span>📅 ${formatearFecha(t.fechaInicio)}</span>
-          ${t.fechaFin ? `<span>🏁 ${formatearFecha(t.fechaFin)}</span>` : ''}
-          ${t.lugar ? `<span>📍 ${t.lugar}</span>` : ''}
-          ${fechaLimiteHtml}
-          <span data-autor-id="${t.organizador.id}" style="cursor:pointer; text-decoration:underline">
-            👤 ${t.organizador.nombre}
-          </span>
-        </div>
-        <div class="detalle__badges">
-          <span class="badge ${badgeClase}">${badgeTexto}</span>
-          ${modalidadBadge}
-          ${nivelBadge}
-          ${tipoBadge}
-          ${sistemaBadge}
-          ${idaVueltaBadge}
-          ${t.precio === 0
-            ? `<span class="match-card__precio match-card__precio--gratis">🎉 Gratis</span>`
-            : `<span class="match-card__precio match-card__precio--pago">💰 $${t.precio.toLocaleString('es-CL')}/${txtParticipante}</span>`}
-        </div>
-      </div>
-
-      ${progresoHtml}
-
-      <div class="detalle__info">
-        <div class="detalle__info-item">
-          <div class="detalle__info-label">${esIndividual ? 'Participantes' : 'Equipos'}</div>
-          <div class="detalle__info-value">${inscritos} / ${t.cuposEquipos}</div>
-        </div>
-        <div class="detalle__info-item">
-          <div class="detalle__info-label">Cupos libres</div>
-          <div class="detalle__info-value">${cuposLibres}</div>
-        </div>
-        <div class="detalle__info-item">
-          <div class="detalle__info-label">En lista de espera</div>
-          <div class="detalle__info-value">${pendientesCount}</div>
-        </div>
-      </div>
-
-      ${t.descripcion ? `
-        <div class="card mb-4">
-          <div class="detalle__seccion-titulo">📝 Descripción</div>
-          <p class="text-sm">${t.descripcion}</p>
-        </div>
-      ` : ''}
-
-      ${botonesFixture ? `
-        <div class="card mb-4">
-          <div class="detalle__seccion-titulo">🏆 ${t.modalidad === 'liga' ? 'Liga' : 'Fixture'}</div>
-          <div class="detalle__acciones" style="margin-bottom:0">
-            ${botonesFixture}
+      <!-- ============ HERO NAVY ============ -->
+      <div class="pd-hero">
+        <div class="pd-hero__left">
+          <div class="pd-hero__sport">${renderEmoji(t.emoji, 48)}</div>
+          <div class="pd-hero__info">
+            <div class="pd-hero__badges">
+              <span class="badge ${badgeClase}">${badgeTexto}</span>
+              ${modalidadBadge}
+              ${nivelBadge}
+              ${sistemaBadge}
+              ${idaVueltaBadge}
+            </div>
+            <h1 class="pd-hero__title">${t.nombre}</h1>
+            <div class="pd-hero__meta">
+              ${fechaHeroTexto ? `<span>${ICONOS.fecha} ${fechaHeroTexto}</span>` : ''}
+              ${t.lugar ? `<span>${ICONOS.ubicacion} ${t.lugar}</span>` : ''}
+              <span class="torneo-hero__organizador" data-ver-perfil="${t.organizador.id}">
+                ${ICONOS.organizador} ${t.organizador.nombre}
+              </span>
+            </div>
           </div>
         </div>
-      ` : ''}
 
-      <div class="card mb-4">
-        <div class="detalle__seccion-titulo">🎯 Acciones</div>
-        <div class="detalle__acciones" style="margin-bottom:0">
-          ${acciones}
-        </div>
+        ${soyOrg ? `
+          <div class="pd-hero__actions">
+            <button class="btn pd-hero__action pd-hero__action--primary" id="btn-editar-torneo">
+              ${ICONOS.lapiz} Editar torneo
+            </button>
+          </div>
+        ` : ''}
       </div>
 
-      <div class="card">
-        <div class="detalle__seccion-titulo">${txtSeccionLista} (${inscritos})</div>
-        ${equiposHtml}
+      <!-- ============ TABS ============ -->
+      <div class="torneo-tabs">
+        <button class="torneo-tab torneo-tab--active" data-tab-torneo="resumen">Resumen</button>
+        <button class="torneo-tab" data-tab-torneo="participantes">Participantes</button>
+        ${t.modalidad === 'liga' ? `<button class="torneo-tab" data-tab-torneo="tabla">Tabla de posiciones</button>` : ''}
+        <button class="torneo-tab" data-tab-torneo="resultados">
+          ${t.modalidad === 'liga' ? 'Resultados' : 'Fixture'}
+        </button>
       </div>
+
+      <!-- ============ CONTENIDO DEL TAB ============ -->
+      <div id="torneo-tab-contenido"></div>
     `;
 
     conectarEventos(t);
+    renderTabActual(t);
   }
-    /* =========================================================
-     CONECTAR EVENTOS
+
+  /* =========================================================
+     RENDER DEL TAB ACTIVO
      ========================================================= */
-  function conectarEventos(t) {
+  function renderTabActual(t) {
+    const cont = document.getElementById('torneo-tab-contenido');
+    if (!cont) return;
+
+    if (tabActual === 'resumen') return renderTabResumen(cont, t);
+    if (tabActual === 'participantes') return renderTabParticipantes(cont, t);
+    if (tabActual === 'tabla') return renderTabTabla(cont, t);
+    if (tabActual === 'resultados') return renderTabResultados(cont, t);
+  }
+
+  /* ---------- TAB: RESUMEN ---------- */
+  function renderTabResumen(cont, t) {
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const soyOrg = esOrganizador(t);
+    const puedeGest = puedeGestionar(t);
+    const inscritos = (t.equipos || []).length;
+    const cuposLibres = t.cuposEquipos - inscritos;
+    const lleno = inscritos >= t.cuposEquipos;
+    const cerrado = estaCerrado(t);
+    const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
+
+    const tipoTexto = esIndividual ? 'Individual' : 'Por equipos';
+    const modalidadTexto = {
+      liga: 'Liga',
+      eliminacion: 'Eliminación directa',
+      custom: 'Personalizada',
+    }[t.modalidad] || t.modalidad;
+
+    const fechaLimiteTexto = t.fechaLimiteInscripcion
+      ? formatearFecha(t.fechaLimiteInscripcion)
+      : 'Sin límite';
+
+    const progreso = Math.min(100, Math.round((inscritos / t.cuposEquipos) * 100));
+
+    /* ---------- Stats ---------- */
+    const statsHtml = `
+      <div class="pd-stats">
+        <div class="pd-stat">
+          <div class="pd-stat__icon">👥</div>
+          <div class="pd-stat__texto">
+            <div class="pd-stat__value">${inscritos}</div>
+            <div class="pd-stat__label">${esIndividual ? 'Participantes' : 'Equipos'}</div>
+          </div>
+        </div>
+
+        <div class="pd-stat">
+          <div class="pd-stat__icon">➕</div>
+          <div class="pd-stat__texto">
+            <div class="pd-stat__value">${cuposLibres}</div>
+            <div class="pd-stat__label">Cupos libres</div>
+          </div>
+        </div>
+
+        <div class="pd-stat">
+          <div class="pd-stat__icon">💰</div>
+          <div class="pd-stat__texto">
+            <div class="pd-stat__value">${t.precio === 0 ? 'Gratis' : '$' + t.precio.toLocaleString('es-CL')}</div>
+            <div class="pd-stat__label">Inscripción</div>
+          </div>
+        </div>
+
+        <div class="pd-stat">
+          <div class="pd-stat__icon">🎯</div>
+          <div class="pd-stat__texto">
+            <div class="pd-stat__value">${t.equiposClasifican || '—'}</div>
+            <div class="pd-stat__label">Clasifican</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    /* ---------- Card descripción + info ---------- */
+    const descripcionHtml = `
+      <div class="pd-card">
+        <div class="pd-card__eyebrow">Competencia</div>
+        <h3 class="pd-card__title">Descripción del torneo</h3>
+
+        ${t.descripcion ? `
+          <p class="pd-card__description">${t.descripcion}</p>
+        ` : `
+          <p class="pd-card__description text-muted">El organizador no dejó descripción.</p>
+        `}
+
+        <div class="torneo-info-grid">
+          <div class="torneo-info-item">
+            <div class="torneo-info-item__icon">${ICONOS.usuarios}</div>
+            <div>
+              <div class="torneo-info-item__label">Participación</div>
+              <div class="torneo-info-item__value">${tipoTexto}</div>
+            </div>
+          </div>
+
+          <div class="torneo-info-item">
+            <div class="torneo-info-item__icon">${ICONOS.modalidad}</div>
+            <div>
+              <div class="torneo-info-item__label">Modalidad</div>
+              <div class="torneo-info-item__value">${modalidadTexto}</div>
+            </div>
+          </div>
+
+          <div class="torneo-info-item">
+            <div class="torneo-info-item__icon">${ICONOS.fecha}</div>
+            <div>
+              <div class="torneo-info-item__label">Fecha límite</div>
+              <div class="torneo-info-item__value">${fechaLimiteTexto}</div>
+            </div>
+          </div>
+
+          <div class="torneo-info-item">
+            <div class="torneo-info-item__icon">${ICONOS.deporte}</div>
+            <div>
+              <div class="torneo-info-item__label">Deporte</div>
+              <div class="torneo-info-item__value">${t.deporte}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    /* ---------- Panel de inscripción ---------- */
+    const botonesPanel = construirBotonesInscripcion(t, {
+      esIndividual, soyOrg, miEquipo: miEquipoInscrito(t),
+      miSol: miSolicitudPendiente(t), miInv: miInvitacionPendiente(t),
+      cerrado, lleno, cuposLibres, pendientesCount, puedeGest,
+    });
+
+    const panelHtml = `
+      <div class="torneo-inscripcion-panel">
+        <div class="torneo-inscripcion-panel__eyebrow">
+          ${cerrado ? 'Inscripciones cerradas' : 'Inscripciones abiertas'}
+        </div>
+        <h3 class="torneo-inscripcion-panel__titulo">
+          ${cerrado ? 'El torneo ya comenzó' : (esIndividual ? 'Participa en el torneo' : 'Participa con tu equipo')}
+        </h3>
+        <p class="torneo-inscripcion-panel__desc">
+          ${cuposLibres > 0
+            ? `Quedan ${cuposLibres} ${esIndividual ? 'cupos disponibles' : 'cupos disponibles'} para este torneo.`
+            : 'No quedan cupos disponibles.'}
+          ${t.fechaLimiteInscripcion ? ` Las inscripciones cierran el ${fechaLimiteTexto}.` : ''}
+        </p>
+
+        <div style="margin-top:8px">
+          <div class="torneo-inscripcion-panel__progreso-labels">
+            <span>${inscritos} / ${t.cuposEquipos} ${esIndividual ? 'participantes' : 'equipos'}</span>
+            <span style="color:var(--color-primary); font-weight:700">${progreso}%</span>
+          </div>
+          <div class="torneo-inscripcion-panel__progreso">
+            <div class="torneo-inscripcion-panel__progreso-bar" style="width:${progreso}%"></div>
+          </div>
+        </div>
+
+        <div class="torneo-inscripcion-panel__acciones">
+          ${botonesPanel}
+        </div>
+      </div>
+    `;
+
+    /* ---------- Render ---------- */
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido">
+        ${statsHtml}
+
+        <div class="torneo-resumen-grid">
+          ${descripcionHtml}
+          ${panelHtml}
+        </div>
+      </div>
+    `;
+
+    conectarEventosTab(t);
+  }
+
+  /* ---------- Botones del panel de inscripción ---------- */
+  function construirBotonesInscripcion(t, ctx) {
+    const { esIndividual, soyOrg, miEquipo, miSol, miInv, cerrado, lleno, cuposLibres } = ctx;
+
+    let botones = '';
+
+    /* ---------- Organizador ---------- */
+    if (soyOrg) {
+      const puedeCerrar = !estaCerrado(t);
+      const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
+
+      botones += `
+        ${puedeCerrar ? `
+          <button class="btn btn--warning" id="btn-cerrar-torneo">
+            🔒 Cerrar inscripciones
+          </button>
+        ` : ''}
+        <button class="btn btn--primary" id="btn-gestionar-solicitudes">
+          👥 Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}
+        </button>
+        ${!esIndividual ? `
+          <button class="btn btn--ghost" id="btn-invitar-equipo">+ Invitar equipo</button>
+        ` : ''}
+        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat del torneo</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">🗑️ Eliminar torneo</button>
+      `;
+      return botones;
+    }
+
+    /* ---------- Ya inscrito ---------- */
+    if (miEquipo) {
+      const nombreMostrado = esIndividual
+        ? miEquipo.nombre
+        : `${miEquipo.escudo || '🛡️'} ${miEquipo.nombre}`;
+      return `
+        <div class="badge badge--success" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
+          ✅ Ya estás inscrito: ${nombreMostrado}
+        </div>
+        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat del torneo</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-salir-torneo" style="color:var(--color-danger)">
+          🚪 Salirme del torneo
+        </button>
+      `;
+    }
+
+    /* ---------- Invitación pendiente ---------- */
+    if (miInv) {
+      return `
+        <div class="card" style="width:100%; background:var(--color-primary-light); border:none; padding:14px">
+          <p class="text-sm" style="margin:0 0 var(--space-3) 0">
+            📨 <strong>¡Te invitaron!</strong> El organizador quiere que
+            ${miInv.equipoEscudo || '🛡️'} <strong>${miInv.equipoNombre}</strong> participe.
+          </p>
+          <div class="flex gap-2">
+            <button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button>
+            <button class="btn btn--ghost btn--sm" id="btn-rechazar-invitacion">Rechazar</button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ---------- Solicitud pendiente ---------- */
+    if (miSol) {
+      return `
+        <div class="badge badge--warning" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
+          ⏳ Tu solicitud está en espera
+        </div>
+        <button class="btn btn--ghost btn--sm" id="btn-cancelar-solicitud">Cancelar solicitud</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+      `;
+    }
+
+    /* ---------- Cerrado / lleno ---------- */
+    if (cerrado || lleno) {
+      return `
+        <div class="badge badge--danger" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
+          🔒 ${lleno ? 'Torneo lleno' : 'Inscripciones cerradas'}
+        </div>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+      `;
+    }
+
+    /* ---------- Puede inscribirse ---------- */
+    if (esIndividual) {
+      return `
+        <button class="btn btn--primary" id="btn-inscribir-equipo">
+          ✅ Inscribirme
+        </button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+      `;
+    }
+
+    const misEq = misEquiposComoCapitan();
+    if (misEq.length === 0) {
+      return `
+        <div class="badge badge--neutral" style="padding:12px 16px; font-size:13px; text-align:center; width:100%; justify-content:center">
+          ⚠️ Necesitás ser capitán de un equipo
+        </div>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+      `;
+    }
+
+    return `
+      <button class="btn btn--primary" id="btn-inscribir-equipo">
+        ✅ Inscribir mi equipo (${cuposLibres} cupos)
+      </button>
+      <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+    `;
+  }
+
+  /* ---------- Card equipos participantes ---------- */
+  function construirEquiposCard(t, { esIndividual, soyOrg }) {
+    const equipos = t.equipos || [];
+
+    if (equipos.length === 0) {
+      return `
+        <div class="pd-card">
+          <div class="pd-card__eyebrow">Inscripciones</div>
+          <h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'}</h3>
+          <div class="pd-empty">
+            <div class="pd-empty__icon">🏅</div>
+            <p class="pd-empty__text">Aún no hay ${esIndividual ? 'participantes' : 'equipos'} inscritos.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    const items = equipos.map(e => {
+      const escudoHtml = esIndividual
+        ? `<img src="${e.escudo || 'assets/icons/usuario.svg'}" alt="" />`
+        : (e.escudo || '🛡️');
+
+      const mostrarExpulsar = soyOrg && !t.fixtureBloqueado && t.estado === 'inscripcion';
+
+      return `
+        <div class="torneo-equipo-item">
+          <div class="torneo-equipo-item__escudo">${escudoHtml}</div>
+          <div class="torneo-equipo-item__info">
+            <div class="torneo-equipo-item__nombre">${e.nombre}</div>
+            <div class="torneo-equipo-item__sub">
+              ${esIndividual ? 'Participante' : `${e.totalJugadores || 0} jugadores`}
+            </div>
+          </div>
+          ${mostrarExpulsar ? `
+            <button class="torneo-equipo-item__expulsar"
+                    data-expulsar-equipo="${e.id}"
+                    title="Eliminar del torneo">
+              🗑️
+            </button>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="pd-card">
+        <div class="pd-card__eyebrow">Inscripciones</div>
+        <h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'} (${equipos.length})</h3>
+        <div class="torneo-equipos-grid">
+          ${items}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ---------- TAB: PARTICIPANTES ---------- */
+  function renderTabParticipantes(cont, t) {
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const soyOrg = esOrganizador(t);
+
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido">
+        ${construirEquiposCard(t, { esIndividual, soyOrg })}
+      </div>
+    `;
+
+    conectarEventosTab(t);
+  }
+
+  /* ---------- TAB: TABLA ---------- */
+  function renderTabTabla(cont, t) {
+    if (t.modalidad !== 'liga') {
+      cont.innerHTML = `
+        <div class="torneo-tab-vacio">
+          <div class="torneo-tab-vacio__icon">📊</div>
+          <p class="torneo-tab-vacio__text">Esta modalidad no usa tabla de posiciones.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const filas = t.tablaPosiciones || [];
     const esIndividual = t.tipoParticipacion === 'individual';
 
+    if (filas.length === 0) {
+      cont.innerHTML = `
+        <div class="torneo-tab-vacio">
+          <div class="torneo-tab-vacio__icon">📊</div>
+          <p class="torneo-tab-vacio__text">Aún no hay datos. Cargá partidos para ver la tabla.</p>
+        </div>
+      `;
+      return;
+    }
+
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido">
+        <div class="pd-card">
+          <div class="tabla-posiciones-wrapper" style="overflow-x:auto;">
+            <table class="tabla-posiciones">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th style="text-align:left">${esIndividual ? 'Participante' : 'Equipo'}</th>
+                  <th>PJ</th>
+                  <th>PG</th>
+                  <th>PE</th>
+                  <th>PP</th>
+                  <th>GF</th>
+                  <th>GC</th>
+                  <th>DG</th>
+                  <th style="font-weight:700">PTS</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filas.map((f, i) => `
+                  <tr class="${i % 2 === 0 ? '' : 'tabla-posiciones__fila--alt'}">
+                    <td>${i + 1}</td>
+                    <td style="text-align:left">
+                      <div style="display:flex; align-items:center; gap:var(--space-2)">
+                        ${esIndividual
+                          ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
+                          : `<span style="font-size:20px">${f.equipoEscudo || '🛡️'}</span>`}
+                        <span>${f.equipoNombre || 'Sin nombre'}</span>
+                      </div>
+                    </td>
+                    <td>${f.partidosJugados}</td>
+                    <td>${f.partidosGanados}</td>
+                    <td>${f.partidosEmpatados}</td>
+                    <td>${f.partidosPerdidos}</td>
+                    <td>${f.puntosFavor}</td>
+                    <td>${f.puntosContra}</td>
+                    <td>${f.diferencia > 0 ? '+' : ''}${f.diferencia}</td>
+                    <td style="font-weight:700">${f.puntosTotales}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ---------- TAB: RESULTADOS ---------- */
+  function renderTabResultados(cont, t) {
+    if (t.modalidad === 'liga') return renderTabResultadosLiga(cont, t);
+    if (t.modalidad === 'eliminacion') return renderTabResultadosFixture(cont, t);
+
+    cont.innerHTML = `
+      <div class="torneo-tab-vacio">
+        <div class="torneo-tab-vacio__icon">📅</div>
+        <p class="torneo-tab-vacio__text">Esta modalidad no tiene resultados cargados.</p>
+      </div>
+    `;
+  }
+
+  /* ---------- TAB: RESULTADOS (LIGA) ---------- */
+  function renderTabResultadosLiga(cont, t) {
+    const partidos = t.partidos || [];
+    const jornadas = t.jornadas || [];
+    const puedeGest = puedeGestionar(t);
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const sistema = t.sistemaClasificacion || 'simple';
+
+    if (jornadas.length === 0 && partidos.length === 0) {
+      cont.innerHTML = `
+        <div class="torneo-tab-vacio">
+          <div class="torneo-tab-vacio__icon">📅</div>
+          <p class="torneo-tab-vacio__text">Aún no hay jornadas ni partidos.</p>
+          ${puedeGest ? `
+            <button class="btn btn--primary mt-4" id="btn-generar-fixture-liga">
+              🎲 Generar fixture automático
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('btn-generar-fixture-liga')?.addEventListener('click', () => generarFixtureLiga(t));
+      return;
+    }
+
+    const partidosPorJornada = new Map();
+    jornadas.forEach(j => partidosPorJornada.set(String(j.id), []));
+    partidos.forEach(p => {
+      const key = String(p.jornadaId);
+      if (!partidosPorJornada.has(key)) partidosPorJornada.set(key, []);
+      partidosPorJornada.get(key).push(p);
+    });
+
+    const jornadasOrdenadas = [...jornadas].sort((a, b) => a.numero - b.numero);
+
+    let html = '';
+
+    if (puedeGest) {
+      html += `
+        <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+          <button class="btn btn--primary btn--sm" id="btn-abrir-crear-partido">
+            ➕ Crear partido
+          </button>
+        </div>
+      `;
+    }
+
+    if (jornadasOrdenadas.length === 0 && partidos.length > 0) {
+      html += `
+        <div class="pd-card mb-4">
+          <div class="pd-card__eyebrow">Partidos</div>
+          <h3 class="pd-card__title">Sin jornada</h3>
+          ${partidos.map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema)).join('')}
+        </div>
+      `;
+    } else {
+      for (const j of jornadasOrdenadas) {
+        const partidosJ = partidosPorJornada.get(String(j.id)) || [];
+
+        html += `
+          <div class="pd-card mb-4 jornada-card" data-jornada-id="${j.id}">
+            <div class="jornada-card__header">
+              <div>
+                <div class="jornada-card__titulo">
+                  ${j.nombre || `Jornada ${j.numero}`}
+                </div>
+                ${j.fecha ? `<div class="jornada-card__fecha text-xs text-muted">${formatearFechaCorta(j.fecha)}</div>` : ''}
+              </div>
+              ${puedeGest ? `
+                <div class="jornada-card__acciones">
+                  <button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">✏️</button>
+                  <button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">🗑️</button>
+                </div>
+              ` : ''}
+            </div>
+
+            ${partidosJ.length === 0
+              ? `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin partidos cargados.</p>`
+              : partidosJ
+                  .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+                  .map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema))
+                  .join('')}
+          </div>
+        `;
+      }
+    }
+
+    cont.innerHTML = `<div class="torneo-tab-contenido">${html}</div>`;
+
+    /* ---------- Conectar acciones ---------- */
+    cont.querySelectorAll('[data-partido-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-jornada-editar]')) return;
+        if (e.target.closest('[data-jornada-borrar]')) return;
+
+        const partidoId = el.dataset.partidoId;
+        const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
+        if (!partido) return;
+
+        if (puedeGest) {
+          abrirCargarResultado(t, partido);
+        } else if (partido.estado === 'finalizado') {
+          abrirVerDetallePartido(t, partido);
+        }
+      });
+    });
+
+    cont.querySelectorAll('[data-jornada-editar]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const jornadaId = btn.dataset.jornadaEditar;
+        const jornada = (t.jornadas || []).find(j => String(j.id) === String(jornadaId));
+        if (jornada) abrirEditarJornada(t, jornada);
+      });
+    });
+
+    cont.querySelectorAll('[data-jornada-borrar]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const jornadaId = btn.dataset.jornadaBorrar;
+        const jornada = (t.jornadas || []).find(j => String(j.id) === String(jornadaId));
+        if (jornada) borrarJornada(t, jornada);
+      });
+    });
+
+    document.getElementById('btn-abrir-crear-partido')?.addEventListener('click', () => abrirCrearPartido(t));
+  }
+
+  /* ---------- TAB: RESULTADOS (ELIMINACIÓN) ---------- */
+  function renderTabResultadosFixture(cont, t) {
+    const puedeGest = puedeGestionar(t);
+    const partidos = t.partidos || [];
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const sistema = t.sistemaClasificacion || 'simple';
+
+    /* ---------- Barra de acciones ---------- */
+    let accionesBarra = '';
+    if (puedeGest && !t.fixtureBloqueado) {
+      const hayPartidos = partidos.length > 0;
+      accionesBarra = `
+        ${!hayPartidos ? `
+          <button class="btn btn--primary btn--sm" id="btn-armar-aleatorio">
+            🎲 Armar fixture aleatorio
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btn-armar-manual">
+            🛠️ Armar fixture manual
+          </button>
+        ` : `
+          <button class="btn btn--primary btn--sm" id="btn-confirmar-fixture">
+            ✅ Confirmar fixture
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btn-rearmar-fixture" style="color:var(--color-danger)">
+            🗑️ Rehacer fixture
+          </button>
+        `}
+      `;
+    } else if (puedeGest && t.fixtureBloqueado) {
+      accionesBarra = `
+        <span class="badge badge--success" style="padding:8px 12px">
+          🔒 Fixture confirmado
+        </span>
+      `;
+    }
+
+    /* ---------- Bracket vacío ---------- */
+    if (partidos.length === 0) {
+      cont.innerHTML = `
+        <div class="torneo-tab-contenido">
+          ${accionesBarra ? `<div class="flex gap-2 mb-4" style="flex-wrap:wrap">${accionesBarra}</div>` : ''}
+          <div class="torneo-tab-vacio">
+            <div class="torneo-tab-vacio__icon">🏆</div>
+            <p class="torneo-tab-vacio__text">El fixture todavía no fue armado.</p>
+            ${puedeGest ? `<p class="text-xs text-muted mt-4">Armalo con los botones de arriba.</p>` : ''}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('btn-armar-aleatorio')?.addEventListener('click', () => armarAleatorio(t));
+      document.getElementById('btn-armar-manual')?.addEventListener('click', () => abrirArmarManual(t));
+      return;
+    }
+
+    /* ---------- Agrupar por fase ---------- */
+    const fases = fasesDelBracket(t);
+    if (fases.length === 0) {
+      cont.innerHTML = `
+        <div class="torneo-tab-vacio">
+          <div class="torneo-tab-vacio__icon">🏆</div>
+          <p class="torneo-tab-vacio__text">Sin fases detectadas.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const faseIni = faseInicial(fases);
+    const partidosPorFase = new Map();
+    fases.forEach(f => partidosPorFase.set(f, []));
+    partidos.forEach(p => {
+      const fase = p.fase || faseIni;
+      if (!partidosPorFase.has(fase)) partidosPorFase.set(fase, []);
+      partidosPorFase.get(fase).push(p);
+    });
+
+    fases.forEach(f => {
+      const lista = partidosPorFase.get(f) || [];
+      lista.sort((a, b) => (a.posicionEnFase ?? 0) - (b.posicionEnFase ?? 0));
+    });
+
+    let bracketHtml = '<div class="fixture-bracket-nuevo">';
+
+    fases.forEach((fase, idxFase) => {
+      const partidosFase = partidosPorFase.get(fase) || [];
+      if (partidosFase.length === 0) return;
+
+      bracketHtml += `
+        <div class="fixture-bracket-nuevo__columna" data-fase="${fase}">
+          <div class="fixture-bracket-nuevo__titulo">${FASES_LABEL[fase] || fase}</div>
+          <div class="fixture-bracket-nuevo__cruces">
+            ${partidosFase.map((p, idxCruce) => {
+              const esPrimeraFase = fase === faseIni;
+              const puedeEditar = puedeGest && !t.fixtureBloqueado && esPrimeraFase;
+              const puedeInteractuar = puedeGest
+                || (p.estado === 'finalizado' && !p.esBye);
+
+              return renderCruceNuevo(
+                p,
+                t.deporte,
+                esIndividual,
+                sistema,
+                idxFase,
+                idxCruce,
+                puedeEditar,
+                puedeInteractuar,
+              );
+            }).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    bracketHtml += '</div>';
+
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido">
+        ${accionesBarra ? `<div class="flex gap-2 mb-4" style="flex-wrap:wrap">${accionesBarra}</div>` : ''}
+        <div style="overflow-x:auto;">
+          ${bracketHtml}
+        </div>
+      </div>
+    `;
+
+    /* ---------- Click en cruces ---------- */
+    cont.querySelectorAll('[data-partido-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const partidoId = el.dataset.partidoId;
+        const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
+        if (!partido) return;
+        if (partido.esBye) return;
+
+        const esPrimeraFase = partido.fase === faseIni;
+        const esGestor = puedeGestionar(t);
+
+        if (esGestor) {
+          if (!t.fixtureBloqueado && esPrimeraFase) {
+            abrirEditarCruce(t, partido);
+            return;
+          }
+
+          if (partido.estado === 'finalizado') {
+            abrirVerDetallePartido(t, partido);
+            return;
+          }
+
+          if (partido.equipoLocalId && partido.equipoVisitanteId) {
+            abrirCargarResultado(t, partido);
+            return;
+          }
+
+          toast('Este cruce todavía no tiene los dos participantes', 'info');
+          return;
+        }
+
+        if (partido.estado === 'finalizado') {
+          abrirVerDetallePartido(t, partido);
+        }
+      });
+    });
+
+    document.getElementById('btn-armar-aleatorio')?.addEventListener('click', () => armarAleatorio(t));
+    document.getElementById('btn-armar-manual')?.addEventListener('click', () => abrirArmarManual(t));
+    document.getElementById('btn-confirmar-fixture')?.addEventListener('click', () => confirmarFixture(t));
+    document.getElementById('btn-rearmar-fixture')?.addEventListener('click', () => rearmarFixture(t));
+  }
+
+  /* =========================================================
+     CONECTAR EVENTOS DEL HERO + TABS
+     ========================================================= */
+  function conectarEventos(t) {
     document.getElementById('btn-volver')?.addEventListener('click', () => {
       window.location.hash = '#/torneos';
     });
 
-    document.querySelectorAll('[data-autor-id]').forEach(el => {
+    /* ---------- Organizador (hero, click → perfil) ---------- */
+    document.querySelectorAll('[data-ver-perfil]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(el.dataset.autorId);
+          verPerfilUsuario(el.dataset.verPerfil);
         });
       });
     });
 
-    document.getElementById('btn-cerrar-torneo')?.addEventListener('click', () => cerrarTorneo(t));
-    document.getElementById('btn-gestionar-solicitudes')?.addEventListener('click', () => abrirGestionSolicitudes(t));
-    document.getElementById('btn-invitar-equipo')?.addEventListener('click', () => abrirInvitarEquipo(t));
-    document.getElementById('btn-abrir-chat')?.addEventListener('click', () => abrirChatTorneo(t));
+    /* ---------- Botón editar torneo (hero) ---------- */
     document.getElementById('btn-editar-torneo')?.addEventListener('click', () => {
-      sessionStorage.setItem('torneoAEditar', String(t.id));
-      window.location.hash = '#/torneos';
+      abrirModalEditarTorneo(t);
     });
-    document.getElementById('btn-eliminar-torneo')?.addEventListener('click', () => eliminarTorneo(t));
 
+    /* ---------- Tabs ---------- */
+    document.querySelectorAll('[data-tab-torneo]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-tab-torneo]').forEach(b => b.classList.remove('torneo-tab--active'));
+        btn.classList.add('torneo-tab--active');
+        tabActual = btn.dataset.tabTorneo;
+        renderTabActual(t);
+      });
+    });
+
+    /* ---------- Modales (cerrar con click fuera) ---------- */
+    document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));
+    });
+
+    [
+      modalInscribir, modalInvitar, modalSolicitudes, modalChat, modalVerEquipo,
+      modalTabla, modalResultados, modalCrearPartido, modalCargar, modalFixture, modalArmar,
+      modalEditarJornada, modalEditarCruce, modalVerDetalle, modalEditarTorneo,
+    ].forEach(m => {
+      m?.addEventListener('click', (e) => {
+        if (e.target === m) m.classList.remove('open');
+      });
+    });
+  }
+
+  /* =========================================================
+     CONECTAR EVENTOS DEL TAB ACTIVO
+     ========================================================= */
+  function conectarEventosTab(t) {
+    /* ---------- Expulsar equipo ---------- */
     document.querySelectorAll('[data-expulsar-equipo]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -546,36 +1143,59 @@ export async function init(params = {}) {
       });
     });
 
+    /* ---------- Cerrar torneo ---------- */
+    document.getElementById('btn-cerrar-torneo')?.addEventListener('click', () => cerrarTorneo(t));
+
+    /* ---------- Gestionar solicitudes ---------- */
+    document.getElementById('btn-gestionar-solicitudes')?.addEventListener('click', () => abrirGestionSolicitudes(t));
+
+    /* ---------- Invitar equipo ---------- */
+    document.getElementById('btn-invitar-equipo')?.addEventListener('click', () => abrirInvitarEquipo(t));
+
+    /* ---------- Chat ---------- */
+    document.getElementById('btn-abrir-chat')?.addEventListener('click', () => abrirChatTorneo(t));
+
+    /* ---------- Compartir ---------- */
+    document.getElementById('btn-compartir-torneo')?.addEventListener('click', async () => {
+      const url = window.location.href;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: t.nombre, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          toast('Enlace copiado', 'success');
+        }
+      } catch {
+        try {
+          await navigator.clipboard.writeText(url);
+          toast('Enlace copiado', 'success');
+        } catch {
+          toast('No se pudo copiar el enlace', 'error');
+        }
+      }
+    });
+
+    /* ---------- Eliminar torneo ---------- */
+    document.getElementById('btn-eliminar-torneo')?.addEventListener('click', () => eliminarTorneo(t));
+
+    /* ---------- Inscribirse ---------- */
     document.getElementById('btn-inscribir-equipo')?.addEventListener('click', () => {
-      if (esIndividual) {
+      if (t.tipoParticipacion === 'individual') {
         inscribirmeIndividual(t);
       } else {
         abrirInscribirEquipo(t);
       }
     });
+
+    /* ---------- Aceptar / Rechazar invitación ---------- */
     document.getElementById('btn-aceptar-invitacion')?.addEventListener('click', () => aceptarInvitacion(t));
     document.getElementById('btn-rechazar-invitacion')?.addEventListener('click', () => rechazarInvitacion(t));
+
+    /* ---------- Cancelar solicitud ---------- */
     document.getElementById('btn-cancelar-solicitud')?.addEventListener('click', () => cancelarSolicitud(t));
+
+    /* ---------- Salir del torneo ---------- */
     document.getElementById('btn-salir-torneo')?.addEventListener('click', () => salirDelTorneo(t));
-
-    document.getElementById('btn-ver-tabla')?.addEventListener('click', () => abrirTablaPosiciones(t));
-    document.getElementById('btn-ver-resultados')?.addEventListener('click', () => abrirResultados(t));
-    document.getElementById('btn-abrir-crear-partido')?.addEventListener('click', () => abrirCrearPartido(t));
-    document.getElementById('btn-ver-fixture')?.addEventListener('click', () => abrirFixture(t));
-
-    document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));
-    });
-
-    [
-      modalInscribir, modalInvitar, modalSolicitudes, modalChat, modalVerEquipo,
-      modalTabla, modalResultados, modalCrearPartido, modalCargar, modalFixture, modalArmar,
-      modalEditarJornada, modalEditarCruce, modalVerDetalle,
-    ].forEach(m => {
-      m?.addEventListener('click', (e) => {
-        if (e.target === m) m.classList.remove('open');
-      });
-    });
   }
 
   /* =========================================================
@@ -595,10 +1215,6 @@ export async function init(params = {}) {
 
       torneo = resultado.torneo;
       await render();
-
-      if (resultado.autoFixturado) {
-        setTimeout(() => abrirFixture(torneo), 300);
-      }
     } catch (err) {
       console.error('[torneo-detalle] Error al cerrar:', err);
       toast(err.message || 'No se pudo cerrar el torneo', 'error');
@@ -630,7 +1246,7 @@ export async function init(params = {}) {
       ? equipo.nombre
       : `${equipo.escudo || '🛡️'} ${equipo.nombre}`;
 
-    if (!confirm(`¿Sacar a ${nombreMostrar} del torneo?`)) return;
+    if (!confirm(`¿Eliminar a ${nombreMostrar} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
 
     try {
       await expulsarEquipoAPI(t.id, String(equipo.id));
@@ -656,9 +1272,7 @@ export async function init(params = {}) {
     try {
       await inscribirEquipoAPI(t.id, null);
       toast(
-        aceptaSolicitudes
-          ? 'Solicitud enviada al organizador'
-          : '¡Inscripción exitosa!',
+        aceptaSolicitudes ? 'Solicitud enviada al organizador' : '¡Inscripción exitosa!',
         'success'
       );
       await render();
@@ -801,247 +1415,6 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
-     TABLA DE POSICIONES (liga)
-     ========================================================= */
-  function abrirTablaPosiciones(t) {
-    if (t.modalidad !== 'liga') return;
-
-    const body = document.getElementById('tabla-posiciones-body');
-    if (!body) return;
-
-    const filas = t.tablaPosiciones || [];
-    const esIndividual = t.tipoParticipacion === 'individual';
-
-    if (filas.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state__icon">📊</div>
-          <p class="text-sm text-muted">Aún no hay datos. Cargá partidos para ver la tabla.</p>
-        </div>`;
-      abrirModal('modal-tabla-posiciones');
-      return;
-    }
-
-    body.innerHTML = `
-      <div class="tabla-posiciones-wrapper" style="overflow-x:auto;">
-        <table class="tabla-posiciones">
-          <thead>
-            <tr>
-              <th style="width:40px">#</th>
-              <th style="text-align:left">${esIndividual ? 'Participante' : 'Equipo'}</th>
-              <th>PJ</th>
-              <th>PG</th>
-              <th>PE</th>
-              <th>PP</th>
-              <th>GF</th>
-              <th>GC</th>
-              <th>DG</th>
-              <th style="font-weight:700">PTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filas.map((f, i) => `
-              <tr class="${i % 2 === 0 ? '' : 'tabla-posiciones__fila--alt'}">
-                <td>${i + 1}</td>
-                <td style="text-align:left">
-                  <div style="display:flex; align-items:center; gap:var(--space-2)">
-                    ${esIndividual
-                      ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
-                      : `<span style="font-size:20px">${f.equipoEscudo || '🛡️'}</span>`}
-                    <span>${f.equipoNombre || 'Sin nombre'}</span>
-                  </div>
-                </td>
-                <td>${f.partidosJugados}</td>
-                <td>${f.partidosGanados}</td>
-                <td>${f.partidosEmpatados}</td>
-                <td>${f.partidosPerdidos}</td>
-                <td>${f.puntosFavor}</td>
-                <td>${f.puntosContra}</td>
-                <td>${f.diferencia > 0 ? '+' : ''}${f.diferencia}</td>
-                <td style="font-weight:700">${f.puntosTotales}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    abrirModal('modal-tabla-posiciones');
-  }
-
-  /* =========================================================
-     RESULTADOS (liga)
-     ========================================================= */
-  function abrirResultados(t) {
-    if (t.modalidad !== 'liga') return;
-
-    const body = document.getElementById('resultados-body');
-    if (!body) return;
-
-    const partidos = t.partidos || [];
-    const jornadas = t.jornadas || [];
-    const puedeGest = puedeGestionar(t);
-    const esIndividual = t.tipoParticipacion === 'individual';
-    const sistema = t.sistemaClasificacion || 'simple';
-
-    if (jornadas.length === 0 && partidos.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state__icon">📅</div>
-          <p class="text-sm text-muted">Aún no hay jornadas ni partidos.</p>
-          ${puedeGest ? `
-            <button class="btn btn--primary mt-4" id="btn-generar-fixture-liga">
-              🎲 Generar fixture automático
-            </button>
-          ` : ''}
-        </div>`;
-
-      abrirModal('modal-resultados');
-
-      document.getElementById('btn-generar-fixture-liga')?.addEventListener('click', () => generarFixtureLiga(t));
-      return;
-    }
-
-    const partidosPorJornada = new Map();
-    jornadas.forEach(j => partidosPorJornada.set(String(j.id), []));
-    partidos.forEach(p => {
-      const key = String(p.jornadaId);
-      if (!partidosPorJornada.has(key)) {
-        partidosPorJornada.set(key, []);
-      }
-      partidosPorJornada.get(key).push(p);
-    });
-
-    const jornadasOrdenadas = [...jornadas].sort((a, b) => a.numero - b.numero);
-
-    let html = '';
-
-    if (jornadasOrdenadas.length === 0 && partidos.length > 0) {
-      html += `
-        <div class="card mb-4">
-          <div class="detalle__seccion-titulo">Partidos sin jornada</div>
-          ${partidos.map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema)).join('')}
-        </div>
-      `;
-    } else {
-      for (const j of jornadasOrdenadas) {
-        const partidosJ = partidosPorJornada.get(String(j.id)) || [];
-
-        html += `
-          <div class="card mb-4 jornada-card" data-jornada-id="${j.id}">
-            <div class="jornada-card__header">
-              <div>
-                <div class="jornada-card__titulo">
-                  ${j.nombre || `Jornada ${j.numero}`}
-                </div>
-                ${j.fecha ? `<div class="jornada-card__fecha text-xs text-muted">${formatearFechaCorta(j.fecha)}</div>` : ''}
-              </div>
-              ${puedeGest ? `
-                <div class="jornada-card__acciones">
-                  <button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">✏️</button>
-                  <button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">🗑️</button>
-                </div>
-              ` : ''}
-            </div>
-
-            ${partidosJ.length === 0
-              ? `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin partidos cargados.</p>`
-              : partidosJ
-                  .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-                  .map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema))
-                  .join('')}
-          </div>
-        `;
-      }
-    }
-
-    body.innerHTML = html;
-
-    if (puedeGest) {
-      body.querySelectorAll('[data-partido-id]').forEach(el => {
-        el.addEventListener('click', (e) => {
-          if (e.target.closest('[data-jornada-editar]')) return;
-          if (e.target.closest('[data-jornada-borrar]')) return;
-
-          const partidoId = el.dataset.partidoId;
-          const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
-          if (!partido) return;
-          abrirCargarResultado(t, partido);
-        });
-      });
-
-      body.querySelectorAll('[data-jornada-editar]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const jornadaId = btn.dataset.jornadaEditar;
-          const jornada = (t.jornadas || []).find(j => String(j.id) === String(jornadaId));
-          if (jornada) abrirEditarJornada(t, jornada);
-        });
-      });
-
-      body.querySelectorAll('[data-jornada-borrar]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const jornadaId = btn.dataset.jornadaBorrar;
-          const jornada = (t.jornadas || []).find(j => String(j.id) === String(jornadaId));
-          if (jornada) borrarJornada(t, jornada);
-        });
-      });
-    } else {
-      body.querySelectorAll('[data-partido-id]').forEach(el => {
-        el.addEventListener('click', (e) => {
-          if (e.target.closest('[data-jornada-editar]')) return;
-          if (e.target.closest('[data-jornada-borrar]')) return;
-
-          const partidoId = el.dataset.partidoId;
-          const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
-          if (!partido) return;
-          if (partido.estado === 'finalizado') {
-            abrirVerDetallePartido(t, partido);
-          }
-        });
-      });
-    }
-
-    abrirModal('modal-resultados');
-  }
-
-  /* ---------- Render de un partido (usa formatearResultado) ---------- */
-  function renderPartido(p, deporte, esIndividual, puedeGest, sistema) {
-    const finalizado = p.estado === 'finalizado';
-    const marcador = finalizado
-      ? formatearResultado(deporte, p.resultado, sistema)
-      : 'vs';
-
-    const localHtml = esIndividual
-      ? `<img src="${p.localEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
-      : `<span style="font-size:20px">${p.localEscudo || '🛡️'}</span>`;
-
-    const visitanteHtml = esIndividual
-      ? `<img src="${p.visitanteEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
-      : `<span style="font-size:20px">${p.visitanteEscudo || '🛡️'}</span>`;
-
-    return `
-      <div class="resultado-item" data-partido-id="${p.id}" style="cursor:${(puedeGest || finalizado) ? 'pointer' : 'default'}">
-        <div class="resultado-item__equipo resultado-item__equipo--local">
-          ${localHtml}
-          <span class="resultado-item__nombre">${p.localNombre || 'Por definir'}</span>
-        </div>
-        <div class="resultado-item__marcador ${finalizado ? '' : 'resultado-item__marcador--pendiente'}">
-          ${marcador}
-          ${finalizado && p.ganador === 'local' ? '<span style="font-size:12px">▲</span>' : ''}
-        </div>
-        <div class="resultado-item__equipo resultado-item__equipo--visitante">
-          <span class="resultado-item__nombre">${p.visitanteNombre || 'Por definir'}</span>
-          ${visitanteHtml}
-          ${finalizado && p.ganador === 'visitante' ? '<span style="font-size:12px">▲</span>' : ''}
-        </div>
-        ${p.fecha ? `<div class="resultado-item__fecha text-xs text-muted">${formatearFechaCorta(p.fecha)}</div>` : ''}
-      </div>
-    `;
-  }
-
-  /* =========================================================
      BORRAR JORNADA
      ========================================================= */
   async function borrarJornada(t, jornada) {
@@ -1068,7 +1441,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirResultados(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al borrar jornada:', err);
       toast(err.message || 'No se pudo borrar la jornada', 'error');
@@ -1076,7 +1448,7 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
-     EDITAR JORNADA (in-place)
+     EDITAR JORNADA
      ========================================================= */
   function abrirEditarJornada(t, jornada) {
     if (!puedeGestionar(t)) return;
@@ -1277,7 +1649,6 @@ export async function init(params = {}) {
       toast('No hay cambios para guardar', 'info');
       cerrarModal('modal-editar-jornada');
       window.__jornadaEnEdicion = null;
-      abrirResultados(t);
       return;
     }
 
@@ -1293,7 +1664,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirResultados(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al guardar jornada:', err);
       toast(err.message || 'No se pudo guardar la jornada', 'error');
@@ -1302,8 +1672,9 @@ export async function init(params = {}) {
       btn.textContent = 'Guardar cambios';
     }
   }
-    /* =========================================================
-     CREAR PARTIDO (con filtro de visitante)
+
+  /* =========================================================
+     CREAR PARTIDO
      ========================================================= */
   function abrirCrearPartido(t, jornadaPreseleccionada = null) {
     if (t.modalidad !== 'liga') return;
@@ -1415,7 +1786,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirResultados(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al crear partido:', err);
       toast(err.message || 'No se pudo crear el partido', 'error');
@@ -1426,11 +1796,7 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
-     ⚡ CARGAR RESULTADO — CON 3 MODOS (D.5)
-     =========================================================
-     1) modo-simple     → goles/puntos/carreras (+ penales)
-     2) modo-sets       → sets con puntos
-     3) modo-tiempo-puntos → tiempo o puntos por participante
+     CARGAR RESULTADO
      ========================================================= */
   function abrirCargarResultado(t, partido) {
     if (!puedeGestionar(t)) return;
@@ -1444,7 +1810,6 @@ export async function init(params = {}) {
 
     document.getElementById('cargar-resultado-titulo').textContent = 'Cargar resultado';
 
-    /* ---------- Cabecera: escudos y nombres ---------- */
     const localEsc = document.getElementById('cargar-resultado-local-escudo');
     const localNom = document.getElementById('cargar-resultado-local-nombre');
     const visEsc   = document.getElementById('cargar-resultado-visitante-escudo');
@@ -1461,25 +1826,19 @@ export async function init(params = {}) {
     localNom.textContent = partido.localNombre || 'Local';
     visNom.textContent   = partido.visitanteNombre || 'Visitante';
 
-    /* ---------- Referencias a los 3 modos ---------- */
     const modoSimple  = document.getElementById('cargar-resultado-modo-simple');
     const modoSets    = document.getElementById('cargar-resultado-modo-sets');
     const modoTP      = document.getElementById('cargar-resultado-modo-tiempo-puntos');
 
-    // Ocultar los 3 por defecto y mostrar el que corresponda
     modoSimple?.classList.add('hidden');
     modoSets?.classList.add('hidden');
     modoTP?.classList.add('hidden');
 
-    /* ---------- Selector de estado ---------- */
     const selectEstado = document.getElementById('cargar-resultado-estado');
     selectEstado.value = partido.estado === 'finalizado' ? 'finalizado'
                        : partido.estado === 'en_curso'   ? 'en_curso'
                        : 'finalizado';
 
-    /* =====================================================
-       MODO TIEMPO / PUNTOS
-       ===================================================== */
     if (sistema === 'tiempo' || sistema === 'puntos') {
       modoTP?.classList.remove('hidden');
       prepararModoTiempoPuntos(t, partido, sistema, esIndividual);
@@ -1487,9 +1846,6 @@ export async function init(params = {}) {
       return;
     }
 
-    /* =====================================================
-       MODO SETS
-       ===================================================== */
     if (reglas.tipo === 'sets') {
       modoSets?.classList.remove('hidden');
 
@@ -1506,7 +1862,7 @@ export async function init(params = {}) {
       } else if (deporte === 'Tenis de mesa') {
         hintText = 'Sets a 11 puntos (dif. 2).';
       } else if (['Tenis', 'Pádel', 'Squash'].includes(deporte)) {
-        hintText = reglas.nota || 'Ingresá el resultado de cada set (ej: 6-4, 7-6, 7-5).';
+        hintText = reglas.nota || 'Ingresá el resultado de cada set.';
       }
       setsHint.textContent = hintText;
 
@@ -1518,7 +1874,6 @@ export async function init(params = {}) {
         ? setsExistentes
         : [{ local: 0, visitante: 0 }];
 
-      // Sincroniza el DOM actual con el array `sets` (evita perder datos)
       function sincronizarSetsConDOM(sets) {
         const filas = setsLista.querySelectorAll('[data-set-index]');
         filas.forEach(fila => {
@@ -1597,9 +1952,7 @@ export async function init(params = {}) {
       return;
     }
 
-    /* =====================================================
-       MODO SIMPLE (con o sin penales)
-       ===================================================== */
+    /* MODO SIMPLE */
     modoSimple?.classList.remove('hidden');
 
     const inputLocal     = document.getElementById('cargar-resultado-local');
@@ -1654,14 +2007,6 @@ export async function init(params = {}) {
     abrirModal('modal-cargar-resultado');
   }
 
-  /* =========================================================
-     ⚡ PREPARAR MODO TIEMPO/PUNTOS
-     =========================================================
-     Renderiza dos filas, una por participante, con:
-     - Si es tiempo: 3 inputs (min, seg, cent)
-     - Si es puntos: 1 input de puntos
-     Y muestra en vivo quién va ganando.
-     ========================================================= */
   function prepararModoTiempoPuntos(t, partido, sistema, esIndividual) {
     const hint      = document.getElementById('cargar-resultado-tp-hint');
     const lista     = document.getElementById('cargar-resultado-tp-lista');
@@ -1678,7 +2023,6 @@ export async function init(params = {}) {
       ? 'El MENOR tiempo gana. Cargá minutos, segundos y centésimas.'
       : 'El MAYOR puntaje gana.';
 
-    /* ---------- Valores iniciales ---------- */
     const partes = Array.isArray(partido.resultado?.participantes)
       ? partido.resultado.participantes
       : [];
@@ -1686,7 +2030,6 @@ export async function init(params = {}) {
     const valLocal  = partes.find(p => String(p.id) === String(localId)) || {};
     const valVisita = partes.find(p => String(p.id) === String(visitaId)) || {};
 
-    /* ---------- Render ---------- */
     if (sistema === 'tiempo') {
       const tl = Number(valLocal.tiempoSeg);
       const tv = Number(valVisita.tiempoSeg);
@@ -1713,7 +2056,6 @@ export async function init(params = {}) {
       `;
     }
 
-    /* ---------- Actualizar ganador en vivo ---------- */
     function actualizarGanador() {
       let ganadorTxt = '—';
 
@@ -1751,7 +2093,6 @@ export async function init(params = {}) {
     });
     actualizarGanador();
 
-    /* ---------- Botón guardar ---------- */
     const btnGuardar = document.getElementById('btn-guardar-resultado');
     btnGuardar.textContent = 'Guardar resultado';
     btnGuardar.disabled = false;
@@ -1817,9 +2158,6 @@ export async function init(params = {}) {
     `;
   }
 
-  /* =========================================================
-     GUARDAR RESULTADO — MODO TIEMPO/PUNTOS
-     ========================================================= */
   async function guardarResultadoTiempoPuntos(t, partido, sistema, localId, visitaId, lista) {
     const estado = document.getElementById('cargar-resultado-estado').value;
 
@@ -1837,12 +2175,8 @@ export async function init(params = {}) {
       const tL = parsearTiempo(minL, segL, cenL);
       const tV = parsearTiempo(minV, segV, cenV);
 
-      if (tL === 0 && tV === 0) {
-        return toast('Ingresá al menos un tiempo', 'error');
-      }
-      if (tL === tV) {
-        return toast('Los tiempos no pueden ser iguales', 'error');
-      }
+      if (tL === 0 && tV === 0) return toast('Ingresá al menos un tiempo', 'error');
+      if (tL === tV) return toast('Los tiempos no pueden ser iguales', 'error');
 
       participantes.push({ id: localId,  tiempoSeg: tL });
       participantes.push({ id: visitaId, tiempoSeg: tV });
@@ -1850,21 +2184,14 @@ export async function init(params = {}) {
       const pL = Number(lista.querySelector('[data-tp-local-puntos]')?.value);
       const pV = Number(lista.querySelector('[data-tp-visitante-puntos]')?.value);
 
-      if (!Number.isFinite(pL) || !Number.isFinite(pV)) {
-        return toast('Ingresá los puntos de ambos participantes', 'error');
-      }
-      if (pL === pV) {
-        return toast('Los puntajes no pueden ser iguales', 'error');
-      }
+      if (!Number.isFinite(pL) || !Number.isFinite(pV)) return toast('Ingresá los puntos de ambos participantes', 'error');
+      if (pL === pV) return toast('Los puntajes no pueden ser iguales', 'error');
 
       participantes.push({ id: localId,  puntos: pL });
       participantes.push({ id: visitaId, puntos: pV });
     }
 
-    const resultado = {
-      sistema,
-      participantes,
-    };
+    const resultado = { sistema, participantes };
 
     const btn = document.getElementById('btn-guardar-resultado');
     btn.disabled = true;
@@ -1872,18 +2199,11 @@ export async function init(params = {}) {
 
     try {
       await cargarResultadoAPI(t.id, partido.id, { resultado, estado });
-
       toast('Resultado cargado', 'success');
       cerrarModal('modal-cargar-resultado');
 
       torneo = await obtenerTorneo(t.id);
       await render();
-
-      if (t.modalidad === 'liga') {
-        abrirResultados(torneo);
-      } else if (t.modalidad === 'eliminacion') {
-        abrirFixture(torneo);
-      }
     } catch (err) {
       console.error('[torneo-detalle] Error al cargar resultado:', err);
       toast(err.message || 'No se pudo cargar el resultado', 'error');
@@ -1893,9 +2213,6 @@ export async function init(params = {}) {
     }
   }
 
-  /* =========================================================
-     GUARDAR RESULTADO — MODO SIMPLE
-     ========================================================= */
   async function guardarResultadoSimple(t, partido) {
     const reglas = getReglasDeporte(t.deporte);
     const campo = formatoDeDeporte(t.deporte).campo;
@@ -1915,9 +2232,7 @@ export async function init(params = {}) {
       const penLocal = Number(document.getElementById('cargar-resultado-desempate-local').value) || 0;
       const penVisita = Number(document.getElementById('cargar-resultado-desempate-visitante').value) || 0;
 
-      if (penLocal === penVisita) {
-        return toast('En caso de empate, el desempate también debe tener un ganador', 'error');
-      }
+      if (penLocal === penVisita) return toast('En caso de empate, el desempate también debe tener un ganador', 'error');
 
       resultado.penales_local = penLocal;
       resultado.penales_visitante = penVisita;
@@ -1933,18 +2248,11 @@ export async function init(params = {}) {
 
     try {
       await cargarResultadoAPI(t.id, partido.id, { resultado, estado });
-
       toast('Resultado cargado', 'success');
       cerrarModal('modal-cargar-resultado');
 
       torneo = await obtenerTorneo(t.id);
       await render();
-
-      if (t.modalidad === 'liga') {
-        abrirResultados(torneo);
-      } else if (t.modalidad === 'eliminacion') {
-        abrirFixture(torneo);
-      }
     } catch (err) {
       console.error('[torneo-detalle] Error al cargar resultado:', err);
       toast(err.message || 'No se pudo cargar el resultado', 'error');
@@ -1954,9 +2262,6 @@ export async function init(params = {}) {
     }
   }
 
-  /* =========================================================
-     GUARDAR RESULTADO — MODO SETS
-     ========================================================= */
   async function guardarResultadoSets(t, partido, setsLista) {
     const estado = document.getElementById('cargar-resultado-estado').value;
 
@@ -1969,9 +2274,7 @@ export async function init(params = {}) {
       sets.push({ local, visitante });
     });
 
-    if (sets.length === 0) {
-      return toast('Agregá al menos un set', 'error');
-    }
+    if (sets.length === 0) return toast('Agregá al menos un set', 'error');
 
     let setsLocal = 0;
     let setsVisitante = 0;
@@ -1980,15 +2283,9 @@ export async function init(params = {}) {
       else if (s.visitante > s.local) setsVisitante++;
     });
 
-    if (setsLocal === setsVisitante) {
-      return toast('Tiene que haber un ganador (no pueden empatar en sets)', 'error');
-    }
+    if (setsLocal === setsVisitante) return toast('Tiene que haber un ganador (no pueden empatar en sets)', 'error');
 
-    const resultado = {
-      sets,
-      setsLocal,
-      setsVisitante,
-    };
+    const resultado = { sets, setsLocal, setsVisitante };
 
     const btn = document.getElementById('btn-guardar-resultado');
     btn.disabled = true;
@@ -1996,18 +2293,11 @@ export async function init(params = {}) {
 
     try {
       await cargarResultadoAPI(t.id, partido.id, { resultado, estado });
-
       toast('Resultado cargado', 'success');
       cerrarModal('modal-cargar-resultado');
 
       torneo = await obtenerTorneo(t.id);
       await render();
-
-      if (t.modalidad === 'liga') {
-        abrirResultados(torneo);
-      } else if (t.modalidad === 'eliminacion') {
-        abrirFixture(torneo);
-      }
     } catch (err) {
       console.error('[torneo-detalle] Error al cargar resultado:', err);
       toast(err.message || 'No se pudo cargar el resultado', 'error');
@@ -2017,9 +2307,6 @@ export async function init(params = {}) {
     }
   }
 
-  /* =========================================================
-     NUEVA JORNADA (helper)
-     ========================================================= */
   async function crearNuevaJornada(t) {
     const totalActual = (t.jornadas || []).length;
     const numero = totalActual + 1;
@@ -2038,523 +2325,18 @@ export async function init(params = {}) {
     }
   }
 
-  /* =========================================================
-     GENERAR FIXTURE LIGA (round-robin)
-     ========================================================= */
   async function generarFixtureLiga(t) {
-    if (!confirm('¿Generar el fixture automático? Esto crea todas las jornadas y partidos. No podrás hacerlo de nuevo hasta borrar los partidos existentes.')) return;
+    if (!confirm('¿Generar el fixture automático? Esto crea todas las jornadas y partidos.')) return;
 
     try {
       const resultado = await generarFixtureLigaAPI(t.id);
       toast(resultado.mensaje || 'Fixture generado', 'success');
 
       torneo = await obtenerTorneo(t.id);
-      abrirResultados(torneo);
+      await render();
     } catch (err) {
       console.error('[torneo-detalle] Error al generar fixture:', err);
       toast(err.message || 'No se pudo generar el fixture', 'error');
-    }
-  }
-
-  /* =========================================================
-     FIXTURE (ELIMINACIÓN) — BRACKET VISUAL
-     ========================================================= */
-  function abrirFixture(t) {
-    if (t.modalidad !== 'eliminacion') return;
-
-    const body = document.getElementById('fixture-body');
-    const accionesCont = document.getElementById('fixture-acciones');
-    if (!body || !accionesCont) return;
-
-    const puedeGest = puedeGestionar(t);
-    const partidos = t.partidos || [];
-    const esIndividual = t.tipoParticipacion === 'individual';
-    const sistema = t.sistemaClasificacion || 'simple';
-
-    /* ---------- Barra de acciones ---------- */
-    if (puedeGest && !t.fixtureBloqueado) {
-      const hayPartidos = partidos.length > 0;
-
-      accionesCont.innerHTML = `
-        ${!hayPartidos ? `
-          <button class="btn btn--primary btn--sm" id="btn-armar-aleatorio">
-            🎲 Armar fixture aleatorio
-          </button>
-          <button class="btn btn--ghost btn--sm" id="btn-armar-manual">
-            🛠️ Armar fixture manual
-          </button>
-        ` : `
-          <button class="btn btn--primary btn--sm" id="btn-confirmar-fixture">
-            ✅ Confirmar fixture
-          </button>
-          <button class="btn btn--ghost btn--sm" id="btn-rearmar-fixture" style="color:var(--color-danger)">
-            🗑️ Rehacer fixture
-          </button>
-        `}
-      `;
-    } else if (puedeGest && t.fixtureBloqueado) {
-      accionesCont.innerHTML = `
-        <span class="badge badge--success" style="padding:8px 12px">
-          🔒 Fixture confirmado
-        </span>
-      `;
-    } else {
-      accionesCont.innerHTML = '';
-    }
-
-    /* ---------- Bracket vacío ---------- */
-    if (partidos.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state__icon">🏆</div>
-          <p class="text-sm text-muted">El fixture todavía no fue armado.</p>
-          ${puedeGest ? `<p class="text-xs text-muted mt-4">Armalo con los botones de arriba.</p>` : ''}
-        </div>`;
-
-      document.getElementById('btn-armar-aleatorio')?.addEventListener('click', () => armarAleatorio(t));
-      document.getElementById('btn-armar-manual')?.addEventListener('click', () => abrirArmarManual(t));
-
-      abrirModal('modal-fixture');
-      return;
-    }
-
-    /* ---------- Agrupar por fase ---------- */
-    const fases = fasesDelBracket(t);
-    if (fases.length === 0) {
-      body.innerHTML = `<p class="text-sm text-muted text-center">Sin fases detectadas.</p>`;
-      abrirModal('modal-fixture');
-      return;
-    }
-
-    const faseIni = faseInicial(fases);
-    const partidosPorFase = new Map();
-    fases.forEach(f => partidosPorFase.set(f, []));
-    partidos.forEach(p => {
-      const fase = p.fase || faseIni;
-      if (!partidosPorFase.has(fase)) partidosPorFase.set(fase, []);
-      partidosPorFase.get(fase).push(p);
-    });
-
-    fases.forEach(f => {
-      const lista = partidosPorFase.get(f) || [];
-      lista.sort((a, b) => (a.posicionEnFase ?? 0) - (b.posicionEnFase ?? 0));
-    });
-
-    /* ---------- Render del bracket ---------- */
-    let html = '<div class="fixture-bracket-nuevo">';
-
-    fases.forEach((fase, idxFase) => {
-      const partidosFase = partidosPorFase.get(fase) || [];
-      if (partidosFase.length === 0) return;
-
-      html += `
-        <div class="fixture-bracket-nuevo__columna" data-fase="${fase}">
-          <div class="fixture-bracket-nuevo__titulo">${FASES_LABEL[fase] || fase}</div>
-          <div class="fixture-bracket-nuevo__cruces">
-            ${partidosFase.map((p, idxCruce) => {
-              const esPrimeraFase = fase === faseIni;
-              const puedeEditar = puedeGest && !t.fixtureBloqueado && esPrimeraFase;
-              const puedeInteractuar = puedeGest
-                || (p.estado === 'finalizado' && !p.esBye);
-
-              return renderCruceNuevo(
-                p,
-                t.deporte,
-                esIndividual,
-                sistema,
-                idxFase,
-                idxCruce,
-                puedeEditar,
-                puedeInteractuar,
-              );
-            }).join('')}
-          </div>
-        </div>
-      `;
-    });
-
-    html += '</div>';
-
-    body.innerHTML = html;
-
-    /* ---------- Conectar clicks ---------- */
-    body.querySelectorAll('[data-partido-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const partidoId = el.dataset.partidoId;
-        const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
-        if (!partido) return;
-
-        if (partido.esBye) return;
-
-        const esPrimeraFase = partido.fase === faseIni;
-        const esGestor = puedeGestionar(t);
-
-        if (esGestor) {
-          if (!t.fixtureBloqueado && esPrimeraFase) {
-            abrirEditarCruce(t, partido);
-            return;
-          }
-
-          if (partido.estado === 'finalizado') {
-            abrirVerDetallePartido(t, partido);
-            return;
-          }
-
-          if (partido.equipoLocalId && partido.equipoVisitanteId) {
-            abrirCargarResultado(t, partido);
-            return;
-          }
-
-          toast('Este cruce todavía no tiene los dos participantes', 'info');
-          return;
-        }
-
-        if (partido.estado === 'finalizado') {
-          abrirVerDetallePartido(t, partido);
-        }
-      });
-    });
-
-    document.getElementById('btn-armar-aleatorio')?.addEventListener('click', () => armarAleatorio(t));
-    document.getElementById('btn-armar-manual')?.addEventListener('click', () => abrirArmarManual(t));
-    document.getElementById('btn-confirmar-fixture')?.addEventListener('click', () => confirmarFixture(t));
-    document.getElementById('btn-rearmar-fixture')?.addEventListener('click', () => rearmarFixture(t));
-
-    abrirModal('modal-fixture');
-  }
-
-  /* ---------- Render de un cruce del bracket ---------- */
-  function renderCruceNuevo(p, deporte, esIndividual, sistema, idxFase, idxCruce, puedeEditar, puedeInteractuar) {
-    const finalizado = p.estado === 'finalizado';
-    const esBye = p.esBye;
-
-    const localNombre = p.localNombre || 'Por definir';
-    const visitanteNombre = p.visitanteNombre || 'Por definir';
-
-    const localEsc = esIndividual
-      ? `<img src="${p.localEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:20px;height:20px" />`
-      : `<span style="font-size:18px">${p.localEscudo || '🛡️'}</span>`;
-
-    const visEsc = esIndividual
-      ? `<img src="${p.visitanteEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:20px;height:20px" />`
-      : `<span style="font-size:18px">${p.visitanteEscudo || '🛡️'}</span>`;
-
-    const ganadorLocal = finalizado && p.ganador === 'local';
-    const ganadorVisitante = finalizado && p.ganador === 'visitante';
-
-    let marcador = '';
-    if (esBye) {
-      marcador = '<span class="badge badge--neutral">BYE</span>';
-    } else if (finalizado) {
-      marcador = formatearResultado(deporte, p.resultado, sistema);
-    }
-
-    const claseCard = [
-      'bracket-cruce',
-      finalizado ? 'bracket-cruce--finalizado' : '',
-      esBye ? 'bracket-cruce--bye' : '',
-      puedeInteractuar ? 'bracket-cruce--clickeable' : '',
-      idxCruce % 2 === 0 ? 'bracket-cruce--impar' : 'bracket-cruce--par',
-    ].filter(Boolean).join(' ');
-
-    const iconoEditar = puedeEditar
-      ? `<span class="bracket-cruce__icono" title="Editar cruce">✏️</span>`
-      : '';
-
-    return `
-      <div class="${claseCard}" data-partido-id="${p.id}" data-idx-fase="${idxFase}" data-idx-cruce="${idxCruce}">
-        ${iconoEditar}
-        <div class="bracket-cruce__equipo ${ganadorLocal ? 'bracket-cruce__equipo--ganador' : ''}">
-          ${localEsc}
-          <span class="bracket-cruce__nombre">${localNombre}</span>
-          ${ganadorLocal ? '<span class="bracket-cruce__check">✓</span>' : ''}
-        </div>
-        <div class="bracket-cruce__marcador">
-          ${marcador || '<span class="text-xs text-muted">vs</span>'}
-        </div>
-        <div class="bracket-cruce__equipo ${ganadorVisitante ? 'bracket-cruce__equipo--ganador' : ''}">
-          ${visEsc}
-          <span class="bracket-cruce__nombre">${visitanteNombre}</span>
-          ${ganadorVisitante ? '<span class="bracket-cruce__check">✓</span>' : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  /* =========================================================
-     VER DETALLE DEL PARTIDO
-     ========================================================= */
-  function abrirVerDetallePartido(t, partido) {
-    partidoDetalleActual = partido;
-
-    const reglas = getReglasDeporte(t.deporte);
-    const sistema = t.sistemaClasificacion || 'simple';
-    const esIndividual = t.tipoParticipacion === 'individual';
-
-    const titulo = document.getElementById('ver-detalle-partido-titulo');
-    const body = document.getElementById('ver-detalle-partido-body');
-    const btnEditar = document.getElementById('btn-editar-resultado-desde-detalle');
-
-    titulo.textContent = `Detalle · ${t.deporte}`;
-
-    const marcadorPrincipal = formatearResultado(t.deporte, partido.resultado, sistema);
-
-    const localEscHtml = esIndividual
-      ? `<img src="${partido.localEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--lg" />`
-      : `<div style="font-size:44px">${partido.localEscudo || '🛡️'}</div>`;
-
-    const visEscHtml = esIndividual
-      ? `<img src="${partido.visitanteEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--lg" />`
-      : `<div style="font-size:44px">${partido.visitanteEscudo || '🛡️'}</div>`;
-
-    /* ---------- Sets ---------- */
-    let setsHtml = '';
-    if (reglas.tipo === 'sets' && Array.isArray(partido.resultado?.sets)) {
-      const setsLocal = partido.resultado.setsLocal ?? 0;
-      const setsVisitante = partido.resultado.setsVisitante ?? 0;
-
-      setsHtml = `
-        <div class="ver-detalle__sets">
-          ${partido.resultado.sets.map((s, i) => {
-            const local = Number(s.local) || 0;
-            const visitante = Number(s.visitante) || 0;
-            const localGana = local > visitante;
-            const visitaGana = visitante > local;
-
-            return `
-              <div class="ver-detalle__set">
-                <div class="ver-detalle__set-num">Set ${i + 1}</div>
-                <div class="ver-detalle__set-marcador">
-                  <span class="${localGana ? 'ver-detalle__set-ganador' : ''}">${local}</span>
-                  <span class="ver-detalle__set-sep">-</span>
-                  <span class="${visitaGana ? 'ver-detalle__set-ganador' : ''}">${visitante}</span>
-                </div>
-                <div class="ver-detalle__set-check">
-                  ${localGana ? '✓' : visitaGana ? ' ' : ''}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-
-        <div class="ver-detalle__resumen-sets">
-          <span>Sets ganados: <strong>${setsLocal} - ${setsVisitante}</strong></span>
-        </div>
-      `;
-    }
-
-    /* ---------- Penales ---------- */
-    let penalesHtml = '';
-    if (partido.resultado?.penales_local != null && partido.resultado?.penales_visitante != null) {
-      penalesHtml = `
-        <div class="ver-detalle__penales">
-          <div class="badge badge--info">${reglas.labelDesempate || 'Desempate'}: ${partido.resultado.penales_local} - ${partido.resultado.penales_visitante}</div>
-        </div>
-      `;
-    }
-
-    /* ---------- ⚡ Tiempo / Puntos ---------- */
-    let tiempoPuntosHtml = '';
-    if ((sistema === 'tiempo' || sistema === 'puntos') && Array.isArray(partido.resultado?.participantes)) {
-      const partes = partido.resultado.participantes;
-
-      tiempoPuntosHtml = `
-        <div class="ver-detalle__tp" style="margin-top:var(--space-4)">
-          ${partes.map(p => {
-            const esLocal = String(p.id) === String(partido.equipoLocalId);
-            const nombre = esLocal ? (partido.localNombre || 'Local') : (partido.visitanteNombre || 'Visitante');
-            const escudo = esLocal ? (partido.localEscudo || '🛡️') : (partido.visitanteEscudo || '🛡️');
-
-            const valor = sistema === 'tiempo'
-              ? formatearTiempo(p.tiempoSeg)
-              : (p.puntos != null ? String(p.puntos) + ' pts' : '—');
-
-            const esGanador =
-              (sistema === 'tiempo' && String(p.id) === String(partido.equipoLocalId) && partido.ganador === 'local') ||
-              (sistema === 'tiempo' && String(p.id) === String(partido.equipoVisitanteId) && partido.ganador === 'visitante') ||
-              (sistema === 'puntos' && String(p.id) === String(partido.equipoLocalId) && partido.ganador === 'local') ||
-              (sistema === 'puntos' && String(p.id) === String(partido.equipoVisitanteId) && partido.ganador === 'visitante');
-
-            return `
-              <div class="ver-detalle__tp-fila" style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3); background:var(--color-bg-alt); border-radius:var(--radius-md); margin-bottom:var(--space-2); ${esGanador ? 'border:2px solid var(--color-success)' : ''}">
-                <div style="display:flex; align-items:center; gap:var(--space-3)">
-                  ${esIndividual
-                    ? `<img src="${escudo === '🛡️' ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
-                    : `<span style="font-size:28px">${escudo}</span>`}
-                  <div>
-                    <div style="font-weight:600">${nombre}</div>
-                    ${esGanador ? `<div class="badge badge--success" style="margin-top:4px">🏆 Ganador</div>` : ''}
-                  </div>
-                </div>
-                <div style="font-size:var(--fs-lg); font-weight:700; ${esGanador ? 'color:var(--color-success)' : ''}">
-                  ${valor}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
-
-    /* ---------- Ganador ---------- */
-    const ganadorHtml = partido.ganador === 'local'
-      ? `<span class="badge badge--success">🏆 Ganó ${partido.localNombre || 'Local'}</span>`
-      : partido.ganador === 'visitante'
-        ? `<span class="badge badge--success">🏆 Ganó ${partido.visitanteNombre || 'Visitante'}</span>`
-        : `<span class="badge badge--warning">Empate</span>`;
-
-    body.innerHTML = `
-      <div class="ver-detalle__cabecera">
-        <div class="ver-detalle__equipo">
-          ${localEscHtml}
-          <div class="ver-detalle__equipo-nombre">${partido.localNombre || 'Local'}</div>
-        </div>
-        <div class="ver-detalle__vs">
-          <div class="ver-detalle__marcador">${marcadorPrincipal}</div>
-          <div class="ver-detalle__vs-txt">VS</div>
-        </div>
-        <div class="ver-detalle__equipo">
-          ${visEscHtml}
-          <div class="ver-detalle__equipo-nombre">${partido.visitanteNombre || 'Visitante'}</div>
-        </div>
-      </div>
-
-      ${setsHtml}
-      ${penalesHtml}
-      ${tiempoPuntosHtml}
-
-      <div class="ver-detalle__footer-info">
-        ${ganadorHtml}
-      </div>
-
-      ${partido.fecha ? `<p class="text-xs text-muted text-center mt-4">📅 ${formatearFecha(partido.fecha)}</p>` : ''}
-    `;
-
-    /* ---------- Botón "Editar resultado" ---------- */
-    if (puedeGestionar(t)) {
-      btnEditar.style.display = '';
-      btnEditar.onclick = () => {
-        cerrarModal('modal-ver-detalle-partido');
-        setTimeout(() => abrirCargarResultado(t, partido), 200);
-      };
-    } else {
-      btnEditar.style.display = 'none';
-    }
-
-    abrirModal('modal-ver-detalle-partido');
-  }
-
-  /* =========================================================
-     EDITAR CRUCE
-     ========================================================= */
-  function abrirEditarCruce(t, partido) {
-    if (!puedeGestionar(t)) return;
-    if (t.fixtureBloqueado) return;
-
-    cruceActual = partido;
-
-    const selectLocal = document.getElementById('editar-cruce-local');
-    const selectVisita = document.getElementById('editar-cruce-visitante');
-    const titulo = document.getElementById('editar-cruce-titulo');
-    const descripcion = document.getElementById('editar-cruce-descripcion');
-
-    const esIndividual = t.tipoParticipacion === 'individual';
-    const inscritos = t.equipos || [];
-
-    titulo.textContent = `✏️ Editar ${FASES_LABEL[partido.fase] || 'cruce'}`;
-    descripcion.textContent = 'Cambiá los participantes de este cruce. Podés dejar uno vacío para dar un BYE.';
-
-    const opciones = inscritos.map(e =>
-      `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`
-    ).join('');
-
-    function refrescar() {
-      const localId = selectLocal.value;
-      const visitaId = selectVisita.value;
-
-      selectLocal.innerHTML = `
-        <option value="">— Vacío (bye) —</option>
-        ${inscritos
-          .filter(e => String(e.id) !== String(visitaId))
-          .map(e => `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`)
-          .join('')}
-      `;
-      selectVisita.innerHTML = `
-        <option value="">— Vacío (bye) —</option>
-        ${inscritos
-          .filter(e => String(e.id) !== String(localId))
-          .map(e => `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`)
-          .join('')}
-      `;
-    }
-
-    selectLocal.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
-    selectVisita.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
-    selectLocal.value = partido.equipoLocalId || '';
-    selectVisita.value = partido.equipoVisitanteId || '';
-
-    refrescar();
-
-    selectLocal.onchange = refrescar;
-    selectVisita.onchange = refrescar;
-
-    const btnGuardar = document.getElementById('btn-guardar-cruce');
-    btnGuardar.disabled = false;
-    btnGuardar.textContent = 'Guardar cambios';
-    btnGuardar.onclick = () => guardarCruce(t, partido);
-
-    abrirModal('modal-editar-cruce');
-  }
-
-  async function guardarCruce(t, partido) {
-    const localId = document.getElementById('editar-cruce-local')?.value || null;
-    const visitaId = document.getElementById('editar-cruce-visitante')?.value || null;
-
-    if (!localId && !visitaId) {
-      if (!confirm('Este cruce va a quedar vacío. ¿Querés borrarlo?')) return;
-
-      try {
-        await eliminarPartidoTorneoAPI(t.id, partido.id);
-        toast('Cruce eliminado', 'info');
-        cerrarModal('modal-editar-cruce');
-
-        torneo = await obtenerTorneo(t.id);
-        await render();
-        abrirFixture(torneo);
-      } catch (err) {
-        console.error('[torneo-detalle] Error al borrar cruce:', err);
-        toast(err.message || 'No se pudo borrar el cruce', 'error');
-      }
-      return;
-    }
-
-    if (localId && visitaId && localId === visitaId) {
-      return toast('Local y visitante no pueden ser el mismo', 'error');
-    }
-
-    const btn = document.getElementById('btn-guardar-cruce');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    try {
-      await editarCruceAPI(t.id, partido.id, {
-        equipoLocalId: localId,
-        equipoVisitanteId: visitaId,
-      });
-
-      toast('Cruce actualizado', 'success');
-      cerrarModal('modal-editar-cruce');
-
-      torneo = await obtenerTorneo(t.id);
-      await render();
-      abrirFixture(torneo);
-    } catch (err) {
-      console.error('[torneo-detalle] Error al editar cruce:', err);
-      toast(err.message || 'No se pudo editar el cruce', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Guardar cambios';
     }
   }
 
@@ -2570,7 +2352,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirFixture(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al armar fixture aleatorio:', err);
       toast(err.message || 'No se pudo armar el fixture', 'error');
@@ -2643,17 +2424,10 @@ export async function init(params = {}) {
       const local = document.querySelector(`[data-cruce-local="${i}"]`)?.value;
       const visitante = document.querySelector(`[data-cruce-visitante="${i}"]`)?.value;
 
-      if (!local && !visitante) {
-        return toast(`El cruce ${i + 1} está vacío`, 'error');
-      }
-      if (local && visitante && local === visitante) {
-        return toast(`El cruce ${i + 1} tiene el mismo equipo en local y visitante`, 'error');
-      }
+      if (!local && !visitante) return toast(`El cruce ${i + 1} está vacío`, 'error');
+      if (local && visitante && local === visitante) return toast(`El cruce ${i + 1} tiene el mismo equipo en local y visitante`, 'error');
 
-      cruces.push({
-        localId: local || null,
-        visitanteId: visitante || null,
-      });
+      cruces.push({ localId: local || null, visitanteId: visitante || null });
     }
 
     const btn = document.getElementById('btn-confirmar-armado');
@@ -2667,7 +2441,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirFixture(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al armar fixture manual:', err);
       toast(err.message || 'No se pudo armar el fixture', 'error');
@@ -2678,7 +2451,7 @@ export async function init(params = {}) {
   }
 
   async function confirmarFixture(t) {
-    if (!confirm('¿Confirmar el fixture? Ya no podrás editar los cruces, solo cargar resultados.')) return;
+    if (!confirm('¿Confirmar el fixture? Ya no podrás editar los cruces.')) return;
 
     try {
       await confirmarFixtureAPI(t.id);
@@ -2686,7 +2459,6 @@ export async function init(params = {}) {
 
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirFixture(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al confirmar fixture:', err);
       toast(err.message || 'No se pudo confirmar el fixture', 'error');
@@ -2722,7 +2494,6 @@ export async function init(params = {}) {
       toast('Fixture borrado', 'info');
       torneo = await obtenerTorneo(t.id);
       await render();
-      abrirFixture(torneo);
     } catch (err) {
       console.error('[torneo-detalle] Error al rehacer fixture:', err);
       toast(err.message || 'No se pudo borrar el fixture', 'error');
@@ -2831,7 +2602,7 @@ export async function init(params = {}) {
             <button class="btn btn--ghost btn--sm" data-rechazar="${i}">✕</button>
           ` : sol.estado === 'aceptado' ? `
             <span class="badge badge--success">Aceptado</span>
-            <button class="btn btn--ghost btn--sm" data-expulsar="${i}" style="color:var(--color-danger)">Sacar</button>
+            <button class="btn btn--ghost btn--sm" data-expulsar="${i}" style="color:var(--color-danger)">🗑️ Eliminar</button>
           ` : `
             <span class="badge badge--danger">Rechazado</span>
           `}
@@ -2953,7 +2724,7 @@ export async function init(params = {}) {
   async function expulsarSolicitante(t, sol) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const nombre = esIndividual ? sol.equipoNombre : `${sol.equipoEscudo || '🛡️'} ${sol.equipoNombre}`;
-    if (!confirm(`¿Sacar a ${nombre} del torneo?`)) return;
+    if (!confirm(`¿Eliminar a ${nombre} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
 
     try {
       await expulsarEquipoAPI(t.id, String(sol.equipoId));
@@ -3162,9 +2933,359 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
+     MODAL EDITAR TORNEO (EN EL DETALLE)
+     ========================================================= */
+  const estadoModal = {
+    modalidad: 'liga',
+    tipoParticipacion: 'equipo',
+    nivel: 'amistoso',
+    sistemaClasificacion: 'simple',
+  };
+
+  let modalEditarInicializado = false;
+
+  function inicializarModalEditar() {
+    if (modalEditarInicializado) return;
+    if (!modalEditarTorneo) return;
+    modalEditarInicializado = true;
+
+    const selectDepDet = document.getElementById('torneo-deporte-det');
+    if (selectDepDet) {
+      selectDepDet.innerHTML = '<option value="">Selecciona un deporte...</option>' +
+        deportes.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+
+    const nivelGrid = document.getElementById('nivel-grid-torneo-det');
+    if (nivelGrid) {
+      nivelGrid.innerHTML = NIVELES_TORNEO_DET.map((n, i) => `
+        <div class="nivel-opcion ${i === 0 ? 'active' : ''}" data-nivel-det="${n.valor}">
+          <div class="nivel-opcion__label">${n.label}</div>
+          <div class="nivel-opcion__desc">${n.descripcion}</div>
+        </div>
+      `).join('');
+
+      nivelGrid.querySelectorAll('[data-nivel-det]').forEach(op => {
+        op.addEventListener('click', () => {
+          nivelGrid.querySelectorAll('[data-nivel-det]').forEach(o => o.classList.remove('active'));
+          op.classList.add('active');
+          estadoModal.nivel = op.dataset.nivelDet;
+          actualizarLibreInscripcionDet();
+        });
+      });
+    }
+
+    document.querySelectorAll('[data-tipo-participacion-det]').forEach(op => {
+      op.addEventListener('click', () => {
+        document.querySelectorAll('[data-tipo-participacion-det]').forEach(o => o.classList.remove('active'));
+        op.classList.add('active');
+        estadoModal.tipoParticipacion = op.dataset.tipoParticipacionDet;
+        actualizarHintTipoParticipacionDet();
+      });
+    });
+
+    document.querySelectorAll('[data-modalidad-det]').forEach(op => {
+      op.addEventListener('click', () => {
+        document.querySelectorAll('[data-modalidad-det]').forEach(o => o.classList.remove('active'));
+        op.classList.add('active');
+        estadoModal.modalidad = op.dataset.modalidadDet;
+        actualizarConfigPorModalidadDet();
+        actualizarAutoFixtureVisibilityDet();
+      });
+    });
+
+    document.querySelectorAll('[data-sistema-clasificacion-det]').forEach(op => {
+      op.addEventListener('click', () => {
+        document.querySelectorAll('[data-sistema-clasificacion-det]').forEach(o => o.classList.remove('active'));
+        op.classList.add('active');
+        estadoModal.sistemaClasificacion = op.dataset.sistemaClasificacionDet;
+        actualizarHintSistemaDet();
+      });
+    });
+
+    const checkGratisDet = document.getElementById('torneo-gratis-det');
+    const precioWrapperDet = document.getElementById('torneo-precio-wrapper-det');
+    checkGratisDet?.addEventListener('change', () => {
+      precioWrapperDet?.classList.toggle('hidden', checkGratisDet.checked);
+      actualizarLibreInscripcionDet();
+    });
+
+    selectDepDet?.addEventListener('change', () => {
+      const dep = selectDepDet.value;
+      actualizarSistemaClasificacionDet(dep);
+
+      if (DEPORTES_INDIVIDUALES_DET.has(dep)) {
+        document.querySelectorAll('[data-tipo-participacion-det]').forEach(op => {
+          op.classList.toggle('active', op.dataset.tipoParticipacionDet === 'individual');
+        });
+        estadoModal.tipoParticipacion = 'individual';
+        actualizarHintTipoParticipacionDet();
+      }
+    });
+
+    document.getElementById('btn-guardar-torneo-det')?.addEventListener('click', guardarEdicionTorneo);
+
+    modalEditarTorneo.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.onclick = () => cerrarModal('modal-editar-torneo-detalle');
+    });
+    modalEditarTorneo.onclick = (e) => {
+      if (e.target === modalEditarTorneo) cerrarModal('modal-editar-torneo-detalle');
+    };
+  }
+
+  function actualizarConfigPorModalidadDet() {
+    const configLiga = document.getElementById('config-liga-wrapper-det');
+    if (configLiga) {
+      configLiga.style.display = estadoModal.modalidad === 'liga' ? '' : 'none';
+    }
+  }
+
+  function actualizarAutoFixtureVisibilityDet() {
+    const wrapper = document.getElementById('auto-fixture-wrapper-det');
+    if (!wrapper) return;
+
+    if (estadoModal.modalidad === 'eliminacion') {
+      wrapper.classList.remove('hidden');
+    } else {
+      wrapper.classList.add('hidden');
+      const check = document.getElementById('torneo-auto-fixture-det');
+      if (check) check.checked = false;
+    }
+  }
+
+  function actualizarLibreInscripcionDet() {
+    const wrapper = document.getElementById('libre-inscripcion-wrapper-det');
+    const aviso = document.getElementById('aviso-pago-det');
+    const checkGratis = document.getElementById('torneo-gratis-det');
+    const checkLibre = document.getElementById('torneo-libre-inscripcion-det');
+
+    if (!wrapper || !aviso) return;
+
+    const esGratis = checkGratis?.checked ?? true;
+    const nivelExigente = estadoModal.nivel !== 'amistoso';
+
+    if (!esGratis) {
+      wrapper.classList.add('hidden');
+      aviso.classList.add('show');
+      return;
+    }
+
+    if (nivelExigente) {
+      wrapper.classList.remove('hidden');
+      aviso.classList.remove('show');
+      return;
+    }
+
+    wrapper.classList.add('hidden');
+    aviso.classList.remove('show');
+    if (checkLibre) checkLibre.checked = true;
+  }
+
+  function actualizarHintTipoParticipacionDet() {
+    const hint = document.getElementById('hint-tipo-participacion-det');
+    if (!hint) return;
+    if (estadoModal.tipoParticipacion === 'individual') {
+      hint.textContent = '👤 Los usuarios se inscriben solos.';
+    } else {
+      hint.textContent = '👥 Los equipos se inscriben al torneo.';
+    }
+  }
+
+  function actualizarSistemaClasificacionDet(deporte) {
+    const wrapper = document.getElementById('sistema-clasificacion-wrapper-det');
+    if (!wrapper) return;
+    wrapper.classList.remove('hidden');
+
+    let sugerido = 'simple';
+    if (deporte) {
+      if (DEPORTES_TIEMPO_DET.has(deporte)) sugerido = 'tiempo';
+      else if (DEPORTES_PUNTOS_DET.has(deporte)) sugerido = 'puntos';
+    }
+
+    estadoModal.sistemaClasificacion = sugerido;
+
+    document.querySelectorAll('[data-sistema-clasificacion-det]').forEach(op => {
+      op.classList.toggle('active', op.dataset.sistemaClasificacionDet === sugerido);
+    });
+
+    actualizarHintSistemaDet();
+  }
+
+  function actualizarHintSistemaDet() {
+    const hint = document.getElementById('sistema-clasificacion-hint-det');
+    if (!hint) return;
+    const textos = {
+      simple: '🎯 Se juega con marcador (goles, puntos, sets).',
+      tiempo: '⏱️ El MENOR tiempo gana.',
+      puntos: '🏅 El MAYOR puntaje gana.',
+    };
+    hint.textContent = textos[estadoModal.sistemaClasificacion] || '';
+  }
+
+  function abrirModalEditarTorneo(t) {
+    if (!modalEditarTorneo) return;
+    inicializarModalEditar();
+
+    document.getElementById('torneo-modal-titulo-detalle').textContent = 'Editar torneo';
+
+    document.getElementById('torneo-nombre-det').value = t.nombre;
+    document.getElementById('torneo-deporte-det').value = t.deporte;
+    document.getElementById('torneo-fecha-inicio-det').value = (t.fechaInicio || '').split('T')[0];
+    document.getElementById('torneo-fecha-fin-det').value = t.fechaFin ? t.fechaFin.split('T')[0] : '';
+    document.getElementById('torneo-fecha-limite-det').value = t.fechaLimiteInscripcion ? t.fechaLimiteInscripcion.split('T')[0] : '';
+    document.getElementById('torneo-lugar-det').value = t.lugar || '';
+    document.getElementById('torneo-equipos-det').value = t.cuposEquipos;
+    document.getElementById('torneo-descripcion-det').value = t.descripcion || '';
+
+    const gratis = t.precio === 0;
+    document.getElementById('torneo-gratis-det').checked = gratis;
+    document.getElementById('torneo-precio-det').value = gratis ? '20000' : t.precio;
+    document.getElementById('torneo-precio-wrapper-det').classList.toggle('hidden', gratis);
+
+    estadoModal.modalidad = t.modalidad || 'liga';
+    estadoModal.tipoParticipacion = t.tipoParticipacion || 'equipo';
+    estadoModal.nivel = t.nivel || 'amistoso';
+
+    document.querySelectorAll('[data-modalidad-det]').forEach(op => {
+      op.classList.toggle('active', op.dataset.modalidadDet === estadoModal.modalidad);
+    });
+    actualizarConfigPorModalidadDet();
+
+    const checkAutoFixture = document.getElementById('torneo-auto-fixture-det');
+    if (checkAutoFixture) checkAutoFixture.checked = t.autoFixture === true;
+    actualizarAutoFixtureVisibilityDet();
+
+    document.querySelectorAll('[data-tipo-participacion-det]').forEach(op => {
+      op.classList.toggle('active', op.dataset.tipoParticipacionDet === estadoModal.tipoParticipacion);
+    });
+    actualizarHintTipoParticipacionDet();
+
+    actualizarSistemaClasificacionDet(t.deporte);
+
+    const sistemaGuardado = t.sistemaClasificacion || 'simple';
+    estadoModal.sistemaClasificacion = sistemaGuardado;
+
+    document.querySelectorAll('[data-sistema-clasificacion-det]').forEach(op => {
+      op.classList.toggle('active', op.dataset.sistemaClasificacionDet === sistemaGuardado);
+    });
+    actualizarHintSistemaDet();
+
+    const nivelGrid = document.getElementById('nivel-grid-torneo-det');
+    if (nivelGrid) {
+      nivelGrid.querySelectorAll('[data-nivel-det]').forEach(op => {
+        op.classList.toggle('active', op.dataset.nivelDet === estadoModal.nivel);
+      });
+    }
+
+    const checkLibre = document.getElementById('torneo-libre-inscripcion-det');
+    if (checkLibre) checkLibre.checked = t.libreInscripcion !== false;
+    actualizarLibreInscripcionDet();
+
+    document.getElementById('torneo-puntos-victoria-det').value = String(t.puntosVictoria ?? 3);
+    document.getElementById('torneo-puntos-empate-det').value = String(t.puntosEmpate ?? 1);
+    document.getElementById('torneo-puntos-derrota-det').value = String(t.puntosDerrota ?? 0);
+    document.getElementById('torneo-permite-empate-det').checked = t.permiteEmpate !== false;
+    document.getElementById('torneo-ida-vuelta-det').checked = t.idaYVuelta === true;
+    document.getElementById('torneo-equipos-clasifican-det').value = t.equiposClasifican ?? '';
+    document.getElementById('torneo-incluye-estadisticas-det').checked = !!t.incluyeEstadisticas;
+
+    abrirModal('modal-editar-torneo-detalle');
+  }
+
+  async function guardarEdicionTorneo() {
+    if (!torneo) return;
+
+    const nombre       = document.getElementById('torneo-nombre-det').value.trim();
+    const deporte      = document.getElementById('torneo-deporte-det').value;
+    const fechaInicio  = document.getElementById('torneo-fecha-inicio-det').value;
+    const fechaFin     = document.getElementById('torneo-fecha-fin-det').value;
+    const fechaLimite  = document.getElementById('torneo-fecha-limite-det').value;
+    const lugar        = document.getElementById('torneo-lugar-det').value.trim();
+    const cuposEquipos = Number(document.getElementById('torneo-equipos-det').value);
+    const esGratis     = document.getElementById('torneo-gratis-det').checked;
+    const precio       = esGratis ? 0 : Number(document.getElementById('torneo-precio-det').value);
+    const descripcion  = document.getElementById('torneo-descripcion-det').value.trim();
+
+    if (!nombre)      return toast('Ingresa un nombre', 'error');
+    if (!deporte)     return toast('Selecciona un deporte', 'error');
+    if (!fechaInicio) return toast('Selecciona fecha de inicio', 'error');
+    if (!lugar)       return toast('Ingresa un lugar', 'error');
+    if (cuposEquipos < 2) return toast('Mínimo 2 equipos', 'error');
+
+    const sistemaClasificacion = estadoModal.sistemaClasificacion || 'simple';
+    const puntosVictoria = Number(document.getElementById('torneo-puntos-victoria-det').value ?? 3);
+    const puntosEmpate   = Number(document.getElementById('torneo-puntos-empate-det').value ?? 1);
+    const puntosDerrota  = Number(document.getElementById('torneo-puntos-derrota-det').value ?? 0);
+    const permiteEmpate  = document.getElementById('torneo-permite-empate-det').checked;
+    const equiposClasificanRaw = document.getElementById('torneo-equipos-clasifican-det').value.trim();
+    const equiposClasifican = equiposClasificanRaw ? Number(equiposClasificanRaw) : null;
+    const incluyeEstadisticas = document.getElementById('torneo-incluye-estadisticas-det').checked;
+    const libreInscripcion = document.getElementById('torneo-libre-inscripcion-det').checked;
+    const idaYVuelta = document.getElementById('torneo-ida-vuelta-det').checked;
+    const autoFixture = (estadoModal.modalidad === 'eliminacion')
+      ? document.getElementById('torneo-auto-fixture-det').checked
+      : false;
+
+    const datos = {
+      nombre,
+      deporte,
+      fechaInicio: new Date(`${fechaInicio}T00:00:00`).toISOString(),
+      fechaFin: fechaFin ? new Date(`${fechaFin}T00:00:00`).toISOString() : null,
+      fechaLimiteInscripcion: fechaLimite ? new Date(`${fechaLimite}T23:59:59`).toISOString() : null,
+      lugar,
+      cuposEquipos,
+      precio,
+      descripcion: descripcion || null,
+      modalidad: estadoModal.modalidad,
+      nivel: estadoModal.nivel,
+      libreInscripcion,
+      tipoParticipacion: estadoModal.tipoParticipacion,
+      idaYVuelta,
+      autoFixture,
+      sistemaClasificacion,
+      puntosVictoria,
+      puntosEmpate,
+      puntosDerrota,
+      permiteEmpate,
+      equiposClasifican,
+      incluyeEstadisticas,
+    };
+
+    const btn = document.getElementById('btn-guardar-torneo-det');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      await editarTorneoAPI(torneo.id, datos);
+      toast('Torneo actualizado', 'success');
+      cerrarModal('modal-editar-torneo-detalle');
+
+      torneo = await obtenerTorneo(id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al editar:', err);
+      toast(err.message || 'No se pudo actualizar el torneo', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  }
+
+  /* =========================================================
      INIT
      ========================================================= */
   await render();
+
+  inicializarModalEditar();
+
+  const torneoAEditar = sessionStorage.getItem('torneoAEditar');
+  if (torneoAEditar) {
+    if (String(torneoAEditar) === String(id) && torneo && esOrganizador(torneo)) {
+      sessionStorage.removeItem('torneoAEditar');
+      setTimeout(() => abrirModalEditarTorneo(torneo), 300);
+    } else {
+      sessionStorage.removeItem('torneoAEditar');
+    }
+  }
 
   return null;
 }

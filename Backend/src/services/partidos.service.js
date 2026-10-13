@@ -69,14 +69,24 @@ function verificarOrganizador(partido, usuarioId) {
 }
 
 /* =========================================================
-   ⚡ HELPER: destinatarios de un partido
-   =========================================================
-   Devuelve un array de usuarioId únicos, incluyendo:
-   - Inscritos individuales (partido_inscripciones)
-   - Capitán + admins de equipos inscritos
-   - Postulantes individuales pendientes
-   - Capitán + admins de equipos postulantes pendientes
-   - Interesados (modo Organizar)
+   HELPER: destinatarios de un equipo (capitán + admins)
+   ========================================================= */
+async function obtenerUsuariosDeEquipo(client, equipoId) {
+  const { rows } = await client.query(
+    `SELECT g.capitan_id AS usuario_id
+     FROM grupos g WHERE g.id = $1
+     UNION
+     SELECT gm.usuario_id
+     FROM grupo_miembros gm
+     WHERE gm.grupo_id = $1 AND gm.rol = 'admin'`,
+    [equipoId]
+  );
+
+  return rows.map(r => r.usuario_id).filter(Boolean);
+}
+
+/* =========================================================
+   HELPER: destinatarios de un partido
    ========================================================= */
 async function obtenerDestinatariosPartido(client, partidoId) {
   const ids = new Set();
@@ -94,16 +104,8 @@ async function obtenerDestinatariosPartido(client, partidoId) {
     [partidoId]
   );
   for (const { equipo_id } of equiposInscritos) {
-    const { rows: us } = await client.query(
-      `SELECT g.capitan_id AS usuario_id
-       FROM grupos g WHERE g.id = $1
-       UNION
-       SELECT gm.usuario_id
-       FROM grupo_miembros gm
-       WHERE gm.grupo_id = $1 AND gm.rol = 'admin'`,
-      [equipo_id]
-    );
-    us.forEach(r => r.usuario_id && ids.add(r.usuario_id));
+    const us = await obtenerUsuariosDeEquipo(client, equipo_id);
+    us.forEach(u => ids.add(u));
   }
 
   // 3. Postulantes individuales pendientes
@@ -121,16 +123,8 @@ async function obtenerDestinatariosPartido(client, partidoId) {
     [partidoId]
   );
   for (const { equipo_id } of equiposPostulantes) {
-    const { rows: us } = await client.query(
-      `SELECT g.capitan_id AS usuario_id
-       FROM grupos g WHERE g.id = $1
-       UNION
-       SELECT gm.usuario_id
-       FROM grupo_miembros gm
-       WHERE gm.grupo_id = $1 AND gm.rol = 'admin'`,
-      [equipo_id]
-    );
-    us.forEach(r => r.usuario_id && ids.add(r.usuario_id));
+    const us = await obtenerUsuariosDeEquipo(client, equipo_id);
+    us.forEach(u => ids.add(u));
   }
 
   // 5. Interesados
@@ -482,6 +476,7 @@ export async function obtenerPartido(partidoId, usuarioId) {
     confirmacionPendiente: confirmacionPendiente,
   };
 }
+
 /* =========================================================
    CREAR PARTIDO
    ========================================================= */
@@ -571,13 +566,6 @@ export async function crearPartido(datos, usuarioId) {
 
 /* =========================================================
    EDITAR PARTIDO (solo organizador)
-   =========================================================
-   ⚡ Notifica a inscritos / postulantes / interesados SI cambian
-   campos críticos:
-   - lugar
-   - fecha
-   - precio
-   - cupos
    ========================================================= */
 export async function editarPartido(partidoId, cambios, usuarioId) {
   const client = await pool.connect();
@@ -609,7 +597,6 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
       }
     }
 
-    /* ---------- Detectar cambios críticos ---------- */
     const camposCriticos = ['lugar', 'fecha', 'precio', 'cupos'];
 
     let cambioCritico = false;
@@ -624,7 +611,6 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
       }
     }
 
-    /* ---------- Armar UPDATE ---------- */
     const permitidos = ['titulo', 'lugar', 'fecha', 'cupos', 'precio', 'descripcion'];
     const campos = [];
     const valores = [];
@@ -671,7 +657,6 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
       );
     }
 
-    /* ---------- Notificar si hubo cambios críticos ---------- */
     if (cambioCritico) {
       const destinatarios = await obtenerDestinatariosPartido(client, partidoId);
 
@@ -697,8 +682,6 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
 
 /* =========================================================
    ELIMINAR PARTIDO (solo organizador)
-   =========================================================
-   ⚡ Notifica a TODOS los participantes antes de borrar.
    ========================================================= */
 export async function eliminarPartido(partidoId, usuarioId) {
   const client = await pool.connect();
@@ -709,22 +692,19 @@ export async function eliminarPartido(partidoId, usuarioId) {
     const partido = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
-    /* ---------- Destinatarios ANTES de borrar ---------- */
     const destinatarios = await obtenerDestinatariosPartido(client, partidoId);
 
-    /* ---------- Borrar ---------- */
     await client.query(
       `DELETE FROM partidos WHERE id = $1`,
       [partidoId]
     );
 
-    /* ---------- Notificar ---------- */
     if (destinatarios.length > 0) {
       await crearNotificacionMultiple(
         destinatarios,
         'cancelacion',
         `El partido "${partido.titulo}" fue cancelado por el organizador.`,
-        null // No link: el partido ya no existe
+        null
       );
     }
 
@@ -740,8 +720,7 @@ export async function eliminarPartido(partidoId, usuarioId) {
 
 /* =========================================================
    INSCRIBIRSE (partido de jugador)
-   =========================================================
-   ⚡ BLOQUEADO si el partido ya fue confirmado (doble confirmación).
+   ⚡ Notifica al organizador.
    ========================================================= */
 export async function inscribirse(partidoId, usuarioId, posicion = null) {
   const client = await pool.connect();
@@ -751,9 +730,20 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
 
-    // ⚡ Si ya está confirmado por ambas partes → CERRADO
-    if (partido.estado_partido === 'confirmado') {
-      const err = new Error('Este partido ya fue confirmado y no acepta más participantes');
+    if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
+      const err = new Error('Este partido ya no acepta más participantes');
+      err.status = 400;
+      throw err;
+    }
+
+    const { rows: confirmAceptada } = await client.query(
+      `SELECT 1 FROM partido_confirmaciones
+       WHERE partido_id = $1 AND estado = 'aceptada'
+       LIMIT 1`,
+      [partidoId]
+    );
+    if (confirmAceptada.length > 0) {
+      const err = new Error('Este partido ya fue confirmado con otro participante');
       err.status = 400;
       throw err;
     }
@@ -813,6 +803,21 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
       );
     }
 
+    if (String(partido.organizador_id) !== String(usuarioId)) {
+      const { rows: datos } = await client.query(
+        `SELECT nombre FROM usuarios WHERE id = $1`,
+        [usuarioId]
+      );
+      const nombreUsuario = datos[0]?.nombre || 'Alguien';
+
+      await crearNotificacion(
+        partido.organizador_id,
+        'inscripcion',
+        `${nombreUsuario} se inscribió en tu partido "${partido.titulo}".`,
+        `#/partido/${partidoId}`
+      );
+    }
+
     await client.query('COMMIT');
     return obtenerPartido(partidoId, usuarioId);
   } catch (err) {
@@ -825,9 +830,9 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
 
 /* =========================================================
    SALIR DE UN PARTIDO
-   =========================================================
    ⚡ Si era el único inscrito de un partido confirmado,
-   el partido vuelve a modo Organizar y se borran fecha/lugar/precio.
+   el partido vuelve a modo Organizar.
+   ⚡ Si venía de doble confirmación, el mensaje lo refleja.
    ========================================================= */
 export async function salirDelPartido(partidoId, usuarioId) {
   const client = await pool.connect();
@@ -876,17 +881,34 @@ export async function salirDelPartido(partidoId, usuarioId) {
         [partidoId]
       );
 
+      const { rows: eraConfirmado } = await client.query(
+        `SELECT 1 FROM partido_confirmaciones
+         WHERE partido_id = $1 AND interesado_id = $2 AND estado = 'aceptada'
+         LIMIT 1`,
+        [partidoId, usuarioId]
+      );
+
       await client.query(
         `UPDATE partido_confirmaciones
          SET estado = 'cancelada', resuelta_en = NOW()
-         WHERE partido_id = $1 AND estado = 'pendiente'`,
+         WHERE partido_id = $1 AND estado IN ('pendiente', 'aceptada')`,
         [partidoId]
       );
+
+      const { rows: datosUsuario } = await client.query(
+        `SELECT nombre FROM usuarios WHERE id = $1`,
+        [usuarioId]
+      );
+      const nombreUsuario = datosUsuario[0]?.nombre || 'El jugador';
+
+      const mensaje = eraConfirmado.length > 0
+        ? `${nombreUsuario} canceló la confirmación del partido "${partido.titulo}". El partido vuelve a modo Organizar.`
+        : `El partido "${partido.titulo}" volvió a modo Organizar porque el inscrito se desinscribió.`;
 
       await crearNotificacion(
         partido.organizador_id,
         'partido_revertido',
-        `El partido "${partido.titulo}" volvió a modo Organizar porque el inscrito se desinscribió.`,
+        mensaje,
         `#/partido/${partidoId}`
       );
 
@@ -912,8 +934,10 @@ export async function salirDelPartido(partidoId, usuarioId) {
     client.release();
   }
 }
+
 /* =========================================================
    POSTULARSE (partido con aprobación)
+   ⚡ Notifica al organizador.
    ========================================================= */
 export async function postularse(partidoId, usuarioId, posicion = null) {
   const client = await pool.connect();
@@ -923,8 +947,20 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
 
-    if (partido.estado_partido === 'confirmado') {
-      const err = new Error('Este partido ya fue confirmado y no acepta más postulaciones');
+    if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
+      const err = new Error('Este partido ya no acepta más postulaciones');
+      err.status = 400;
+      throw err;
+    }
+
+    const { rows: confirmAceptada } = await client.query(
+      `SELECT 1 FROM partido_confirmaciones
+       WHERE partido_id = $1 AND estado = 'aceptada'
+       LIMIT 1`,
+      [partidoId]
+    );
+    if (confirmAceptada.length > 0) {
+      const err = new Error('Este partido ya fue confirmado con otro participante');
       err.status = 400;
       throw err;
     }
@@ -965,6 +1001,21 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
       [partidoId, usuarioId, posicion || null]
     );
 
+    if (String(partido.organizador_id) !== String(usuarioId)) {
+      const { rows: datos } = await client.query(
+        `SELECT nombre FROM usuarios WHERE id = $1`,
+        [usuarioId]
+      );
+      const nombreUsuario = datos[0]?.nombre || 'Alguien';
+
+      await crearNotificacion(
+        partido.organizador_id,
+        'postulacion',
+        `${nombreUsuario} se postuló a tu partido "${partido.titulo}".`,
+        `#/partido/${partidoId}`
+      );
+    }
+
     await client.query('COMMIT');
     return obtenerPartido(partidoId, usuarioId);
   } catch (err) {
@@ -996,6 +1047,7 @@ export async function cancelarPostulacion(partidoId, usuarioId) {
 
 /* =========================================================
    APROBAR / RECHAZAR POSTULANTE (organizador)
+   ⚡ Notifica al postulante.
    ========================================================= */
 export async function gestionarPostulante(partidoId, usuarioId, postulanteId, accion) {
   const client = await pool.connect();
@@ -1024,6 +1076,13 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
          SET estado = 'rechazado', resuelta_en = NOW()
          WHERE partido_id = $1 AND usuario_id = $2`,
         [partidoId, postulanteId]
+      );
+
+      await crearNotificacion(
+        postulanteId,
+        'rechazado',
+        `Tu postulación al partido "${partido.titulo}" fue rechazada.`,
+        `#/partido/${partidoId}`
       );
 
       await client.query('COMMIT');
@@ -1069,6 +1128,13 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
       );
     }
 
+    await crearNotificacion(
+      postulanteId,
+      'aprobado',
+      `¡Te aprobaron en el partido "${partido.titulo}"! Ya estás inscrito.`,
+      `#/partido/${partidoId}`
+    );
+
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Postulación aprobada' };
   } catch (err) {
@@ -1081,6 +1147,7 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
 
 /* =========================================================
    POSTULAR EQUIPO (a partido de equipos)
+   ⚡ Notifica al organizador.
    ========================================================= */
 export async function postularEquipo(partidoId, usuarioId, equipoId) {
   const client = await pool.connect();
@@ -1090,8 +1157,8 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
 
-    if (partido.estado_partido === 'confirmado') {
-      const err = new Error('Este partido ya fue confirmado y no acepta más equipos');
+    if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
+      const err = new Error('Este partido ya no acepta más equipos');
       err.status = 400;
       throw err;
     }
@@ -1109,7 +1176,7 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
     }
 
     const { rows: equipo } = await client.query(
-      `SELECT id FROM grupos
+      `SELECT id, nombre FROM grupos
        WHERE id = $1 AND tipo = 'equipo'
          AND (capitan_id = $2 OR EXISTS (
            SELECT 1 FROM grupo_miembros
@@ -1143,6 +1210,14 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
       `INSERT INTO partido_equipos_postulantes (partido_id, equipo_id)
        VALUES ($1, $2)`,
       [partidoId, equipoId]
+    );
+
+    const nombreEquipo = equipo[0].nombre || 'Un equipo';
+    await crearNotificacion(
+      partido.organizador_id,
+      'postulacion',
+      `${nombreEquipo} se postuló a tu partido "${partido.titulo}".`,
+      `#/partido/${partidoId}`
     );
 
     await client.query('COMMIT');
@@ -1218,6 +1293,7 @@ export async function cancelarPostulacionEquipo(partidoId, usuarioId, equipoId) 
 
 /* =========================================================
    APROBAR / RECHAZAR EQUIPO POSTULANTE (organizador)
+   ⚡ Notifica a capitán + admins del equipo.
    ========================================================= */
 export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, accion) {
   const client = await pool.connect();
@@ -1240,6 +1316,12 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
       throw err;
     }
 
+    const { rows: datosEquipo } = await client.query(
+      `SELECT nombre FROM grupos WHERE id = $1`,
+      [equipoId]
+    );
+    const nombreEquipo = datosEquipo[0]?.nombre || 'Tu equipo';
+
     if (accion === 'rechazar') {
       await client.query(
         `UPDATE partido_equipos_postulantes
@@ -1247,6 +1329,16 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
          WHERE partido_id = $1 AND equipo_id = $2`,
         [partidoId, equipoId]
       );
+
+      const usuariosDestino = await obtenerUsuariosDeEquipo(client, equipoId);
+      if (usuariosDestino.length > 0) {
+        await crearNotificacionMultiple(
+          usuariosDestino,
+          'rechazado',
+          `La postulación de "${nombreEquipo}" al partido "${partido.titulo}" fue rechazada.`,
+          `#/partido/${partidoId}`
+        );
+      }
 
       await client.query('COMMIT');
       return { ok: true, mensaje: 'Equipo rechazado' };
@@ -1285,6 +1377,16 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
       );
     }
 
+    const usuariosDestino = await obtenerUsuariosDeEquipo(client, equipoId);
+    if (usuariosDestino.length > 0) {
+      await crearNotificacionMultiple(
+        usuariosDestino,
+        'aprobado',
+        `¡"${nombreEquipo}" fue aprobado en el partido "${partido.titulo}"!`,
+        `#/partido/${partidoId}`
+      );
+    }
+
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Equipo aprobado' };
   } catch (err) {
@@ -1294,6 +1396,7 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
     client.release();
   }
 }
+
 /* =========================================================
    MODO "ORGANIZAR PARTIDO" — Interesados
    ========================================================= */
@@ -1335,6 +1438,19 @@ export async function interesarse(partidoId, usuarioId, mensaje = null) {
       `INSERT INTO partido_interesados (partido_id, usuario_id, mensaje)
        VALUES ($1, $2, $3)`,
       [partidoId, usuarioId, mensaje || null]
+    );
+
+    const { rows: datosInteresado } = await client.query(
+      `SELECT nombre FROM usuarios WHERE id = $1`,
+      [usuarioId]
+    );
+    const nombreInteresado = datosInteresado[0]?.nombre || 'Un usuario';
+
+    await crearNotificacion(
+      partido.organizador_id,
+      'nuevo_interesado',
+      `${nombreInteresado} está interesado en tu partido "${partido.titulo}".`,
+      `#/partido/${partidoId}`
     );
 
     await client.query('COMMIT');
@@ -1572,7 +1688,6 @@ export async function aprobarConfirmacion(partidoId, usuarioId, propuestaId) {
       );
     }
 
-    // Notificar a los demás interesados que el partido se confirmó con otro
     const { rows: otrosInteresados } = await client.query(
       `SELECT usuario_id FROM partido_interesados
        WHERE partido_id = $1 AND usuario_id != $2`,
@@ -1683,6 +1798,7 @@ export async function rechazarConfirmacion(partidoId, usuarioId, propuestaId) {
 
 /* =========================================================
    CANCELAR CONFIRMACIÓN (el organizador cancela)
+   ⚡ Notifica al interesado.
    ========================================================= */
 export async function cancelarConfirmacion(partidoId, usuarioId, propuestaId) {
   const client = await pool.connect();
@@ -1720,6 +1836,13 @@ export async function cancelarConfirmacion(partidoId, usuarioId, propuestaId) {
          AND tipo = 'confirmacion_partido'
          AND link = $2`,
       [propuesta.interesado_id, `#/partido/${partidoId}`]
+    );
+
+    await crearNotificacion(
+      propuesta.interesado_id,
+      'confirmacion_cancelada',
+      `El organizador canceló la propuesta de confirmación del partido "${partido.titulo}".`,
+      `#/partido/${partidoId}`
     );
 
     await client.query('COMMIT');
@@ -1789,10 +1912,230 @@ export async function obtenerConfirmacionPendiente(partidoId, usuarioId) {
 }
 
 /* =========================================================
+   ⚡ ECHAR PARTICIPANTES (solo organizador)
+   ========================================================= */
+
+/* ---------- DELETE /api/partidos/:id/inscritos/:usuarioId ---------- */
+export async function echarInscrito(partidoId, usuarioId, inscritoId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const partido = await obtenerPartidoOFallar(client, partidoId);
+    verificarOrganizador(partido, usuarioId);
+
+    if (String(partido.organizador_id) === String(inscritoId)) {
+      const err = new Error('No podés echarte a vos mismo del partido');
+      err.status = 400;
+      throw err;
+    }
+
+    const { rowCount } = await client.query(
+      `DELETE FROM partido_inscripciones
+       WHERE partido_id = $1 AND usuario_id = $2`,
+      [partidoId, inscritoId]
+    );
+
+    if (rowCount === 0) {
+      const err = new Error('Ese jugador no está inscrito en este partido');
+      err.status = 404;
+      throw err;
+    }
+
+    const { rows: conteo } = await client.query(
+      `SELECT COUNT(*)::int AS total FROM partido_inscripciones WHERE partido_id = $1`,
+      [partidoId]
+    );
+
+    const yaNoQuedan = conteo[0].total === 0;
+    let reversiono = false;
+
+    if (yaNoQuedan && partido.estado_partido === 'confirmado') {
+      await client.query(
+        `UPDATE partidos
+         SET estado_partido = 'buscando_jugadores',
+             estado = 'abierto',
+             lugar = NULL,
+             fecha = NULL,
+             precio = 0,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [partidoId]
+      );
+
+      await client.query(
+        `UPDATE partido_confirmaciones
+         SET estado = 'cancelada', resuelta_en = NOW()
+         WHERE partido_id = $1 AND estado IN ('pendiente', 'aceptada')`,
+        [partidoId]
+      );
+
+      reversiono = true;
+    } else if (conteo[0].total < partido.cupos && partido.estado === 'lleno') {
+      await client.query(
+        `UPDATE partidos SET estado = 'abierto' WHERE id = $1`,
+        [partidoId]
+      );
+    }
+
+    await crearNotificacion(
+      inscritoId,
+      'expulsado',
+      `Fuiste retirado del partido "${partido.titulo}" por el organizador.`,
+      `#/partido/${partidoId}`
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      ok: true,
+      mensaje: reversiono
+        ? 'Jugador retirado. El partido volvió a modo Organizar.'
+        : 'Jugador retirado del partido',
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* ---------- DELETE /api/partidos/:id/interesados/:usuarioId ---------- */
+export async function echarInteresado(partidoId, usuarioId, interesadoId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const partido = await obtenerPartidoOFallar(client, partidoId);
+    verificarOrganizador(partido, usuarioId);
+
+    const { rowCount } = await client.query(
+      `DELETE FROM partido_interesados
+       WHERE partido_id = $1 AND usuario_id = $2`,
+      [partidoId, interesadoId]
+    );
+
+    if (rowCount === 0) {
+      const err = new Error('Ese usuario no está interesado en este partido');
+      err.status = 404;
+      throw err;
+    }
+
+    const { rows: propuestas } = await client.query(
+      `SELECT id FROM partido_confirmaciones
+       WHERE partido_id = $1 AND interesado_id = $2 AND estado = 'pendiente'`,
+      [partidoId, interesadoId]
+    );
+
+    if (propuestas.length > 0) {
+      await client.query(
+        `UPDATE partido_confirmaciones
+         SET estado = 'cancelada', resuelta_en = NOW()
+         WHERE partido_id = $1 AND interesado_id = $2 AND estado = 'pendiente'`,
+        [partidoId, interesadoId]
+      );
+
+      await client.query(
+        `DELETE FROM notificaciones
+         WHERE usuario_id = $1
+           AND tipo = 'confirmacion_partido'
+           AND link = $2`,
+        [interesadoId, `#/partido/${partidoId}`]
+      );
+
+      await crearNotificacion(
+        interesadoId,
+        'confirmacion_cancelada',
+        `El organizador canceló la propuesta de confirmación del partido "${partido.titulo}".`,
+        `#/partido/${partidoId}`
+      );
+    }
+
+    await crearNotificacion(
+      interesadoId,
+      'expulsado',
+      `Fuiste retirado de la lista de interesados del partido "${partido.titulo}".`,
+      `#/partido/${partidoId}`
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      ok: true,
+      mensaje: 'Interesado retirado del partido',
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* ---------- DELETE /api/partidos/:id/equipos-inscritos/:equipoId ---------- */
+export async function echarEquipoInscrito(partidoId, usuarioId, equipoId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const partido = await obtenerPartidoOFallar(client, partidoId);
+    verificarOrganizador(partido, usuarioId);
+
+    const { rowCount } = await client.query(
+      `DELETE FROM partido_equipos_inscritos
+       WHERE partido_id = $1 AND equipo_id = $2`,
+      [partidoId, equipoId]
+    );
+
+    if (rowCount === 0) {
+      const err = new Error('Ese equipo no está inscrito en este partido');
+      err.status = 404;
+      throw err;
+    }
+
+    const { rows: conteo } = await client.query(
+      `SELECT COUNT(*)::int AS total FROM partido_equipos_inscritos WHERE partido_id = $1`,
+      [partidoId]
+    );
+    if (conteo[0].total < partido.cupos && partido.estado === 'lleno') {
+      await client.query(
+        `UPDATE partidos SET estado = 'abierto' WHERE id = $1`,
+        [partidoId]
+      );
+    }
+
+    const { rows: datosEquipo } = await client.query(
+      `SELECT nombre FROM grupos WHERE id = $1`,
+      [equipoId]
+    );
+    const nombreEquipo = datosEquipo[0]?.nombre || 'Tu equipo';
+
+    const usuariosDestino = await obtenerUsuariosDeEquipo(client, equipoId);
+    if (usuariosDestino.length > 0) {
+      await crearNotificacionMultiple(
+        usuariosDestino,
+        'expulsado',
+        `"${nombreEquipo}" fue retirado del partido "${partido.titulo}" por el organizador.`,
+        `#/partido/${partidoId}`
+      );
+    }
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: 'Equipo retirado del partido' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* =========================================================
    HISTORIAL DE PARTIDOS (para el perfil)
-   =========================================================
-   Con paginación. Solo devuelve partidos con estado_partido='confirmado'
-   y estado='finalizado'.
    ========================================================= */
 export async function obtenerHistorialPartidos(usuarioId, filtros = {}) {
   const { deporte, desde, hasta, tipo, page = 1, limit = 20 } = filtros;
@@ -1843,7 +2186,6 @@ export async function obtenerHistorialPartidos(usuarioId, filtros = {}) {
 
   const where = `WHERE ${condiciones.join(' AND ')}`;
 
-  // Contar total
   const { rows: countRows } = await pool.query(
     `SELECT COUNT(*)::int AS total FROM partidos p ${where}`,
     valores

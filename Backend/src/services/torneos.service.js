@@ -1777,6 +1777,15 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
 /* =========================================================
    EXPULSAR
    ========================================================= */
+/* =========================================================
+   EXPULSAR PARTICIPANTE (organizador)
+   =========================================================
+   - Bloquea si el torneo ya arrancó (estado !== 'inscripcion'),
+     o si el fixture está bloqueado, o si hay partidos generados.
+   - Notifica a capitán + admins si es equipo. Al usuario directo
+     si es torneo individual.
+   - Borra también de lista de espera si había algo pendiente.
+   ========================================================= */
 export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
   const client = await pool.connect();
 
@@ -1789,8 +1798,45 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
 
-    const usuarioDestino = await obtenerUsuarioDestino(client, equipoId, esIndividual);
+    /* ---------- Bloqueos ---------- */
+    if (torneo.estado !== 'inscripcion') {
+      const err = new Error('No podés expulsar participantes con el torneo ya iniciado o finalizado');
+      err.status = 400;
+      throw err;
+    }
 
+    if (torneo.fixture_bloqueado === true) {
+      const err = new Error('No podés expulsar participantes con el fixture confirmado');
+      err.status = 400;
+      throw err;
+    }
+
+    const { rows: partidosConEquipo } = await client.query(
+      `SELECT 1 FROM torneo_partidos
+       WHERE torneo_id = $1
+         AND (equipo_local_id = $2 OR equipo_visitante_id = $2)
+       LIMIT 1`,
+      [torneoId, equipoId]
+    );
+
+    if (partidosConEquipo.length > 0) {
+      const err = new Error('No podés expulsar a un participante que ya tiene partidos generados');
+      err.status = 400;
+      throw err;
+    }
+
+    /* ---------- Nombre para la notificación ---------- */
+    const nombreMostrar = await obtenerNombreMostrar(client, equipoId, esIndividual);
+
+    /* ---------- Usuarios a notificar ---------- */
+    let usuariosDestino = [];
+    if (esIndividual) {
+      usuariosDestino = [equipoId];
+    } else {
+      usuariosDestino = await obtenerUsuariosDeEquipo(client, equipoId);
+    }
+
+    /* ---------- Borrar de torneo_equipos ---------- */
     const { rowCount } = await client.query(
       `DELETE FROM torneo_equipos WHERE torneo_id = $1 AND equipo_id = $2`,
       [torneoId, equipoId]
@@ -1802,15 +1848,28 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       throw err;
     }
 
+    /* ---------- Limpiar tablas relacionadas ---------- */
     await client.query(
       `DELETE FROM torneo_tabla_posiciones WHERE torneo_id = $1 AND equipo_id = $2`,
       [torneoId, equipoId]
     );
 
+    await client.query(
+      `DELETE FROM torneo_lista_espera WHERE torneo_id = $1 AND equipo_id = $2`,
+      [torneoId, equipoId]
+    );
+
+    await client.query(
+      `DELETE FROM torneo_invitaciones WHERE torneo_id = $1 AND equipo_id = $2`,
+      [torneoId, equipoId]
+    );
+
+    /* ---------- Si el torneo estaba lleno, vuelve a inscripción ---------- */
     const { rows: conteo } = await client.query(
       `SELECT COUNT(*)::int AS total FROM torneo_equipos WHERE torneo_id = $1`,
       [torneoId]
     );
+
     if (conteo[0].total < torneo.cupos_equipos && torneo.estado === 'en_curso') {
       await client.query(
         `UPDATE torneos SET estado = 'inscripcion' WHERE id = $1`,
@@ -1820,12 +1879,17 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
 
     await client.query('COMMIT');
 
-    if (usuarioDestino) {
+    /* ---------- Notificar ---------- */
+    if (usuariosDestino.length > 0) {
       try {
-        await crearNotificacion(
-          usuarioDestino,
+        const mensaje = esIndividual
+          ? `Fuiste retirado del torneo "${torneo.nombre}" por el organizador.`
+          : `"${nombreMostrar}" fue retirado del torneo "${torneo.nombre}" por el organizador.`;
+
+        await crearNotificacionMultiple(
+          usuariosDestino,
           'expulsado',
-          `Fuiste expulsado de "${torneo.nombre}"`,
+          mensaje,
           `#/torneo/${torneoId}`
         );
       } catch (e) {
@@ -1841,7 +1905,6 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     client.release();
   }
 }
-
 /* =========================================================
    INVITAR EQUIPO
    ========================================================= */

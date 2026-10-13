@@ -18,8 +18,38 @@ import notificacionesRoutes from './routes/notificaciones.routes.js';
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+// ⚡ Helmet con crossOriginResourcePolicy deshabilitado para permitir
+// que el navegador cargue recursos desde otro origen (frontend en 5500).
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// ⚡ CORS: acepta tanto localhost como 127.0.0.1 (y el puerto 5500).
+const ORIGENES_PERMITIDOS = [
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Sin origin (Postman, curl, server-to-server) → permitir
+    if (!origin) return callback(null, true);
+
+    if (ORIGENES_PERMITIDOS.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn('[CORS] Origen bloqueado:', origin);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+// ⚡ Responder al preflight OPTIONS en el router principal
+app.options('*', cors());
 app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

@@ -1,5 +1,11 @@
 /* =========================================================
-   layout.css — Shell de la app
+   layout.css — Shell de la app (rediseño 2026)
+   =========================================================
+   Cambios:
+   - Header con blur más fuerte, altura 72px
+   - Sidebar con tarjeta "Tu semana" arriba
+   - Sidebar-nav activo con borde izquierdo naranja y fondo suave
+   - Main con más aire
    ========================================================= */
 
 .app-shell {
@@ -10,23 +16,20 @@
     "header header"
     "sidebar main";
   min-height: 100vh;
-  /* Fondo con cancha SVG */
-  background-color: var(--color-bg);
-  background-size: 900px auto;
-  background-position: center top;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background: var(--color-bg);
 }
 
-/* ---------- HEADER ---------- */
+/* =========================================================
+   HEADER
+   ========================================================= */
 .app-header {
   grid-area: header;
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  z-index: var(--z-header);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -38,25 +41,36 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 800;
+  font-weight: var(--fw-black);
   font-size: var(--fs-lg);
-  color: var(--color-mint-dark);
-  letter-spacing: -0.02em;
+  color: var(--color-navy);
+  letter-spacing: var(--tracking-tight);
   flex-shrink: 0;
+  transition: transform var(--t-fast);
 }
 
+.app-header__logo:hover {
+  transform: scale(1.02);
+}
+
+.app-header__logo img {
+  height: 36px;
+  width: auto;
+}
+
+/* Buscador central */
 .app-header__search {
   flex: 1;
-  max-width: 460px;
+  max-width: 520px;
   margin: 0 auto;
   position: relative;
 }
 
 .app-header__search input {
   width: 100%;
-  padding: 11px 18px 11px 42px;
-  background: var(--color-mint-lighter);
-  border: 1px solid transparent;
+  padding: 11px 48px 11px 44px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   font-size: var(--fs-sm);
   color: var(--color-text);
@@ -69,19 +83,41 @@
 
 .app-header__search input:focus {
   outline: none;
-  background: var(--color-surface);
-  border-color: var(--color-mint);
-  box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.12);
 }
 
 .app-header__search::before {
-  content: "🔍";
+  content: "";
   position: absolute;
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
-  opacity: 0.5;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A8A39A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Atajo ⌘K opcional */
+.app-header__search::after {
+  content: "⌘K";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-soft);
+  background: var(--color-surface-2);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+  pointer-events: none;
+  letter-spacing: 0.5px;
 }
 
 .app-header__actions {
@@ -94,8 +130,8 @@
 
 .app-header__icon-btn {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border-radius: var(--radius-full);
@@ -105,59 +141,142 @@
 }
 
 .app-header__icon-btn:hover {
-  background: var(--color-mint-light);
-  color: var(--color-mint-dark);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
 }
 
 .app-header__icon-btn .badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: var(--color-primary);
+  top: 2px;
+  right: 2px;
+  background: var(--grad-primary);
   color: white;
   font-size: 10px;
-  font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  font-weight: var(--fw-bold);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: var(--radius-full);
   display: grid;
   place-items: center;
   border: 2px solid var(--color-surface);
+  box-shadow: var(--shadow-glow);
 }
 
 .app-header__avatar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   object-fit: cover;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border-color var(--t-fast);
+  transition: border-color var(--t-fast), transform var(--t-fast);
 }
 
 .app-header__avatar:hover {
-  border-color: var(--color-mint);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
 }
 
-/* ---------- SIDEBAR ---------- */
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 .app-sidebar {
   grid-area: sidebar;
-  background: rgba(255, 255, 255, 0.60);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: var(--space-5) var(--space-3);
   position: sticky;
   top: var(--header-h);
   height: calc(100vh - var(--header-h));
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
+/* Card "Tu semana" (opcional, si querés agregarla) */
+.sidebar-card {
+  background: var(--grad-navy);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-card::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 107, 74, 0.2);
+  border-radius: 50%;
+  filter: blur(40px);
+}
+
+.sidebar-card__label {
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: var(--space-2);
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-card__title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-black);
+  line-height: 1.2;
+  margin-bottom: var(--space-3);
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-card__progress {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-card__progress-fill {
+  height: 100%;
+  background: var(--grad-primary);
+  border-radius: var(--radius-full);
+}
+
+.sidebar-card__hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: var(--space-2);
+  position: relative;
+  z-index: 1;
+}
+
+/* Label "MENÚ" */
+.sidebar-label {
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-soft);
+  padding: 0 var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Nav */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .sidebar-nav__item {
@@ -166,21 +285,44 @@
   gap: var(--space-3);
   padding: 11px 14px;
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
   transition: all var(--t-fast);
+  position: relative;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-nav__item img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: 0.7;
+  transition: opacity var(--t-fast), filter var(--t-fast);
 }
 
 .sidebar-nav__item:hover {
-  background: var(--color-mint-lighter);
-  color: var(--color-mint-dark);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  transform: translateX(2px);
+}
+
+.sidebar-nav__item:hover img {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(60%) saturate(1500%) hue-rotate(340deg);
 }
 
 .sidebar-nav__item.active {
-  background: var(--color-mint-light);
-  color: var(--color-mint-dark);
-  font-weight: 600;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: var(--fw-semibold);
+  border-left-color: var(--color-primary);
+  padding-left: 11px;
+}
+
+.sidebar-nav__item.active img {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(60%) saturate(1500%) hue-rotate(340deg);
 }
 
 .sidebar-nav__icon {
@@ -189,31 +331,75 @@
   text-align: center;
 }
 
+/* Badge de "Mensajes 3" en el sidebar */
+.sidebar-nav__item .badge {
+  margin-left: auto;
+  background: var(--color-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+}
+
 .sidebar-divider {
   height: 1px;
   background: var(--color-border);
-  margin: var(--space-4) 0;
+  margin: var(--space-3) 0;
 }
 
 .sidebar-cta {
-  background: var(--color-mint-light);
+  background: var(--grad-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-cta::after {
+  content: "";
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
 }
 
 .sidebar-cta p {
   font-size: var(--fs-xs);
-  color: var(--color-mint-dark);
   margin-bottom: var(--space-3);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   line-height: 1.4;
+  position: relative;
+  z-index: 1;
 }
 
-/* ---------- MAIN ---------- */
+.sidebar-cta .btn {
+  background: white;
+  color: var(--color-primary-dark);
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-cta .btn:hover {
+  background: var(--color-primary-light);
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
 .app-main {
   grid-area: main;
-  padding: var(--space-5);
+  padding: var(--space-6) var(--space-5);
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -226,13 +412,40 @@
 
 .page-title {
   font-size: var(--fs-2xl);
-  font-weight: 700;
+  font-weight: var(--fw-black);
   color: var(--color-text);
   margin-bottom: var(--space-5);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-tight);
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* Subtítulo arriba del título (tipo "MIÉRCOLES, 18 DE JUNIO") */
+.page-eyebrow {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  margin-bottom: var(--space-2);
+}
+
+.page-subtitle {
+  font-size: var(--fs-md);
+  color: var(--color-text-muted);
+  margin-top: calc(var(--space-1) * -1);
+  margin-bottom: var(--space-5);
+  line-height: var(--lh-normal);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-w: 200px;
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -240,6 +453,203 @@
       "header"
       "main";
   }
-  .app-sidebar { display: none; }
-  .app-header__search { display: none; }
+
+  .app-sidebar {
+    display: none;
+  }
+
+  .app-header__search {
+    max-width: none;
+  }
+
+  .app-header__search::after {
+    display: none;
+  }
+
+  .app-main {
+    padding: var(--space-4);
+  }
+
+  .page-title {
+    font-size: var(--fs-xl);
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 0 var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .app-header__logo {
+    font-size: var(--fs-base);
+  }
+
+  .app-header__logo img {
+    height: 30px;
+  }
+
+  .app-header__search {
+    display: none;
+  }
+
+  .app-header__icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+/* =========================================================
+   FASE 1.5 — LOGO SVG + ÍCONOS SVG
+   ========================================================= */
+
+/* Logo del header */
+.app-header__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-mark {
+  width: 40px;
+  height: 40px;
+  background: var(--grad-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: var(--shadow-glow);
+  transition: transform var(--t-bounce);
+}
+
+.app-header__logo:hover .logo-mark {
+  transform: scale(1.05) rotate(-3deg);
+}
+
+.logo-mark span {
+  display: block;
+  width: 3px;
+  background: white;
+  border-radius: 2px;
+}
+
+.logo-mark span:nth-child(1) { height: 14px; }
+.logo-mark span:nth-child(2) { height: 20px; }
+.logo-mark span:nth-child(3) { height: 16px; }
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-navy);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.logo-text strong {
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+/* Íconos SVG del header */
+.app-header__icon-btn svg {
+  stroke: currentColor;
+  transition: stroke var(--t-fast);
+}
+
+.app-header__icon-btn:hover svg {
+  stroke: var(--color-primary-dark);
+}
+
+/* Chevron del menú usuario */
+.user-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border-radius: var(--radius-full);
+  transition: background var(--t-fast);
+}
+
+.user-menu__trigger:hover {
+  background: var(--color-surface-2);
+}
+
+.user-menu__chevron {
+  stroke: var(--color-text-muted);
+  transition: transform var(--t-fast);
+}
+
+.user-menu.open .user-menu__chevron {
+  transform: rotate(180deg);
+}
+
+/* Íconos del menú de usuario */
+.user-menu__icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.user-menu__icon svg {
+  stroke: currentColor;
+}
+
+/* =========================================================
+   SIDEBAR — ÍCONOS SVG Y LOGOUT SUTIL
+   ========================================================= */
+
+/* Íconos del sidebar */
+.sidebar-nav__item svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  flex-shrink: 0;
+  transition: stroke var(--t-fast), transform var(--t-fast);
+}
+
+.sidebar-nav__item:hover svg {
+  stroke: var(--color-primary-dark);
+  transform: scale(1.05);
+}
+
+.sidebar-nav__item.active svg {
+  stroke: var(--color-primary);
+}
+
+/* Botón logout sutil */
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-top: auto;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  width: 100%;
+  text-align: left;
+  margin-top: var(--space-4);
+}
+
+.sidebar-logout:hover {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.sidebar-logout svg {
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* Separador de nav (por si no usás la card de "Tu semana") */
+.app-sidebar {
+  display: flex;
+  flex-direction: column;
 }

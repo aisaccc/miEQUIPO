@@ -1,40 +1,76 @@
-<h1 class="page-title">Torneos</h1>
+<!-- ================= HERO DE PÁGINA ================= -->
+<div class="page-hero">
+  <div class="page-eyebrow" id="torneos-eyebrow">Cargando...</div>
+  <div class="page-hero__row">
+    <div>
+      <h1 class="page-title page-title--xl">Torneos</h1>
+      <p class="page-subtitle">Explora todos los torneos</p>
+    </div>
+    <button class="btn btn--primary" id="btn-crear-torneo-hero">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Crear torneo
+    </button>
+  </div>
+</div>
 
 <!-- ================= SUB-PESTAÑAS ================= -->
 <div class="subtabs mb-4">
-  <button class="subtab subtab--active" data-tab-torneos="disponibles">🔍 Disponibles</button>
+  <button class="subtab subtab--active" data-tab-torneos="disponibles">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+    Disponibles
+  </button>
   <button class="subtab" data-tab-torneos="creados">
-    👑 Mis creados <span class="subtab__count" id="count-torneos-creados">0</span>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+      <path d="M4 22h16"/>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+    </svg>
+    Mis creados <span class="subtab__count" id="count-torneos-creados">0</span>
   </button>
   <button class="subtab" data-tab-torneos="inscritos">
-    ✅ Inscritos <span class="subtab__count" id="count-torneos-inscritos">0</span>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    Inscritos <span class="subtab__count" id="count-torneos-inscritos">0</span>
   </button>
 </div>
 
 <!-- ================= PANEL: DISPONIBLES ================= -->
 <div class="subpanel subpanel--active" id="panel-torneos-disponibles">
-  <div class="toolbar mb-4">
+  <div class="toolbar mb-4" style="justify-content:flex-start">
     <div class="toolbar__filters">
       <button class="chip chip--active" data-filtro-torneo="todos">Todos</button>
-      <button class="chip" data-filtro-torneo="individual">👤 Individual</button>
-      <button class="chip" data-filtro-torneo="equipo">👥 Equipos</button>
+      <button class="chip" data-filtro-torneo="individual">Individual</button>
+      <button class="chip" data-filtro-torneo="equipo">Equipos</button>
       <button class="chip" data-filtro-torneo="inscripcion">Inscripción abierta</button>
       <button class="chip" data-filtro-torneo="en_curso">En curso</button>
       <button class="chip" data-filtro-torneo="gratis">Gratis</button>
     </div>
-    <button class="btn btn--primary" id="btn-crear-torneo">+ Crear torneo</button>
   </div>
 
-  <div id="lista-torneos" class="card-grid"></div>
+  <div id="lista-torneos" class="tournament-grid"></div>
 </div>
 
 <!-- ================= PANEL: MIS CREADOS ================= -->
 <div class="subpanel" id="panel-torneos-creados">
   <div class="toolbar mb-4">
     <p class="text-sm text-muted">Torneos que tú organizas</p>
-    <button class="btn btn--primary" id="btn-crear-torneo-2">+ Crear torneo</button>
+    <button class="btn btn--primary" id="btn-crear-torneo-2">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Crear torneo
+    </button>
   </div>
-  <div id="lista-torneos-creados" class="card-grid"></div>
+  <div id="lista-torneos-creados" class="tournament-grid"></div>
 </div>
 
 <!-- ================= PANEL: INSCRITOS ================= -->
@@ -42,7 +78,7 @@
   <div class="toolbar mb-4">
     <p class="text-sm text-muted">Torneos en los que participas</p>
   </div>
-  <div id="lista-torneos-inscritos" class="card-grid"></div>
+  <div id="lista-torneos-inscritos" class="tournament-grid"></div>
 </div>
 
 <!-- ================= MODAL: CREAR / EDITAR TORNEO ================= -->
@@ -55,12 +91,8 @@
 
     <div class="modal__body">
 
-      <!-- ============================================== -->
-      <!-- TIPO DE PARTICIPACIÓN (equipos o individual)   -->
-      <!-- ============================================== -->
       <div class="field">
         <label class="field__label">Tipo de participación *</label>
-
         <div class="nivel-grid" style="grid-template-columns:repeat(2, 1fr); gap:var(--space-2)">
           <div class="tipo-partido-opcion active" data-tipo-participacion="equipo">
             <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👥 Por equipos</h3>
@@ -77,12 +109,8 @@
         </p>
       </div>
 
-      <!-- ============================================== -->
-      <!-- MODALIDAD DEL TORNEO                            -->
-      <!-- ============================================== -->
       <div class="field">
         <label class="field__label">Modalidad del torneo *</label>
-
         <div class="nivel-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
           <div class="tipo-partido-opcion active" data-modalidad="liga">
             <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⚽ Liga</h3>
@@ -99,9 +127,6 @@
         </div>
       </div>
 
-      <!-- ============================================== -->
-      <!-- ⚡ AUTO-FIXTURE (solo eliminación)              -->
-      <!-- ============================================== -->
       <div class="field hidden" id="auto-fixture-wrapper">
         <label class="switch">
           <input type="checkbox" id="torneo-auto-fixture" />
@@ -117,15 +142,10 @@
         </label>
       </div>
 
-      <!-- ============================================== -->
-      <!-- NIVEL DEL TORNEO                                -->
-      <!-- ============================================== -->
       <div class="field">
         <label class="field__label">Nivel del torneo *</label>
-
         <div class="nivel-grid" id="nivel-grid-torneo" style="grid-template-columns:repeat(3, 1fr)"></div>
 
-        <!-- ⚡ Switch "libre inscripción" (aparece según nivel/precio) -->
         <div class="mt-4 hidden" id="libre-inscripcion-wrapper">
           <label class="switch">
             <input type="checkbox" id="torneo-libre-inscripcion" checked />
@@ -148,9 +168,6 @@
         </div>
       </div>
 
-      <!-- ============================================== -->
-      <!-- CONFIGURACIÓN AVANZADA (colapsable)            -->
-      <!-- ============================================== -->
       <div class="field">
         <details>
           <summary style="cursor:pointer; font-weight:600; font-size:var(--fs-sm); padding:var(--space-2) 0; user-select:none">
@@ -159,7 +176,6 @@
 
           <div style="padding:var(--space-3) 0 0 0; display:flex; flex-direction:column; gap:var(--space-3)">
 
-            <!-- Solo para liga -->
             <div id="config-liga-wrapper">
               <label class="field__label" style="font-size:var(--fs-xs)">Puntos por partido</label>
               <div class="form-row" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
@@ -196,14 +212,12 @@
               </label>
             </div>
 
-            <!-- Equipos que clasifican -->
             <div class="field" style="margin:0">
               <label class="field__label" for="torneo-equipos-clasifican" style="font-size:var(--fs-xs)">Equipos que clasifican (opcional)</label>
               <input type="number" id="torneo-equipos-clasifican" class="field__input" min="0" max="64" placeholder="Ej: 4" />
               <p class="text-xs text-muted mt-4">Dejar vacío si no aplica</p>
             </div>
 
-            <!-- Estadísticas -->
             <label class="switch">
               <input type="checkbox" id="torneo-incluye-estadisticas" />
               <span class="switch__slider"></span>
@@ -229,14 +243,6 @@
         </select>
       </div>
 
-      <!-- ============================================== -->
-      <!-- ⚡ NUEVO D.5: SISTEMA DE CLASIFICACIÓN          -->
-      <!-- ============================================== -->
-      <!-- Solo se muestra cuando el deporte es de tiempo  -->
-      <!-- (natación, atletismo, ciclismo) o de puntos     -->
-      <!-- (escalada, surf, boxeo). El usuario puede       -->
-      <!-- cambiarlo manualmente.                          -->
-      <!-- ============================================== -->
       <div class="field hidden" id="sistema-clasificacion-wrapper">
         <label class="field__label">Sistema de clasificación *</label>
 
@@ -271,7 +277,6 @@
         </div>
       </div>
 
-      <!-- Fecha límite de inscripción -->
       <div class="field">
         <label class="field__label" for="torneo-fecha-limite">Fecha límite de inscripción</label>
         <input type="date" id="torneo-fecha-limite" class="field__input" />

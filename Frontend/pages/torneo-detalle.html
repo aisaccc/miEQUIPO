@@ -511,3 +511,250 @@
     </div>
   </div>
 </div>
+<!-- ================= MODAL: CREAR / EDITAR TORNEO (desde el detalle) ================= -->
+<div class="modal-backdrop" id="modal-editar-torneo-detalle">
+  <div class="modal" style="max-width: 580px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="torneo-modal-titulo-detalle">Editar torneo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-torneo-detalle">✕</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- TIPO DE PARTICIPACIÓN -->
+      <div class="field">
+        <label class="field__label">Tipo de participación *</label>
+
+        <div class="nivel-grid" style="grid-template-columns:repeat(2, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion active" data-tipo-participacion-det="equipo">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👥 Por equipos</h3>
+            <div class="nivel-opcion__desc">Se inscriben equipos</div>
+          </div>
+          <div class="tipo-partido-opcion" data-tipo-participacion-det="individual">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👤 Individual</h3>
+            <div class="nivel-opcion__desc">Se inscriben personas</div>
+          </div>
+        </div>
+
+        <p class="text-xs text-muted mt-4" id="hint-tipo-participacion-det"></p>
+      </div>
+
+      <!-- MODALIDAD -->
+      <div class="field">
+        <label class="field__label">Modalidad del torneo *</label>
+
+        <div class="nivel-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion" data-modalidad-det="liga">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⚽ Liga</h3>
+            <div class="nivel-opcion__desc">Tabla de puntos</div>
+          </div>
+          <div class="tipo-partido-opcion" data-modalidad-det="eliminacion">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏆 Eliminación</h3>
+            <div class="nivel-opcion__desc">Bracket directo</div>
+          </div>
+          <div class="tipo-partido-opcion" data-modalidad-det="custom">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🔧 Custom</h3>
+            <div class="nivel-opcion__desc">Vos organizás</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUTO-FIXTURE -->
+      <div class="field hidden" id="auto-fixture-wrapper-det">
+        <label class="switch">
+          <input type="checkbox" id="torneo-auto-fixture-det" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Armar cruces automáticamente</div>
+            <div class="switch__hint">
+              Si activás, al cerrar las inscripciones se arma el bracket
+              automáticamente con los participantes inscriptos.
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- NIVEL -->
+      <div class="field">
+        <label class="field__label">Nivel del torneo *</label>
+        <div class="nivel-grid" id="nivel-grid-torneo-det" style="grid-template-columns:repeat(3, 1fr)"></div>
+
+        <div class="mt-4 hidden" id="libre-inscripcion-wrapper-det">
+          <label class="switch">
+            <input type="checkbox" id="torneo-libre-inscripcion-det" checked />
+            <span class="switch__slider"></span>
+            <div>
+              <div class="switch__label">Libre inscripción</div>
+              <div class="switch__hint">
+                Si activás, los equipos se inscriben directo. Si desactivás, van a lista de espera.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="aviso-aprobacion mt-4" id="aviso-pago-det">
+          <span class="aviso-aprobacion__icon">💰</span>
+          <div>
+            <strong>Torneo de pago.</strong>
+            Todas las inscripciones van a lista de espera.
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIG AVANZADA -->
+      <div class="field">
+        <details>
+          <summary style="cursor:pointer; font-weight:600; font-size:var(--fs-sm); padding:var(--space-2) 0; user-select:none">
+            ⚙️ Configuración avanzada
+          </summary>
+
+          <div style="padding:var(--space-3) 0 0 0; display:flex; flex-direction:column; gap:var(--space-3)">
+
+            <div id="config-liga-wrapper-det">
+              <label class="field__label" style="font-size:var(--fs-xs)">Puntos por partido</label>
+              <div class="form-row" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-victoria-det" style="font-size:var(--fs-xs)">Victoria</label>
+                  <input type="number" id="torneo-puntos-victoria-det" class="field__input" min="0" max="10" value="3" />
+                </div>
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-empate-det" style="font-size:var(--fs-xs)">Empate</label>
+                  <input type="number" id="torneo-puntos-empate-det" class="field__input" min="0" max="10" value="1" />
+                </div>
+                <div class="field" style="margin:0">
+                  <label class="field__label" for="torneo-puntos-derrota-det" style="font-size:var(--fs-xs)">Derrota</label>
+                  <input type="number" id="torneo-puntos-derrota-det" class="field__input" min="0" max="10" value="0" />
+                </div>
+              </div>
+
+              <label class="switch mt-4">
+                <input type="checkbox" id="torneo-permite-empate-det" checked />
+                <span class="switch__slider"></span>
+                <div>
+                  <div class="switch__label">Permitir empates</div>
+                  <div class="switch__hint">Si desactivás, los partidos deben tener un ganador</div>
+                </div>
+              </label>
+
+              <label class="switch mt-4">
+                <input type="checkbox" id="torneo-ida-vuelta-det" />
+                <span class="switch__slider"></span>
+                <div>
+                  <div class="switch__label">Ida y vuelta</div>
+                  <div class="switch__hint">Duplica las jornadas</div>
+                </div>
+              </label>
+            </div>
+
+            <div class="field" style="margin:0">
+              <label class="field__label" for="torneo-equipos-clasifican-det" style="font-size:var(--fs-xs)">Equipos que clasifican (opcional)</label>
+              <input type="number" id="torneo-equipos-clasifican-det" class="field__input" min="0" max="64" placeholder="Ej: 4" />
+            </div>
+
+            <label class="switch">
+              <input type="checkbox" id="torneo-incluye-estadisticas-det" />
+              <span class="switch__slider"></span>
+              <div>
+                <div class="switch__label">Incluir estadísticas por jugador</div>
+                <div class="switch__hint">Los organizadores podrán cargar goles, asistencias, etc.</div>
+              </div>
+            </label>
+
+          </div>
+        </details>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-nombre-det">Nombre del torneo *</label>
+        <input type="text" id="torneo-nombre-det" class="field__input" placeholder="Ej: Copa Verano 2026" maxlength="80" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-deporte-det">Deporte *</label>
+        <select id="torneo-deporte-det" class="field__input">
+          <option value="">Selecciona un deporte...</option>
+        </select>
+      </div>
+
+      <!-- SISTEMA DE CLASIFICACIÓN -->
+      <div class="field hidden" id="sistema-clasificacion-wrapper-det">
+        <label class="field__label">Sistema de clasificación *</label>
+
+        <div class="nivel-grid" id="sistema-clasificacion-grid-det" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
+          <div class="tipo-partido-opcion active" data-sistema-clasificacion-det="simple">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🎯 Simple</h3>
+            <div class="nivel-opcion__desc">Goles, puntos o sets</div>
+          </div>
+          <div class="tipo-partido-opcion" data-sistema-clasificacion-det="tiempo">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⏱️ Tiempo</h3>
+            <div class="nivel-opcion__desc">Menor tiempo gana</div>
+          </div>
+          <div class="tipo-partido-opcion" data-sistema-clasificacion-det="puntos">
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏅 Puntos</h3>
+            <div class="nivel-opcion__desc">Mayor puntaje gana</div>
+          </div>
+        </div>
+
+        <p class="text-xs text-muted mt-4" id="sistema-clasificacion-hint-det">
+          Elegí cómo se define al ganador en cada partido.
+        </p>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="torneo-fecha-inicio-det">Fecha de inicio *</label>
+          <input type="date" id="torneo-fecha-inicio-det" class="field__input" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="torneo-fecha-fin-det">Fecha de término</label>
+          <input type="date" id="torneo-fecha-fin-det" class="field__input" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-fecha-limite-det">Fecha límite de inscripción</label>
+        <input type="date" id="torneo-fecha-limite-det" class="field__input" />
+        <p class="text-xs text-muted mt-4">
+          Después de esta fecha, no se aceptan más inscripciones. Dejar vacío si no aplica.
+        </p>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-lugar-det">Lugar *</label>
+        <input type="text" id="torneo-lugar-det" class="field__input" placeholder="Ej: Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-equipos-det">Cupos de equipos *</label>
+        <input type="number" id="torneo-equipos-det" class="field__input" min="2" max="64" value="8" />
+      </div>
+
+      <div class="field">
+        <label class="switch mb-4">
+          <input type="checkbox" id="torneo-gratis-det" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Torneo gratis</div>
+            <div class="switch__hint">Desactiva para cobrar inscripción</div>
+          </div>
+        </label>
+
+        <div id="torneo-precio-wrapper-det" class="hidden">
+          <label class="field__label" for="torneo-precio-det">Valor de inscripción (CLP)</label>
+          <input type="number" id="torneo-precio-det" class="field__input" min="0" step="1000" value="20000" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="torneo-descripcion-det">Descripción (opcional)</label>
+        <textarea id="torneo-descripcion-det" class="textarea" placeholder="Formato, reglas, premios, etc." maxlength="400"></textarea>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-torneo-detalle">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-torneo-det">Guardar cambios</button>
+    </div>
+  </div>
+</div>
