@@ -8,7 +8,7 @@
 /* =========================================================
    CONFIGURACIÓN
    ========================================================= */
-const API_URL = 'https://miequipo.onrender.com';
+const API_URL = 'https://miequipo.onrender.com/api';
 
 /* Keys en localStorage */
 const KEY_ACCESS  = 'miejquipo_access_token';
