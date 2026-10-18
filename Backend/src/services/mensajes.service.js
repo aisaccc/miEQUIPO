@@ -401,12 +401,20 @@ export async function ocultarConversacion(conversacionId, usuarioId) {
 /* =========================================================
    CONTAR MENSAJES NO LEÍDOS (total, para badge)
    ========================================================= */
+/* =========================================================
+   CONTAR MENSAJES NO LEÍDOS (total, para badge)
+   ========================================================= */
 export async function contarNoLeidos(usuarioId) {
+  const bloqueados = await idsBloqueadosTotales(usuarioId);
+
+  // 1. Contar mensajes no leídos de conversaciones 1 a 1 (SIN bloqueados)
   const { rows: rowsConv } = await pool.query(
-    `SELECT COUNT(*)::int AS total
+    `SELECT m.id, cp2.usuario_id AS otro_id
      FROM mensajes m
      JOIN conversacion_participantes cp
        ON cp.conversacion_id = m.conversacion_id AND cp.usuario_id = $1
+     JOIN conversacion_participantes cp2
+       ON cp2.conversacion_id = m.conversacion_id AND cp2.usuario_id != $1
      WHERE m.autor_id != $1
        AND cp.oculta = FALSE
        AND NOT EXISTS (
@@ -416,6 +424,10 @@ export async function contarNoLeidos(usuarioId) {
     [usuarioId]
   );
 
+  // Filtramos en JS para ignorar a los usuarios bloqueados
+  const totalConv = rowsConv.filter(row => !bloqueados.includes(row.otro_id)).length;
+
+  // 2. Contar mensajes no leídos de canales (equipos + torneos)
   const { rows: rowsCanal } = await pool.query(
     `SELECT COUNT(*)::int AS total
      FROM mensajes m
@@ -430,7 +442,7 @@ export async function contarNoLeidos(usuarioId) {
     [usuarioId]
   );
 
-  return (rowsConv[0].total || 0) + (rowsCanal[0].total || 0);
+  return totalConv + (rowsCanal[0].total || 0);
 }
 
 /* =========================================================
