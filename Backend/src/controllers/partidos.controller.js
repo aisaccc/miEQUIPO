@@ -1,7 +1,3 @@
-/* =========================================================
-   partidos.controller.js — Manejo de req/res de partidos
-   ========================================================= */
-
 import * as partidosService from '../services/partidos.service.js';
 import { validar } from '../validators/index.js';
 import {
@@ -18,9 +14,6 @@ import {
   schemaHistorialPartidos,
 } from '../validators/partidos.schema.js';
 
-/* =========================================================
-   GET /api/partidos
-   ========================================================= */
 export async function listar(req, res, next) {
   try {
     const filtros = validar(schemaListarPartidos, req.query);
@@ -31,9 +24,6 @@ export async function listar(req, res, next) {
   }
 }
 
-/* =========================================================
-   GET /api/partidos/:id
-   ========================================================= */
 export async function obtener(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -44,9 +34,6 @@ export async function obtener(req, res, next) {
   }
 }
 
-/* =========================================================
-   POST /api/partidos
-   ========================================================= */
 export async function crear(req, res, next) {
   try {
     const datos = validar(schemaCrearPartido, req.body);
@@ -60,9 +47,6 @@ export async function crear(req, res, next) {
   }
 }
 
-/* =========================================================
-   PATCH /api/partidos/:id
-   ========================================================= */
 export async function editar(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -79,9 +63,6 @@ export async function editar(req, res, next) {
   }
 }
 
-/* =========================================================
-   DELETE /api/partidos/:id
-   ========================================================= */
 export async function eliminar(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -92,9 +73,6 @@ export async function eliminar(req, res, next) {
   }
 }
 
-/* =========================================================
-   POST /api/partidos/:id/inscribirse
-   ========================================================= */
 export async function inscribirse(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -111,9 +89,6 @@ export async function inscribirse(req, res, next) {
   }
 }
 
-/* =========================================================
-   DELETE /api/partidos/:id/inscribirse
-   ========================================================= */
 export async function salir(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -124,9 +99,6 @@ export async function salir(req, res, next) {
   }
 }
 
-/* =========================================================
-   POST /api/partidos/:id/postularse
-   ========================================================= */
 export async function postularse(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -143,9 +115,6 @@ export async function postularse(req, res, next) {
   }
 }
 
-/* =========================================================
-   DELETE /api/partidos/:id/postularse
-   ========================================================= */
 export async function cancelarPostulacion(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -156,9 +125,6 @@ export async function cancelarPostulacion(req, res, next) {
   }
 }
 
-/* =========================================================
-   PATCH /api/partidos/:id/postulantes/:usuarioId
-   ========================================================= */
 export async function gestionarPostulante(req, res, next) {
   try {
     const partidoId = validar(schemaUuidParam, req.params.id);
@@ -178,9 +144,6 @@ export async function gestionarPostulante(req, res, next) {
   }
 }
 
-/* =========================================================
-   POST /api/partidos/:id/equipos-postulantes
-   ========================================================= */
 export async function postularEquipo(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -197,9 +160,6 @@ export async function postularEquipo(req, res, next) {
   }
 }
 
-/* =========================================================
-   PATCH /api/partidos/:id/equipos-postulantes/:equipoId
-   ========================================================= */
 export async function gestionarEquipoPostulante(req, res, next) {
   try {
     const partidoId = validar(schemaUuidParam, req.params.id);
@@ -219,9 +179,6 @@ export async function gestionarEquipoPostulante(req, res, next) {
   }
 }
 
-/* =========================================================
-   DELETE /api/partidos/:id/equipos-postulantes/:equipoId
-   ========================================================= */
 export async function cancelarPostulacionEquipo(req, res, next) {
   try {
     const partidoId = validar(schemaUuidParam, req.params.id);
@@ -239,16 +196,12 @@ export async function cancelarPostulacionEquipo(req, res, next) {
   }
 }
 
-/* =========================================================
-   MODO "ORGANIZAR PARTIDO" — Interesados
-   ========================================================= */
-
 export async function interesarse(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
-    const { mensaje } = validar(schemaInteresarse, req.body || {});
+    const { mensaje, equipoId } = validar(schemaInteresarse, req.body || {});
 
-    const partido = await partidosService.interesarse(id, req.usuario.id, mensaje);
+    const partido = await partidosService.interesarse(id, req.usuario.id, equipoId, mensaje);
 
     res.json({
       mensaje: 'Te marcaste como interesado',
@@ -294,10 +247,6 @@ export async function confirmar(req, res, next) {
     next(err);
   }
 }
-
-/* =========================================================
-   FLUJO DE DOBLE CONFIRMACIÓN (modo Organizar)
-   ========================================================= */
 
 export async function aprobarConfirmacion(req, res, next) {
   try {
@@ -365,10 +314,6 @@ export async function obtenerConfirmacionPendiente(req, res, next) {
   }
 }
 
-/* =========================================================
-   ⚡ ECHAR PARTICIPANTES (solo organizador)
-   ========================================================= */
-
 export async function echarInscrito(req, res, next) {
   try {
     const partidoId = validar(schemaUuidParam, req.params.id);
@@ -420,9 +365,6 @@ export async function echarEquipoInscrito(req, res, next) {
   }
 }
 
-/* =========================================================
-   GET /api/usuarios/me/historial-partidos
-   ========================================================= */
 export async function obtenerHistorialPartidos(req, res, next) {
   try {
     const filtros = validar(schemaHistorialPartidos, req.query);

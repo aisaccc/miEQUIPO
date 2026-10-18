@@ -12,6 +12,10 @@ import {
   expulsarEquipo as expulsarEquipoAPI,
   invitarEquipo as invitarEquipoAPI,
   responderInvitacion as responderInvitacionAPI,
+  invitarOrganizador as invitarOrganizadorAPI,
+  responderInvitacionOrganizador as responderInvOrgAPI,
+  cancelarInvitacionOrganizador as cancelarInvOrgAPI,
+  quitarOrganizador as quitarOrganizadorAPI,
   crearPartidoTorneo as crearPartidoTorneoAPI,
   editarPartidoTorneo as editarPartidoTorneoAPI,
   eliminarPartidoTorneo as eliminarPartidoTorneoAPI,
@@ -26,8 +30,29 @@ import {
   guardarJornadaBulk as guardarJornadaBulkAPI,
 } from '../services/torneos.service.js';
 
-import { deportes } from '../data-mock.js';
+import {
+  listarCanales as listarCanalesAPI,
+  obtenerCanal as obtenerCanalAPI,
+  listarMensajesDeCanal as listarMensajesDeCanalAPI,
+  enviarMensajeACanal as enviarMensajeACanalAPI,
+  marcarCanalLeido as marcarCanalLeidoAPI,
+} from '../services/mensajes.service.js';
 
+import {
+  listarPublicacionesDeTorneo as listarPubsTorneoAPI,
+} from '../services/publicaciones.service.js';
+
+import {
+  renderFeedPublicaciones,
+  abrirModalCrearPublicacionCompartido,
+} from '../utils/publicaciones-ui.js';
+
+import { buscarUsuarios as buscarUsuariosAPI } from '../services/usuarios.service.js';
+
+import { ICONOS } from '../utils/iconos.js';
+
+import { deportes } from '../data-mock.js';
+import { renderGrupoPublico } from '../utils/grupo-publico.js';
 import {
   getReglasDeporte,
   esPorSets,
@@ -90,22 +115,122 @@ const NIVELES_TORNEO_DET = [
 ];
 
 /* =========================================================
-   ICONOS SVG
+   COLORES POR DEPORTE (hero + banner)
    ========================================================= */
-const ICONOS = {
-  fecha: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  ubicacion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
-  organizador: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-  usuarios: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 0 0 7.75"/></svg>`,
-  cupo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
-  dinero: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`,
-  trofeo: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
-  modalidad: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
-  reloj: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-  deporte: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/></svg>`,
-  lapiz: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+const COLOR_DEPORTE_TORNEO = {
+  'Fútbol':            { from: '#FF6B4A', to: '#C2410C' },
+  'Fútbol americano':  { from: '#DC2626', to: '#7F1D1D' },
+  'Básquetbol':        { from: '#3B82F6', to: '#1E40AF' },
+  'Tenis':             { from: '#22C55E', to: '#166534' },
+  'Tenis de mesa':     { from: '#EC4899', to: '#9D174D' },
+  'Vóleibol':          { from: '#F59E0B', to: '#92400E' },
+  'Pádel':             { from: '#6366F1', to: '#3730A3' },
+  'Squash':            { from: '#06B6D4', to: '#155E75' },
+  'Bádminton':         { from: '#A855F7', to: '#6B21A8' },
+  'Golf':              { from: '#10B981', to: '#065F46' },
+  'Béisbol':           { from: '#EAB308', to: '#854D0E' },
+  'Hockey':            { from: '#0EA5E9', to: '#075985' },
+  'Handball':          { from: '#F43F5E', to: '#9F1239' },
+  'Rugby':             { from: '#8B5CF6', to: '#5B21B6' },
+  'Boxeo':             { from: '#EF4444', to: '#7F1D1D' },
+  'Ciclismo':          { from: '#84CC16', to: '#3F6212' },
+  'Natación':          { from: '#06B6D4', to: '#0E7490' },
+  'Atletismo':         { from: '#F43F5E', to: '#BE123C' },
+  'Surf':              { from: '#0EA5E9', to: '#0369A1' },
+  'Escalada':          { from: '#F59E0B', to: '#B45309' },
 };
+const COLOR_DEPORTE_TORNEO_DEFAULT = { from: '#FF6B4A', to: '#C2410C' };
+
+function colorDeporteTorneo(deporte) {
+  return COLOR_DEPORTE_TORNEO[deporte] || COLOR_DEPORTE_TORNEO_DEFAULT;
+}
+
+/* =========================================================
+   HELPERS GLOBALES DE CHAT
+   ========================================================= */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function horaCortaChat(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const hoy = new Date();
+  if (d.toDateString() === hoy.toDateString()) {
+    return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+function mismoDiaChat(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function labelDiaChat(iso) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+
+  if (mismoDiaChat(d, hoy))  return 'Hoy';
+  if (mismoDiaChat(d, ayer)) return 'Ayer';
+
+  const difDias = Math.floor((hoy - d) / (1000 * 60 * 60 * 24));
+  if (difDias < 7) {
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return dias[d.getDay()];
+  }
+  return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+function avatarDeChat(usuario) {
+  return usuario?.avatar || 'assets/icons/usuario.svg';
+}
+
+/* =========================================================
+   HELPERS DE IMÁGENES EN EL CHAT (Fase E.7)
+   ========================================================= */
+
+function abrirModalVerImagen(src) {
+  const img = document.getElementById('modal-imagen-img');
+  const modal = document.getElementById('modal-ver-imagen');
+  if (!img || !modal) return;
+
+  img.src = src;
+  abrirModal('modal-ver-imagen');
+
+  modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+    btn.onclick = () => cerrarModal('modal-ver-imagen');
+  });
+
+  modal.onclick = (e) => {
+    if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen');
+  };
+}
+
+function mostrarPreviewImagen(panelId, src) {
+  const wrapper = document.getElementById(`${panelId}-preview`);
+  const img = document.getElementById(`${panelId}-preview-img`);
+  if (!wrapper || !img) return;
+
+  img.src = src;
+  wrapper.classList.remove('hidden');
+}
+
+function ocultarPreviewImagen(panelId) {
+  const wrapper = document.getElementById(`${panelId}-preview`);
+  const img = document.getElementById(`${panelId}-preview-img`);
+  if (!wrapper || !img) return;
+
+  img.src = '';
+  wrapper.classList.add('hidden');
+}
 
 export async function init(params = {}) {
   const id = params.id;
@@ -129,6 +254,8 @@ export async function init(params = {}) {
   const modalEditarCruce    = document.getElementById('modal-editar-cruce');
   const modalVerDetalle     = document.getElementById('modal-ver-detalle-partido');
   const modalEditarTorneo   = document.getElementById('modal-editar-torneo-detalle');
+  const modalSubOrganizadores = document.getElementById('modal-sub-organizadores');
+  const modalResponderInvOrg  = document.getElementById('modal-responder-invitacion-organizador');
 
   /* ---------- ESTADO ---------- */
   let torneo = null;
@@ -137,6 +264,14 @@ export async function init(params = {}) {
   let cruceActual = null;
   let partidoDetalleActual = null;
   let tabActual = 'resumen';
+
+  /* ---------- ESTADO DEL CHAT DEL TORNEO ---------- */
+  let canalTorneoId = null;
+  let canalTorneoActualId = null;
+  let intervaloCanalTorneo = null;
+  let ultimoHashCanalTorneo = null;
+  let ultimaCanalTorneoRenderizado = null;
+  let imagenBase64Torneo = null;
 
   /* =========================================================
      HELPERS
@@ -162,11 +297,28 @@ export async function init(params = {}) {
   function misEquiposComoCapitan() { return misEquipos; }
 
   function renderEmoji(emoji, size = 32) {
-    if (!emoji) return '🏆';
+    if (!emoji) return ICONOS.trofeo;
     if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
       return `<img src="${emoji}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
     }
     return emoji;
+  }
+
+  function renderEscudoCruce(escudo, esIndividual, size = 22) {
+    if (esIndividual) {
+      return `<img src="${escudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%" />`;
+    }
+    if (typeof escudo === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(escudo)) {
+      return `<img src="${escudo}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
+    }
+    return `<span style="font-size:${Math.round(size * 0.8)}px;line-height:1;display:inline-block">${escudo || ICONOS.escudo}</span>`;
+  }
+
+  function renderIconoGenerico(valor, size = 28) {
+    if (typeof valor === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
+      return `<img src="${valor}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
+    }
+    return `<span style="font-size:${size}px;line-height:1;display:inline-block">${valor || ICONOS.escudo}</span>`;
   }
 
   function formatearFechaCorta(iso) {
@@ -186,7 +338,6 @@ export async function init(params = {}) {
     partidos.forEach(p => {
       if (p.fase) fasesSet.add(p.fase);
     });
-
     return FASES_ORDEN.filter(f => fasesSet.has(f));
   }
 
@@ -199,8 +350,11 @@ export async function init(params = {}) {
     } catch (err) {
       console.error('[torneo-detalle] Error al cargar:', err);
       contenedor.innerHTML = `
-        <div class="detalle__top">
-          <button class="detalle__back" id="btn-volver">←</button>
+        <div class="gd-top">
+          <button class="gd-top__volver" id="btn-volver">
+            ${ICONOS.flechaIzq}
+            Volver
+          </button>
         </div>
         <div class="card">
           <h2 class="card__title">Torneo no encontrado</h2>
@@ -232,47 +386,45 @@ export async function init(params = {}) {
     const cerrado = estaCerrado(t);
     const lleno = inscritos >= t.cuposEquipos;
     const soyOrg = esOrganizador(t);
-    const puedeGest = puedeGestionar(t);
     const miEquipo = miEquipoInscrito(t);
     const miSol = miSolicitudPendiente(t);
     const miInv = miInvitacionPendiente(t);
-
     const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
 
     /* ---------- BADGES ---------- */
     const badgeClase = cerrado && !lleno ? 'badge--warning'
                      : lleno              ? 'badge--danger'
                      : t.estado === 'inscripcion' ? 'badge--success'
-                     : t.estado === 'en_curso'    ? 'badge--warning'
+                     : t.estado === 'en_curso'    ? 'badge--info'
                                                   : 'badge--neutral';
 
     const badgeTexto = cerrado && !lleno ? 'Inscripciones cerradas'
                      : lleno              ? 'Lleno'
-                     : t.estado === 'inscripcion' ? 'Inscripción abierta'
+                     : t.estado === 'inscripcion' ? (t.libreInscripcion === false ? 'Inscripción' : 'Inscripción abierta')
                      : t.estado === 'en_curso'    ? 'En curso'
                                                   : 'Finalizado';
 
     const modalidadBadge = {
-      liga: '<span class="badge badge--info">⚽ Liga</span>',
-      eliminacion: '<span class="badge badge--warning">🏆 Eliminación</span>',
-      custom: '<span class="badge badge--neutral">🔧 Custom</span>',
+      liga: '<span class="badge badge--info">Liga</span>',
+      eliminacion: '<span class="badge badge--warning">Eliminación</span>',
+      custom: '<span class="badge badge--neutral">Custom</span>',
     }[t.modalidad] || '';
 
     const nivelBadge = {
-      amistoso: '<span class="badge badge--success">🟢 Amistoso</span>',
-      semiprofesional: '<span class="badge badge--warning">🟡 Semiprofesional</span>',
-      profesional: '<span class="badge badge--danger">🔴 Profesional</span>',
+      amistoso: '<span class="badge badge--success">Amistoso</span>',
+      semiprofesional: '<span class="badge badge--warning">Semiprofesional</span>',
+      profesional: '<span class="badge badge--danger">Profesional</span>',
     }[t.nivel] || '';
 
     const sistema = t.sistemaClasificacion || 'simple';
     const sistemaBadge = sistema === 'simple'
       ? ''
       : sistema === 'tiempo'
-        ? '<span class="badge badge--info">⏱️ Por tiempo</span>'
-        : '<span class="badge badge--info">🏅 Por puntos</span>';
+        ? '<span class="badge badge--info">Por tiempo</span>'
+        : '<span class="badge badge--info">Por puntos</span>';
 
     const idaVueltaBadge = t.idaYVuelta
-      ? '<span class="badge badge--info">🔁 Ida y vuelta</span>'
+      ? '<span class="badge badge--info">Ida y vuelta</span>'
       : '';
 
     /* ---------- FECHAS HERO ---------- */
@@ -282,58 +434,91 @@ export async function init(params = {}) {
       ? `${fechaIni} — ${fechaFin}`
       : fechaIni;
 
+    /* ---------- COLOR DEL DEPORTE ---------- */
+    const color = colorDeporteTorneo(t.deporte);
+    const heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+
     /* =========================================================
        RENDER
        ========================================================= */
     contenedor.innerHTML = `
-      <div class="detalle__top">
-        <button class="detalle__back" id="btn-volver">←</button>
-        <h2 class="page-title" style="margin:0; font-size:var(--fs-lg)">Detalle del torneo</h2>
+      <div class="gd-top">
+        <button class="gd-top__volver" id="btn-volver">
+          ${ICONOS.flechaIzq}
+          Volver
+        </button>
       </div>
 
-      <!-- ============ HERO NAVY ============ -->
-      <div class="pd-hero">
-        <div class="pd-hero__left">
-          <div class="pd-hero__sport">${renderEmoji(t.emoji, 48)}</div>
-          <div class="pd-hero__info">
-            <div class="pd-hero__badges">
+      <div class="td-hero" style="${heroStyle}">
+        <div class="td-hero__left">
+          <div class="td-hero__sport">${renderEmoji(t.emoji, 52)}</div>
+          <div class="td-hero__info">
+            <div class="td-hero__badges">
               <span class="badge ${badgeClase}">${badgeTexto}</span>
               ${modalidadBadge}
               ${nivelBadge}
               ${sistemaBadge}
               ${idaVueltaBadge}
+              ${t.soySubOrganizador && !soyOrg ? `<span class="badge badge--suborg">${ICONOS.corona} Sub-organizador</span>` : ''}
             </div>
-            <h1 class="pd-hero__title">${t.nombre}</h1>
-            <div class="pd-hero__meta">
-              ${fechaHeroTexto ? `<span>${ICONOS.fecha} ${fechaHeroTexto}</span>` : ''}
+            <h1 class="td-hero__title">${t.nombre}</h1>
+            <div class="td-hero__meta">
+              ${fechaHeroTexto ? `<span>${ICONOS.calendario} ${fechaHeroTexto}</span>` : ''}
               ${t.lugar ? `<span>${ICONOS.ubicacion} ${t.lugar}</span>` : ''}
-              <span class="torneo-hero__organizador" data-ver-perfil="${t.organizador.id}">
-                ${ICONOS.organizador} ${t.organizador.nombre}
+              <span class="td-hero__organizador" data-ver-perfil="${t.organizador.id}">
+                ${ICONOS.usuario} ${t.organizador.nombre}
               </span>
             </div>
           </div>
         </div>
 
         ${soyOrg ? `
-          <div class="pd-hero__actions">
-            <button class="btn pd-hero__action pd-hero__action--primary" id="btn-editar-torneo">
+          <div class="td-hero__actions">
+            <button class="btn td-hero__action" id="btn-sub-organizadores">
+              ${ICONOS.corona} Sub-organizadores
+            </button>
+            <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
+              ${ICONOS.lapiz} Editar torneo
+            </button>
+          </div>
+        ` : t.soySubOrganizador ? `
+          <div class="td-hero__actions">
+            <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
               ${ICONOS.lapiz} Editar torneo
             </button>
           </div>
         ` : ''}
       </div>
 
-      <!-- ============ TABS ============ -->
-      <div class="torneo-tabs">
-        <button class="torneo-tab torneo-tab--active" data-tab-torneo="resumen">Resumen</button>
-        <button class="torneo-tab" data-tab-torneo="participantes">Participantes</button>
-        ${t.modalidad === 'liga' ? `<button class="torneo-tab" data-tab-torneo="tabla">Tabla de posiciones</button>` : ''}
-        <button class="torneo-tab" data-tab-torneo="resultados">
+      <div class="subtabs mb-4" id="torneo-tabs">
+        <button class="subtab subtab--active" data-tab-torneo="resumen">
+          ${ICONOS.copa}
+          Resumen
+        </button>
+        <button class="subtab" data-tab-torneo="participantes">
+          ${ICONOS.usuarios}
+          Participantes
+        </button>
+        ${t.modalidad === 'liga' ? `
+          <button class="subtab" data-tab-torneo="tabla">
+            ${ICONOS.diana}
+            Tabla
+          </button>
+        ` : ''}
+        <button class="subtab" data-tab-torneo="resultados">
+          ${ICONOS.calendario}
           ${t.modalidad === 'liga' ? 'Resultados' : 'Fixture'}
+        </button>
+        <button class="subtab" data-tab-torneo="chat">
+          ${ICONOS.chat}
+          Chat
+        </button>
+        <button class="subtab" data-tab-torneo="publicaciones">
+          ${ICONOS.imagen}
+          Publicaciones
         </button>
       </div>
 
-      <!-- ============ CONTENIDO DEL TAB ============ -->
       <div id="torneo-tab-contenido"></div>
     `;
 
@@ -348,17 +533,22 @@ export async function init(params = {}) {
     const cont = document.getElementById('torneo-tab-contenido');
     if (!cont) return;
 
+    document.querySelectorAll('[data-tab-torneo]').forEach(btn => {
+      btn.classList.toggle('subtab--active', btn.dataset.tabTorneo === tabActual);
+    });
+
     if (tabActual === 'resumen') return renderTabResumen(cont, t);
     if (tabActual === 'participantes') return renderTabParticipantes(cont, t);
     if (tabActual === 'tabla') return renderTabTabla(cont, t);
     if (tabActual === 'resultados') return renderTabResultados(cont, t);
+    if (tabActual === 'chat') return renderTabChat(cont, t);
+    if (tabActual === 'publicaciones') return renderTabPublicaciones(cont, t);
   }
 
   /* ---------- TAB: RESUMEN ---------- */
   function renderTabResumen(cont, t) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const soyOrg = esOrganizador(t);
-    const puedeGest = puedeGestionar(t);
     const inscritos = (t.equipos || []).length;
     const cuposLibres = t.cuposEquipos - inscritos;
     const lleno = inscritos >= t.cuposEquipos;
@@ -382,7 +572,7 @@ export async function init(params = {}) {
     const statsHtml = `
       <div class="pd-stats">
         <div class="pd-stat">
-          <div class="pd-stat__icon">👥</div>
+          <div class="pd-stat__icon">${ICONOS.usuarios}</div>
           <div class="pd-stat__texto">
             <div class="pd-stat__value">${inscritos}</div>
             <div class="pd-stat__label">${esIndividual ? 'Participantes' : 'Equipos'}</div>
@@ -390,7 +580,7 @@ export async function init(params = {}) {
         </div>
 
         <div class="pd-stat">
-          <div class="pd-stat__icon">➕</div>
+          <div class="pd-stat__icon">${ICONOS.mas}</div>
           <div class="pd-stat__texto">
             <div class="pd-stat__value">${cuposLibres}</div>
             <div class="pd-stat__label">Cupos libres</div>
@@ -398,20 +588,13 @@ export async function init(params = {}) {
         </div>
 
         <div class="pd-stat">
-          <div class="pd-stat__icon">💰</div>
+          <div class="pd-stat__icon">${ICONOS.dinero}</div>
           <div class="pd-stat__texto">
             <div class="pd-stat__value">${t.precio === 0 ? 'Gratis' : '$' + t.precio.toLocaleString('es-CL')}</div>
             <div class="pd-stat__label">Inscripción</div>
           </div>
         </div>
 
-        <div class="pd-stat">
-          <div class="pd-stat__icon">🎯</div>
-          <div class="pd-stat__texto">
-            <div class="pd-stat__value">${t.equiposClasifican || '—'}</div>
-            <div class="pd-stat__label">Clasifican</div>
-          </div>
-        </div>
       </div>
     `;
 
@@ -419,7 +602,7 @@ export async function init(params = {}) {
     const descripcionHtml = `
       <div class="pd-card">
         <div class="pd-card__eyebrow">Competencia</div>
-        <h3 class="pd-card__title">Descripción del torneo</h3>
+        <h3 class="pd-card__title">Sobre el torneo</h3>
 
         ${t.descripcion ? `
           <p class="pd-card__description">${t.descripcion}</p>
@@ -437,7 +620,7 @@ export async function init(params = {}) {
           </div>
 
           <div class="torneo-info-item">
-            <div class="torneo-info-item__icon">${ICONOS.modalidad}</div>
+            <div class="torneo-info-item__icon">${ICONOS.diana}</div>
             <div>
               <div class="torneo-info-item__label">Modalidad</div>
               <div class="torneo-info-item__value">${modalidadTexto}</div>
@@ -445,7 +628,7 @@ export async function init(params = {}) {
           </div>
 
           <div class="torneo-info-item">
-            <div class="torneo-info-item__icon">${ICONOS.fecha}</div>
+            <div class="torneo-info-item__icon">${ICONOS.calendario}</div>
             <div>
               <div class="torneo-info-item__label">Fecha límite</div>
               <div class="torneo-info-item__value">${fechaLimiteTexto}</div>
@@ -453,7 +636,7 @@ export async function init(params = {}) {
           </div>
 
           <div class="torneo-info-item">
-            <div class="torneo-info-item__icon">${ICONOS.deporte}</div>
+            <div class="torneo-info-item__icon">${ICONOS.trofeo}</div>
             <div>
               <div class="torneo-info-item__label">Deporte</div>
               <div class="torneo-info-item__value">${t.deporte}</div>
@@ -467,7 +650,7 @@ export async function init(params = {}) {
     const botonesPanel = construirBotonesInscripcion(t, {
       esIndividual, soyOrg, miEquipo: miEquipoInscrito(t),
       miSol: miSolicitudPendiente(t), miInv: miInvitacionPendiente(t),
-      cerrado, lleno, cuposLibres, pendientesCount, puedeGest,
+      cerrado, lleno, cuposLibres, pendientesCount,
     });
 
     const panelHtml = `
@@ -480,7 +663,7 @@ export async function init(params = {}) {
         </h3>
         <p class="torneo-inscripcion-panel__desc">
           ${cuposLibres > 0
-            ? `Quedan ${cuposLibres} ${esIndividual ? 'cupos disponibles' : 'cupos disponibles'} para este torneo.`
+            ? `Quedan ${cuposLibres} cupos disponibles para este torneo.`
             : 'No quedan cupos disponibles.'}
           ${t.fechaLimiteInscripcion ? ` Las inscripciones cierran el ${fechaLimiteTexto}.` : ''}
         </p>
@@ -501,9 +684,28 @@ export async function init(params = {}) {
       </div>
     `;
 
-    /* ---------- Render ---------- */
+    /* ⚡ Card de invitación pendiente a sub-organizador */
+    const miInvOrg = t.miInvitacionOrganizador;
+    const cardInvitacionOrg = miInvOrg ? `
+      <div class="tso-invitacion-pendiente">
+        <div class="tso-invitacion-pendiente__icon">${ICONOS.corona}</div>
+        <div class="tso-invitacion-pendiente__info">
+          <div class="tso-invitacion-pendiente__titulo">Te invitaron a organizar</div>
+          <div class="tso-invitacion-pendiente__desc">
+            <strong>${t.organizador?.nombre || 'El organizador'}</strong> te invitó a ser
+            sub-organizador de <strong>${t.nombre}</strong>.
+          </div>
+        </div>
+        <div class="tso-invitacion-pendiente__acciones">
+          <button class="btn btn--ghost btn--sm" id="btn-rechazar-inv-organizador">Rechazar</button>
+          <button class="btn btn--primary btn--sm" id="btn-aceptar-inv-organizador">Aceptar</button>
+        </div>
+      </div>
+    ` : '';
+
     cont.innerHTML = `
       <div class="torneo-tab-contenido">
+        ${cardInvitacionOrg}
         ${statsHtml}
 
         <div class="torneo-resumen-grid">
@@ -512,6 +714,9 @@ export async function init(params = {}) {
         </div>
       </div>
     `;
+
+    document.getElementById('btn-aceptar-inv-organizador')?.addEventListener('click', () => responderInvitacionOrganizadorUI(t, true));
+    document.getElementById('btn-rechazar-inv-organizador')?.addEventListener('click', () => responderInvitacionOrganizadorUI(t, false));
 
     conectarEventosTab(t);
   }
@@ -522,54 +727,52 @@ export async function init(params = {}) {
 
     let botones = '';
 
-    /* ---------- Organizador ---------- */
-    if (soyOrg) {
+    if (soyOrg || t.soySubOrganizador) {
       const puedeCerrar = !estaCerrado(t);
       const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
 
       botones += `
         ${puedeCerrar ? `
           <button class="btn btn--warning" id="btn-cerrar-torneo">
-            🔒 Cerrar inscripciones
+            ${ICONOS.candado} Cerrar inscripciones
           </button>
         ` : ''}
         <button class="btn btn--primary" id="btn-gestionar-solicitudes">
-          👥 Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}
+          ${ICONOS.usuarios} Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}
         </button>
-        ${!esIndividual ? `
-          <button class="btn btn--ghost" id="btn-invitar-equipo">+ Invitar equipo</button>
+        ${!esIndividual && t.estado === 'inscripcion' ? `
+          <button class="btn btn--ghost" id="btn-invitar-equipo">${ICONOS.mas} Invitar equipo</button>
         ` : ''}
-        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat del torneo</button>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
-        <button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">🗑️ Eliminar torneo</button>
+        <button class="btn btn--ghost" id="btn-abrir-chat">${ICONOS.chat} Chat del torneo</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
+        ${soyOrg ? `
+          <button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">${ICONOS.basura} Eliminar torneo</button>
+        ` : ''}
       `;
       return botones;
     }
-
-    /* ---------- Ya inscrito ---------- */
     if (miEquipo) {
       const nombreMostrado = esIndividual
         ? miEquipo.nombre
-        : `${miEquipo.escudo || '🛡️'} ${miEquipo.nombre}`;
+        : `${miEquipo.escudo || ICONOS.escudo} ${miEquipo.nombre}`;
       return `
         <div class="badge badge--success" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          ✅ Ya estás inscrito: ${nombreMostrado}
+          ${ICONOS.check} Ya estás inscrito: ${nombreMostrado}
         </div>
-        <button class="btn btn--ghost" id="btn-abrir-chat">💬 Chat del torneo</button>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-abrir-chat">${ICONOS.chat} Chat del torneo</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
         <button class="btn btn--ghost" id="btn-salir-torneo" style="color:var(--color-danger)">
-          🚪 Salirme del torneo
+          ${ICONOS.salir} Salirme del torneo
         </button>
       `;
     }
 
-    /* ---------- Invitación pendiente ---------- */
     if (miInv) {
       return `
         <div class="card" style="width:100%; background:var(--color-primary-light); border:none; padding:14px">
           <p class="text-sm" style="margin:0 0 var(--space-3) 0">
-            📨 <strong>¡Te invitaron!</strong> El organizador quiere que
-            ${miInv.equipoEscudo || '🛡️'} <strong>${miInv.equipoNombre}</strong> participe.
+            ${ICONOS.correo} <strong>¡Te invitaron!</strong> El organizador quiere que
+            ${miInv.equipoEscudo || ICONOS.escudo} <strong>${miInv.equipoNombre}</strong> participe.
           </p>
           <div class="flex gap-2">
             <button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button>
@@ -579,34 +782,31 @@ export async function init(params = {}) {
       `;
     }
 
-    /* ---------- Solicitud pendiente ---------- */
     if (miSol) {
       return `
         <div class="badge badge--warning" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          ⏳ Tu solicitud está en espera
+          ${ICONOS.reloj} Tu solicitud está en espera
         </div>
         <button class="btn btn--ghost btn--sm" id="btn-cancelar-solicitud">Cancelar solicitud</button>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
 
-    /* ---------- Cerrado / lleno ---------- */
     if (cerrado || lleno) {
       return `
         <div class="badge badge--danger" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          🔒 ${lleno ? 'Torneo lleno' : 'Inscripciones cerradas'}
+          ${lleno ? 'Torneo lleno' : 'Inscripciones cerradas'}
         </div>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
 
-    /* ---------- Puede inscribirse ---------- */
     if (esIndividual) {
       return `
         <button class="btn btn--primary" id="btn-inscribir-equipo">
-          ✅ Inscribirme
+          ${ICONOS.check} Inscribirme
         </button>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
 
@@ -614,17 +814,17 @@ export async function init(params = {}) {
     if (misEq.length === 0) {
       return `
         <div class="badge badge--neutral" style="padding:12px 16px; font-size:13px; text-align:center; width:100%; justify-content:center">
-          ⚠️ Necesitás ser capitán de un equipo
+          ${ICONOS.alerta} Necesitás ser capitán de un equipo
         </div>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
 
     return `
       <button class="btn btn--primary" id="btn-inscribir-equipo">
-        ✅ Inscribir mi equipo (${cuposLibres} cupos)
+        ${ICONOS.check} Inscribir mi equipo (${cuposLibres} cupos)
       </button>
-      <button class="btn btn--ghost" id="btn-compartir-torneo">🔗 Compartir</button>
+      <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
     `;
   }
 
@@ -638,7 +838,7 @@ export async function init(params = {}) {
           <div class="pd-card__eyebrow">Inscripciones</div>
           <h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'}</h3>
           <div class="pd-empty">
-            <div class="pd-empty__icon">🏅</div>
+            <div class="pd-empty__icon">${ICONOS.usuarios}</div>
             <p class="pd-empty__text">Aún no hay ${esIndividual ? 'participantes' : 'equipos'} inscritos.</p>
           </div>
         </div>
@@ -646,14 +846,12 @@ export async function init(params = {}) {
     }
 
     const items = equipos.map(e => {
-      const escudoHtml = esIndividual
-        ? `<img src="${e.escudo || 'assets/icons/usuario.svg'}" alt="" />`
-        : (e.escudo || '🛡️');
-
+      const escudoHtml = renderEscudoCruce(e.escudo, esIndividual, 40);
       const mostrarExpulsar = soyOrg && !t.fixtureBloqueado && t.estado === 'inscripcion';
+      const idParticipante = e.equipoId || e.id;
 
       return `
-        <div class="torneo-equipo-item">
+        <div class="torneo-equipo-item" data-ver-participante="${idParticipante}" data-es-individual="${esIndividual}" role="button" tabindex="0">
           <div class="torneo-equipo-item__escudo">${escudoHtml}</div>
           <div class="torneo-equipo-item__info">
             <div class="torneo-equipo-item__nombre">${e.nombre}</div>
@@ -665,7 +863,7 @@ export async function init(params = {}) {
             <button class="torneo-equipo-item__expulsar"
                     data-expulsar-equipo="${e.id}"
                     title="Eliminar del torneo">
-              🗑️
+              ${ICONOS.basura}
             </button>
           ` : ''}
         </div>
@@ -694,6 +892,31 @@ export async function init(params = {}) {
       </div>
     `;
 
+    cont.querySelectorAll('[data-ver-participante]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-expulsar-equipo]')) return;
+
+        const id = el.dataset.verParticipante;
+        const esInd = el.dataset.esIndividual === 'true';
+
+        if (esInd) {
+          import('../components.js').then(({ verPerfilUsuario }) => {
+            verPerfilUsuario(id);
+          });
+        } else {
+          const equipo = (t.equipos || []).find(eq => String(eq.id) === String(id));
+          if (equipo) verDetalleEquipo(equipo);
+        }
+      });
+
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          el.click();
+        }
+      });
+    });
+
     conectarEventosTab(t);
   }
 
@@ -702,7 +925,7 @@ export async function init(params = {}) {
     if (t.modalidad !== 'liga') {
       cont.innerHTML = `
         <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">📊</div>
+          <div class="torneo-tab-vacio__icon">${ICONOS.diana}</div>
           <p class="torneo-tab-vacio__text">Esta modalidad no usa tabla de posiciones.</p>
         </div>
       `;
@@ -715,8 +938,11 @@ export async function init(params = {}) {
     if (filas.length === 0) {
       cont.innerHTML = `
         <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">📊</div>
-          <p class="torneo-tab-vacio__text">Aún no hay datos. Cargá partidos para ver la tabla.</p>
+          <div class="torneo-tab-vacio__icon">${ICONOS.diana}</div>
+          <h3 class="torneo-tab-vacio__titulo">Sin datos todavía</h3>
+          <p class="torneo-tab-vacio__text">
+            Cuando se carguen los resultados de los partidos, acá vas a ver la tabla de posiciones completa con los puntos, goles y diferencia de cada participante.
+          </p>
         </div>
       `;
       return;
@@ -749,7 +975,7 @@ export async function init(params = {}) {
                       <div style="display:flex; align-items:center; gap:var(--space-2)">
                         ${esIndividual
                           ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
-                          : `<span style="font-size:20px">${f.equipoEscudo || '🛡️'}</span>`}
+                          : `<span style="font-size:20px">${f.equipoEscudo || ICONOS.escudo}</span>`}
                         <span>${f.equipoNombre || 'Sin nombre'}</span>
                       </div>
                     </td>
@@ -778,7 +1004,7 @@ export async function init(params = {}) {
 
     cont.innerHTML = `
       <div class="torneo-tab-vacio">
-        <div class="torneo-tab-vacio__icon">📅</div>
+        <div class="torneo-tab-vacio__icon">${ICONOS.calendario}</div>
         <p class="torneo-tab-vacio__text">Esta modalidad no tiene resultados cargados.</p>
       </div>
     `;
@@ -795,16 +1021,20 @@ export async function init(params = {}) {
     if (jornadas.length === 0 && partidos.length === 0) {
       cont.innerHTML = `
         <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">📅</div>
-          <p class="torneo-tab-vacio__text">Aún no hay jornadas ni partidos.</p>
+          <div class="torneo-tab-vacio__icon">${ICONOS.calendario}</div>
+          <h3 class="torneo-tab-vacio__titulo">Sin jornadas todavía</h3>
+          <p class="torneo-tab-vacio__text">
+            ${puedeGest
+              ? 'Generá el fixture automático y el sistema va a crear todas las jornadas y los cruces entre los participantes inscriptos.'
+              : 'Cuando el organizador arme el fixture, vas a ver acá todas las jornadas con sus partidos.'}
+          </p>
           ${puedeGest ? `
-            <button class="btn btn--primary mt-4" id="btn-generar-fixture-liga">
-              🎲 Generar fixture automático
+            <button class="btn btn--primary" id="btn-generar-fixture-liga">
+              Generar fixture automático
             </button>
           ` : ''}
         </div>
       `;
-
       document.getElementById('btn-generar-fixture-liga')?.addEventListener('click', () => generarFixtureLiga(t));
       return;
     }
@@ -825,7 +1055,7 @@ export async function init(params = {}) {
       html += `
         <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
           <button class="btn btn--primary btn--sm" id="btn-abrir-crear-partido">
-            ➕ Crear partido
+            ${ICONOS.mas} Crear partido
           </button>
         </div>
       `;
@@ -854,8 +1084,8 @@ export async function init(params = {}) {
               </div>
               ${puedeGest ? `
                 <div class="jornada-card__acciones">
-                  <button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">✏️</button>
-                  <button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">🗑️</button>
+                  <button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">${ICONOS.lapiz}</button>
+                  <button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">${ICONOS.basura}</button>
                 </div>
               ` : ''}
             </div>
@@ -873,7 +1103,6 @@ export async function init(params = {}) {
 
     cont.innerHTML = `<div class="torneo-tab-contenido">${html}</div>`;
 
-    /* ---------- Conectar acciones ---------- */
     cont.querySelectorAll('[data-partido-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-jornada-editar]')) return;
@@ -912,6 +1141,36 @@ export async function init(params = {}) {
     document.getElementById('btn-abrir-crear-partido')?.addEventListener('click', () => abrirCrearPartido(t));
   }
 
+  /* ---------- Render de un partido (liga) ---------- */
+  function renderPartido(p, deporte, esIndividual, puedeGest, sistema) {
+    const finalizado = p.estado === 'finalizado';
+    const marcador = finalizado
+      ? formatearResultado(deporte, p.resultado, sistema)
+      : 'vs';
+
+    const localHtml = renderEscudoCruce(p.localEscudo, esIndividual, 24);
+    const visitanteHtml = renderEscudoCruce(p.visitanteEscudo, esIndividual, 24);
+
+    return `
+      <div class="resultado-item" data-partido-id="${p.id}" style="cursor:${(puedeGest || finalizado) ? 'pointer' : 'default'}">
+        <div class="resultado-item__equipo resultado-item__equipo--local">
+          ${localHtml}
+          <span class="resultado-item__nombre">${p.localNombre || 'Por definir'}</span>
+        </div>
+        <div class="resultado-item__marcador ${finalizado ? '' : 'resultado-item__marcador--pendiente'}">
+          ${marcador}
+          ${finalizado && p.ganador === 'local' ? '<span style="font-size:12px">▲</span>' : ''}
+        </div>
+        <div class="resultado-item__equipo resultado-item__equipo--visitante">
+          <span class="resultado-item__nombre">${p.visitanteNombre || 'Por definir'}</span>
+          ${visitanteHtml}
+          ${finalizado && p.ganador === 'visitante' ? '<span style="font-size:12px">▲</span>' : ''}
+        </div>
+        ${p.fecha ? `<div class="resultado-item__fecha text-xs text-muted">${formatearFechaCorta(p.fecha)}</div>` : ''}
+      </div>
+    `;
+  }
+
   /* ---------- TAB: RESULTADOS (ELIMINACIÓN) ---------- */
   function renderTabResultadosFixture(cont, t) {
     const puedeGest = puedeGestionar(t);
@@ -919,44 +1178,46 @@ export async function init(params = {}) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const sistema = t.sistemaClasificacion || 'simple';
 
-    /* ---------- Barra de acciones ---------- */
     let accionesBarra = '';
     if (puedeGest && !t.fixtureBloqueado) {
       const hayPartidos = partidos.length > 0;
       accionesBarra = `
         ${!hayPartidos ? `
           <button class="btn btn--primary btn--sm" id="btn-armar-aleatorio">
-            🎲 Armar fixture aleatorio
+            ${ICONOS.dado} Armar fixture aleatorio
           </button>
           <button class="btn btn--ghost btn--sm" id="btn-armar-manual">
-            🛠️ Armar fixture manual
+            ${ICONOS.martillo} Armar fixture manual
           </button>
         ` : `
           <button class="btn btn--primary btn--sm" id="btn-confirmar-fixture">
-            ✅ Confirmar fixture
+            ${ICONOS.check} Confirmar fixture
           </button>
           <button class="btn btn--ghost btn--sm" id="btn-rearmar-fixture" style="color:var(--color-danger)">
-            🗑️ Rehacer fixture
+            ${ICONOS.basura} Rehacer fixture
           </button>
         `}
       `;
     } else if (puedeGest && t.fixtureBloqueado) {
       accionesBarra = `
         <span class="badge badge--success" style="padding:8px 12px">
-          🔒 Fixture confirmado
+          ${ICONOS.candado} Fixture confirmado
         </span>
       `;
     }
 
-    /* ---------- Bracket vacío ---------- */
     if (partidos.length === 0) {
       cont.innerHTML = `
         <div class="torneo-tab-contenido">
           ${accionesBarra ? `<div class="flex gap-2 mb-4" style="flex-wrap:wrap">${accionesBarra}</div>` : ''}
           <div class="torneo-tab-vacio">
-            <div class="torneo-tab-vacio__icon">🏆</div>
-            <p class="torneo-tab-vacio__text">El fixture todavía no fue armado.</p>
-            ${puedeGest ? `<p class="text-xs text-muted mt-4">Armalo con los botones de arriba.</p>` : ''}
+            <div class="torneo-tab-vacio__icon">${ICONOS.trofeo}</div>
+            <h3 class="torneo-tab-vacio__titulo">Sin fixture todavía</h3>
+            <p class="torneo-tab-vacio__text">
+              ${puedeGest
+                ? 'Armá el bracket de eliminación con los botones de arriba. Podés hacerlo automático (aleatorio) o manual (eligiendo cada cruce).'
+                : 'Cuando el organizador arme el fixture, vas a ver acá el bracket completo con todos los cruces.'}
+            </p>
           </div>
         </div>
       `;
@@ -966,12 +1227,11 @@ export async function init(params = {}) {
       return;
     }
 
-    /* ---------- Agrupar por fase ---------- */
     const fases = fasesDelBracket(t);
     if (fases.length === 0) {
       cont.innerHTML = `
         <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">🏆</div>
+          <div class="torneo-tab-vacio__icon">${ICONOS.trofeo}</div>
           <p class="torneo-tab-vacio__text">Sin fases detectadas.</p>
         </div>
       `;
@@ -1035,13 +1295,13 @@ export async function init(params = {}) {
       </div>
     `;
 
-    /* ---------- Click en cruces ---------- */
     cont.querySelectorAll('[data-partido-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         const partidoId = el.dataset.partidoId;
         const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
         if (!partido) return;
+
         if (partido.esBye) return;
 
         const esPrimeraFase = partido.fase === faseIni;
@@ -1052,17 +1312,14 @@ export async function init(params = {}) {
             abrirEditarCruce(t, partido);
             return;
           }
-
           if (partido.estado === 'finalizado') {
             abrirVerDetallePartido(t, partido);
             return;
           }
-
           if (partido.equipoLocalId && partido.equipoVisitanteId) {
             abrirCargarResultado(t, partido);
             return;
           }
-
           toast('Este cruce todavía no tiene los dos participantes', 'info');
           return;
         }
@@ -1079,6 +1336,1223 @@ export async function init(params = {}) {
     document.getElementById('btn-rearmar-fixture')?.addEventListener('click', () => rearmarFixture(t));
   }
 
+  /* ---------- Render de un cruce del bracket ---------- */
+  function renderCruceNuevo(p, deporte, esIndividual, sistema, idxFase, idxCruce, puedeEditar, puedeInteractuar) {
+    const finalizado = p.estado === 'finalizado';
+    const esBye = p.esBye;
+
+    const localNombre = p.localNombre || 'Por definir';
+    const visitanteNombre = p.visitanteNombre || 'Por definir';
+
+    const localEsc = renderEscudoCruce(p.localEscudo, esIndividual);
+    const visEsc   = renderEscudoCruce(p.visitanteEscudo, esIndividual);
+
+    const ganadorLocal = finalizado && p.ganador === 'local';
+    const ganadorVisitante = finalizado && p.ganador === 'visitante';
+
+    let marcador = '';
+    if (esBye) {
+      marcador = '<span class="badge badge--neutral">BYE</span>';
+    } else if (finalizado) {
+      marcador = formatearResultado(deporte, p.resultado, sistema);
+    }
+
+    const claseCard = [
+      'bracket-cruce',
+      finalizado ? 'bracket-cruce--finalizado' : '',
+      esBye ? 'bracket-cruce--bye' : '',
+      puedeInteractuar ? 'bracket-cruce--clickeable' : '',
+      idxCruce % 2 === 0 ? 'bracket-cruce--impar' : 'bracket-cruce--par',
+    ].filter(Boolean).join(' ');
+
+    const iconoEditar = puedeEditar
+      ? `<span class="bracket-cruce__icono" title="Editar cruce">${ICONOS.lapiz}</span>`
+      : '';
+
+    return `
+      <div class="${claseCard}" data-partido-id="${p.id}" data-idx-fase="${idxFase}" data-idx-cruce="${idxCruce}">
+        ${iconoEditar}
+        <div class="bracket-cruce__equipo ${ganadorLocal ? 'bracket-cruce__equipo--ganador' : ''}">
+          ${localEsc}
+          <span class="bracket-cruce__nombre">${localNombre}</span>
+          ${ganadorLocal ? '<span class="bracket-cruce__check">✓</span>' : ''}
+        </div>
+        <div class="bracket-cruce__marcador">
+          ${marcador || '<span class="text-xs text-muted">vs</span>'}
+        </div>
+        <div class="bracket-cruce__equipo ${ganadorVisitante ? 'bracket-cruce__equipo--ganador' : ''}">
+          ${visEsc}
+          <span class="bracket-cruce__nombre">${visitanteNombre}</span>
+          ${ganadorVisitante ? '<span class="bracket-cruce__check">✓</span>' : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /* =========================================================
+     TAB: CHAT DEL TORNEO
+     ========================================================= */
+  async function renderTabChat(cont, t) {
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido" style="padding:0">
+        <div class="chat-layout chat-layout--torneo">
+          <section class="chat-layout__panel" id="panel-canal-torneo">
+            <div class="chat-empty">
+              <div class="chat-empty__icon">
+                <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <h3 class="chat-empty__titulo">Chat del torneo</h3>
+              <p class="chat-empty__text">Cargando...</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    `;
+
+    await cargarCanalTorneo(t);
+  }
+
+  async function cargarCanalTorneo(t) {
+    let canales = [];
+    try {
+      canales = await listarCanalesAPI();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al cargar canales:', err);
+    }
+
+    const canalDelTorneo = (canales || []).find(c =>
+      c.tipo === 'torneo' && String(c.refId) === String(t.id)
+    );
+
+    if (!canalDelTorneo) {
+      const panel = document.getElementById('panel-canal-torneo');
+      if (panel) {
+        panel.innerHTML = `
+          <div class="chat-empty">
+            <div class="chat-empty__icon">
+              <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h3 class="chat-empty__titulo">Chat no disponible</h3>
+            <p class="chat-empty__text">
+              Solo los participantes del torneo pueden ver este chat.
+            </p>
+          </div>`;
+      }
+      return;
+    }
+
+    canalTorneoId = canalDelTorneo.id;
+
+    try {
+      await marcarCanalLeidoAPI(canalTorneoId);
+    } catch (err) {
+      console.warn('[torneo-detalle] No se pudo marcar el canal como leído:', err.message);
+    }
+
+    await renderPanelCanalTorneo(canalTorneoId);
+
+    if (intervaloCanalTorneo) clearInterval(intervaloCanalTorneo);
+    intervaloCanalTorneo = setInterval(async () => {
+      if (canalTorneoActualId === canalTorneoId) {
+        await refrescarMensajesCanalTorneo(canalTorneoId);
+      }
+    }, 3000);
+  }
+
+  async function renderPanelCanalTorneo(canalId) {
+    const panel = document.getElementById('panel-canal-torneo');
+    if (!panel) return;
+
+    canalTorneoActualId = canalId;
+    ultimoHashCanalTorneo = null;
+    ultimaCanalTorneoRenderizado = null;
+    imagenBase64Torneo = null;
+
+    let canal;
+    try {
+      canal = await obtenerCanalAPI(canalId);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al obtener canal:', err);
+      panel.innerHTML = `
+        <div class="chat-empty">
+          <div class="chat-empty__icon">
+            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <p class="chat-empty__text">No se pudo cargar el chat</p>
+        </div>`;
+      return;
+    }
+
+    const iconoHtml = renderIconoGenerico(canal.icono || ICONOS.trofeo, 28);
+
+    panel.innerHTML = `
+      <div class="chat-header">
+        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
+          ${iconoHtml}
+        </div>
+        <div class="chat-header__info">
+          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
+          <div class="chat-header__sub">Torneo · ${canal.totalMiembros || 0} miembros</div>
+        </div>
+      </div>
+
+      <div class="chat-mensajes" id="chat-mensajes-torneo"></div>
+
+      <div class="chat-input-preview hidden" id="chat-torneo-preview">
+        <div class="chat-input-preview__img-wrapper">
+          <img id="chat-torneo-preview-img" src="" alt="" />
+          <button type="button" class="chat-input-preview__del" id="chat-torneo-preview-del" title="Quitar">✕</button>
+        </div>
+      </div>
+
+      <form class="chat-input" id="chat-form-torneo">
+        <label class="chat-input__attach" title="Adjuntar imagen">
+          ${ICONOS.clip}
+          <input type="file" id="chat-torneo-file" accept="image/*" style="display:none" />
+        </label>
+
+        <input
+          type="text"
+          id="chat-input-torneo"
+          placeholder="Escribí un mensaje..."
+          maxlength="2000"
+          autocomplete="off"
+        />
+        <button type="submit" class="chat-input__btn" title="Enviar">
+          ${ICONOS.enviar}
+        </button>
+      </form>
+    `;
+
+    document.getElementById('chat-torneo-file')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 3 * 1024 * 1024) {
+        toast('La imagen es muy grande (máx 3MB)', 'error');
+        e.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        imagenBase64Torneo = ev.target.result;
+        mostrarPreviewImagen('chat-torneo', imagenBase64Torneo);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    document.getElementById('chat-torneo-preview-del')?.addEventListener('click', () => {
+      imagenBase64Torneo = null;
+      ocultarPreviewImagen('chat-torneo');
+    });
+
+    document.getElementById('chat-form-torneo')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await enviarMensajeEnCanalTorneo(canalId);
+    });
+
+    await refrescarMensajesCanalTorneo(canalId);
+  }
+
+  async function refrescarMensajesCanalTorneo(canalId) {
+    const cont = document.getElementById('chat-mensajes-torneo');
+    if (!cont) return;
+
+    let mensajes;
+    try {
+      mensajes = await listarMensajesDeCanalAPI(canalId);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al cargar mensajes del canal:', err);
+      return;
+    }
+
+    const hash = mensajes
+      .map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`)
+      .join('|');
+
+    const cambioDeCanal = ultimaCanalTorneoRenderizado !== canalId;
+
+    if (!cambioDeCanal && hash === ultimoHashCanalTorneo) return;
+
+    ultimoHashCanalTorneo = hash;
+    ultimaCanalTorneoRenderizado = canalId;
+
+    if (mensajes.length === 0) {
+      cont.innerHTML = `
+        <div class="chat-mensajes__empty">
+          <div class="chat-mensajes__empty-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <p>Aún no hay mensajes.</p>
+          <p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p>
+        </div>`;
+      return;
+    }
+
+    const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
+
+    let html = '';
+    let diaAnterior = null;
+
+    mensajes.forEach((m, idx) => {
+      const fecha = new Date(m.createdAt);
+      const dia = fecha.toDateString();
+
+      if (dia !== diaAnterior) {
+        html += `<div class="chat-dia">${labelDiaChat(m.createdAt)}</div>`;
+        diaAnterior = dia;
+      }
+
+      const esMio = String(m.autorId) === String(user.id);
+
+      const tieneTexto = !!m.texto;
+      const tieneImagen = !!m.imagen;
+      const soloImagen = tieneImagen && !tieneTexto;
+
+      html += `
+        <div class="msg ${esMio ? 'msg--yo' : ''}">
+          ${!esMio ? `<img src="${avatarDeChat(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
+            ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
+            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
+            ${tieneImagen ? `
+              <div class="msg__imagen-wrapper" data-ver-imagen-torneo="${idx}">
+                <img src="${m.imagen}" alt="" loading="lazy" />
+              </div>
+            ` : ''}
+            <div class="msg__meta">
+              <span class="msg__hora">${horaCortaChat(m.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-ver-imagen-torneo]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagenTorneo);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    if (estabaAbajo || mensajes.length <= 2) {
+      cont.scrollTop = cont.scrollHeight;
+    }
+
+    try {
+      await marcarCanalLeidoAPI(canalId);
+    } catch (err) {
+      // Silencioso
+    }
+  }
+
+  async function enviarMensajeEnCanalTorneo(canalId) {
+    const input = document.getElementById('chat-input-torneo');
+    if (!input) return;
+
+    const texto = input.value.trim();
+    const imagen = imagenBase64Torneo;
+
+    if (!texto && !imagen) return;
+
+    input.value = '';
+    imagenBase64Torneo = null;
+    ocultarPreviewImagen('chat-torneo');
+    input.focus();
+
+    try {
+      await enviarMensajeACanalAPI(canalId, texto || null, imagen || null);
+      await refrescarMensajesCanalTorneo(canalId);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al enviar mensaje:', err);
+      toast(err.message || 'No se pudo enviar el mensaje', 'error');
+    }
+  }
+
+  /* =========================================================
+     TAB: PUBLICACIONES DEL TORNEO
+     ========================================================= */
+  async function renderTabPublicaciones(cont, t) {
+    const soyOrg = esOrganizador(t);
+    const puedePublicar = soyOrg || t.soySubOrganizador === true;
+
+    cont.innerHTML = `
+      <div class="torneo-tab-contenido">
+        <div class="pubs-subtab-wrapper" id="pubs-torneo-contenido">
+          <div class="page-loader">
+            <div class="spinner"></div>
+            <span>Cargando publicaciones...</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const wrapper = document.getElementById('pubs-torneo-contenido');
+    if (!wrapper) return;
+
+    let publicaciones = [];
+    try {
+      publicaciones = await listarPubsTorneoAPI(t.id);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al cargar publicaciones:', err);
+      wrapper.innerHTML = `
+        <div class="pubs-subtab-empty">
+          <div class="pubs-subtab-empty__icon">${ICONOS.alerta}</div>
+          <h3 class="pubs-subtab-empty__titulo">No se pudieron cargar</h3>
+          <p class="pubs-subtab-empty__text">${err.message || ''}</p>
+        </div>`;
+      return;
+    }
+
+    wrapper.innerHTML = `
+      <div class="perfil-pubs-header mb-4" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <h3 class="card__title" style="margin:0">Publicaciones de ${t.nombre}</h3>
+        ${puedePublicar ? `
+          <button class="btn btn--primary btn--sm" id="btn-nueva-pub-torneo">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva publicación
+          </button>
+        ` : ''}
+      </div>
+      <div id="feed-torneo-contenido"></div>
+    `;
+
+    const feedCont = document.getElementById('feed-torneo-contenido');
+
+    renderFeedPublicaciones(feedCont, publicaciones, {
+      onRefrescar: () => renderTabPublicaciones(cont, t)
+    });
+
+    document.getElementById('btn-nueva-pub-torneo')?.addEventListener('click', () => {
+      abrirModalCrearPublicacionCompartido(
+        'torneo',
+        t.id,
+        () => renderTabPublicaciones(cont, t),
+        { tipo: 'post' }
+      );
+    });
+  }
+
+  /* =========================================================
+     VER DETALLE DEL PARTIDO
+     ========================================================= */
+  function abrirVerDetallePartido(t, partido) {
+    partidoDetalleActual = partido;
+
+    const reglas = getReglasDeporte(t.deporte);
+    const sistema = t.sistemaClasificacion || 'simple';
+    const esIndividual = t.tipoParticipacion === 'individual';
+
+    const titulo = document.getElementById('ver-detalle-partido-titulo');
+    const body = document.getElementById('ver-detalle-partido-body');
+    const btnEditar = document.getElementById('btn-editar-resultado-desde-detalle');
+
+    titulo.textContent = `Detalle · ${t.deporte}`;
+
+    const marcadorPrincipal = formatearResultado(t.deporte, partido.resultado, sistema);
+
+    const localEscHtml = `<div style="display:flex; justify-content:center">${renderEscudoCruce(partido.localEscudo, esIndividual, 64)}</div>`;
+    const visEscHtml = `<div style="display:flex; justify-content:center">${renderEscudoCruce(partido.visitanteEscudo, esIndividual, 64)}</div>`;
+
+    let setsHtml = '';
+    if (reglas.tipo === 'sets' && Array.isArray(partido.resultado?.sets)) {
+      const setsLocal = partido.resultado.setsLocal ?? 0;
+      const setsVisitante = partido.resultado.setsVisitante ?? 0;
+
+      setsHtml = `
+        <div class="ver-detalle__sets">
+          ${partido.resultado.sets.map((s, i) => {
+            const local = Number(s.local) || 0;
+            const visitante = Number(s.visitante) || 0;
+            const localGana = local > visitante;
+            const visitaGana = visitante > local;
+
+            return `
+              <div class="ver-detalle__set">
+                <div class="ver-detalle__set-num">Set ${i + 1}</div>
+                <div class="ver-detalle__set-marcador">
+                  <span class="${localGana ? 'ver-detalle__set-ganador' : ''}">${local}</span>
+                  <span class="ver-detalle__set-sep">-</span>
+                  <span class="${visitaGana ? 'ver-detalle__set-ganador' : ''}">${visitante}</span>
+                </div>
+                <div class="ver-detalle__set-check">
+                  ${localGana ? '✓' : visitaGana ? ' ' : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div class="ver-detalle__resumen-sets">
+          <span>Sets ganados: <strong>${setsLocal} - ${setsVisitante}</strong></span>
+        </div>
+      `;
+    }
+
+    let penalesHtml = '';
+    if (partido.resultado?.penales_local != null && partido.resultado?.penales_visitante != null) {
+      penalesHtml = `
+        <div class="ver-detalle__penales">
+          <div class="badge badge--info">${reglas.labelDesempate || 'Desempate'}: ${partido.resultado.penales_local} - ${partido.resultado.penales_visitante}</div>
+        </div>
+      `;
+    }
+
+    let tiempoPuntosHtml = '';
+    if ((sistema === 'tiempo' || sistema === 'puntos') && Array.isArray(partido.resultado?.participantes)) {
+      const partes = partido.resultado.participantes;
+
+      tiempoPuntosHtml = `
+        <div class="ver-detalle__tp" style="margin-top:var(--space-4)">
+          ${partes.map(p => {
+            const esLocal = String(p.id) === String(partido.equipoLocalId);
+            const nombre = esLocal ? (partido.localNombre || 'Local') : (partido.visitanteNombre || 'Visitante');
+            const escudo = esLocal ? (partido.localEscudo || ICONOS.escudo) : (partido.visitanteEscudo || ICONOS.escudo);
+
+            const valor = sistema === 'tiempo'
+              ? formatearTiempo(p.tiempoSeg)
+              : (p.puntos != null ? String(p.puntos) + ' pts' : '—');
+
+            const esGanador =
+              (sistema === 'tiempo' && String(p.id) === String(partido.equipoLocalId) && partido.ganador === 'local') ||
+              (sistema === 'tiempo' && String(p.id) === String(partido.equipoVisitanteId) && partido.ganador === 'visitante') ||
+              (sistema === 'puntos' && String(p.id) === String(partido.equipoLocalId) && partido.ganador === 'local') ||
+              (sistema === 'puntos' && String(p.id) === String(partido.equipoVisitanteId) && partido.ganador === 'visitante');
+
+            return `
+              <div class="ver-detalle__tp-fila" style="display:flex; align-items:center; justify-content:space-between; padding:var(--space-3); background:var(--color-bg-alt); border-radius:var(--radius-md); margin-bottom:var(--space-2); ${esGanador ? 'border:2px solid var(--color-success)' : ''}">
+                <div style="display:flex; align-items:center; gap:var(--space-3)">
+                  ${esIndividual
+                    ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
+                    : `<span style="font-size:28px">${escudo}</span>`}
+                  <div>
+                    <div style="font-weight:600">${nombre}</div>
+                    ${esGanador ? `<div class="badge badge--success" style="margin-top:4px">${ICONOS.trofeo} Ganador</div>` : ''}
+                  </div>
+                </div>
+                <div style="font-size:var(--fs-lg); font-weight:700; ${esGanador ? 'color:var(--color-success)' : ''}">
+                  ${valor}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    const ganadorHtml = partido.ganador === 'local'
+      ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.localNombre || 'Local'}</span>`
+      : partido.ganador === 'visitante'
+        ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.visitanteNombre || 'Visitante'}</span>`
+        : `<span class="badge badge--warning">Empate</span>`;
+
+    body.innerHTML = `
+      <div class="ver-detalle__cabecera">
+        <div class="ver-detalle__equipo">
+          ${localEscHtml}
+          <div class="ver-detalle__equipo-nombre">${partido.localNombre || 'Local'}</div>
+        </div>
+        <div class="ver-detalle__vs">
+          <div class="ver-detalle__marcador">${marcadorPrincipal}</div>
+          <div class="ver-detalle__vs-txt">VS</div>
+        </div>
+        <div class="ver-detalle__equipo">
+          ${visEscHtml}
+          <div class="ver-detalle__equipo-nombre">${partido.visitanteNombre || 'Visitante'}</div>
+        </div>
+      </div>
+
+      ${setsHtml}
+      ${penalesHtml}
+      ${tiempoPuntosHtml}
+
+      <div class="ver-detalle__footer-info">
+        ${ganadorHtml}
+      </div>
+
+      ${partido.fecha ? `<p class="text-xs text-muted text-center mt-4">${ICONOS.calendario} ${formatearFecha(partido.fecha)}</p>` : ''}
+    `;
+
+    if (puedeGestionar(t)) {
+      btnEditar.style.display = '';
+      btnEditar.onclick = () => {
+        cerrarModal('modal-ver-detalle-partido');
+        setTimeout(() => abrirCargarResultado(t, partido), 200);
+      };
+    } else {
+      btnEditar.style.display = 'none';
+    }
+
+    abrirModal('modal-ver-detalle-partido');
+  }
+
+  /* =========================================================
+     EDITAR CRUCE
+     ========================================================= */
+  function abrirEditarCruce(t, partido) {
+    if (!puedeGestionar(t)) return;
+    if (t.fixtureBloqueado) return;
+
+    cruceActual = partido;
+
+    const selectLocal = document.getElementById('editar-cruce-local');
+    const selectVisita = document.getElementById('editar-cruce-visitante');
+    const titulo = document.getElementById('editar-cruce-titulo');
+    const descripcion = document.getElementById('editar-cruce-descripcion');
+
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const inscritos = t.equipos || [];
+
+    titulo.textContent = `Editar ${FASES_LABEL[partido.fase] || 'cruce'}`;
+    descripcion.textContent = 'Cambiá los participantes de este cruce. Podés dejar uno vacío para dar un BYE.';
+
+    const opciones = inscritos.map(e =>
+      `<option value="${e.id}">${e.nombre}</option>`
+    ).join('');
+
+    function refrescar() {
+      const localId = selectLocal.value;
+      const visitaId = selectVisita.value;
+
+      selectLocal.innerHTML = `
+        <option value="">— Vacío (bye) —</option>
+        ${inscritos
+          .filter(e => String(e.id) !== String(visitaId))
+          .map(e => `<option value="${e.id}">${e.nombre}</option>`)
+          .join('')}
+      `;
+      selectVisita.innerHTML = `
+        <option value="">— Vacío (bye) —</option>
+        ${inscritos
+          .filter(e => String(e.id) !== String(localId))
+          .map(e => `<option value="${e.id}">${e.nombre}</option>`)
+          .join('')}
+      `;
+    }
+
+    selectLocal.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
+    selectVisita.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
+    selectLocal.value = partido.equipoLocalId || '';
+    selectVisita.value = partido.equipoVisitanteId || '';
+
+    refrescar();
+
+    selectLocal.onchange = refrescar;
+    selectVisita.onchange = refrescar;
+
+    const btnGuardar = document.getElementById('btn-guardar-cruce');
+    btnGuardar.disabled = false;
+    btnGuardar.textContent = 'Guardar cambios';
+    btnGuardar.onclick = () => guardarCruce(t, partido);
+
+    abrirModal('modal-editar-cruce');
+  }
+
+  async function guardarCruce(t, partido) {
+    const localId = document.getElementById('editar-cruce-local')?.value || null;
+    const visitaId = document.getElementById('editar-cruce-visitante')?.value || null;
+
+    if (!localId && !visitaId) {
+      if (!confirm('Este cruce va a quedar vacío. ¿Querés borrarlo?')) return;
+
+      try {
+        await eliminarPartidoTorneoAPI(t.id, partido.id);
+        toast('Cruce eliminado', 'info');
+        cerrarModal('modal-editar-cruce');
+
+        torneo = await obtenerTorneo(t.id);
+        await render();
+      } catch (err) {
+        console.error('[torneo-detalle] Error al borrar cruce:', err);
+        toast(err.message || 'No se pudo borrar el cruce', 'error');
+      }
+      return;
+    }
+
+    if (localId && visitaId && localId === visitaId) {
+      return toast('Local y visitante no pueden ser el mismo', 'error');
+    }
+
+    const btn = document.getElementById('btn-guardar-cruce');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      await editarCruceAPI(t.id, partido.id, {
+        equipoLocalId: localId,
+        equipoVisitanteId: visitaId,
+      });
+
+      toast('Cruce actualizado', 'success');
+      cerrarModal('modal-editar-cruce');
+
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al editar cruce:', err);
+      toast(err.message || 'No se pudo editar el cruce', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  }
+
+  /* =========================================================
+     ARMAR FIXTURE
+     ========================================================= */
+  async function armarAleatorio(t) {
+    if (!confirm('¿Armar el fixture aleatorio? Se mezclarán los participantes en cruces al azar.')) return;
+
+    try {
+      const resultado = await armarFixtureAleatorioAPI(t.id);
+      toast(resultado.mensaje || 'Fixture aleatorio armado', 'success');
+
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al armar fixture aleatorio:', err);
+      toast(err.message || 'No se pudo armar el fixture', 'error');
+    }
+  }
+
+  function abrirArmarManual(t) {
+    const body = document.getElementById('armar-fixture-body');
+    if (!body) return;
+
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const inscritos = t.equipos || [];
+
+    if (inscritos.length < 2) {
+      toast('Necesitás al menos 2 participantes', 'error');
+      return;
+    }
+
+    const cantidadInscritos = inscritos.length;
+    let cantidadSlots;
+    if (cantidadInscritos <= 2) cantidadSlots = 2;
+    else if (cantidadInscritos <= 4) cantidadSlots = 4;
+    else if (cantidadInscritos <= 8) cantidadSlots = 8;
+    else if (cantidadInscritos <= 16) cantidadSlots = 16;
+    else if (cantidadInscritos <= 32) cantidadSlots = 32;
+    else cantidadSlots = 64;
+
+    const cantidadCruces = cantidadSlots / 2;
+
+    const opcionesEquipos = inscritos.map(e =>
+      `<option value="${e.id}">${e.nombre}</option>`
+    ).join('');
+
+    let html = '';
+    for (let i = 0; i < cantidadCruces; i++) {
+      html += `
+        <div class="form-row mb-4" style="grid-template-columns:1fr 1fr; gap:var(--space-2)">
+          <div class="field" style="margin:0">
+            <label class="field__label" style="font-size:var(--fs-xs)">Local ${i + 1}</label>
+            <select class="field__input" data-cruce-local="${i}">
+              <option value="">— Vacío (bye) —</option>
+              ${opcionesEquipos}
+            </select>
+          </div>
+          <div class="field" style="margin:0">
+            <label class="field__label" style="font-size:var(--fs-xs)">Visitante ${i + 1}</label>
+            <select class="field__input" data-cruce-visitante="${i}">
+              <option value="">— Vacío (bye) —</option>
+              ${opcionesEquipos}
+            </select>
+          </div>
+        </div>
+      `;
+    }
+
+    body.innerHTML = html;
+
+    const btn = document.getElementById('btn-confirmar-armado');
+    btn.disabled = false;
+    btn.textContent = 'Armar fixture';
+    btn.onclick = () => guardarArmadoManual(t, cantidadCruces);
+
+    abrirModal('modal-armar-fixture');
+  }
+
+  async function guardarArmadoManual(t, cantidadCruces) {
+    const cruces = [];
+
+    for (let i = 0; i < cantidadCruces; i++) {
+      const local = document.querySelector(`[data-cruce-local="${i}"]`)?.value;
+      const visitante = document.querySelector(`[data-cruce-visitante="${i}"]`)?.value;
+
+      if (!local && !visitante) return toast(`El cruce ${i + 1} está vacío`, 'error');
+      if (local && visitante && local === visitante) return toast(`El cruce ${i + 1} tiene el mismo equipo en local y visitante`, 'error');
+
+      cruces.push({ localId: local || null, visitanteId: visitante || null });
+    }
+
+    const btn = document.getElementById('btn-confirmar-armado');
+    btn.disabled = true;
+    btn.textContent = 'Armando...';
+
+    try {
+      await armarFixtureManualAPI(t.id, cruces);
+      toast('Fixture armado', 'success');
+      cerrarModal('modal-armar-fixture');
+
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al armar fixture manual:', err);
+      toast(err.message || 'No se pudo armar el fixture', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Armar fixture';
+    }
+  }
+
+  async function confirmarFixture(t) {
+    if (!confirm('¿Confirmar el fixture? Ya no podrás editar los cruces.')) return;
+
+    try {
+      await confirmarFixtureAPI(t.id);
+      toast('Fixture confirmado', 'success');
+
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al confirmar fixture:', err);
+      toast(err.message || 'No se pudo confirmar el fixture', 'error');
+    }
+  }
+
+  async function rearmarFixture(t) {
+    const partidos = t.partidos || [];
+    const partidosConResultado = partidos.filter(p => p.estado === 'finalizado' && p.resultado);
+
+    if (partidosConResultado.length > 0) {
+      const msg =
+        `ATENCIÓN\n\n` +
+        `Este torneo ya tiene ${partidosConResultado.length} partido(s) con resultado cargado.\n\n` +
+        `Si rehacés el fixture, se van a borrar TODOS los cruces Y TODOS los resultados.\n\n` +
+        `¿Estás seguro de que querés rehacer el fixture?`;
+
+      if (!confirm(msg)) return;
+      if (!confirm('Última confirmación: ¿rehacer el fixture y perder todos los resultados?')) return;
+    } else {
+      if (!confirm('¿Borrar el fixture actual? Se eliminarán todos los partidos y cruces.')) return;
+    }
+
+    try {
+      for (const p of partidos) {
+        try {
+          await eliminarPartidoTorneoAPI(t.id, p.id);
+        } catch (e) {
+          console.warn('[torneo-detalle] No se pudo borrar partido:', p.id, e.message);
+        }
+      }
+
+      toast('Fixture borrado', 'info');
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al rehacer fixture:', err);
+      toast(err.message || 'No se pudo borrar el fixture', 'error');
+    }
+  }
+
+  /* =========================================================
+     GESTIONAR SOLICITUDES
+     ========================================================= */
+  function abrirGestionSolicitudes(t) {
+    renderSolicitudes(t, 'pendientes');
+    abrirModal('modal-gestionar-solicitudes');
+  }
+
+  function renderSolicitudes(t, tab) {
+    const cont = document.getElementById('lista-solicitudes');
+    if (!cont) return;
+
+    const esIndividual = t.tipoParticipacion === 'individual';
+
+    document.querySelectorAll('[data-tab-sol]').forEach(el => {
+      el.classList.toggle('active', el.dataset.tabSol === tab);
+    });
+
+    const listaEspera = t.listaEspera || [];
+    const pendientes = listaEspera.filter(l => l.estado === 'pendiente');
+    const aceptados  = listaEspera.filter(l => l.estado === 'aceptado');
+    const rechazados = listaEspera.filter(l => l.estado === 'rechazado');
+
+    document.getElementById('count-sol-pendientes').textContent = pendientes.length;
+    document.getElementById('count-sol-aceptados').textContent = aceptados.length;
+    document.getElementById('count-sol-rechazados').textContent = rechazados.length;
+
+    let lista;
+    if (tab === 'pendientes') lista = pendientes;
+    else if (tab === 'aceptados') lista = aceptados;
+    else lista = rechazados;
+
+    const total = listaEspera.length;
+    const statsHtml = `
+      <div class="torneo-stats-bar">
+        <div class="torneo-stat-mini">
+          <div class="torneo-stat-mini__valor">${(t.equipos || []).length}</div>
+          <div class="torneo-stat-mini__label">${esIndividual ? 'Particip.' : 'Equipos'}</div>
+        </div>
+        <div class="torneo-stat-mini">
+          <div class="torneo-stat-mini__valor">${t.cuposEquipos - (t.equipos || []).length}</div>
+          <div class="torneo-stat-mini__label">Cupos libres</div>
+        </div>
+        <div class="torneo-stat-mini">
+          <div class="torneo-stat-mini__valor">${pendientes.length}</div>
+          <div class="torneo-stat-mini__label">Pendientes</div>
+        </div>
+        <div class="torneo-stat-mini">
+          <div class="torneo-stat-mini__valor">${total}</div>
+          <div class="torneo-stat-mini__label">Totales</div>
+        </div>
+      </div>
+    `;
+
+    if (lista.length === 0) {
+      cont.innerHTML = statsHtml + `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">${ICONOS.carpetaAbierta}</div>
+          <p>Sin solicitudes en esta categoría</p>
+        </div>`;
+      return;
+    }
+
+    const lleno = (t.equipos || []).length >= t.cuposEquipos;
+
+    const loteHtml = tab === 'pendientes' && !lleno ? `
+      <div class="torneo-lote-acciones">
+        <button class="btn btn--ghost btn--sm" id="btn-seleccionar-todas">Seleccionar todas</button>
+        <button class="btn btn--accion-lote btn--sm" id="btn-aprobar-lote" disabled>
+          ${ICONOS.check} Aprobar seleccionadas
+        </button>
+        <button class="btn btn--ghost btn--sm" id="btn-rechazar-lote" disabled>
+          Rechazar
+        </button>
+      </div>
+    ` : '';
+
+    cont.innerHTML = statsHtml + loteHtml + lista.map((sol, i) => `
+      <div class="solicitud-item">
+        ${tab === 'pendientes' && !lleno ? `
+          <input type="checkbox" data-sel="${i}" />
+        ` : ''}
+
+        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; overflow:hidden">
+          ${renderEscudoCruce(sol.equipoEscudo, esIndividual, 40)}
+        </div>
+        <div class="solicitud-item__info" data-ver="${i}" style="cursor:pointer">
+          <div class="solicitud-item__nombre">${sol.equipoNombre}</div>
+          <div class="solicitud-item__meta">
+            ${sol.origen === 'invitacion-aceptada'
+              ? `${ICONOS.check} Aceptó tu invitación`
+              : (esIndividual ? `${ICONOS.carta} Solicitó inscribirse` : `${ICONOS.carta} Solicitó unirse`)} ·
+            ${new Date(sol.fecha).toLocaleDateString('es-CL')}
+          </div>
+        </div>
+        <div class="solicitud-item__actions">
+          ${!esIndividual ? `<button class="btn btn--ghost btn--sm" data-ver-btn="${i}">Ver</button>` : ''}
+          ${!esIndividual ? `<button class="btn btn--ghost btn--sm" data-chat-capitan="${sol.equipoId}" title="Hablar con el capitán">${ICONOS.chat}</button>` : ''}
+          ${sol.estado === 'pendiente' ? `
+            <button class="btn btn--primary btn--sm" data-aceptar="${i}" ${lleno ? 'disabled title="Torneo lleno"' : ''}>Aprobar</button>
+            <button class="btn btn--ghost btn--sm" data-rechazar="${i}">${ICONOS.x}</button>
+          ` : sol.estado === 'aceptado' ? `
+            <span class="badge badge--success">Aceptado</span>
+            <button class="btn btn--ghost btn--sm" data-expulsar="${i}" style="color:var(--color-danger)">${ICONOS.basura}</button>
+          ` : `
+            <span class="badge badge--danger">Rechazado</span>
+          `}
+        </div>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('[data-ver], [data-ver-btn]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.ver ?? el.dataset.verBtn);
+        verDetalleEquipo(lista[idx]);
+      });
+    });
+
+    cont.querySelectorAll('[data-aceptar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.aceptar);
+        aprobarSolicitud(t, lista[idx]);
+      });
+    });
+
+    cont.querySelectorAll('[data-rechazar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.rechazar);
+        rechazarSolicitud(t, lista[idx]);
+      });
+    });
+
+    cont.querySelectorAll('[data-expulsar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.expulsar);
+        expulsarSolicitante(t, lista[idx]);
+      });
+    });
+
+    cont.querySelectorAll('[data-chat-capitan]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const equipoId = btn.dataset.chatCapitan;
+        try {
+          const eq = await obtenerGrupo(equipoId);
+          const capitanId = eq.capitanId || eq.miembros?.find(m => m.rol === 'capitan')?.id;
+          
+          if (!capitanId) {
+            return toast('No se pudo encontrar al capitán del equipo', 'error');
+          }
+
+          const { crearConversacion } = await import('../services/mensajes.service.js');
+          const conv = await crearConversacion(capitanId);
+          cerrarModal('modal-gestionar-solicitudes');
+          window.location.hash = '#/mensajes';
+          setTimeout(() => {
+            document.querySelector(`[data-conv="${conv.id}"]`)?.click();
+          }, 400);
+        } catch (err) {
+          console.error(err);
+          toast('Error al abrir el chat con el capitán', 'error');
+        }
+      });
+    });
+
+    const checkboxes = cont.querySelectorAll('input[data-sel]');
+    const btnAprobarLote = document.getElementById('btn-aprobar-lote');
+    const btnRechazarLote = document.getElementById('btn-rechazar-lote');
+    const btnSeleccionarTodas = document.getElementById('btn-seleccionar-todas');
+
+    function actualizarLote() {
+      const marcadas = cont.querySelectorAll('input[data-sel]:checked').length;
+      if (btnAprobarLote) btnAprobarLote.disabled = marcadas === 0;
+      if (btnRechazarLote) btnRechazarLote.disabled = marcadas === 0;
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', actualizarLote));
+
+    btnSeleccionarTodas?.addEventListener('click', () => {
+      const todasMarcadas = [...checkboxes].every(cb => cb.checked);
+      checkboxes.forEach(cb => cb.checked = !todasMarcadas);
+      actualizarLote();
+      btnSeleccionarTodas.textContent = todasMarcadas ? 'Seleccionar todas' : 'Deseleccionar todas';
+    });
+
+    btnAprobarLote?.addEventListener('click', async () => {
+      const marcadas = [...cont.querySelectorAll('input[data-sel]:checked')].map(cb => Number(cb.dataset.sel));
+      await aprobarLote(t, marcadas.map(i => lista[i]));
+    });
+
+    btnRechazarLote?.addEventListener('click', async () => {
+      const marcadas = [...cont.querySelectorAll('input[data-sel]:checked')].map(cb => Number(cb.dataset.sel));
+      if (marcadas.length === 0) return;
+      if (!confirm(`¿Rechazar ${marcadas.length} solicitud(es)?`)) return;
+
+      for (const i of marcadas) {
+        await rechazarSolicitud(t, lista[i], true);
+      }
+
+      await render();
+      abrirGestionSolicitudes(torneo);
+    });
+  }
+
+  async function aprobarSolicitud(t, sol) {
+    try {
+      await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'aprobar');
+      toast('Solicitud aprobada', 'success');
+      await render();
+      abrirGestionSolicitudes(torneo);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al aprobar:', err);
+      toast(err.message || 'No se pudo aprobar', 'error');
+    }
+  }
+
+  async function rechazarSolicitud(t, sol, silencioso = false) {
+    try {
+      await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'rechazar');
+      if (!silencioso) {
+        toast('Solicitud rechazada', 'info');
+        await render();
+        abrirGestionSolicitudes(torneo);
+      }
+    } catch (err) {
+      console.error('[torneo-detalle] Error al rechazar:', err);
+      if (!silencioso) toast(err.message || 'No se pudo rechazar', 'error');
+    }
+  }
+
+  async function aprobarLote(t, solicitudes) {
+    let aprobadas = 0;
+
+    for (const sol of solicitudes) {
+      if (sol.estado !== 'pendiente') continue;
+      try {
+        await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'aprobar');
+        aprobadas++;
+      } catch (err) {
+        console.warn('[torneo-detalle] No se pudo aprobar:', sol.equipoNombre, err.message);
+      }
+    }
+
+    toast(`Aprobadas ${aprobadas} solicitud(es)`, 'success');
+    await render();
+    abrirGestionSolicitudes(torneo);
+  }
+
+  async function expulsarSolicitante(t, sol) {
+    const esIndividual = t.tipoParticipacion === 'individual';
+    const nombre = esIndividual ? sol.equipoNombre : `${sol.equipoEscudo || ICONOS.escudo} ${sol.equipoNombre}`;
+    if (!confirm(`¿Eliminar a ${nombre} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
+
+    try {
+      await expulsarEquipoAPI(t.id, String(sol.equipoId));
+      toast(esIndividual ? 'Participante retirado' : 'Equipo retirado', 'info');
+      await render();
+      abrirGestionSolicitudes(torneo);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al expulsar:', err);
+      toast(err.message || 'No se pudo expulsar', 'error');
+    }
+  }
+
+  document.querySelectorAll('[data-tab-sol]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (torneo) renderSolicitudes(torneo, tab.dataset.tabSol);
+    });
+  });
+
+  /* =========================================================
+     INVITAR EQUIPO
+     ========================================================= */
+  function abrirInvitarEquipo(t) {
+    renderEquiposInvitar(t, '');
+    abrirModal('modal-invitar-equipo');
+  }
+
+  async function renderEquiposInvitar(t, filtro) {
+    const cont = document.getElementById('lista-equipos-invitar');
+    if (!cont) return;
+
+    cont.innerHTML = `<p class="text-sm text-muted text-center">Cargando equipos...</p>`;
+
+    let todos = [];
+    try {
+      const { data } = await listarGrupos({ tipo: 'equipo', limit: 50 });
+      todos = data || [];
+    } catch (err) {
+      console.error('[torneo-detalle] Error al cargar equipos:', err);
+      cont.innerHTML = `<p class="text-sm text-muted text-center">Error al cargar equipos</p>`;
+      return;
+    }
+
+    const excluidos = new Set([
+      ...(t.equipos || []).map(e => String(e.id)),
+      ...(t.listaEspera || []).filter(l => l.estado === 'pendiente').map(l => String(l.equipoId)),
+      ...(t.invitaciones || []).filter(i => i.estado === 'pendiente').map(i => String(i.equipoId))
+    ]);
+
+    const f = filtro.toLowerCase().trim();
+    const filtrados = todos.filter(eq => {
+      if (excluidos.has(String(eq.id))) return false;
+      if (String(eq.capitanId) === String(user.id)) return false;
+      if (f) {
+        return eq.nombre.toLowerCase().includes(f) ||
+               (eq.deporte || '').toLowerCase().includes(f);
+      }
+      return true;
+    });
+
+    if (filtrados.length === 0) {
+      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-5)">
+        No hay equipos disponibles para invitar.
+      </p>`;
+      return;
+    }
+
+    cont.innerHTML = filtrados.map(eq => `
+      <div class="amigo-item">
+        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px; overflow:hidden">
+          ${renderEscudoCruce(eq.escudo, false, 40)}
+        </div>
+        <div class="amigo-item__info">
+          <div class="amigo-item__name">${eq.nombre}</div>
+          <div class="amigo-item__sub">${eq.deporte || 'Sin deporte'}${eq.ciudad ? ' · ' + eq.ciudad : ''}</div>
+        </div>
+        <button class="btn btn--primary btn--sm" data-invitar="${eq.id}">${ICONOS.mas} Invitar</button>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('[data-invitar]').forEach(btn => {
+      btn.addEventListener('click', () => enviarInvitacion(t, btn.dataset.invitar));
+    });
+  }
+
+  async function enviarInvitacion(t, equipoId) {
+    try {
+      await invitarEquipoAPI(t.id, String(equipoId));
+      toast('Invitación enviada', 'success');
+
+      torneo = await obtenerTorneo(t.id);
+
+      const input = document.getElementById('buscar-equipo-invitar');
+      renderEquiposInvitar(torneo, input?.value || '');
+    } catch (err) {
+      console.error('[torneo-detalle] Error al invitar:', err);
+      toast(err.message || 'No se pudo invitar', 'error');
+    }
+  }
+
+  document.getElementById('buscar-equipo-invitar')?.addEventListener('input', (e) => {
+    if (torneo) renderEquiposInvitar(torneo, e.target.value);
+  });
+
+  /* =========================================================
+     VER DETALLE DE EQUIPO
+     ========================================================= */
+  async function verDetalleEquipo(equipoData) {
+    const body = document.getElementById('ver-equipo-body');
+    if (!body) return;
+
+    document.getElementById('ver-equipo-titulo').textContent = 'Perfil del equipo';
+    
+    abrirModal('modal-ver-equipo');
+
+    // ⚡ Llamamos a nuestro módulo compartido
+    await renderGrupoPublico(body, equipoData.equipoId || equipoData.id, {
+      onVolver: () => cerrarModal('modal-ver-equipo')
+    });
+  }
+
+  /* =========================================================
+     CHAT DEL TORNEO — botón "Chat del torneo" del resumen
+     ========================================================= */
+  function irAlTabChatTorneo() {
+    tabActual = 'chat';
+    renderTabActual(torneo);
+  }
+
   /* =========================================================
      CONECTAR EVENTOS DEL HERO + TABS
      ========================================================= */
@@ -1087,7 +2561,6 @@ export async function init(params = {}) {
       window.location.hash = '#/torneos';
     });
 
-    /* ---------- Organizador (hero, click → perfil) ---------- */
     document.querySelectorAll('[data-ver-perfil]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1097,22 +2570,32 @@ export async function init(params = {}) {
       });
     });
 
-    /* ---------- Botón editar torneo (hero) ---------- */
+    document.getElementById('btn-sub-organizadores')?.addEventListener('click', () => {
+      abrirModalSubOrganizadores(t);
+    });
+
     document.getElementById('btn-editar-torneo')?.addEventListener('click', () => {
       abrirModalEditarTorneo(t);
     });
 
-    /* ---------- Tabs ---------- */
     document.querySelectorAll('[data-tab-torneo]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-tab-torneo]').forEach(b => b.classList.remove('torneo-tab--active'));
-        btn.classList.add('torneo-tab--active');
-        tabActual = btn.dataset.tabTorneo;
+        const nuevoTab = btn.dataset.tabTorneo;
+
+        if (tabActual === 'chat' && nuevoTab !== 'chat') {
+          if (intervaloCanalTorneo) {
+            clearInterval(intervaloCanalTorneo);
+            intervaloCanalTorneo = null;
+          }
+        }
+
+        document.querySelectorAll('[data-tab-torneo]').forEach(b => b.classList.remove('subtab--active'));
+        btn.classList.add('subtab--active');
+        tabActual = nuevoTab;
         renderTabActual(t);
       });
     });
 
-    /* ---------- Modales (cerrar con click fuera) ---------- */
     document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
       btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));
     });
@@ -1132,7 +2615,6 @@ export async function init(params = {}) {
      CONECTAR EVENTOS DEL TAB ACTIVO
      ========================================================= */
   function conectarEventosTab(t) {
-    /* ---------- Expulsar equipo ---------- */
     document.querySelectorAll('[data-expulsar-equipo]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1143,19 +2625,12 @@ export async function init(params = {}) {
       });
     });
 
-    /* ---------- Cerrar torneo ---------- */
     document.getElementById('btn-cerrar-torneo')?.addEventListener('click', () => cerrarTorneo(t));
-
-    /* ---------- Gestionar solicitudes ---------- */
     document.getElementById('btn-gestionar-solicitudes')?.addEventListener('click', () => abrirGestionSolicitudes(t));
-
-    /* ---------- Invitar equipo ---------- */
     document.getElementById('btn-invitar-equipo')?.addEventListener('click', () => abrirInvitarEquipo(t));
 
-    /* ---------- Chat ---------- */
-    document.getElementById('btn-abrir-chat')?.addEventListener('click', () => abrirChatTorneo(t));
+    document.getElementById('btn-abrir-chat')?.addEventListener('click', () => irAlTabChatTorneo());
 
-    /* ---------- Compartir ---------- */
     document.getElementById('btn-compartir-torneo')?.addEventListener('click', async () => {
       const url = window.location.href;
       try {
@@ -1175,10 +2650,8 @@ export async function init(params = {}) {
       }
     });
 
-    /* ---------- Eliminar torneo ---------- */
     document.getElementById('btn-eliminar-torneo')?.addEventListener('click', () => eliminarTorneo(t));
 
-    /* ---------- Inscribirse ---------- */
     document.getElementById('btn-inscribir-equipo')?.addEventListener('click', () => {
       if (t.tipoParticipacion === 'individual') {
         inscribirmeIndividual(t);
@@ -1187,19 +2660,14 @@ export async function init(params = {}) {
       }
     });
 
-    /* ---------- Aceptar / Rechazar invitación ---------- */
     document.getElementById('btn-aceptar-invitacion')?.addEventListener('click', () => aceptarInvitacion(t));
     document.getElementById('btn-rechazar-invitacion')?.addEventListener('click', () => rechazarInvitacion(t));
-
-    /* ---------- Cancelar solicitud ---------- */
     document.getElementById('btn-cancelar-solicitud')?.addEventListener('click', () => cancelarSolicitud(t));
-
-    /* ---------- Salir del torneo ---------- */
     document.getElementById('btn-salir-torneo')?.addEventListener('click', () => salirDelTorneo(t));
   }
 
   /* =========================================================
-     CERRAR TORNEO (con auto-fixture)
+     CERRAR TORNEO
      ========================================================= */
   async function cerrarTorneo(t) {
     if (!confirm('¿Cerrar las inscripciones? Ya no se podrán inscribir más participantes.')) return;
@@ -1244,7 +2712,7 @@ export async function init(params = {}) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const nombreMostrar = esIndividual
       ? equipo.nombre
-      : `${equipo.escudo || '🛡️'} ${equipo.nombre}`;
+      : `${equipo.escudo || ICONOS.escudo} ${equipo.nombre}`;
 
     if (!confirm(`¿Eliminar a ${nombreMostrar} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
 
@@ -1307,12 +2775,12 @@ export async function init(params = {}) {
 
     lista.innerHTML = disponibles.map(eq => `
       <div class="amigo-item" data-equipo="${eq.id}" style="cursor:pointer">
-        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px">
-          ${eq.escudo || '🛡️'}
+        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px; overflow:hidden;">
+          ${renderEscudoCruce(eq.escudo, false, 40)}
         </div>
         <div class="amigo-item__info">
-          <div class="amigo-item__name">${eq.nombre}</div>
-          <div class="amigo-item__sub">${eq.deporte} · ${eq.totalMiembros || 0} jugadores</div>
+          <div class="amigo-item__name">${escapeHtml(eq.nombre)}</div>
+          <div class="amigo-item__sub">${escapeHtml(eq.deporte)} · ${eq.totalMiembros || 0} jugadores</div>
         </div>
         <button class="btn btn--primary btn--sm">Inscribir</button>
       </div>
@@ -1461,7 +2929,7 @@ export async function init(params = {}) {
     };
 
     document.getElementById('editar-jornada-titulo').textContent =
-      `✏️ Editar ${jornada.nombre || `Jornada ${jornada.numero}`}`;
+      `Editar ${jornada.nombre || `Jornada ${jornada.numero}`}`;
 
     document.getElementById('editar-jornada-nombre').value = jornada.nombre || '';
 
@@ -1502,13 +2970,8 @@ export async function init(params = {}) {
       const finalizado = p.estado === 'finalizado';
       const fechaVal = p.fecha ? new Date(p.fecha).toISOString().slice(0, 16) : '';
 
-      const localHtml = esIndividual
-        ? `<img src="${p.localEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:20px;height:20px" />`
-        : `<span style="font-size:18px">${p.localEscudo || '🛡️'}</span>`;
-
-      const visHtml = esIndividual
-        ? `<img src="${p.visitanteEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:20px;height:20px" />`
-        : `<span style="font-size:18px">${p.visitanteEscudo || '🛡️'}</span>`;
+      const localHtml = renderEscudoCruce(p.localEscudo, esIndividual, 20);
+      const visHtml = renderEscudoCruce(p.visitanteEscudo, esIndividual, 20);
 
       let resultadoHtml = '';
       if (finalizado && p.resultado) {
@@ -1535,7 +2998,7 @@ export async function init(params = {}) {
               </div>
             </div>
             <button class="btn btn--ghost btn--sm" data-partido-eliminar="${i}" style="color:var(--color-danger)" title="Borrar partido">
-              🗑️
+              ${ICONOS.basura}
             </button>
           </div>
 
@@ -1572,7 +3035,7 @@ export async function init(params = {}) {
 
     if (tieneResultado) {
       const confirmMsg =
-        `⚠️ ATENCIÓN: Este partido ya tiene un resultado cargado.\n\n` +
+        `ATENCIÓN: Este partido ya tiene un resultado cargado.\n\n` +
         `${nombrePartido}\n\n` +
         `Si lo borrás, se va a recalcular la tabla de posiciones y los puntos de este partido se van a perder.\n\n` +
         `¿Estás seguro de que querés borrarlo?`;
@@ -1696,14 +3159,14 @@ export async function init(params = {}) {
     }
 
     const opcionesEquipos = inscritos.map(e =>
-      `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`
+      `<option value="${e.id}">${e.nombre}</option>`
     ).join('');
 
     function refrescarVisitantes() {
       const localId = tSelLocal.value;
       const opcionesVisitante = inscritos
         .filter(e => String(e.id) !== String(localId))
-        .map(e => `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`)
+        .map(e => `<option value="${e.id}">${e.nombre}</option>`)
         .join('');
       tSelVisita.innerHTML = '<option value="">Seleccioná el visitante...</option>' + opcionesVisitante;
     }
@@ -1815,13 +3278,8 @@ export async function init(params = {}) {
     const visEsc   = document.getElementById('cargar-resultado-visitante-escudo');
     const visNom   = document.getElementById('cargar-resultado-visitante-nombre');
 
-    if (esIndividual) {
-      localEsc.innerHTML = `<img src="${partido.localEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--lg" />`;
-      visEsc.innerHTML   = `<img src="${partido.visitanteEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--lg" />`;
-    } else {
-      localEsc.textContent = partido.localEscudo || '🛡️';
-      visEsc.textContent   = partido.visitanteEscudo || '🛡️';
-    }
+    localEsc.innerHTML = renderEscudoCruce(partido.localEscudo, esIndividual, 64);
+    visEsc.innerHTML   = renderEscudoCruce(partido.visitanteEscudo, esIndividual, 64);
 
     localNom.textContent = partido.localNombre || 'Local';
     visNom.textContent   = partido.visitanteNombre || 'Visitante';
@@ -1897,7 +3355,7 @@ export async function init(params = {}) {
               <input type="number" class="field__input set-item__input" data-set-visitante="${i}" min="0" value="${s.visitante || 0}" placeholder="0" />
             </div>
             ${sets.length > 1 ? `
-              <button type="button" class="btn btn--ghost btn--sm set-item__del" data-set-del="${i}" style="color:var(--color-danger)" title="Borrar set">🗑️</button>
+              <button type="button" class="btn btn--ghost btn--sm set-item__del" data-set-del="${i}" style="color:var(--color-danger)" title="Borrar set">${ICONOS.basura}</button>
             ` : ''}
           </div>
         `).join('');
@@ -2072,16 +3530,16 @@ export async function init(params = {}) {
         const tV = parsearTiempo(minV, segV, cenV);
 
         if (tL === 0 && tV === 0) ganadorTxt = '—';
-        else if (tL < tV) ganadorTxt = `🏆 ${localNom}`;
-        else if (tV < tL) ganadorTxt = `🏆 ${visitaNom}`;
+        else if (tL < tV) ganadorTxt = `${localNom}`;
+        else if (tV < tL) ganadorTxt = `${visitaNom}`;
         else ganadorTxt = 'Empate';
       } else {
         const pL = Number(lista.querySelector('[data-tp-local-puntos]')?.value);
         const pV = Number(lista.querySelector('[data-tp-visitante-puntos]')?.value);
 
         if (!Number.isFinite(pL) && !Number.isFinite(pV)) ganadorTxt = '—';
-        else if (Number.isFinite(pL) && (!Number.isFinite(pV) || pL > pV)) ganadorTxt = `🏆 ${localNom}`;
-        else if (Number.isFinite(pV) && (!Number.isFinite(pL) || pV > pL)) ganadorTxt = `🏆 ${visitaNom}`;
+        else if (Number.isFinite(pL) && (!Number.isFinite(pV) || pL > pV)) ganadorTxt = `${localNom}`;
+        else if (Number.isFinite(pV) && (!Number.isFinite(pL) || pV > pL)) ganadorTxt = `${visitaNom}`;
         else ganadorTxt = 'Empate';
       }
 
@@ -2102,13 +3560,13 @@ export async function init(params = {}) {
   }
 
   function localEscDe(partido, lado) {
-    if (lado === 'local')  return partido.localEscudo || '🛡️';
-    return partido.visitanteEscudo || '🛡️';
+    if (lado === 'local')  return partido.localEscudo || ICONOS.escudo;
+    return partido.visitanteEscudo || ICONOS.escudo;
   }
 
   function renderFilaTiempo(participanteId, nombre, esIndividual, escudo, min, seg, cen, lado) {
     const escudoHtml = esIndividual
-      ? `<img src="${escudo === '🛡️' ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
+      ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
       : `<span style="font-size:28px">${escudo}</span>`;
 
     return `
@@ -2138,7 +3596,7 @@ export async function init(params = {}) {
 
   function renderFilaPuntos(participanteId, nombre, esIndividual, escudo, puntos, lado) {
     const escudoHtml = esIndividual
-      ? `<img src="${escudo === '🛡️' ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
+      ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
       : `<span style="font-size:28px">${escudo}</span>`;
 
     return `
@@ -2341,596 +3799,225 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
-     ARMAR FIXTURE
+     D.3 — SUB-ORGANIZADORES
      ========================================================= */
-  async function armarAleatorio(t) {
-    if (!confirm('¿Armar el fixture aleatorio? Se mezclarán los participantes en cruces al azar.')) return;
 
-    try {
-      const resultado = await armarFixtureAleatorioAPI(t.id);
-      toast(resultado.mensaje || 'Fixture aleatorio armado', 'success');
+  async function abrirModalSubOrganizadores(t) {
+    if (!esOrganizador(t)) return;
 
-      torneo = await obtenerTorneo(t.id);
-      await render();
-    } catch (err) {
-      console.error('[torneo-detalle] Error al armar fixture aleatorio:', err);
-      toast(err.message || 'No se pudo armar el fixture', 'error');
-    }
+    renderSubOrganizadores(t);
+    renderInvitacionesPendientes(t);
+    renderBuscadorUsuarios(t, '');
+
+    const input = document.getElementById('tso-buscar');
+    if (input) input.value = '';
+
+    abrirModal('modal-sub-organizadores');
   }
 
-  function abrirArmarManual(t) {
-    const body = document.getElementById('armar-fixture-body');
-    if (!body) return;
-
-    const esIndividual = t.tipoParticipacion === 'individual';
-    const inscritos = t.equipos || [];
-
-    if (inscritos.length < 2) {
-      toast('Necesitás al menos 2 participantes', 'error');
-      return;
-    }
-
-    const cantidadInscritos = inscritos.length;
-    let cantidadSlots;
-    if (cantidadInscritos <= 2) cantidadSlots = 2;
-    else if (cantidadInscritos <= 4) cantidadSlots = 4;
-    else if (cantidadInscritos <= 8) cantidadSlots = 8;
-    else if (cantidadInscritos <= 16) cantidadSlots = 16;
-    else if (cantidadInscritos <= 32) cantidadSlots = 32;
-    else cantidadSlots = 64;
-
-    const cantidadCruces = cantidadSlots / 2;
-
-    const opcionesEquipos = inscritos.map(e =>
-      `<option value="${e.id}">${esIndividual ? '' : '🛡️ '}${e.nombre}</option>`
-    ).join('');
-
-    let html = '';
-    for (let i = 0; i < cantidadCruces; i++) {
-      html += `
-        <div class="form-row mb-4" style="grid-template-columns:1fr 1fr; gap:var(--space-2)">
-          <div class="field" style="margin:0">
-            <label class="field__label" style="font-size:var(--fs-xs)">Local ${i + 1}</label>
-            <select class="field__input" data-cruce-local="${i}">
-              <option value="">— Vacío (bye) —</option>
-              ${opcionesEquipos}
-            </select>
-          </div>
-          <div class="field" style="margin:0">
-            <label class="field__label" style="font-size:var(--fs-xs)">Visitante ${i + 1}</label>
-            <select class="field__input" data-cruce-visitante="${i}">
-              <option value="">— Vacío (bye) —</option>
-              ${opcionesEquipos}
-            </select>
-          </div>
-        </div>
-      `;
-    }
-
-    body.innerHTML = html;
-
-    const btn = document.getElementById('btn-confirmar-armado');
-    btn.disabled = false;
-    btn.textContent = 'Armar fixture';
-    btn.onclick = () => guardarArmadoManual(t, cantidadCruces);
-
-    abrirModal('modal-armar-fixture');
-  }
-
-  async function guardarArmadoManual(t, cantidadCruces) {
-    const cruces = [];
-
-    for (let i = 0; i < cantidadCruces; i++) {
-      const local = document.querySelector(`[data-cruce-local="${i}"]`)?.value;
-      const visitante = document.querySelector(`[data-cruce-visitante="${i}"]`)?.value;
-
-      if (!local && !visitante) return toast(`El cruce ${i + 1} está vacío`, 'error');
-      if (local && visitante && local === visitante) return toast(`El cruce ${i + 1} tiene el mismo equipo en local y visitante`, 'error');
-
-      cruces.push({ localId: local || null, visitanteId: visitante || null });
-    }
-
-    const btn = document.getElementById('btn-confirmar-armado');
-    btn.disabled = true;
-    btn.textContent = 'Armando...';
-
-    try {
-      await armarFixtureManualAPI(t.id, cruces);
-      toast('Fixture armado', 'success');
-      cerrarModal('modal-armar-fixture');
-
-      torneo = await obtenerTorneo(t.id);
-      await render();
-    } catch (err) {
-      console.error('[torneo-detalle] Error al armar fixture manual:', err);
-      toast(err.message || 'No se pudo armar el fixture', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Armar fixture';
-    }
-  }
-
-  async function confirmarFixture(t) {
-    if (!confirm('¿Confirmar el fixture? Ya no podrás editar los cruces.')) return;
-
-    try {
-      await confirmarFixtureAPI(t.id);
-      toast('Fixture confirmado', 'success');
-
-      torneo = await obtenerTorneo(t.id);
-      await render();
-    } catch (err) {
-      console.error('[torneo-detalle] Error al confirmar fixture:', err);
-      toast(err.message || 'No se pudo confirmar el fixture', 'error');
-    }
-  }
-
-  async function rearmarFixture(t) {
-    const partidos = t.partidos || [];
-    const partidosConResultado = partidos.filter(p => p.estado === 'finalizado' && p.resultado);
-
-    if (partidosConResultado.length > 0) {
-      const msg =
-        `⚠️ ATENCIÓN\n\n` +
-        `Este torneo ya tiene ${partidosConResultado.length} partido(s) con resultado cargado.\n\n` +
-        `Si rehacés el fixture, se van a borrar TODOS los cruces Y TODOS los resultados.\n\n` +
-        `¿Estás seguro de que querés rehacer el fixture?`;
-
-      if (!confirm(msg)) return;
-      if (!confirm('Última confirmación: ¿rehacer el fixture y perder todos los resultados?')) return;
-    } else {
-      if (!confirm('¿Borrar el fixture actual? Se eliminarán todos los partidos y cruces.')) return;
-    }
-
-    try {
-      for (const p of partidos) {
-        try {
-          await eliminarPartidoTorneoAPI(t.id, p.id);
-        } catch (e) {
-          console.warn('[torneo-detalle] No se pudo borrar partido:', p.id, e.message);
-        }
-      }
-
-      toast('Fixture borrado', 'info');
-      torneo = await obtenerTorneo(t.id);
-      await render();
-    } catch (err) {
-      console.error('[torneo-detalle] Error al rehacer fixture:', err);
-      toast(err.message || 'No se pudo borrar el fixture', 'error');
-    }
-  }
-
-  /* =========================================================
-     GESTIONAR SOLICITUDES
-     ========================================================= */
-  function abrirGestionSolicitudes(t) {
-    renderSolicitudes(t, 'pendientes');
-    abrirModal('modal-gestionar-solicitudes');
-  }
-
-  function renderSolicitudes(t, tab) {
-    const cont = document.getElementById('lista-solicitudes');
+  function renderSubOrganizadores(t) {
+    const cont = document.getElementById('tso-lista-actuales');
     if (!cont) return;
 
-    const esIndividual = t.tipoParticipacion === 'individual';
-
-    document.querySelectorAll('[data-tab-sol]').forEach(el => {
-      el.classList.toggle('active', el.dataset.tabSol === tab);
-    });
-
-    const listaEspera = t.listaEspera || [];
-    const pendientes = listaEspera.filter(l => l.estado === 'pendiente');
-    const aceptados  = listaEspera.filter(l => l.estado === 'aceptado');
-    const rechazados = listaEspera.filter(l => l.estado === 'rechazado');
-
-    document.getElementById('count-sol-pendientes').textContent = pendientes.length;
-    document.getElementById('count-sol-aceptados').textContent = aceptados.length;
-    document.getElementById('count-sol-rechazados').textContent = rechazados.length;
-
-    let lista;
-    if (tab === 'pendientes') lista = pendientes;
-    else if (tab === 'aceptados') lista = aceptados;
-    else lista = rechazados;
-
-    const total = listaEspera.length;
-    const statsHtml = `
-      <div class="torneo-stats-bar">
-        <div class="torneo-stat-mini">
-          <div class="torneo-stat-mini__valor">${(t.equipos || []).length}</div>
-          <div class="torneo-stat-mini__label">${esIndividual ? 'Particip.' : 'Equipos'}</div>
-        </div>
-        <div class="torneo-stat-mini">
-          <div class="torneo-stat-mini__valor">${t.cuposEquipos - (t.equipos || []).length}</div>
-          <div class="torneo-stat-mini__label">Cupos libres</div>
-        </div>
-        <div class="torneo-stat-mini">
-          <div class="torneo-stat-mini__valor">${pendientes.length}</div>
-          <div class="torneo-stat-mini__label">Pendientes</div>
-        </div>
-        <div class="torneo-stat-mini">
-          <div class="torneo-stat-mini__valor">${total}</div>
-          <div class="torneo-stat-mini__label">Totales</div>
-        </div>
-      </div>
-    `;
+    const lista = t.organizadores || [];
 
     if (lista.length === 0) {
-      cont.innerHTML = statsHtml + `
-        <div class="empty-state--sm">
-          <div class="empty-state__icon">📭</div>
-          <p>Sin solicitudes en esta categoría</p>
-        </div>`;
+      cont.innerHTML = `<div class="tso-empty">Todavía no hay sub-organizadores.</div>`;
       return;
     }
 
-    const lleno = (t.equipos || []).length >= t.cuposEquipos;
-
-    const loteHtml = tab === 'pendientes' && !lleno ? `
-      <div class="torneo-lote-acciones">
-        <button class="btn btn--ghost btn--sm" id="btn-seleccionar-todas">Seleccionar todas</button>
-        <button class="btn btn--accion-lote btn--sm" id="btn-aprobar-lote" disabled>
-          ✅ Aprobar seleccionadas
-        </button>
-        <button class="btn btn--ghost btn--sm" id="btn-rechazar-lote" disabled>
-          ❌ Rechazar
-        </button>
-      </div>
-    ` : '';
-
-    cont.innerHTML = statsHtml + loteHtml + lista.map((sol, i) => `
-      <div class="solicitud-item">
-        ${tab === 'pendientes' && !lleno ? `
-          <input type="checkbox" data-sel="${i}" />
-        ` : ''}
-
-        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px">
-          ${esIndividual
-            ? `<img src="${sol.equipoEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" />`
-            : (sol.equipoEscudo || '🛡️')}
+    cont.innerHTML = lista.map(o => `
+      <div class="tso-item">
+        <img src="${o.avatar || 'assets/icons/usuario.svg'}" alt="" class="tso-item__avatar" />
+        <div class="tso-item__info">
+          <div class="tso-item__nombre">${o.nombre || 'Usuario'}</div>
+          <div class="tso-item__sub">@${o.username || 'usuario'}</div>
         </div>
-        <div class="solicitud-item__info" data-ver="${i}" style="cursor:pointer">
-          <div class="solicitud-item__nombre">${sol.equipoNombre}</div>
-          <div class="solicitud-item__meta">
-            ${sol.origen === 'invitacion-aceptada' ? '✅ Aceptó tu invitación' : (esIndividual ? '📩 Solicitó inscribirse' : '📩 Solicitó unirse')} ·
-            ${new Date(sol.fecha).toLocaleDateString('es-CL')}
-          </div>
-        </div>
-        <div class="solicitud-item__actions">
-          ${!esIndividual ? `<button class="btn btn--ghost btn--sm" data-ver-btn="${i}">👁️ Ver</button>` : ''}
-          ${sol.estado === 'pendiente' ? `
-            <button class="btn btn--primary btn--sm" data-aceptar="${i}" ${lleno ? 'disabled title="Torneo lleno"' : ''}>Aprobar</button>
-            <button class="btn btn--ghost btn--sm" data-rechazar="${i}">✕</button>
-          ` : sol.estado === 'aceptado' ? `
-            <span class="badge badge--success">Aceptado</span>
-            <button class="btn btn--ghost btn--sm" data-expulsar="${i}" style="color:var(--color-danger)">🗑️ Eliminar</button>
-          ` : `
-            <span class="badge badge--danger">Rechazado</span>
-          `}
+        <div class="tso-item__acciones">
+          <button class="tso-item__btn tso-item__btn--danger"
+                  data-tso-quitar="${o.usuarioId}"
+                  title="Quitar sub-organizador">
+            ${ICONOS.basura}
+          </button>
         </div>
       </div>
     `).join('');
 
-    cont.querySelectorAll('[data-ver], [data-ver-btn]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.ver ?? el.dataset.verBtn);
-        verDetalleEquipo(lista[idx]);
-      });
-    });
-
-    cont.querySelectorAll('[data-aceptar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.aceptar);
-        aprobarSolicitud(t, lista[idx]);
-      });
-    });
-
-    cont.querySelectorAll('[data-rechazar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.rechazar);
-        rechazarSolicitud(t, lista[idx]);
-      });
-    });
-
-    cont.querySelectorAll('[data-expulsar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.dataset.expulsar);
-        expulsarSolicitante(t, lista[idx]);
-      });
-    });
-
-    const checkboxes = cont.querySelectorAll('input[data-sel]');
-    const btnAprobarLote = document.getElementById('btn-aprobar-lote');
-    const btnRechazarLote = document.getElementById('btn-rechazar-lote');
-    const btnSeleccionarTodas = document.getElementById('btn-seleccionar-todas');
-
-    function actualizarLote() {
-      const marcadas = cont.querySelectorAll('input[data-sel]:checked').length;
-      if (btnAprobarLote) btnAprobarLote.disabled = marcadas === 0;
-      if (btnRechazarLote) btnRechazarLote.disabled = marcadas === 0;
-    }
-
-    checkboxes.forEach(cb => cb.addEventListener('change', actualizarLote));
-
-    btnSeleccionarTodas?.addEventListener('click', () => {
-      const todasMarcadas = [...checkboxes].every(cb => cb.checked);
-      checkboxes.forEach(cb => cb.checked = !todasMarcadas);
-      actualizarLote();
-      btnSeleccionarTodas.textContent = todasMarcadas ? 'Seleccionar todas' : 'Deseleccionar todas';
-    });
-
-    btnAprobarLote?.addEventListener('click', async () => {
-      const marcadas = [...cont.querySelectorAll('input[data-sel]:checked')].map(cb => Number(cb.dataset.sel));
-      await aprobarLote(t, marcadas.map(i => lista[i]));
-    });
-
-    btnRechazarLote?.addEventListener('click', async () => {
-      const marcadas = [...cont.querySelectorAll('input[data-sel]:checked')].map(cb => Number(cb.dataset.sel));
-      if (marcadas.length === 0) return;
-      if (!confirm(`¿Rechazar ${marcadas.length} solicitud(es)?`)) return;
-
-      for (const i of marcadas) {
-        await rechazarSolicitud(t, lista[i], true);
-      }
-
-      await render();
-      abrirGestionSolicitudes(torneo);
+    cont.querySelectorAll('[data-tso-quitar]').forEach(btn => {
+      btn.addEventListener('click', () => quitarSubOrganizadorUI(t, btn.dataset.tsoQuitar));
     });
   }
 
-  async function aprobarSolicitud(t, sol) {
-    try {
-      await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'aprobar');
-      toast('Solicitud aprobada', 'success');
-      await render();
-      abrirGestionSolicitudes(torneo);
-    } catch (err) {
-      console.error('[torneo-detalle] Error al aprobar:', err);
-      toast(err.message || 'No se pudo aprobar', 'error');
-    }
-  }
-
-  async function rechazarSolicitud(t, sol, silencioso = false) {
-    try {
-      await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'rechazar');
-      if (!silencioso) {
-        toast('Solicitud rechazada', 'info');
-        await render();
-        abrirGestionSolicitudes(torneo);
-      }
-    } catch (err) {
-      console.error('[torneo-detalle] Error al rechazar:', err);
-      if (!silencioso) toast(err.message || 'No se pudo rechazar', 'error');
-    }
-  }
-
-  async function aprobarLote(t, solicitudes) {
-    let aprobadas = 0;
-
-    for (const sol of solicitudes) {
-      if (sol.estado !== 'pendiente') continue;
-      try {
-        await gestionarSolicitudAPI(t.id, String(sol.equipoId), 'aprobar');
-        aprobadas++;
-      } catch (err) {
-        console.warn('[torneo-detalle] No se pudo aprobar:', sol.equipoNombre, err.message);
-      }
-    }
-
-    toast(`Aprobadas ${aprobadas} solicitud(es)`, 'success');
-    await render();
-    abrirGestionSolicitudes(torneo);
-  }
-
-  async function expulsarSolicitante(t, sol) {
-    const esIndividual = t.tipoParticipacion === 'individual';
-    const nombre = esIndividual ? sol.equipoNombre : `${sol.equipoEscudo || '🛡️'} ${sol.equipoNombre}`;
-    if (!confirm(`¿Eliminar a ${nombre} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
-
-    try {
-      await expulsarEquipoAPI(t.id, String(sol.equipoId));
-      toast(esIndividual ? 'Participante retirado' : 'Equipo retirado', 'info');
-      await render();
-      abrirGestionSolicitudes(torneo);
-    } catch (err) {
-      console.error('[torneo-detalle] Error al expulsar:', err);
-      toast(err.message || 'No se pudo expulsar', 'error');
-    }
-  }
-
-  document.querySelectorAll('[data-tab-sol]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (torneo) renderSolicitudes(torneo, tab.dataset.tabSol);
-    });
-  });
-
-  /* =========================================================
-     INVITAR EQUIPO
-     ========================================================= */
-  function abrirInvitarEquipo(t) {
-    renderEquiposInvitar(t, '');
-    abrirModal('modal-invitar-equipo');
-  }
-
-  async function renderEquiposInvitar(t, filtro) {
-    const cont = document.getElementById('lista-equipos-invitar');
+  function renderInvitacionesPendientes(t) {
+    const cont = document.getElementById('tso-lista-pendientes');
     if (!cont) return;
 
-    cont.innerHTML = `<p class="text-sm text-muted text-center">Cargando equipos...</p>`;
+    const lista = t.invitacionesOrganizador || [];
 
-    let todos = [];
+    if (lista.length === 0) {
+      cont.innerHTML = `<div class="tso-empty">Sin invitaciones pendientes.</div>`;
+      return;
+    }
+
+    cont.innerHTML = lista.map(i => `
+      <div class="tso-item">
+        <img src="${i.avatar || 'assets/icons/usuario.svg'}" alt="" class="tso-item__avatar" />
+        <div class="tso-item__info">
+          <div class="tso-item__nombre">${i.nombre || 'Usuario'}</div>
+          <div class="tso-item__sub">@${i.username || 'usuario'}</div>
+        </div>
+        <span class="tso-item__badge tso-item__badge--pendiente">Pendiente</span>
+        <div class="tso-item__acciones">
+          <button class="tso-item__btn tso-item__btn--danger"
+                  data-tso-cancelar="${i.usuarioId}"
+                  title="Cancelar invitación">
+            ${ICONOS.basura}
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('[data-tso-cancelar]').forEach(btn => {
+      btn.addEventListener('click', () => cancelarInvitacionOrganizadorUI(t, btn.dataset.tsoCancelar));
+    });
+  }
+
+  async function renderBuscadorUsuarios(t, query) {
+    const cont = document.getElementById('tso-resultados');
+    if (!cont) return;
+
+    if (!query || query.trim().length < 2) {
+      cont.innerHTML = '';
+      return;
+    }
+
+    cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-3)">Buscando...</p>`;
+
+    let usuarios = [];
     try {
-      const { data } = await listarGrupos({ tipo: 'equipo', limit: 50 });
-      todos = data || [];
+      usuarios = await buscarUsuariosAPI(query.trim());
     } catch (err) {
-      console.error('[torneo-detalle] Error al cargar equipos:', err);
-      cont.innerHTML = `<p class="text-sm text-muted text-center">Error al cargar equipos</p>`;
+      console.error('[torneo-detalle] Error al buscar usuarios:', err);
+      cont.innerHTML = `<div class="tso-empty">No se pudo buscar.</div>`;
       return;
     }
 
     const excluidos = new Set([
-      ...(t.equipos || []).map(e => String(e.id)),
-      ...(t.listaEspera || []).filter(l => l.estado === 'pendiente').map(l => String(l.equipoId)),
-      ...(t.invitaciones || []).filter(i => i.estado === 'pendiente').map(i => String(i.equipoId))
+      ...(t.organizadores || []).map(o => String(o.usuarioId)),
+      ...(t.invitacionesOrganizador || []).map(i => String(i.usuarioId)),
+      String(t.organizador?.id),
     ]);
 
-    const f = filtro.toLowerCase().trim();
-    const filtrados = todos.filter(eq => {
-      if (excluidos.has(String(eq.id))) return false;
-      if (String(eq.capitanId) === String(user.id)) return false;
-      if (f) {
-        return eq.nombre.toLowerCase().includes(f) ||
-               (eq.deporte || '').toLowerCase().includes(f);
-      }
-      return true;
-    });
+    const filtrados = usuarios.filter(u => !excluidos.has(String(u.id)));
 
     if (filtrados.length === 0) {
-      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-5)">
-        No hay equipos disponibles para invitar.
-      </p>`;
+      cont.innerHTML = `<div class="tso-empty">No hay usuarios disponibles.</div>`;
       return;
     }
 
-    cont.innerHTML = filtrados.map(eq => `
-      <div class="amigo-item">
-        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:20px">
-          ${eq.escudo || '🛡️'}
+    cont.innerHTML = filtrados.map(u => `
+      <div class="tso-item">
+        <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="tso-item__avatar" />
+        <div class="tso-item__info">
+          <div class="tso-item__nombre">${u.nombre || 'Usuario'}</div>
+          <div class="tso-item__sub">@${u.username || 'usuario'}</div>
         </div>
-        <div class="amigo-item__info">
-          <div class="amigo-item__name">${eq.nombre}</div>
-          <div class="amigo-item__sub">${eq.deporte || 'Sin deporte'}${eq.ciudad ? ' · ' + eq.ciudad : ''}</div>
+        <div class="tso-item__acciones">
+          <button class="tso-item__btn tso-item__btn--primary"
+                  data-tso-invitar="${u.id}">
+            Invitar
+          </button>
         </div>
-        <button class="btn btn--primary btn--sm" data-invitar="${eq.id}">+ Invitar</button>
       </div>
     `).join('');
 
-    cont.querySelectorAll('[data-invitar]').forEach(btn => {
-      btn.addEventListener('click', () => enviarInvitacion(t, btn.dataset.invitar));
+    cont.querySelectorAll('[data-tso-invitar]').forEach(btn => {
+      btn.addEventListener('click', () => invitarSubOrganizadorUI(t, btn.dataset.tsoInvitar));
     });
   }
 
-  async function enviarInvitacion(t, equipoId) {
+  document.getElementById('tso-buscar')?.addEventListener('input', (e) => {
+    if (torneo) renderBuscadorUsuarios(torneo, e.target.value);
+  });
+
+  async function invitarSubOrganizadorUI(t, usuarioId) {
+    if (!confirm('¿Enviar invitación para que sea sub-organizador?')) return;
+
     try {
-      await invitarEquipoAPI(t.id, String(equipoId));
+      await invitarOrganizadorAPI(t.id, usuarioId, 'completo');
       toast('Invitación enviada', 'success');
 
       torneo = await obtenerTorneo(t.id);
+      renderInvitacionesPendientes(torneo);
+      renderSubOrganizadores(torneo);
 
-      const input = document.getElementById('buscar-equipo-invitar');
-      renderEquiposInvitar(torneo, input?.value || '');
+      const input = document.getElementById('tso-buscar');
+      if (input) await renderBuscadorUsuarios(torneo, input.value);
     } catch (err) {
       console.error('[torneo-detalle] Error al invitar:', err);
       toast(err.message || 'No se pudo invitar', 'error');
     }
   }
 
-  document.getElementById('buscar-equipo-invitar')?.addEventListener('input', (e) => {
-    if (torneo) renderEquiposInvitar(torneo, e.target.value);
+  async function cancelarInvitacionOrganizadorUI(t, invitadoId) {
+    if (!confirm('¿Cancelar la invitación?')) return;
+
+    try {
+      await cancelarInvOrgAPI(t.id, invitadoId);
+      toast('Invitación cancelada', 'info');
+
+      torneo = await obtenerTorneo(t.id);
+      renderInvitacionesPendientes(torneo);
+      renderSubOrganizadores(torneo);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al cancelar:', err);
+      toast(err.message || 'No se pudo cancelar', 'error');
+    }
+  }
+
+  async function quitarSubOrganizadorUI(t, usuarioId) {
+    if (!confirm('¿Quitar a este sub-organizador?')) return;
+
+    try {
+      await quitarOrganizadorAPI(t.id, usuarioId);
+      toast('Sub-organizador removido', 'info');
+
+      torneo = await obtenerTorneo(t.id);
+      renderSubOrganizadores(torneo);
+      renderInvitacionesPendientes(torneo);
+    } catch (err) {
+      console.error('[torneo-detalle] Error al quitar:', err);
+      toast(err.message || 'No se pudo quitar', 'error');
+    }
+  }
+
+  async function responderInvitacionOrganizadorUI(t, aceptar) {
+    try {
+      const res = await responderInvOrgAPI(t.id, aceptar);
+      toast(res.mensaje || (aceptar ? 'Ahora sos sub-organizador' : 'Invitación rechazada'),
+            aceptar ? 'success' : 'info');
+
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al responder:', err);
+      toast(err.message || 'No se pudo responder', 'error');
+    }
+  }
+
+  document.querySelectorAll('#modal-sub-organizadores [data-cerrar-modal]').forEach(btn => {
+    btn.onclick = () => cerrarModal('modal-sub-organizadores');
+  });
+  modalSubOrganizadores?.addEventListener('click', (e) => {
+    if (e.target === modalSubOrganizadores) cerrarModal('modal-sub-organizadores');
   });
 
-  /* =========================================================
-     VER DETALLE DE EQUIPO
-     ========================================================= */
-  async function verDetalleEquipo(equipoData) {
-    let equipo;
-    try {
-      equipo = await obtenerGrupo(equipoData.equipoId || equipoData.id);
-    } catch (err) {
-      console.error('[torneo-detalle] Error al cargar equipo:', err);
-      return toast('No se pudo cargar el equipo', 'error');
-    }
-
-    if (!equipo) return toast('Equipo no encontrado', 'error');
-
-    document.getElementById('ver-equipo-titulo').textContent =
-      `${equipo.escudo || '🛡️'} ${equipo.nombre}`;
-
-    const jugadores = equipo.miembros || [];
-
-    document.getElementById('ver-equipo-body').innerHTML = `
-      <div class="ver-equipo__header">
-        <div class="ver-equipo__escudo">${equipo.escudo || '🛡️'}</div>
-        <div>
-          <div class="ver-equipo__nombre">${equipo.nombre}</div>
-          <div class="ver-equipo__meta">
-            ${equipo.deporte || 'Sin deporte'}${equipo.ciudad ? ' · ' + equipo.ciudad : ''}
-          </div>
-        </div>
-      </div>
-
-      ${equipo.descripcion ? `<p class="text-sm text-muted mb-4">${equipo.descripcion}</p>` : ''}
-
-      <div class="detalle__seccion-titulo mb-4">
-        👥 Plantilla (${jugadores.length} jugadores)
-      </div>
-
-      ${jugadores.length === 0 ? `
-        <p class="text-sm text-muted text-center" style="padding:var(--space-5)">
-          Sin información de jugadores
-        </p>
-      ` : `
-        <div class="player-list">
-          ${jugadores.map(j => {
-            const capitan = String(j.id) === String(equipo.capitanId);
-            return `
-              <div class="player-row">
-                <div class="player-row__pos">${j.posicion ? j.posicion.slice(0, 3).toUpperCase() : '—'}</div>
-                <img src="${j.avatar || 'assets/icons/usuario.svg'}" class="avatar avatar--md" alt="" data-autor-id="${j.id}" style="cursor:pointer" />
-                <div style="flex:1; min-width:0">
-                  <div class="feed-item__title">
-                    ${j.nombre}
-                    ${capitan ? '<span class="badge badge--primary" style="margin-left:6px">👑 Capitán</span>' : ''}
-                  </div>
-                  <div class="feed-item__subtitle">
-                    ${j.posicion || 'Sin posición'}${j.dorsal ? ' · #' + j.dorsal : ''}
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `}
-    `;
-
-    document.getElementById('ver-equipo-body').querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(el.dataset.autorId);
-        });
-      });
-    });
-
-    document.querySelectorAll('#modal-ver-equipo [data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-ver-equipo');
-    });
-    document.getElementById('modal-ver-equipo').onclick = (e) => {
-      if (e.target.id === 'modal-ver-equipo') cerrarModal('modal-ver-equipo');
-    };
-
-    abrirModal('modal-ver-equipo');
-  }
-
-  /* =========================================================
-     CHAT (LEGACY)
-     ========================================================= */
-  function abrirChatTorneo(t) {
-    document.getElementById('chat-torneo-titulo').textContent = `💬 ${t.nombre}`;
-
-    const cont = document.getElementById('chat-torneo-mensajes');
-    if (cont) {
-      cont.innerHTML = `
-        <div class="chat-mensajes__empty">
-          <div style="font-size:48px">🚧</div>
-          <p class="mt-4">Chat en migración</p>
-          <p class="text-xs" style="margin-top:4px">
-            Esta función se activará en la próxima fase.
-          </p>
-        </div>`;
-    }
-
-    abrirModal('modal-chat-torneo');
-  }
+  document.querySelectorAll('#modal-responder-invitacion-organizador [data-cerrar-modal]').forEach(btn => {
+    btn.onclick = () => cerrarModal('modal-responder-invitacion-organizador');
+  });
+  modalResponderInvOrg?.addEventListener('click', (e) => {
+    if (e.target === modalResponderInvOrg) cerrarModal('modal-responder-invitacion-organizador');
+  });
 
   /* =========================================================
      MODAL EDITAR TORNEO (EN EL DETALLE)
@@ -3084,9 +4171,9 @@ export async function init(params = {}) {
     const hint = document.getElementById('hint-tipo-participacion-det');
     if (!hint) return;
     if (estadoModal.tipoParticipacion === 'individual') {
-      hint.textContent = '👤 Los usuarios se inscriben solos.';
+      hint.innerHTML = `${ICONOS.usuario} Los usuarios se inscriben solos.`;
     } else {
-      hint.textContent = '👥 Los equipos se inscriben al torneo.';
+      hint.innerHTML = `${ICONOS.usuarios} Los equipos se inscriben al torneo.`;
     }
   }
 
@@ -3114,9 +4201,9 @@ export async function init(params = {}) {
     const hint = document.getElementById('sistema-clasificacion-hint-det');
     if (!hint) return;
     const textos = {
-      simple: '🎯 Se juega con marcador (goles, puntos, sets).',
-      tiempo: '⏱️ El MENOR tiempo gana.',
-      puntos: '🏅 El MAYOR puntaje gana.',
+      simple: 'Se juega con marcador (goles, puntos, sets).',
+      tiempo: 'El MENOR tiempo gana.',
+      puntos: 'El MAYOR puntaje gana.',
     };
     hint.textContent = textos[estadoModal.sistemaClasificacion] || '';
   }
@@ -3287,5 +4374,7 @@ export async function init(params = {}) {
     }
   }
 
-  return null;
+  return () => {
+    if (intervaloCanalTorneo) clearInterval(intervaloCanalTorneo);
+  };
 }

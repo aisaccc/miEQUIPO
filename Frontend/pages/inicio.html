@@ -45,6 +45,7 @@
       <button class="chip" data-feed="partido">Partidos</button>
       <button class="chip" data-feed="torneo">Torneos</button>
       <button class="chip" data-feed="grupo">Grupos</button>
+      <button class="chip" data-feed="amigos">Amigos</button> <!-- ⚡ NUEVO -->
     </div>
 
     <!-- Feed -->
@@ -119,82 +120,4 @@
     </div>
 
   </aside>
-</div>
-
-<!-- ================= MODAL: CREAR PUBLICACIÓN ================= -->
-<div class="modal-backdrop" id="modal-crear-post">
-  <div class="modal">
-    <div class="modal__header">
-      <div>
-        <div class="modal__eyebrow">Publicar</div>
-        <h3 class="modal__title">Crear publicación</h3>
-      </div>
-      <button class="modal__close" data-cerrar-modal="modal-crear-post">✕</button>
-    </div>
-
-    <div class="modal__body">
-
-      <!-- Aviso "próximamente" -->
-      <div class="aviso-aprobacion show mb-4">
-        <span class="aviso-aprobacion__icon">🚧</span>
-        <div>
-          <strong>Función en camino.</strong>
-          Las publicaciones van a estar disponibles en la próxima actualización.
-        </div>
-      </div>
-
-      <!-- Selector de tipo -->
-      <div class="form-tipo" id="selector-tipo">
-        <div class="form-tipo__opcion active" data-tipo="post">
-          <span class="form-tipo__icono">📝</span>
-          Publicación
-        </div>
-        <div class="form-tipo__opcion" data-tipo="partido">
-          <span class="form-tipo__icono">⚽</span>
-          Partido
-        </div>
-        <div class="form-tipo__opcion" data-tipo="torneo">
-          <span class="form-tipo__icono">🏆</span>
-          Torneo
-        </div>
-      </div>
-
-      <!-- Texto -->
-      <div class="field">
-        <label class="field__label" for="post-contenido">¿Qué quieres compartir?</label>
-        <textarea
-          id="post-contenido"
-          class="textarea"
-          placeholder="Escribe algo..."
-          maxlength="500"
-          disabled
-        ></textarea>
-        <div class="text-xs text-muted mt-4" style="text-align:right">
-          <span id="contador-chars">0</span>/500
-        </div>
-      </div>
-
-      <!-- Adjuntos (deshabilitados) -->
-      <div class="field">
-        <label class="field__label">Adjuntos</label>
-        <div class="flex gap-2" style="flex-wrap:wrap">
-          <button class="btn btn--ghost btn--sm" disabled style="cursor:not-allowed; opacity:0.6">
-            📷 Imagen
-          </button>
-          <button class="btn btn--ghost btn--sm" disabled style="cursor:not-allowed; opacity:0.6">
-            🎥 Video
-          </button>
-        </div>
-        <p class="text-xs text-muted mt-4">
-          Los adjuntos estarán disponibles próximamente.
-        </p>
-      </div>
-
-    </div>
-
-    <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-crear-post">Cancelar</button>
-      <button class="btn btn--primary" id="btn-publicar" disabled>Publicar</button>
-    </div>
-  </div>
 </div>

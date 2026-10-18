@@ -150,4 +150,88 @@
   --z-modal:      200;
   --z-modal-top:  300;
   --z-toast:      400;
+    /* ================== FONDO DECORATIVO (rediseño 2026) ================== */
+  /* Base (modo claro) */
+  --bg-base:           #F7F6F3;
+  --bg-gradient-from:  #FDFCFA;
+  --bg-gradient-to:    #F7F5F0;
+
+  /* Blobs difusos */
+  --bg-blob-primary:   rgba(255, 107, 74, 0.12);
+  --bg-blob-secondary: rgba(255, 138, 101, 0.10);
+  --bg-blob-navy:      rgba(15, 27, 45, 0.05);
+
+  /* Patrón de puntos (textura tipo pelota) */
+  --bg-pattern-dot:    rgba(26, 24, 21, 0.045);
+
+  /* Círculo decorativo tipo cancha */
+  --bg-circle-stroke:  rgba(255, 107, 74, 0.10);
+    /* ================== ACENTOS NUEVOS (rediseño 2026) ================== */
+  --accent-violet:  #8B5CF6;
+  --accent-teal:    #14B8A6;
+  --accent-cyan:    #06B6D4;
+  --accent-amber:   #F59E0B;
+  --accent-rose:    #F43F5E;
+  --accent-emerald: #10B981;
+  --accent-sky:     #0EA5E9;
+
+  /* ================== GRADIENTES NUEVOS ================== */
+  --grad-sunrise:      linear-gradient(135deg, #FFB088 0%, #FF6B4A 50%, #C94A2E 100%);
+  --grad-sunset-warm:  linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%);
+  --grad-ocean:        linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+  --grad-violet:       linear-gradient(135deg, #A855F7 0%, #8B5CF6 100%);
+  --grad-emerald:      linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --grad-navy-soft:    linear-gradient(135deg, #1E2D45 0%, #0F1B2D 100%);
+
+  /* ================== GLOWS ================== */
+  --glow-primary:  0 8px 28px rgba(255, 107, 74, 0.35);
+  --glow-violet:   0 8px 28px rgba(139, 92, 246, 0.30);
+  --glow-teal:     0 8px 28px rgba(20, 184, 166, 0.30);
+  --glow-emerald:  0 8px 28px rgba(16, 185, 129, 0.30);
+  --glow-amber:    0 8px 28px rgba(245, 158, 11, 0.30);
+  --glow-rose:     0 8px 28px rgba(244, 63, 94, 0.30);
+}
+/* =========================================================
+   MODO OSCURO (Dark Mode)
+   ========================================================= */
+[data-theme="dark"] {
+  /* Fondos */
+  --color-bg:             #0B111A;
+  --color-surface:        #151E2D;
+  --color-surface-2:      #1E2A3D;
+  --color-surface-3:      #2A3951;
+  
+  /* Bordes */
+  --color-border:         #2A3951;
+  --color-border-strong:  #3F516C;
+
+  /* Textos */
+  --color-text:           #F7F6F3;
+  --color-text-muted:     #A8B2C1;
+  --color-text-soft:      #7A8B9E;
+
+  /* Ajustes del primario */
+  --color-primary:        #FF8A65;
+  --color-primary-hover:  #FF6B4A;
+  --color-primary-dark:   #FFB088;
+  --color-primary-light:  rgba(255, 138, 101, 0.15);
+  --color-primary-soft:   rgba(255, 138, 101, 0.25);
+  --color-mint-lighter:   rgba(255, 138, 101, 0.05);
+
+  /* Colores especiales */
+  --color-success-light:  rgba(22, 163, 74, 0.15);
+  --color-warning-light:  rgba(245, 158, 11, 0.15);
+  --color-danger-light:   rgba(220, 38, 38, 0.15);
+  --color-info-light:     rgba(37, 99, 235, 0.15);
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+
+  /* Fondo general F.18 */
+  --bg-base:           #0B111A;
+  --bg-gradient-from:  #0F1722;
+  --bg-gradient-to:    #0B111A;
+  --bg-pattern-dot:    rgba(255, 255, 255, 0.03);
 }

@@ -103,3 +103,16 @@ export async function obtenerPerfilPublico(usuarioId) {
   const { usuario } = await api.get(`/usuarios/${usuarioId}`);
   return usuario;
 }
+/* =========================================================
+   BUSCAR USUARIOS (D.3)
+   =========================================================
+   @param {string} q - término de búsqueda (mín 2 caracteres)
+   @returns {Promise<Array>} [{ id, nombre, username, avatar }]
+*/
+export async function buscarUsuarios(q) {
+  const params = new URLSearchParams();
+  params.append('q', q);
+
+  const { usuarios } = await api.get(`/usuarios/buscar?${params.toString()}`);
+  return usuarios || [];
+}

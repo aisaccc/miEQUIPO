@@ -84,6 +84,10 @@ export const schemaEditarStats = z.object({
   victorias: z.number().int().min(0).max(10000),
   empates: z.number().int().min(0).max(10000),
   derrotas: z.number().int().min(0).max(10000),
+  // Flags de privacidad por stat (opcionales)
+  victoriasPrivadas: z.boolean().optional(),
+  empatesPrivadas: z.boolean().optional(),
+  derrotasPrivadas: z.boolean().optional(),
 }).strict();
 
 /* ---------- POST /api/grupos/:id/unirse ---------- */

@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MiEquipo — Inicio</title>
+    <script>
+    // ⚡ Carga el tema antes de pintar la página para evitar flash
+    (function() {
+      const theme = localStorage.getItem('miEquipoTheme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,8 +35,39 @@
         <span class="logo-text">Mi<strong>Equipo</strong></span>
       </a>
 
-      <div class="app-header__search">
-        <input type="text" placeholder="Buscar personas, equipos o torneos..." />
+      <div class="app-header__create">
+        <div class="dropdown" id="dropdown-crear">
+          <button class="btn btn--primary dropdown__trigger" style="border-radius: var(--radius-full); padding: 10px 24px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Crear
+          </button>
+          
+          <div class="dropdown__panel" style="width: 220px; right: auto; left: 50%; transform: translateX(-50%);">
+            <div class="dropdown__header" style="padding: 12px 16px;">
+              <h4>Crear nuevo</h4>
+            </div>
+            <div style="padding: var(--space-2);">
+              <button class="user-menu__item" onclick="window.location.hash = '#/inicio'">
+                <span class="user-menu__icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                </span>
+                Publicación
+              </button>
+              <button class="user-menu__item" onclick="window.location.hash = '#/partidos'">
+                <span class="user-menu__icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><path d="M2 12h20"/></svg>
+                </span>
+                Partido
+              </button>
+              <button class="user-menu__item" onclick="window.location.hash = '#/torneos'">
+                <span class="user-menu__icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                </span>
+                Torneo
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="app-header__actions">
@@ -43,85 +81,38 @@
               <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            <span class="badge">2</span>
+            <span class="badge hidden" id="badge-amigos">0</span>
           </button>
 
           <div class="dropdown__panel">
             <div class="dropdown__header">
               <h4>Amigos</h4>
-              <button class="dropdown__link">Ver todos</button>
             </div>
 
             <div class="dropdown__tabs">
               <button class="dropdown__tab active" data-tab-amigos="solicitudes">
-                Solicitudes <span class="badge badge--primary">2</span>
+                Solicitudes <span class="badge badge--primary" id="count-amigos-sol">0</span>
               </button>
               <button class="dropdown__tab" data-tab-amigos="lista">
-                Amigos <span class="badge badge--neutral">18</span>
+                Amigos <span class="badge badge--neutral" id="count-amigos-lista">0</span>
               </button>
-            </div>
-
-            <div class="dropdown__search">
-              <input type="text" placeholder="Buscar personas..." />
             </div>
 
             <div class="dropdown__pane active" id="pane-solicitudes">
-              <div class="amigo-item">
-                <img src="https://i.pravatar.cc/100?img=22" alt="" class="avatar avatar--md" />
-                <div class="amigo-item__info">
-                  <div class="amigo-item__name">Rodrigo Muñoz</div>
-                  <div class="amigo-item__sub">Fútbol · Santiago</div>
-                </div>
-                <div class="amigo-item__actions">
-                  <button class="btn btn--primary btn--sm" data-aceptar="1">Aceptar</button>
-                  <button class="btn btn--ghost btn--sm" data-rechazar="1">✕</button>
-                </div>
-              </div>
-
-              <div class="amigo-item">
-                <img src="https://i.pravatar.cc/100?img=24" alt="" class="avatar avatar--md" />
-                <div class="amigo-item__info">
-                  <div class="amigo-item__name">Valentina Rojas</div>
-                  <div class="amigo-item__sub">Vóleibol · Valparaíso</div>
-                </div>
-                <div class="amigo-item__actions">
-                  <button class="btn btn--primary btn--sm" data-aceptar="2">Aceptar</button>
-                  <button class="btn btn--ghost btn--sm" data-rechazar="2">✕</button>
-                </div>
-              </div>
+              <!-- JS llena esto -->
             </div>
 
             <div class="dropdown__pane" id="pane-lista">
-              <div class="amigo-item">
-                <img src="https://i.pravatar.cc/100?img=13" alt="" class="avatar avatar--md" />
-                <div class="amigo-item__info">
-                  <div class="amigo-item__name">Carlos Ruiz</div>
-                  <div class="amigo-item__sub">En línea</div>
-                </div>
-                <button class="btn btn--ghost btn--sm">Mensaje</button>
-              </div>
-
-              <div class="amigo-item">
-                <img src="https://i.pravatar.cc/100?img=45" alt="" class="avatar avatar--md" />
-                <div class="amigo-item__info">
-                  <div class="amigo-item__name">María González</div>
-                  <div class="amigo-item__sub">Hace 5 min</div>
-                </div>
-                <button class="btn btn--ghost btn--sm">Mensaje</button>
-              </div>
-
-              <div class="amigo-item">
-                <img src="https://i.pravatar.cc/100?img=14" alt="" class="avatar avatar--md" />
-                <div class="amigo-item__info">
-                  <div class="amigo-item__name">Andrés Soto</div>
-                  <div class="amigo-item__sub">Hace 1 h</div>
-                </div>
-                <button class="btn btn--ghost btn--sm">Mensaje</button>
-              </div>
+              <!-- JS llena esto -->
             </div>
 
             <div class="dropdown__footer">
-              <button class="btn btn--ghost btn--block btn--sm">🔍 Buscar nuevos amigos</button>
+              <button class="btn btn--ghost btn--block btn--sm" id="btn-buscar-amigos">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                Buscar nuevos amigos
+              </button>
             </div>
           </div>
         </div>
@@ -194,6 +185,12 @@
                 </svg>
               </span> Ayuda
             </button>
+            <button class="user-menu__item" id="btn-theme-toggle">
+              <span class="user-menu__icon" id="theme-icon-container">
+                <!-- El ícono se inyecta por JS -->
+              </span>
+              <span id="theme-label">Modo oscuro</span>
+            </button>           
 
             <div class="user-menu__divider"></div>
 
@@ -215,7 +212,6 @@
     <!-- ================= SIDEBAR ================= -->
     <aside class="app-sidebar">
 
-      <!-- Card "Tu semana" (opcional, podés quitarla si no la usás) -->
       <div class="sidebar-card">
         <div class="sidebar-card__label">Tu semana</div>
         <div class="sidebar-card__title">¡A seguir sumando!</div>
@@ -277,7 +273,6 @@
         </a>
       </nav>
 
-      <!-- Logout sutil (con ícono, sin borde) -->
       <button id="btn-logout" class="sidebar-logout">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -291,7 +286,6 @@
 
     <!-- ================= MAIN ================= -->
     <main class="app-main">
-      <!-- Solo UN #page-content, y SIN la clase container -->
       <div id="page-content"></div>
     </main>
 
@@ -299,86 +293,388 @@
 
   <!-- ================= MODAL: VER PERFIL ================= -->
   <div class="modal-backdrop" id="modal-ver-perfil">
-    <div class="modal" style="max-width: 480px;">
+    <div class="modal modal--lg">
       <div class="modal__header">
-        <h3 class="modal__title">Perfil de usuario</h3>
-        <button class="modal__close" data-cerrar-modal="modal-ver-perfil">✕</button>
+        <h3 class="modal__title">Perfil</h3>
+        <button class="modal__close" data-cerrar-modal="modal-ver-perfil">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body" id="ver-perfil-body"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VER PUBLICACIÓN (global) ================= -->
+  <div class="modal-backdrop" id="modal-ver-publicacion">
+    <div class="modal" style="max-width: 720px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Publicación</h3>
+        <button class="modal__close" data-cerrar-modal="modal-ver-publicacion">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body" id="ver-publicacion-body"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CREAR PUBLICACIÓN (global) ================= -->
+  <div class="modal-backdrop" id="modal-crear-publicacion">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Nueva publicación</h3>
+        <button class="modal__close" data-cerrar-modal="modal-crear-publicacion">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
-      <div class="modal__body" id="ver-perfil-body"></div>
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="crear-pub-contenido">Descripción (opcional)</label>
+          <textarea
+            id="crear-pub-contenido"
+            class="textarea"
+            placeholder="Contá algo sobre tu foto..."
+            maxlength="2000"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Imagen (opcional, máx 3MB)</label>
+
+          <div id="crear-pub-preview-wrapper" class="hidden">
+            <div class="crear-pub-preview" style="position:relative">
+              <img id="crear-pub-preview-img" src="" alt="" />
+              <button
+                class="crear-pub-preview__del"
+                id="crear-pub-quitar-imagen"
+                title="Quitar imagen"
+                type="button"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer; display:inline-flex" id="crear-pub-label-imagen">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Elegir imagen
+            <input type="file" id="crear-pub-imagen-file" accept="image/*" style="display:none" />
+          </label>
+        </div>
+      </div>
 
       <div class="modal__footer">
-        <button class="btn btn--ghost" data-cerrar-modal="modal-ver-perfil">Cerrar</button>
+        <button class="btn btn--ghost" data-cerrar-modal="modal-crear-publicacion">Cancelar</button>
+        <button class="btn btn--primary" id="btn-publicar">Publicar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: EDITAR PUBLICACIÓN (global) ================= -->
+  <div class="modal-backdrop" id="modal-editar-publicacion">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Editar publicación</h3>
+        <button class="modal__close" data-cerrar-modal="modal-editar-publicacion">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="field">
+          <label class="field__label" for="editar-pub-contenido">Descripción</label>
+          <textarea
+            id="editar-pub-contenido"
+            class="textarea"
+            placeholder="Descripción..."
+            maxlength="2000"
+          ></textarea>
+        </div>
+
+        <!-- ⚡ Selector de privacidad (solo para publicaciones de equipo) -->
+        <div class="field hidden" id="editar-pub-privacidad-wrapper">
+          <label class="field__label">¿Quién puede verla?</label>
+
+          <div class="privacidad-grid" id="editar-pub-privacidad-grid">
+            <div class="privacidad-opcion" data-privacidad="publico">
+              <div class="privacidad-opcion__icono">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </div>
+              <div class="privacidad-opcion__titulo">Público</div>
+              <div class="privacidad-opcion__desc">Cualquiera que vea el equipo</div>
+            </div>
+
+            <div class="privacidad-opcion" data-privacidad="miembros">
+              <div class="privacidad-opcion__icono">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="privacidad-opcion__titulo">Miembros</div>
+              <div class="privacidad-opcion__desc">Solo integrantes del equipo</div>
+            </div>
+
+            <div class="privacidad-opcion" data-privacidad="staff">
+              <div class="privacidad-opcion__icono">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/>
+                </svg>
+              </div>
+              <div class="privacidad-opcion__titulo">Staff</div>
+              <div class="privacidad-opcion__desc">Solo capitán y sub-capitanes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--ghost" data-cerrar-modal="modal-editar-publicacion">Cancelar</button>
+        <button class="btn btn--primary" id="btn-guardar-edicion-pub">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VER IMAGEN GRANDE (chat) ================= -->
+  <div class="modal-backdrop" id="modal-ver-imagen">
+    <div class="modal modal--imagen">
+      <button class="modal__close modal__close--floating" data-cerrar-modal="modal-ver-imagen">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="modal-imagen-body">
+        <img id="modal-imagen-img" src="" alt="" />
       </div>
     </div>
   </div>
 
   <!-- ================= MODAL: CONFIGURACIÓN ================= -->
   <div class="modal-backdrop" id="modal-configuracion">
-    <div class="modal" style="max-width: 460px;">
+    <div class="modal" style="max-width: 540px;">
       <div class="modal__header">
         <h3 class="modal__title">Configuración</h3>
-        <button class="modal__close" data-cerrar-modal="modal-configuracion">✕</button>
+        <button class="modal__close" data-cerrar-modal="modal-configuracion">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
-      <div class="modal__body">
-        <div class="dropdown__pane active" style="padding:0">
-          <button class="user-menu__item" data-config-action="perfil">
-            <span>👤</span> Ver mi perfil
-          </button>
-          <button class="user-menu__item" data-config-action="editar-perfil">
-            <span>✏️</span> Editar mi perfil
-          </button>
-          <button class="user-menu__item" data-config-action="cambiar-pass">
-            <span>🔒</span> Cambiar contraseña
-          </button>
-          <button class="user-menu__item" data-config-action="notificaciones">
-            <span>🔔</span> Notificaciones
-          </button>
-          <button class="user-menu__item" data-config-action="privacidad">
-            <span>🔐</span> Privacidad
-          </button>
-          <button class="user-menu__item" data-config-action="ayuda">
-            <span>❓</span> Ayuda
+      <div class="modal__body modal-config">
+        <!-- SECCIÓN: CUENTA -->
+        <div class="modal-config__section">
+          <div class="modal-config__section-label">Cuenta</div>
+
+          <button class="modal-config__item" data-config-action="perfil">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Ver mi perfil</div>
+              <div class="modal-config__item-desc">Mirá cómo te ven los demás</div>
+            </div>
+            <div class="modal-config__item-chevron">›</div>
           </button>
 
-          <div class="user-menu__divider"></div>
-
-          <button class="user-menu__item user-menu__item--danger" data-config-action="cerrar-sesion">
-            <span>🚪</span> Cerrar sesión
+          <button class="modal-config__item" data-config-action="editar-perfil">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Editar mi perfil</div>
+              <div class="modal-config__item-desc">Nombre, foto, bio y deportes</div>
+            </div>
+            <div class="modal-config__item-chevron">›</div>
           </button>
-          <button class="user-menu__item user-menu__item--danger" data-config-action="eliminar-cuenta">
-            <span>⚠️</span> Eliminar mi cuenta
+
+          <button class="modal-config__item" data-config-action="cambiar-pass">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Cambiar contraseña</div>
+              <div class="modal-config__item-desc">Actualizá tu contraseña de acceso</div>
+            </div>
+            <div class="modal-config__item-chevron">›</div>
           </button>
         </div>
-      </div>
 
-      <div class="modal__footer">
-        <button class="btn btn--ghost" data-cerrar-modal="modal-configuracion">Cerrar</button>
+        <!-- SECCIÓN: PREFERENCIAS -->
+        <div class="modal-config__section">
+          <div class="modal-config__section-label">Preferencias</div>
+
+          <button class="modal-config__item" data-config-action="notificaciones">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Notificaciones</div>
+              <div class="modal-config__item-desc">Elegí qué querés recibir</div>
+            </div>
+            <span class="modal-config__badge">Próximamente</span>
+          </button>
+
+          <button class="modal-config__item" data-config-action="privacidad">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Privacidad</div>
+              <div class="modal-config__item-desc">Controlá quién ve tu perfil</div>
+            </div>
+            <span class="modal-config__badge">Próximamente</span>
+          </button>
+
+          <button class="modal-config__item" data-config-action="ayuda">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Ayuda</div>
+              <div class="modal-config__item-desc">Preguntas frecuentes y soporte</div>
+            </div>
+            <span class="modal-config__badge">Próximamente</span>
+          </button>
+        </div>
+
+        <!-- SECCIÓN: PELIGRO -->
+        <div class="modal-config__section">
+          <div class="modal-config__section-label">Cuenta</div>
+
+          <button class="modal-config__item modal-config__item--danger" data-config-action="cerrar-sesion">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Cerrar sesión</div>
+              <div class="modal-config__item-desc">Salir de tu cuenta en este dispositivo</div>
+            </div>
+            <div class="modal-config__item-chevron">›</div>
+          </button>
+
+          <button class="modal-config__item modal-config__item--danger" data-config-action="eliminar-cuenta">
+            <div class="modal-config__item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <div class="modal-config__item-info">
+              <div class="modal-config__item-titulo">Eliminar mi cuenta</div>
+              <div class="modal-config__item-desc">Esta acción no se puede deshacer</div>
+            </div>
+            <div class="modal-config__item-chevron">›</div>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- ================= MODAL: CAMBIAR CONTRASEÑA ================= -->
   <div class="modal-backdrop" id="modal-cambiar-pass">
-    <div class="modal" style="max-width: 420px;">
+    <div class="modal" style="max-width: 440px;">
       <div class="modal__header">
-        <h3 class="modal__title">🔒 Cambiar contraseña</h3>
-        <button class="modal__close" data-cerrar-modal="modal-cambiar-pass">✕</button>
+        <h3 class="modal__title">Cambiar contraseña</h3>
+        <button class="modal__close" data-cerrar-modal="modal-cambiar-pass">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <div class="modal__body">
+        <p class="text-xs text-muted mb-4">
+          Elegí una contraseña segura con al menos 8 caracteres, mayúscula, minúscula y número.
+        </p>
+
         <div class="field">
           <label class="field__label" for="pass-actual">Contraseña actual *</label>
-          <input type="password" id="pass-actual" class="field__input" placeholder="••••••••" />
+          <div class="pass-input">
+            <input type="password" id="pass-actual" class="field__input" placeholder="••••••••" />
+            <button type="button" class="pass-input__toggle" data-toggle-pass="pass-actual" title="Ver contraseña">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
+
         <div class="field">
           <label class="field__label" for="pass-nueva">Nueva contraseña *</label>
-          <input type="password" id="pass-nueva" class="field__input" placeholder="Mínimo 8 caracteres" />
+          <div class="pass-input">
+            <input type="password" id="pass-nueva" class="field__input" placeholder="Mínimo 8 caracteres" />
+            <button type="button" class="pass-input__toggle" data-toggle-pass="pass-nueva" title="Ver contraseña">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
+
         <div class="field">
           <label class="field__label" for="pass-confirmar">Confirmar nueva contraseña *</label>
-          <input type="password" id="pass-confirmar" class="field__input" placeholder="Repite la nueva contraseña" />
+          <div class="pass-input">
+            <input type="password" id="pass-confirmar" class="field__input" placeholder="Repite la nueva contraseña" />
+            <button type="button" class="pass-input__toggle" data-toggle-pass="pass-confirmar" title="Ver contraseña">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -390,6 +686,6 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="js/main.js?v=8"></script>
+  <script type="module" src="js/main.js?v=73"></script>
 </body>
 </html>

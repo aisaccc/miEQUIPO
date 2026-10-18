@@ -1,5 +1,5 @@
 /* =========================================================
-   mensajes.routes.js — Rutas de mensajería 1 a 1
+   mensajes.routes.js — Rutas de mensajería
    =========================================================
    Base: /api/mensajes
    Todas las rutas requieren autenticación.
@@ -11,7 +11,6 @@ import { requiereAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-/* Todas las rutas requieren autenticación */
 router.use(requiereAuth);
 
 /* =========================================================
@@ -20,22 +19,24 @@ router.use(requiereAuth);
 router.get('/no-leidos', mensajesController.contarNoLeidos);
 
 /* =========================================================
-   CONVERSACIONES
+   CONVERSACIONES 1 A 1
    ========================================================= */
 router.get('/conversaciones', mensajesController.listarConversaciones);
 router.post('/conversaciones', mensajesController.crearConversacion);
 router.get('/conversaciones/:id', mensajesController.obtenerConversacion);
 router.delete('/conversaciones/:id', mensajesController.ocultarConversacion);
 
-/* =========================================================
-   MENSAJES DENTRO DE UNA CONVERSACIÓN
-   ========================================================= */
 router.get('/conversaciones/:id/mensajes', mensajesController.listarMensajes);
 router.post('/conversaciones/:id/mensajes', mensajesController.enviarMensaje);
+router.patch('/conversaciones/:id/leidos', mensajesController.marcarLeidos);
 
 /* =========================================================
-   MARCAR COMO LEÍDOS
+   CANALES (equipos + torneos)
    ========================================================= */
-router.patch('/conversaciones/:id/leidos', mensajesController.marcarLeidos);
+router.get('/canales', mensajesController.listarCanales);
+router.get('/canales/:id', mensajesController.obtenerCanal);
+router.get('/canales/:id/mensajes', mensajesController.listarMensajesDeCanal);
+router.post('/canales/:id/mensajes', mensajesController.enviarMensajeACanal);
+router.patch('/canales/:id/leidos', mensajesController.marcarCanalLeido);
 
 export default router;

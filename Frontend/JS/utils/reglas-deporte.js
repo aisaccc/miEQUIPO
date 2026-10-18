@@ -97,7 +97,6 @@ export const REGLAS_DEPORTE = {
     maxSets: 3,
     setsParaGanar: 2,
     sistema: 'games',
-    nota: 'Ingresá el resultado de cada set (ej: 6-4, 7-6, 7-5).',
   },
   'Pádel': {
     tipo: 'sets',
@@ -105,7 +104,6 @@ export const REGLAS_DEPORTE = {
     maxSets: 3,
     setsParaGanar: 2,
     sistema: 'games',
-    nota: 'Ingresá el resultado de cada set (ej: 6-4, 7-6, 7-5).',
   },
   'Squash': {
     tipo: 'sets',

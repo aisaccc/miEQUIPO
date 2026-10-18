@@ -1102,8 +1102,127 @@ select.field__input {
 /* =========================================================
    RESPONSIVE
    ========================================================= */
+/* =========================================================
+   QA MOBILE — FIXES COMPONENTS
+   ========================================================= */
+
 @media (max-width: 600px) {
-  .modal { max-width: 100%; border-radius: var(--radius-xl); }
-  .dropdown__panel { width: calc(100vw - 24px); right: -12px; }
-  .subtabs { gap: var(--space-4); }
+  /* Modales */
+  .modal-backdrop {
+    padding: var(--space-2);
+    align-items: flex-end; /* El modal sale desde abajo */
+  }
+
+  .modal {
+    max-width: 100%;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 95vh; /* Fallback */
+    max-height: 95dvh; /* Usa la altura dinámica del viewport */
+    margin-bottom: 0;
+  }
+
+  .modal--lg,
+  .modal--xl {
+    max-width: 100%;
+  }
+
+  .modal__header {
+    flex-wrap: wrap;
+    padding: var(--space-4);
+  }
+
+  .modal__title {
+    font-size: var(--fs-base);
+    word-break: break-word;
+  }
+
+  .modal__footer {
+    flex-direction: column-reverse; /* Los botones se apilan */
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .modal__footer .btn {
+    width: 100%;
+  }
+
+  /* Dropdowns (notificaciones, amigos, user menu) */
+  .dropdown__panel,
+  .user-menu__dropdown {
+    position: fixed;
+    top: calc(var(--header-h) + 8px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - var(--header-h) - 24px);
+    max-height: calc(100dvh - var(--header-h) - 24px);
+    z-index: var(--z-dropdown);
+  }
+
+  /* Toasts */
+  .toast-container {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    align-items: stretch;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Filtros y Chips */
+  .toolbar__filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px; /* Para que la sombra no se corte */
+    margin: 0 -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  .toolbar__filters::-webkit-scrollbar {
+    height: 0;
+  }
+}
+/* =========================================================
+   QA MOBILE / SPLIT SCREEN — FIXES COMPONENTS
+   ========================================================= */
+
+@media (max-width: 900px) {
+  /* Modales más angostos en pantallas divididas */
+  .modal {
+    max-width: 95%;
+  }
+  
+  .modal--lg,
+  .modal--xl {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 600px) {
+  /* En celular el modal va de borde a borde */
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-width: 100%;
+    max-height: 90vh; 
+    max-height: 90dvh; /* Altura dinámica */
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  /* Header: Evitar que los botones se aplasten */
+  .app-header__logo {
+    font-size: var(--fs-sm);
+  }
+  
+  .app-header__icon-btn {
+    width: 36px;
+    height: 36px;
+  }
 }

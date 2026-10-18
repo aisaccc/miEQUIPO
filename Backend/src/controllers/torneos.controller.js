@@ -11,6 +11,8 @@ import {
   schemaAprobarSolicitud,
   schemaInvitarEquipo,
   schemaAgregarOrganizador,
+  schemaInvitarOrganizador,
+  schemaResponderInvitacionOrganizador,
   schemaCrearPartidoTorneo,
   schemaEditarPartidoTorneo,
   schemaEditarCruce,
@@ -104,9 +106,6 @@ export async function eliminar(req, res, next) {
 
 /* =========================================================
    PATCH /api/torneos/:id/cerrar
-   =========================================================
-   ⚡ Ahora devuelve también autoFixturado e infoFixture si el
-   torneo es de eliminación y se auto-armó el bracket.
    ========================================================= */
 export async function cerrar(req, res, next) {
   try {
@@ -263,18 +262,60 @@ export async function responderInvitacion(req, res, next) {
 }
 
 /* =========================================================
-   POST /api/torneos/:id/organizadores
+   POST /api/torneos/:id/organizadores/invitaciones (D.3)
    ========================================================= */
-export async function agregarOrganizador(req, res, next) {
+export async function invitarOrganizador(req, res, next) {
   try {
     const torneoId = validar(schemaUuidParam, req.params.id);
-    const { usuarioId, permisos } = validar(schemaAgregarOrganizador, req.body);
+    const { usuarioId, permisos } = validar(schemaInvitarOrganizador, req.body);
 
-    const resultado = await torneosService.agregarOrganizador(
+    const resultado = await torneosService.invitarOrganizador(
       torneoId,
       req.usuario.id,
       usuarioId,
       permisos
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   PATCH /api/torneos/:id/organizadores/invitaciones/responder (D.3)
+   =========================================================
+   El invitado acepta o rechaza. El usuario sale del token.
+   ========================================================= */
+export async function responderInvitacionOrganizador(req, res, next) {
+  try {
+    const torneoId = validar(schemaUuidParam, req.params.id);
+    const { aceptar } = validar(schemaResponderInvitacionOrganizador, req.body);
+
+    const resultado = await torneosService.responderInvitacionOrganizador(
+      torneoId,
+      req.usuario.id,
+      aceptar
+    );
+
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   DELETE /api/torneos/:id/organizadores/invitaciones/:usuarioId (D.3)
+   ========================================================= */
+export async function cancelarInvitacionOrganizador(req, res, next) {
+  try {
+    const torneoId = validar(schemaUuidParam, req.params.id);
+    const invitadoId = validar(schemaUuidParam, req.params.usuarioId);
+
+    const resultado = await torneosService.cancelarInvitacionOrganizador(
+      torneoId,
+      req.usuario.id,
+      invitadoId
     );
 
     res.json(resultado);
@@ -366,12 +407,6 @@ export async function eliminarPartidoTorneo(req, res, next) {
   }
 }
 
-/* =========================================================
-   ⚡ PATCH /api/torneos/:id/cruces/:partidoId
-   =========================================================
-   Editar un cruce individual (local/visitante) mientras el
-   fixture NO esté confirmado.
-   ========================================================= */
 export async function editarCruce(req, res, next) {
   try {
     const torneoId = validar(schemaUuidParam, req.params.id);
@@ -413,10 +448,6 @@ export async function cargarResultado(req, res, next) {
   }
 }
 
-/* =========================================================
-   FIXTURE AUTOMÁTICO — LIGA
-   ========================================================= */
-
 export async function generarFixtureLiga(req, res, next) {
   try {
     const torneoId = validar(schemaUuidParam, req.params.id);
@@ -432,10 +463,6 @@ export async function generarFixtureLiga(req, res, next) {
     next(err);
   }
 }
-
-/* =========================================================
-   FIXTURE — ELIMINACIÓN
-   ========================================================= */
 
 export async function armarFixtureAleatorio(req, res, next) {
   try {
@@ -485,10 +512,6 @@ export async function confirmarFixture(req, res, next) {
     next(err);
   }
 }
-
-/* =========================================================
-   JORNADAS (liga)
-   ========================================================= */
 
 export async function crearJornada(req, res, next) {
   try {
@@ -548,10 +571,6 @@ export async function eliminarJornada(req, res, next) {
     next(err);
   }
 }
-
-/* =========================================================
-   GUARDAR JORNADA BULK
-   ========================================================= */
 
 export async function guardarJornadaBulk(req, res, next) {
   try {

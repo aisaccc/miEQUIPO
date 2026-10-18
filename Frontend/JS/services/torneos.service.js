@@ -204,6 +204,7 @@ function normalizarTorneo(t) {
     listaEspera: (t.listaEspera || t.lista_espera || []).map(normalizarSolicitud),
     invitaciones: (t.invitaciones || []).map(normalizarInvitacion),
     organizadores: (t.organizadores || []).map(normalizarOrganizador),
+    invitacionesOrganizador: (t.invitacionesOrganizador || t.invitaciones_organizador || []).map(normalizarOrganizador),   // ⚡ D.3
     partidos: (t.partidos || []).map(normalizarPartido),
     jornadas: (t.jornadas || []).map(normalizarJornada),
     tablaPosiciones: (t.tablaPosiciones || t.tabla_posiciones || []).map(normalizarFilaTabla),
@@ -218,6 +219,7 @@ function normalizarTorneo(t) {
     miInvitacionPendienteDetalle: t.miInvitacionPendienteDetalle
       ? normalizarInvitacion(t.miInvitacionPendienteDetalle)
       : null,
+    miInvitacionOrganizador: t.miInvitacionOrganizador ?? t.mi_invitacion_organizador ?? null,   // ⚡ D.3
 
     // Helpers calculados
     esIndividual: (t.tipoParticipacion ?? t.tipo_participacion) === 'individual',
@@ -339,12 +341,33 @@ export async function responderInvitacion(torneoId, equipoId, aceptar) {
 }
 
 /* =========================================================
-   SUB-ORGANIZADORES
+   SUB-ORGANIZADORES (D.3)
    ========================================================= */
-export async function agregarOrganizador(torneoId, usuarioId, permisos = 'resultados') {
-  return api.post(`/torneos/${torneoId}/organizadores`, { usuarioId, permisos });
+
+/* El organizador invita a alguien a ser sub-organizador */
+export async function invitarOrganizador(torneoId, usuarioId, permisos = 'completo') {
+  return api.post(`/torneos/${torneoId}/organizadores/invitaciones`, {
+    usuarioId,
+    permisos,
+  });
 }
 
+/* El invitado acepta o rechaza */
+export async function responderInvitacionOrganizador(torneoId, aceptar) {
+  return api.patch(
+    `/torneos/${torneoId}/organizadores/invitaciones/responder`,
+    { aceptar }
+  );
+}
+
+/* El organizador cancela una invitación pendiente */
+export async function cancelarInvitacionOrganizador(torneoId, invitadoId) {
+  return api.delete(
+    `/torneos/${torneoId}/organizadores/invitaciones/${invitadoId}`
+  );
+}
+
+/* El organizador quita a un sub-organizador ya aceptado */
 export async function quitarOrganizador(torneoId, usuarioId) {
   return api.delete(`/torneos/${torneoId}/organizadores/${usuarioId}`);
 }

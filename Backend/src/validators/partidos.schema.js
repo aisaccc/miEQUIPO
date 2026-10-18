@@ -91,14 +91,12 @@ const posicionesValidas = z
    ========================================================= */
 
 /* ---------- POST /api/partidos ---------- */
-/* ---------- POST /api/partidos ---------- */
 export const schemaCrearPartido = z.object({
   titulo: tituloValido,
   deporte: deporteValido,
   emoji: emojiValido,
   descripcion: descripcionValida,
 
-  // ⚡ AHORA OPCIONALES (para modo "Organizar partido")
   lugar: z
     .string()
     .min(2, 'Mínimo 2 caracteres')
@@ -132,7 +130,6 @@ export const schemaCrearPartido = z.object({
   pedirPosiciones: z.boolean().default(false),
   posiciones: posicionesValidas,
 
-  // ⚡ NUEVO: modo del partido
   estadoPartido: z
     .enum(['buscando_jugadores', 'confirmado'])
     .default('confirmado'),
@@ -192,6 +189,7 @@ export const schemaListarPartidos = z.object({
 
 /* ---------- Param :id ---------- */
 export const schemaUuidParam = uuidValido;
+
 /* ---------- POST /api/partidos/:id/interesarse ---------- */
 export const schemaInteresarse = z.object({
   mensaje: z
@@ -200,11 +198,16 @@ export const schemaInteresarse = z.object({
     .transform(v => v.trim())
     .nullable()
     .optional(),
+  // ⚡ AGREGADO: para permitir interesarse con un equipo
+  equipoId: z
+    .string()
+    .uuid('El ID del equipo debe ser un UUID válido')
+    .nullable()
+    .optional(),
 }).strict();
 
 /* ---------- PATCH /api/partidos/:id/confirmar ---------- */
 export const schemaConfirmarPartido = z.object({
-  // ⚡ NUEVOS: hay que indicar con quién se confirma
   interesadoId: z.string().uuid('El ID del interesado debe ser un UUID válido'),
   interesadoTipo: z
     .enum(['usuario', 'equipo'], {
@@ -217,7 +220,6 @@ export const schemaConfirmarPartido = z.object({
     .nullable()
     .optional(),
 
-  // Datos del partido propuestos
   lugar: lugarValido,
   fecha: fechaValida,
   precio: z
@@ -227,7 +229,6 @@ export const schemaConfirmarPartido = z.object({
     .max(10_000_000, 'Precio demasiado alto')
     .default(0),
 
-  // Mensaje opcional al interesado
   mensaje: z
     .string()
     .max(300, 'Máximo 300 caracteres')
@@ -235,6 +236,7 @@ export const schemaConfirmarPartido = z.object({
     .nullable()
     .optional(),
 }).strict();
+
 /* ---------- GET /api/usuarios/me/historial-partidos ---------- */
 export const schemaHistorialPartidos = z.object({
   deporte: z.string().max(50).optional(),

@@ -1,8 +1,5 @@
-/* =========================================================
-   publicaciones.service.js — Lógica de negocio
-   ========================================================= */
-
 import { pool } from '../config/db.js';
+import { estanBloqueados, idsBloqueadosTotales } from '../utils/bloqueos.js';
 
 /* =========================================================
    HELPERS
@@ -15,6 +12,7 @@ function formatearPublicacion(row, extras = {}) {
     scope: row.scope || 'perfil',
     grupoId: row.grupo_id || null,
     torneoId: row.torneo_id || null,
+    privacidad: row.privacidad || 'publico',
     contenido: row.contenido,
     imagen: row.imagen,
     video: row.video,
@@ -23,7 +21,6 @@ function formatearPublicacion(row, extras = {}) {
     totalLikes: extras.totalLikes ?? 0,
     totalComentarios: extras.totalComentarios ?? 0,
     yoLikee: extras.yoLikee ?? false,
-    // Contexto (solo para feed)
     grupo: extras.grupo || null,
     torneo: extras.torneo || null,
   };
@@ -43,14 +40,10 @@ function formatearComentario(row) {
   };
 }
 
-/**
- * SELECT base reutilizable para listar publicaciones.
- * Incluye autor + contadores + flags.
- */
 function sqlBasePublicacion(whereClause) {
   return `
     SELECT
-      p.id, p.tipo, p.scope, p.grupo_id, p.torneo_id,
+      p.id, p.tipo, p.scope, p.grupo_id, p.torneo_id, p.privacidad,
       p.contenido, p.imagen, p.video, p.created_at,
       u.id AS autor_id, u.nombre AS autor_nombre,
       u.username AS autor_username, u.avatar AS autor_avatar,
@@ -83,11 +76,58 @@ function parsearFilas(rows) {
 }
 
 /* =========================================================
-   LISTAR POR USUARIO (perfil público)
+   HELPERS DE PRIVACIDAD Y ROLES
+   ========================================================= */
+
+async function obtenerRolEnGrupo(grupoId, usuarioId) {
+  const { rows: cap } = await pool.query(
+    `SELECT capitan_id FROM grupos WHERE id = $1`,
+    [grupoId]
+  );
+  if (!cap[0]) return { esCapitan: false, esAdmin: false, esMiembro: false };
+
+  const esCapitan = String(cap[0].capitan_id) === String(usuarioId);
+  const { rows: miem } = await pool.query(
+    `SELECT rol FROM grupo_miembros
+     WHERE grupo_id = $1 AND usuario_id = $2`,
+    [grupoId, usuarioId]
+  );
+  const rol = miem[0]?.rol;
+  const esAdmin = rol === 'admin';
+  const esMiembro = miem.length > 0;
+
+  return { esCapitan, esAdmin, esMiembro };
+}
+
+const sqlFiltroPrivacidadPerfil = `
+  (
+    p.privacidad = 'publico'
+    OR p.autor_id = $1
+    OR (
+      p.privacidad = 'amigos' AND EXISTS (
+        SELECT 1 FROM amistades a
+        WHERE a.estado = 'aceptada'
+        AND (
+          (a.usuario_id = $1 AND a.amigo_id = p.autor_id)
+          OR (a.usuario_id = p.autor_id AND a.amigo_id = $1)
+        )
+      )
+    )
+  )
+`;
+
+/* =========================================================
+   LISTAR POR USUARIO
    ========================================================= */
 export async function listarPorUsuario(usuarioId, usuarioActualId) {
+  if (await estanBloqueados(usuarioId, usuarioActualId)) return [];
+
   const { rows } = await pool.query(
-    sqlBasePublicacion(`WHERE p.autor_id = $2 AND p.scope = 'perfil'`),
+    sqlBasePublicacion(`
+      WHERE p.autor_id = $2 
+      AND p.scope = 'perfil'
+      AND ${sqlFiltroPrivacidadPerfil}
+    `),
     [usuarioActualId, usuarioId]
   );
   return parsearFilas(rows);
@@ -97,41 +137,120 @@ export async function listarPorUsuario(usuarioId, usuarioActualId) {
    LISTAR POR GRUPO
    ========================================================= */
 export async function listarPorGrupo(grupoId, usuarioActualId) {
+  const { esCapitan, esAdmin, esMiembro } = await obtenerRolEnGrupo(grupoId, usuarioActualId);
+
+  const esStaff = esCapitan || esAdmin;
+  const esMiembroReal = esMiembro || esCapitan;
+
+  let filtroPrivacidad;
+  if (esStaff) {
+    filtroPrivacidad = `TRUE`;
+  } else if (esMiembroReal) {
+    filtroPrivacidad = `(p.privacidad IN ('publico', 'miembros') OR p.autor_id = $1)`;
+  } else {
+    filtroPrivacidad = `(p.privacidad = 'publico' OR p.autor_id = $1)`;
+  }
+
   const { rows } = await pool.query(
-    sqlBasePublicacion(`WHERE p.grupo_id = $2 AND p.scope = 'grupo'`),
+    sqlBasePublicacion(`
+      WHERE p.grupo_id = $2
+        AND p.scope = 'grupo'
+        AND ${filtroPrivacidad}
+    `),
     [usuarioActualId, grupoId]
   );
-  return parsearFilas(rows);
+
+  const bloqueados = await idsBloqueadosTotales(usuarioActualId);
+  return parsearFilas(rows).filter(p => !bloqueados.includes(p.autor.id));
 }
 
 /* =========================================================
    LISTAR POR TORNEO
    ========================================================= */
 export async function listarPorTorneo(torneoId, usuarioActualId) {
+  const { rows: acceso } = await pool.query(`
+    SELECT
+      EXISTS(SELECT 1 FROM torneos t WHERE t.id = $1 AND t.organizador_id = $2) AS es_org,
+      EXISTS(SELECT 1 FROM torneo_organizadores to2 WHERE to2.torneo_id = $1 AND to2.usuario_id = $2) AS es_suborg,
+      EXISTS(
+        SELECT 1 FROM torneo_equipos te
+        LEFT JOIN grupo_miembros gm ON gm.grupo_id = te.equipo_id
+        WHERE te.torneo_id = $1 AND (gm.usuario_id = $2 OR te.equipo_id = $2)
+      ) AS es_participante,
+      EXISTS(
+        SELECT 1 FROM torneo_lista_espera tle
+        LEFT JOIN grupo_miembros gm ON gm.grupo_id = tle.equipo_id
+        WHERE tle.torneo_id = $1 AND (gm.usuario_id = $2 OR tle.equipo_id = $2) AND tle.estado = 'aceptado'
+      ) AS es_participante_espera
+  `, [torneoId, usuarioActualId]);
+
+  const a = acceso[0];
+  const esMiembro = a.es_org || a.es_suborg || a.es_participante || a.es_participante_espera;
+  const filtroPrivacidad = esMiembro ? `TRUE` : `(p.privacidad = 'publico' OR p.autor_id = $1)`;
+
   const { rows } = await pool.query(
-    sqlBasePublicacion(`WHERE p.torneo_id = $2 AND p.scope = 'torneo'`),
+    sqlBasePublicacion(`
+      WHERE p.torneo_id = $2
+        AND p.scope = 'torneo'
+        AND ${filtroPrivacidad}
+    `),
     [usuarioActualId, torneoId]
   );
-  return parsearFilas(rows);
+
+  const bloqueados = await idsBloqueadosTotales(usuarioActualId);
+  return parsearFilas(rows).filter(p => !bloqueados.includes(p.autor.id));
 }
 
 /* =========================================================
-   FEED GLOBAL (Inicio) — perfil + torneos
-   =========================================================
-   Mezcla publicaciones de perfil y de torneos (para que las
-   de torneos aparezcan en el inicio).
+   FEED GLOBAL
    ========================================================= */
 export async function feedGlobal(usuarioActualId) {
+  const filtroPrivacidad = `
+    (
+      (p.scope = 'perfil' AND (
+        p.privacidad = 'publico'
+        OR p.autor_id = $1
+        OR (
+          p.privacidad = 'amigos' AND EXISTS (
+            SELECT 1 FROM amistades a
+            WHERE a.estado = 'aceptada'
+            AND (
+              (a.usuario_id = $1 AND a.amigo_id = p.autor_id)
+              OR (a.usuario_id = p.autor_id AND a.amigo_id = $1)
+            )
+          )
+        )
+      ))
+      OR
+      (p.scope = 'torneo' AND p.privacidad = 'publico')
+      OR
+      (p.scope = 'grupo' AND EXISTS (
+        SELECT 1 FROM grupos g
+        WHERE g.id = p.grupo_id AND (
+          (g.tipo = 'equipo' AND p.privacidad = 'publico')
+          OR
+          (g.tipo = 'comunidad' AND (
+            g.tipo_acceso = 'publico'
+            OR (
+              g.tipo_acceso = 'privado' AND (
+                EXISTS (SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = p.grupo_id AND gm.usuario_id = $1)
+                OR g.capitan_id = $1
+              )
+            )
+          ))
+        )
+      ))
+    )
+  `;
+
   const { rows } = await pool.query(
-    sqlBasePublicacion(`
-      WHERE p.scope IN ('perfil', 'torneo')
-    `),
+    sqlBasePublicacion(`WHERE ${filtroPrivacidad}`),
     [usuarioActualId]
   );
 
-  const publicaciones = parsearFilas(rows);
+  const bloqueados = await idsBloqueadosTotales(usuarioActualId);
+  const publicaciones = parsearFilas(rows).filter(p => !bloqueados.includes(p.autor.id));
 
-  // Adjuntar datos del torneo (para mostrar contexto)
   const idsTorneo = [...new Set(publicaciones.map(p => p.torneoId).filter(Boolean))];
   if (idsTorneo.length > 0) {
     const { rows: torneos } = await pool.query(
@@ -139,18 +258,25 @@ export async function feedGlobal(usuarioActualId) {
       [idsTorneo]
     );
     const mapTorneos = new Map(torneos.map(t => [String(t.id), t]));
-
     publicaciones.forEach(p => {
       if (p.torneoId) {
         const t = mapTorneos.get(String(p.torneoId));
-        if (t) {
-          p.torneo = {
-            id: t.id,
-            nombre: t.nombre,
-            emoji: t.emoji,
-            deporte: t.deporte,
-          };
-        }
+        if (t) p.torneo = { id: t.id, nombre: t.nombre, emoji: t.emoji, deporte: t.deporte };
+      }
+    });
+  }
+
+  const idsGrupo = [...new Set(publicaciones.map(p => p.grupoId).filter(Boolean))];
+  if (idsGrupo.length > 0) {
+    const { rows: grupos } = await pool.query(
+      `SELECT id, nombre, escudo, tipo, deporte FROM grupos WHERE id = ANY($1::uuid[])`,
+      [idsGrupo]
+    );
+    const mapGrupos = new Map(grupos.map(g => [String(g.id), g]));
+    publicaciones.forEach(p => {
+      if (p.grupoId) {
+        const g = mapGrupos.get(String(p.grupoId));
+        if (g) p.grupo = { id: g.id, nombre: g.nombre, escudo: g.escudo, tipo: g.tipo, deporte: g.deporte };
       }
     });
   }
@@ -159,101 +285,123 @@ export async function feedGlobal(usuarioActualId) {
 }
 
 /* =========================================================
-   CREAR (perfil)
+   CREAR
    ========================================================= */
 export async function crear(usuarioId, datos) {
   const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, contenido, imagen)
-     VALUES ($1, 'post', 'perfil', $2, $3)
+    `INSERT INTO publicaciones (autor_id, tipo, scope, contenido, imagen, video, privacidad)
+     VALUES ($1, $2, 'perfil', $3, $4, $5, $6)
      RETURNING id`,
-    [usuarioId, datos.contenido || null, datos.imagen || null]
+    [usuarioId, datos.tipo || 'post', datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
   );
-
   return { id: rows[0].id };
 }
 
-/* =========================================================
-   CREAR EN GRUPO
-   ========================================================= */
 export async function crearEnGrupo(grupoId, usuarioId, datos) {
   const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, grupo_id, contenido, imagen)
-     VALUES ($1, 'grupo', 'grupo', $2, $3, $4)
+    `INSERT INTO publicaciones (autor_id, tipo, scope, grupo_id, contenido, imagen, video, privacidad)
+     VALUES ($1, $2, 'grupo', $3, $4, $5, $6, $7)
      RETURNING id`,
-    [usuarioId, grupoId, datos.contenido || null, datos.imagen || null]
+    [usuarioId, datos.tipo || 'post', grupoId, datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
   );
-
   return { id: rows[0].id };
 }
 
-/* =========================================================
-   CREAR EN TORNEO
-   ========================================================= */
 export async function crearEnTorneo(torneoId, usuarioId, datos) {
   const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, torneo_id, contenido, imagen)
-     VALUES ($1, 'torneo', 'torneo', $2, $3, $4)
+    `INSERT INTO publicaciones (autor_id, tipo, scope, torneo_id, contenido, imagen, video, privacidad)
+     VALUES ($1, $2, 'torneo', $3, $4, $5, $6, $7)
      RETURNING id`,
-    [usuarioId, torneoId, datos.contenido || null, datos.imagen || null]
+    [usuarioId, datos.tipo || 'post', torneoId, datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
   );
-
   return { id: rows[0].id };
 }
 
 /* =========================================================
-   OBTENER POR ID (helper interno)
+   OBTENER POR ID
    ========================================================= */
 async function obtenerPublicacionOFallar(id) {
-  const { rows } = await pool.query(
-    `SELECT * FROM publicaciones WHERE id = $1`,
-    [id]
-  );
-
+  const { rows } = await pool.query(`SELECT * FROM publicaciones WHERE id = $1`, [id]);
   if (!rows[0]) {
     const err = new Error('Publicación no encontrada');
     err.status = 404;
     throw err;
   }
-
   return rows[0];
 }
 
 /* =========================================================
-   EDITAR (solo autor, solo descripción)
+   EDITAR
    ========================================================= */
 export async function editar(id, usuarioId, datos) {
   const pub = await obtenerPublicacionOFallar(id);
-
   if (String(pub.autor_id) !== String(usuarioId)) {
     const err = new Error('No tenés permiso para editar esta publicación');
     err.status = 403;
     throw err;
   }
-
   if (datos.contenido !== undefined) {
     await pool.query(
       `UPDATE publicaciones SET contenido = $1 WHERE id = $2`,
       [datos.contenido || null, id]
     );
   }
-
   return { ok: true };
 }
 
 /* =========================================================
-   ELIMINAR (solo autor)
+   EDITAR PRIVACIDAD
+   ========================================================= */
+export async function editarPrivacidad(id, usuarioId, datos) {
+  const pub = await obtenerPublicacionOFallar(id);
+  
+  if (pub.scope === 'perfil') {
+    if (String(pub.autor_id) !== String(usuarioId)) {
+      const err = new Error('No tenés permiso');
+      err.status = 403;
+      throw err;
+    }
+  } else if (pub.scope === 'grupo' && pub.grupo_id) {
+    const { esCapitan, esAdmin } = await obtenerRolEnGrupo(pub.grupo_id, usuarioId);
+    if (!esCapitan && !esAdmin && String(pub.autor_id) !== String(usuarioId)) {
+      const err = new Error('Solo el capitán o sub-capitán puede cambiar la privacidad');
+      err.status = 403;
+      throw err;
+    }
+  } else {
+    const err = new Error('No se puede cambiar la privacidad de esta publicación');
+    err.status = 400;
+    throw err;
+  }
+
+  await pool.query(
+    `UPDATE publicaciones SET privacidad = $1 WHERE id = $2`,
+    [datos.privacidad, id]
+  );
+
+  return { ok: true, privacidad: datos.privacidad };
+}
+
+/* =========================================================
+   ELIMINAR
    ========================================================= */
 export async function eliminar(id, usuarioId) {
   const pub = await obtenerPublicacionOFallar(id);
+  const esAutor = String(pub.autor_id) === String(usuarioId);
+  let puedeBorrar = esAutor;
 
-  if (String(pub.autor_id) !== String(usuarioId)) {
+  if (!esAutor && pub.scope === 'grupo' && pub.grupo_id) {
+    const { esCapitan, esAdmin } = await obtenerRolEnGrupo(pub.grupo_id, usuarioId);
+    puedeBorrar = esCapitan || esAdmin;
+  }
+
+  if (!puedeBorrar) {
     const err = new Error('No tenés permiso para eliminar esta publicación');
     err.status = 403;
     throw err;
   }
 
   await pool.query(`DELETE FROM publicaciones WHERE id = $1`, [id]);
-
   return { ok: true };
 }
 
@@ -264,31 +412,27 @@ export async function toggleLike(id, usuarioId) {
   await obtenerPublicacionOFallar(id);
 
   const { rows: existentes } = await pool.query(
-    `SELECT 1 FROM publicacion_likes
-     WHERE publicacion_id = $1 AND usuario_id = $2`,
+    `SELECT 1 FROM publicacion_likes WHERE publicacion_id = $1 AND usuario_id = $2`,
     [id, usuarioId]
   );
 
   if (existentes.length > 0) {
     await pool.query(
-      `DELETE FROM publicacion_likes
-       WHERE publicacion_id = $1 AND usuario_id = $2`,
+      `DELETE FROM publicacion_likes WHERE publicacion_id = $1 AND usuario_id = $2`,
       [id, usuarioId]
     );
     return { yoLikee: false };
   }
 
   await pool.query(
-    `INSERT INTO publicacion_likes (publicacion_id, usuario_id)
-     VALUES ($1, $2)
-     ON CONFLICT DO NOTHING`,
+    `INSERT INTO publicacion_likes (publicacion_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [id, usuarioId]
   );
   return { yoLikee: true };
 }
 
 /* =========================================================
-   LISTAR COMENTARIOS
+   COMENTARIOS
    ========================================================= */
 export async function listarComentarios(id) {
   await obtenerPublicacionOFallar(id);
@@ -309,9 +453,6 @@ export async function listarComentarios(id) {
   return rows.map(formatearComentario);
 }
 
-/* =========================================================
-   CREAR COMENTARIO
-   ========================================================= */
 export async function crearComentario(id, usuarioId, texto) {
   await obtenerPublicacionOFallar(id);
 

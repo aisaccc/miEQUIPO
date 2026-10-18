@@ -9,14 +9,13 @@ import {
   schemaCrearPublicacionGrupo,
   schemaCrearPublicacionTorneo,
   schemaEditarPublicacion,
+  schemaEditarPrivacidad,
   schemaCrearComentario,
   schemaUuidParam,
 } from '../validators/publicaciones.schema.js';
 
 /* =========================================================
    GET /api/publicaciones/feed
-   =========================================================
-   Feed global (perfil + torneos) para el Inicio.
    ========================================================= */
 export async function feed(req, res, next) {
   try {
@@ -134,13 +133,31 @@ export async function listarPorTorneo(req, res, next) {
 }
 
 /* =========================================================
-   PATCH /api/publicaciones/:id
+   PATCH /api/publicaciones/:id  (contenido)
    ========================================================= */
 export async function editar(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
     const datos = validar(schemaEditarPublicacion, req.body);
     const resultado = await publicacionesService.editar(id, req.usuario.id, datos);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   PATCH /api/publicaciones/:id/privacidad
+   ========================================================= */
+export async function editarPrivacidad(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const datos = validar(schemaEditarPrivacidad, req.body);
+    const resultado = await publicacionesService.editarPrivacidad(
+      id,
+      req.usuario.id,
+      datos
+    );
     res.json(resultado);
   } catch (err) {
     next(err);

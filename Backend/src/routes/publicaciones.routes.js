@@ -9,12 +9,10 @@ import { requiereAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-/* Todas las rutas requieren autenticación */
 router.use(requiereAuth);
 
 /* =========================================================
-   FEED GLOBAL (Inicio)
-   ⚠️ Va ANTES de /:id para no matchear
+   FEED GLOBAL (Inicio) — antes de /:id
    ========================================================= */
 router.get('/feed', publicacionesController.feed);
 
@@ -28,6 +26,7 @@ router.get('/usuario/:usuarioId', publicacionesController.listarPorUsuario);
    ========================================================= */
 router.post('/', publicacionesController.crear);
 router.patch('/:id', publicacionesController.editar);
+router.patch('/:id/privacidad', publicacionesController.editarPrivacidad);
 router.delete('/:id', publicacionesController.eliminar);
 
 /* =========================================================

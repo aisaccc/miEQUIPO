@@ -1,8 +1,5 @@
-/* =========================================================
-   partidos.service.js — Lógica de negocio de partidos
-   ========================================================= */
-
 import { pool } from '../config/db.js';
+import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js'; // ⚡ NUEVO
 import {
   crearNotificacion,
   crearNotificacionMultiple,
@@ -91,14 +88,12 @@ async function obtenerUsuariosDeEquipo(client, equipoId) {
 async function obtenerDestinatariosPartido(client, partidoId) {
   const ids = new Set();
 
-  // 1. Inscritos individuales
   const { rows: inscritos } = await client.query(
     `SELECT usuario_id FROM partido_inscripciones WHERE partido_id = $1`,
     [partidoId]
   );
   inscritos.forEach(r => ids.add(r.usuario_id));
 
-  // 2. Capitán + admins de equipos inscritos
   const { rows: equiposInscritos } = await client.query(
     `SELECT equipo_id FROM partido_equipos_inscritos WHERE partido_id = $1`,
     [partidoId]
@@ -108,7 +103,6 @@ async function obtenerDestinatariosPartido(client, partidoId) {
     us.forEach(u => ids.add(u));
   }
 
-  // 3. Postulantes individuales pendientes
   const { rows: postulantes } = await client.query(
     `SELECT usuario_id FROM partido_postulaciones
      WHERE partido_id = $1 AND estado = 'pendiente'`,
@@ -116,7 +110,6 @@ async function obtenerDestinatariosPartido(client, partidoId) {
   );
   postulantes.forEach(r => ids.add(r.usuario_id));
 
-  // 4. Capitán + admins de equipos postulantes pendientes
   const { rows: equiposPostulantes } = await client.query(
     `SELECT equipo_id FROM partido_equipos_postulantes
      WHERE partido_id = $1 AND estado = 'pendiente'`,
@@ -127,7 +120,6 @@ async function obtenerDestinatariosPartido(client, partidoId) {
     us.forEach(u => ids.add(u));
   }
 
-  // 5. Interesados
   const { rows: interesados } = await client.query(
     `SELECT usuario_id FROM partido_interesados WHERE partido_id = $1`,
     [partidoId]
@@ -194,6 +186,18 @@ export async function listarPartidos(filtros, usuarioId) {
     )`);
     valores.push(usuarioId);
     i++;
+  }
+
+  // ⚡ BLOQUEO: excluir partidos de organizadores bloqueados (en cualquier dirección)
+  const bloqueados = await idsBloqueadosTotales(usuarioId);
+  if (bloqueados.length > 0) {
+    const placeholders = [];
+    for (let j = 0; j < bloqueados.length; j++) {
+      placeholders.push(`$${i}`);
+      valores.push(bloqueados[j]);
+      i++;
+    }
+    condiciones.push(`p.organizador_id NOT IN (${placeholders.join(', ')})`);
   }
 
   const where = condiciones.length > 0
@@ -321,6 +325,14 @@ export async function obtenerPartido(partidoId, usuarioId) {
   }
 
   const partido = rows[0];
+
+  // ⚡ BLOQUEO: si hay bloqueo con el organizador, no se puede ver el detalle
+  if (await estanBloqueados(usuarioId, partido.organizador_id)) {
+    const err = new Error('Partido no disponible');
+    err.status = 403;
+    throw err;
+  }
+
   const esOrganizador = String(partido.organizador_id) === String(usuarioId);
 
   const { rows: inscritos } = await pool.query(
@@ -720,7 +732,6 @@ export async function eliminarPartido(partidoId, usuarioId) {
 
 /* =========================================================
    INSCRIBIRSE (partido de jugador)
-   ⚡ Notifica al organizador.
    ========================================================= */
 export async function inscribirse(partidoId, usuarioId, posicion = null) {
   const client = await pool.connect();
@@ -729,6 +740,13 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
     await client.query('BEGIN');
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, partido.organizador_id)) {
+      const err = new Error('No podés inscribirte en este partido');
+      err.status = 403;
+      throw err;
+    }
 
     if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
       const err = new Error('Este partido ya no acepta más participantes');
@@ -830,9 +848,6 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
 
 /* =========================================================
    SALIR DE UN PARTIDO
-   ⚡ Si era el único inscrito de un partido confirmado,
-   el partido vuelve a modo Organizar.
-   ⚡ Si venía de doble confirmación, el mensaje lo refleja.
    ========================================================= */
 export async function salirDelPartido(partidoId, usuarioId) {
   const client = await pool.connect();
@@ -937,7 +952,6 @@ export async function salirDelPartido(partidoId, usuarioId) {
 
 /* =========================================================
    POSTULARSE (partido con aprobación)
-   ⚡ Notifica al organizador.
    ========================================================= */
 export async function postularse(partidoId, usuarioId, posicion = null) {
   const client = await pool.connect();
@@ -946,6 +960,13 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
     await client.query('BEGIN');
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, partido.organizador_id)) {
+      const err = new Error('No podés postularte a este partido');
+      err.status = 403;
+      throw err;
+    }
 
     if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
       const err = new Error('Este partido ya no acepta más postulaciones');
@@ -1047,7 +1068,6 @@ export async function cancelarPostulacion(partidoId, usuarioId) {
 
 /* =========================================================
    APROBAR / RECHAZAR POSTULANTE (organizador)
-   ⚡ Notifica al postulante.
    ========================================================= */
 export async function gestionarPostulante(partidoId, usuarioId, postulanteId, accion) {
   const client = await pool.connect();
@@ -1147,7 +1167,6 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
 
 /* =========================================================
    POSTULAR EQUIPO (a partido de equipos)
-   ⚡ Notifica al organizador.
    ========================================================= */
 export async function postularEquipo(partidoId, usuarioId, equipoId) {
   const client = await pool.connect();
@@ -1156,6 +1175,13 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, partido.organizador_id)) {
+      const err = new Error('No podés postular a este partido');
+      err.status = 403;
+      throw err;
+    }
 
     if (partido.estado_partido === 'en_curso' || partido.estado_partido === 'finalizado') {
       const err = new Error('Este partido ya no acepta más equipos');
@@ -1293,7 +1319,6 @@ export async function cancelarPostulacionEquipo(partidoId, usuarioId, equipoId) 
 
 /* =========================================================
    APROBAR / RECHAZAR EQUIPO POSTULANTE (organizador)
-   ⚡ Notifica a capitán + admins del equipo.
    ========================================================= */
 export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, accion) {
   const client = await pool.connect();
@@ -1402,13 +1427,20 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
    ========================================================= */
 
 /* ---------- POST /api/partidos/:id/interesarse ---------- */
-export async function interesarse(partidoId, usuarioId, mensaje = null) {
+export async function interesarse(partidoId, usuarioId, equipoId = null, mensaje = null) {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, partido.organizador_id)) {
+      const err = new Error('No podés interesarte en este partido');
+      err.status = 403;
+      throw err;
+    }
 
     if (partido.estado_partido !== 'buscando_jugadores') {
       const err = new Error('Este partido ya fue confirmado y no acepta más interesados');
@@ -1420,6 +1452,30 @@ export async function interesarse(partidoId, usuarioId, mensaje = null) {
       const err = new Error('El organizador no puede marcar "Me interesa" en su propio partido');
       err.status = 400;
       throw err;
+    }
+
+    if (partido.tipo_partido === 'equipo' && !equipoId) {
+      const err = new Error('Este partido es de equipos. Debés elegir un equipo para interesarte.');
+      err.status = 400;
+      throw err;
+    }
+
+    if (equipoId) {
+      const { rows: equipo } = await client.query(
+        `SELECT id, nombre FROM grupos
+         WHERE id = $1 AND tipo = 'equipo' AND deporte = $2
+           AND (capitan_id = $3 OR EXISTS (
+             SELECT 1 FROM grupo_miembros
+             WHERE grupo_id = grupos.id AND usuario_id = $3 AND rol IN ('capitan', 'admin')
+           ))`,
+        [equipoId, partido.deporte, usuarioId]
+      );
+
+      if (!equipo[0]) {
+        const err = new Error(`No tenés permisos sobre ese equipo o no es de ${partido.deporte}`);
+        err.status = 403;
+        throw err;
+      }
     }
 
     const { rows: existe } = await client.query(
@@ -1435,9 +1491,9 @@ export async function interesarse(partidoId, usuarioId, mensaje = null) {
     }
 
     await client.query(
-      `INSERT INTO partido_interesados (partido_id, usuario_id, mensaje)
-       VALUES ($1, $2, $3)`,
-      [partidoId, usuarioId, mensaje || null]
+      `INSERT INTO partido_interesados (partido_id, usuario_id, equipo_id, mensaje)
+       VALUES ($1, $2, $3, $4)`,
+      [partidoId, usuarioId, equipoId, mensaje || null]
     );
 
     const { rows: datosInteresado } = await client.query(
@@ -1483,7 +1539,7 @@ export async function cancelarInteres(partidoId, usuarioId) {
 /* ---------- GET /api/partidos/:id/interesados ---------- */
 export async function listarInteresados(partidoId, usuarioId) {
   const { rows: partidoRows } = await pool.query(
-    `SELECT organizador_id FROM partidos WHERE id = $1`,
+    `SELECT organizador_id, tipo_partido FROM partidos WHERE id = $1`,
     [partidoId]
   );
 
@@ -1504,15 +1560,22 @@ export async function listarInteresados(partidoId, usuarioId) {
   const { rows } = await pool.query(
     `SELECT
        u.id, u.nombre, u.username, u.avatar, u.ciudad,
-       pi.mensaje, pi.estado, pi.created_at AS fecha
+       pi.mensaje, pi.estado, pi.created_at AS fecha,
+       pi.equipo_id,
+       g.nombre AS equipo_nombre,
+       g.escudo AS equipo_escudo,
+       g.capitan_id
      FROM partido_interesados pi
      JOIN usuarios u ON u.id = pi.usuario_id
+     LEFT JOIN grupos g ON g.id = pi.equipo_id
      WHERE pi.partido_id = $1
      ORDER BY pi.created_at ASC`,
     [partidoId]
   );
 
-  return rows;
+  // ⚡ BLOQUEO: ocultar interesados bloqueados con el organizador
+  const bloqueados = await idsBloqueadosTotales(usuarioId);
+  return rows.filter(r => !bloqueados.includes(r.id));
 }
 
 /* =========================================================
@@ -1546,6 +1609,13 @@ export async function confirmarPartido(partidoId, usuarioId, datos) {
     if (!interesadoId) {
       const err = new Error('Falta indicar el interesado');
       err.status = 400;
+      throw err;
+    }
+
+    // ⚡ BLOQUEO: no se puede confirmar con un usuario bloqueado
+    if (await estanBloqueados(usuarioId, interesadoId)) {
+      const err = new Error('No podés confirmar con este usuario');
+      err.status = 403;
       throw err;
     }
 
@@ -1646,6 +1716,13 @@ export async function aprobarConfirmacion(partidoId, usuarioId, propuestaId) {
     }
 
     const propuesta = propRows[0];
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, propuesta.organizador_id)) {
+      const err = new Error('No podés responder a esta propuesta');
+      err.status = 403;
+      throw err;
+    }
 
     if (String(propuesta.interesado_id) !== String(usuarioId)) {
       const err = new Error('Solo el interesado puede aprobar esta propuesta');
@@ -1756,6 +1833,13 @@ export async function rechazarConfirmacion(partidoId, usuarioId, propuestaId) {
 
     const propuesta = propRows[0];
 
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, propuesta.organizador_id)) {
+      const err = new Error('No podés responder a esta propuesta');
+      err.status = 403;
+      throw err;
+    }
+
     if (String(propuesta.interesado_id) !== String(usuarioId)) {
       const err = new Error('Solo el interesado puede rechazar esta propuesta');
       err.status = 403;
@@ -1798,7 +1882,6 @@ export async function rechazarConfirmacion(partidoId, usuarioId, propuestaId) {
 
 /* =========================================================
    CANCELAR CONFIRMACIÓN (el organizador cancela)
-   ⚡ Notifica al interesado.
    ========================================================= */
 export async function cancelarConfirmacion(partidoId, usuarioId, propuestaId) {
   const client = await pool.connect();

@@ -1,29 +1,33 @@
-/* =========================================================
-   inicio.js — Página de Inicio (Fase 3 rediseño)
-   =========================================================
-   Todo desde backend, sin mocks.
-   - Feed de publicaciones: pendiente (no hay endpoint todavía).
-   - Agenda, equipos, comunidades, torneos: reales.
-   ========================================================= */
-
 import { getSesion } from '../auth.js';
-import { toast, abrirModal, cerrarModal } from '../components.js';
+import { toast, abrirModalVerPublicacion } from '../components.js';
 import { listarPartidos } from '../services/partidos.service.js';
 import { listarTorneos } from '../services/torneos.service.js';
 import { listarGrupos } from '../services/grupos.service.js';
+import {
+  obtenerFeed,
+  toggleLike,
+} from '../services/publicaciones.service.js';
+import {
+  abrirModalCrearPublicacionCompartido,
+  renderFeedPublicaciones
+} from '../utils/publicaciones-ui.js';
+import { ICONOS } from '../utils/iconos.js';
+import { listarAmigos } from '../services/amistades.service.js';
 
 export async function init() {
   const user = getSesion();
   const feed = document.getElementById('feed');
-  const modal = document.getElementById('modal-crear-post');
 
   if (!feed) return null;
+
+  /* ---------- ESTADO ---------- */
+  let publicacionesCache = [];
+  let filtroActual = 'todo';
+  let amigosIds = new Set();
 
   /* =========================================================
      HERO: eyebrow + saludo + avatar del composer
      ========================================================= */
-
-  // Fecha del día: "LUNES, 5 DE OCTUBRE"
   const eyebrow = document.getElementById('inicio-eyebrow');
   if (eyebrow) {
     const hoy = new Date();
@@ -34,71 +38,117 @@ export async function init() {
       `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
-  // Saludo: "¡Hola, Isaac!"
   const titulo = document.getElementById('inicio-titulo');
   if (titulo) {
     const nombre = user?.nombre?.split(' ')[0] || '';
     titulo.textContent = nombre ? `¡Hola, ${nombre}!` : '¡Hola!';
   }
 
-  // Avatar del composer
   const composerAvatar = document.getElementById('composer-avatar');
   if (composerAvatar && user?.avatar) {
     composerAvatar.src = user.avatar;
   }
 
   /* =========================================================
-     FEED (vacío por ahora, con empty state)
+     RENDER DEL FEED Y FILTROS
      ========================================================= */
-  const filtroActual = 'todo';
-
   function renderFeedVacio() {
     feed.innerHTML = `
       <div class="feed-empty">
-        <div class="feed-empty__icon">📭</div>
+        <div class="feed-empty__icon">${ICONOS.carpeta}</div>
         <div class="feed-empty__titulo">Aún no hay publicaciones</div>
         <div class="feed-empty__text">
-          Cuando el feed esté activo vas a poder compartir tus partidos,
-          torneos y logros con tu comunidad deportiva.
+          Cuando vos o tus equipos y torneos publiquen algo,
+          va a aparecer acá.
         </div>
       </div>
     `;
   }
 
-  renderFeedVacio();
+  function aplicarFiltro() {
+    let lista = publicacionesCache;
+
+    if (filtroActual === 'post') {
+      lista = lista.filter(p => p.scope === 'perfil' && (p.tipo === 'post' || !p.tipo));
+    } else if (filtroActual === 'partido') {
+      lista = lista.filter(p => p.tipo === 'partido');
+    } else if (filtroActual === 'torneo') {
+      lista = lista.filter(p => p.scope === 'torneo' || p.tipo === 'torneo');
+    } else if (filtroActual === 'grupo') {
+      lista = lista.filter(p => p.scope === 'grupo' || p.tipo === 'grupo');
+    } else if (filtroActual === 'amigos') {
+      lista = lista.filter(p => amigosIds.has(String(p.autor?.id)));
+    }
+
+    if (lista.length === 0) {
+      renderFeedVacio();
+      return;
+    }
+
+    renderFeedPublicaciones(feed, lista, {
+      onRefrescar: () => cargarFeed(true)
+    });
+  }
 
   /* =========================================================
-     FILTROS DEL FEED (solo visual por ahora)
+     CARGAR FEED & AMIGOS
+     ========================================================= */
+  async function cargarAmigosLista() {
+    try {
+      const amigos = await listarAmigos();
+      amigosIds = new Set(amigos.map(a => String(a.id)));
+    } catch (err) {
+      console.error('[inicio] Error al cargar amigos:', err);
+    }
+  }
+
+  async function cargarFeed(mostrarLoader = false) {
+    if (mostrarLoader) {
+      feed.innerHTML = `
+        <div class="page-loader">
+          <div class="spinner"></div>
+          <span>Cargando feed...</span>
+        </div>`;
+    }
+
+    try {
+      publicacionesCache = await obtenerFeed();
+      aplicarFiltro();
+    } catch (err) {
+      console.error('[inicio] Error al cargar feed:', err);
+      feed.innerHTML = `
+        <div class="feed-empty">
+          <div class="feed-empty__icon">${ICONOS.alerta}</div>
+          <div class="feed-empty__titulo">No se pudo cargar el feed</div>
+          <div class="feed-empty__text">${escapeHtml(err.message || '')}</div>
+        </div>`;
+    }
+  }
+
+  /* =========================================================
+     FILTROS DEL FEED (CHIPS)
      ========================================================= */
   const chips = document.querySelectorAll('[data-feed]');
   function handleChip(e) {
     chips.forEach(c => c.classList.remove('chip--active'));
     e.currentTarget.classList.add('chip--active');
-    renderFeedVacio();
+    filtroActual = e.currentTarget.dataset.feed;
+    aplicarFiltro();
   }
   chips.forEach(c => c.addEventListener('click', handleChip));
 
   /* =========================================================
-     COMPOSER / MODAL CREAR POST
+     COMPOSER (BOTONES DE TIPO RÁPIDO)
      ========================================================= */
   document.getElementById('btn-abrir-composer')?.addEventListener('click', () => {
-    toast('Las publicaciones estarán disponibles próximamente', 'info');
+    abrirModalCrearPublicacionCompartido('perfil', null, () => cargarFeed(true), { tipo: 'post' });
   });
 
   document.querySelectorAll('[data-tipo-rapido]').forEach(btn => {
     btn.addEventListener('click', () => {
-      toast('Las publicaciones estarán disponibles próximamente', 'info');
+      const tipo = btn.dataset.tipoRapido || 'post';
+      abrirModalCrearPublicacionCompartido('perfil', null, () => cargarFeed(true), { tipo: tipo });
     });
-  });
-
-  document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      cerrarModal(btn.dataset.cerrarModal);
-    });
-  });
-
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) cerrarModal('modal-crear-post');
   });
 
   /* =========================================================
@@ -110,7 +160,7 @@ export async function init() {
 
     cont.innerHTML = `
       <div class="aside-empty">
-        <div class="aside-empty__icon">⏳</div>
+        <div class="aside-empty__icon">${ICONOS.reloj}</div>
         <div class="aside-empty__text">Cargando...</div>
       </div>
     `;
@@ -121,7 +171,7 @@ export async function init() {
       if (!data || data.length === 0) {
         cont.innerHTML = `
           <div class="aside-empty">
-            <div class="aside-empty__icon">📅</div>
+            <div class="aside-empty__icon">${ICONOS.calendario}</div>
             <div class="aside-empty__text">
               No hay partidos próximos por ahora.
             </div>
@@ -152,7 +202,7 @@ export async function init() {
             <div class="agenda-item__info">
               <div class="agenda-item__titulo">${escapeHtml(p.titulo || 'Partido')}</div>
               <div class="agenda-item__meta">
-                <span>📍</span>
+                <span>${ICONOS.ubicacion}</span>
                 <span>${escapeHtml(lugar)}${hora ? ' · ' + hora : ''}</span>
               </div>
             </div>
@@ -164,7 +214,7 @@ export async function init() {
       console.error('[inicio] Error al cargar agenda:', err);
       cont.innerHTML = `
         <div class="aside-empty">
-          <div class="aside-empty__icon">⚠️</div>
+          <div class="aside-empty__icon">${ICONOS.alerta}</div>
           <div class="aside-empty__text">No se pudieron cargar los partidos.</div>
         </div>
       `;
@@ -180,7 +230,7 @@ export async function init() {
 
     cont.innerHTML = `
       <div class="aside-empty">
-        <div class="aside-empty__icon">⏳</div>
+        <div class="aside-empty__icon">${ICONOS.reloj}</div>
         <div class="aside-empty__text">Cargando...</div>
       </div>
     `;
@@ -195,7 +245,7 @@ export async function init() {
       if (!data || data.length === 0) {
         cont.innerHTML = `
           <div class="aside-empty">
-            <div class="aside-empty__icon">🛡️</div>
+            <div class="aside-empty__icon">${ICONOS.escudo}</div>
             <div class="aside-empty__text">
               No pertenecés a ningún equipo todavía.
             </div>
@@ -211,7 +261,7 @@ export async function init() {
               ? (esImagen(g.escudo)
                   ? `<img src="${g.escudo}" alt="" />`
                   : g.escudo)
-              : '🛡️'}
+              : ICONOS.escudo}
           </div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
@@ -223,7 +273,7 @@ export async function init() {
       console.error('[inicio] Error al cargar equipos:', err);
       cont.innerHTML = `
         <div class="aside-empty">
-          <div class="aside-empty__icon">⚠️</div>
+          <div class="aside-empty__icon">${ICONOS.alerta}</div>
           <div class="aside-empty__text">No se pudieron cargar tus equipos.</div>
         </div>
       `;
@@ -239,7 +289,7 @@ export async function init() {
 
     cont.innerHTML = `
       <div class="aside-empty">
-        <div class="aside-empty__icon">⏳</div>
+        <div class="aside-empty__icon">${ICONOS.reloj}</div>
         <div class="aside-empty__text">Cargando...</div>
       </div>
     `;
@@ -253,7 +303,7 @@ export async function init() {
       if (!data || data.length === 0) {
         cont.innerHTML = `
           <div class="aside-empty">
-            <div class="aside-empty__icon">🌐</div>
+            <div class="aside-empty__icon">${ICONOS.globo}</div>
             <div class="aside-empty__text">
               No hay comunidades sugeridas por ahora.
             </div>
@@ -269,7 +319,7 @@ export async function init() {
               ? (esImagen(g.escudo)
                   ? `<img src="${g.escudo}" alt="" />`
                   : g.escudo)
-              : '🌐'}
+              : ICONOS.globo}
           </div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
@@ -283,7 +333,6 @@ export async function init() {
         </div>
       `).join('');
 
-      // Botones "Unirme" (solo visual por ahora)
       cont.querySelectorAll('[data-unirse-comunidad]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -294,7 +343,7 @@ export async function init() {
       console.error('[inicio] Error al cargar comunidades:', err);
       cont.innerHTML = `
         <div class="aside-empty">
-          <div class="aside-empty__icon">⚠️</div>
+          <div class="aside-empty__icon">${ICONOS.alerta}</div>
           <div class="aside-empty__text">No se pudieron cargar las comunidades.</div>
         </div>
       `;
@@ -310,7 +359,7 @@ export async function init() {
 
     cont.innerHTML = `
       <div class="aside-empty">
-        <div class="aside-empty__icon">⏳</div>
+        <div class="aside-empty__icon">${ICONOS.reloj}</div>
         <div class="aside-empty__text">Cargando...</div>
       </div>
     `;
@@ -324,7 +373,7 @@ export async function init() {
       if (!data || data.length === 0) {
         cont.innerHTML = `
           <div class="aside-empty">
-            <div class="aside-empty__icon">🏆</div>
+            <div class="aside-empty__icon">${ICONOS.trofeo}</div>
             <div class="aside-empty__text">
               No hay torneos abiertos por ahora.
             </div>
@@ -340,7 +389,7 @@ export async function init() {
               ? (esImagen(t.emoji)
                   ? `<img src="${t.emoji}" alt="" />`
                   : t.emoji)
-              : '🏆'}
+              : ICONOS.trofeo}
           </div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(t.nombre)}</div>
@@ -355,7 +404,7 @@ export async function init() {
       console.error('[inicio] Error al cargar torneos:', err);
       cont.innerHTML = `
         <div class="aside-empty">
-          <div class="aside-empty__icon">⚠️</div>
+          <div class="aside-empty__icon">${ICONOS.alerta}</div>
           <div class="aside-empty__text">No se pudieron cargar los torneos.</div>
         </div>
       `;
@@ -383,9 +432,11 @@ export async function init() {
   });
 
   /* =========================================================
-     CARGA INICIAL DE DATOS
+     CARGA INICIAL
      ========================================================= */
   await Promise.all([
+    cargarAmigosLista(),
+    cargarFeed(true),
     cargarAgenda(),
     cargarTusEquipos(),
     cargarComunidades(),
@@ -416,28 +467,32 @@ function esImagen(str) {
 }
 
 function emojiDeporte(deporte) {
-  if (!deporte) return '🏅';
+  if (!deporte) return ICONOS.medalla;
   const map = {
-    'Fútbol': '⚽',
-    'Básquetbol': '🏀',
-    'Tenis': '🎾',
-    'Vóleibol': '🏐',
-    'Pádel': '🎾',
-    'Golf': '⛳',
-    'Béisbol': '⚾',
-    'Hockey': '🏑',
-    'Boxeo': '🥊',
-    'Bádminton': '🏸',
-    'Rugby': '🏉',
-    'Ciclismo': '🚴',
-    'Natación': '🏊',
-    'Atletismo': '🏃',
-    'Tenis de mesa': '🏓',
-    'Squash': '🎾',
-    'Handball': '🤾',
-    'Fútbol americano': '🏈',
-    'Surf': '🏄',
-    'Escalada': '🧗',
+    'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+    'Básquetbol': 'assets/icons/balocensto.svg',
+    'Tenis': 'assets/icons/pelota-de-tenis.png',
+    'Vóleibol': 'assets/icons/voleibol.svg',
+    'Pádel': 'assets/icons/raqueta-de-padel.png',
+    'Golf': 'assets/icons/golf.png',
+    'Béisbol': 'assets/icons/beisbol.png',
+    'Hockey': 'assets/icons/disco.png',
+    'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+    'Bádminton': 'assets/icons/volante.png',
+    'Rugby': 'assets/icons/rugby.png',
+    'Ciclismo': 'assets/icons/bicicleta.svg',
+    'Natación': 'assets/icons/natacion.svg',
+    'Atletismo': 'assets/icons/corriendo.png',
+    'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+    'Squash': 'assets/icons/tenis-de-squash.png',
+    'Handball': 'assets/icons/balonmano.png',
+    'Fútbol americano': 'assets/icons/deporte.svg',
+    'Surf': 'assets/icons/tabla-de-surf.png',
+    'Escalada': 'assets/icons/escalada.png'
   };
-  return map[deporte] || '🏅';
+  const valor = map[deporte] || ICONOS.medalla;
+  if (esImagen(valor)) {
+    return `<img src="${valor}" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+  }
+  return valor;
 }

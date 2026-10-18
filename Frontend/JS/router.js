@@ -67,6 +67,13 @@ export async function navegar(hash) {
     return;
   }
 
+  /* ⚡ Fondo por pestaña: seteamos data-page en .app-main.
+     El CSS usa este atributo para elegir la foto de fondo. */
+  const appMain = document.querySelector('.app-main');
+  if (appMain) {
+    appMain.dataset.page = ruta.script;   // 'inicio', 'partidos', 'torneos', etc.
+  }
+
   document.querySelectorAll('.sidebar-nav__item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('href') === hash);
   });
@@ -92,7 +99,7 @@ export async function navegar(hash) {
 
     let modulo = modulosCargados[ruta.script];
     if (!modulo) {
-      modulo = await import(`./pages/${ruta.script}.js?v=8`);
+      modulo = await import(`./pages/${ruta.script}.js?v=73`);
       modulosCargados[ruta.script] = modulo;
     }
 

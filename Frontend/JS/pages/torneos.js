@@ -14,6 +14,7 @@ import {
 } from '../services/torneos.service.js';
 
 import { getReglasDeporte, getSistemaEfectivo } from '../utils/reglas-deporte.js';
+import { ICONOS } from '../utils/iconos.js';
 
 /* =========================================================
    MAPA DE EMOJIS / ASSETS
@@ -72,6 +73,13 @@ const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
 function colorDeporte(deporte) {
   return COLOR_DEPORTE[deporte] || COLOR_DEFAULT;
 }
+function slugDeporte(deporte) {
+  if (!deporte) return '';
+  return deporte
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
 
 /* =========================================================
    DEPORTES INDIVIDUALES
@@ -88,14 +96,7 @@ const DEPORTES_INDIVIDUALES = new Set([
 const DEPORTES_TIEMPO = new Set(['Natación', 'Atletismo', 'Ciclismo']);
 const DEPORTES_PUNTOS = new Set(['Escalada', 'Surf', 'Boxeo']);
 
-/* =========================================================
-   ICONOS SVG
-   ========================================================= */
-const ICONOS = {
-  fecha: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  ubicacion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
-  lapiz: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
-};
+
 
 /* =========================================================
    MODAL EDITAR — EXPORTADA
@@ -117,6 +118,7 @@ export async function init() {
   /* ---------- ESTADO ---------- */
   let torneos = [];
   let filtroActual = 'todos';
+  let filtroBusqueda = '';
   let modalidadSeleccionada = 'liga';
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
@@ -168,7 +170,7 @@ export async function init() {
   const subtabs         = document.querySelectorAll('[data-tab-torneos]');
   const chips           = document.querySelectorAll('[data-filtro-torneo]');
   const btnCrear        = document.getElementById('btn-crear-torneo-hero');
-  const btnCrear2       = document.getElementById('btn-crear-torneo-2');
+  const inputBuscar     = document.getElementById('buscar-torneos');
 
   if (!contDisponibles) return null;
 
@@ -183,13 +185,6 @@ export async function init() {
     }
   }
 
-  function renderEmoji(emoji, size = 32) {
-    if (!emoji) return '🏆';
-    if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
-      return `<img src="${emoji}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
-    }
-    return emoji;
-  }
 
   /* =========================================================
      RENDER CARD (VERTICAL)
@@ -207,15 +202,16 @@ export async function init() {
     const soyOrganizador = t.soyOrganizador || String(t.organizador?.id) === String(user?.id);
 
     const badgeClase = lleno ? 'badge--danger'
-                     : t.estado === 'en_curso' ? 'badge--info'
-                     : cerrado ? 'badge--warning'
-                     : 'badge--success';
+                    : t.estado === 'en_curso' ? 'badge--info'
+                    : cerrado ? 'badge--warning'
+                    : 'badge--success';
 
+    // ⚡ AQUÍ EL CAMBIO: Si requiere aprobación (libreInscripcion false), dice "Inscripción" en vez de "Inscripción abierta"
     const badgeTexto = lleno ? 'Lleno'
-                     : t.estado === 'en_curso' ? 'En curso'
-                     : cerrado && t.estado === 'inscripcion' ? 'Inscripciones cerradas'
-                     : t.estado === 'inscripcion' ? 'Inscripción abierta'
-                     : 'Finalizado';
+                    : t.estado === 'en_curso' ? 'En curso'
+                    : cerrado && t.estado === 'inscripcion' ? 'Inscripciones cerradas'
+                    : t.estado === 'inscripcion' ? (t.libreInscripcion === false ? 'Inscripción' : 'Inscripción abierta')
+                    : 'Finalizado';
 
     const precioHtml = t.precio === 0
       ? 'Gratis'
@@ -226,17 +222,15 @@ export async function init() {
       ? '<span style="color:var(--color-danger); font-weight:700">Lleno</span>'
       : `<span style="color:var(--color-success); font-weight:700">${cuposLibres} cupos</span>`;
 
-    const fechaInicio = t.fechaInicio ? formatearFecha(t.fechaInicio) : '';
-    const fechaFin = t.fechaFin ? formatearFecha(t.fechaFin) : '';
-    const fechaTexto = fechaInicio && fechaFin
-      ? `${fechaInicio} — ${fechaFin}`
-      : fechaInicio || '';
+    const fechaLimiteTexto = t.fechaLimiteInscripcion
+      ? `Cierra el ${formatearFecha(t.fechaLimiteInscripcion)}`
+      : 'Sin fecha límite';
 
     const color = colorDeporte(t.deporte);
     const iconoDeporte = emojiDeporte[t.deporte];
     const iconoHtml = iconoDeporte
       ? `<img src="${iconoDeporte}" alt="" style="width:28px;height:28px;object-fit:contain;display:block" />`
-      : (t.emoji || '🏆');
+      : (t.emoji || ICONOS.trofeo);
 
     const tipoTexto = t.tipoParticipacion === 'individual' ? 'POR PERSONA' : 'POR EQUIPOS';
     const deporteUpper = (t.deporte || '').toUpperCase();
@@ -251,41 +245,52 @@ export async function init() {
       ? `<span class="badge badge--primary">${mostrarBadgeRol}</span>`
       : '';
 
+    const deporteSlug = slugDeporte(t.deporte);
+
     return `
-      <article class="tournament-card" data-id="${t.id}">
-        <div class="tournament-card__top">
-          <div class="tournament-card__sport" style="background:${color.bg}; color:${color.fg}">
-            ${iconoHtml}
-          </div>
-          <div class="tournament-card__top-right">
-            ${badgeRolHtml}
-            <span class="badge ${badgeClase}">${badgeTexto}</span>
-            ${lapizHtml}
-          </div>
-        </div>
+      <article class="tournament-card" data-id="${t.id}" data-deporte="${deporteSlug}">
 
-        <div class="tournament-card__eyebrow">${deporteUpper} · ${tipoTexto}</div>
-        <h3 class="tournament-card__title">${t.nombre}</h3>
-
-        <div class="tournament-card__meta">
-          ${fechaTexto ? `<span>${ICONOS.fecha} ${fechaTexto}</span>` : ''}
-          ${t.lugar ? `<span>${ICONOS.ubicacion} ${t.lugar}</span>` : ''}
-        </div>
-
-        <div class="tournament-card__progress-row">
-          <span class="text-xs text-muted">${inscritosCount} / ${t.cuposEquipos} ${t.tipoParticipacion === 'individual' ? 'participantes' : 'equipos'}</span>
-          ${cuposTexto}
-        </div>
-
-        <div class="tournament-card__progress">
-          <div class="tournament-card__progress-bar" style="width:${porcentaje}%"></div>
-        </div>
-
-        <div class="tournament-card__bottom">
-          <div class="tournament-card__price">${precioHtml}</div>
-          <button class="btn btn--ghost btn--sm tournament-card__ver" data-accion-torneo="ver" data-id="${t.id}">
+        <div class="tournament-card__image">
+          <div class="tournament-card__image-bg"></div>
+          <button class="tournament-card__view" data-accion-torneo="ver" data-id="${t.id}">
             Ver detalles
           </button>
+        </div>
+
+        <div class="tournament-card__body">
+
+          <div class="tournament-card__top">
+            <div class="tournament-card__sport" style="background:${color.bg}; color:${color.fg}">
+              ${iconoHtml}
+            </div>
+            <div class="tournament-card__top-right">
+              ${badgeRolHtml}
+              <span class="badge ${badgeClase}">${badgeTexto}</span>
+              ${lapizHtml}
+            </div>
+          </div>
+
+          <div class="tournament-card__eyebrow">${deporteUpper} · ${tipoTexto}</div>
+          <h3 class="tournament-card__title">${t.nombre}</h3>
+
+          <div class="tournament-card__meta">
+            <span>${ICONOS.calendario} ${fechaLimiteTexto}</span>
+            ${t.lugar ? `<span>${ICONOS.ubicacion} ${t.lugar}</span>` : ''}
+          </div>
+
+          <div class="tournament-card__progress-row">
+            <span class="text-xs">${inscritosCount} / ${t.cuposEquipos} ${t.tipoParticipacion === 'individual' ? 'participantes' : 'equipos'}</span>
+            ${cuposTexto}
+          </div>
+
+          <div class="tournament-card__progress">
+            <div class="tournament-card__progress-bar" style="width:${porcentaje}%"></div>
+          </div>
+
+          <div class="tournament-card__bottom">
+            <div class="tournament-card__price">${precioHtml}</div>
+          </div>
+
         </div>
       </article>
     `;
@@ -297,18 +302,27 @@ export async function init() {
   function renderDisponibles() {
     let lista = torneos;
 
-    if (filtroActual === 'individual')  lista = torneos.filter(t => t.tipoParticipacion === 'individual');
-    if (filtroActual === 'equipo')      lista = torneos.filter(t => t.tipoParticipacion === 'equipo');
-    if (filtroActual === 'inscripcion') lista = torneos.filter(t => t.estado === 'inscripcion');
-    if (filtroActual === 'en_curso')    lista = torneos.filter(t => t.estado === 'en_curso');
-    if (filtroActual === 'gratis')      lista = torneos.filter(t => t.precio === 0);
+    if (filtroActual === 'individual')  lista = lista.filter(t => t.tipoParticipacion === 'individual');
+    if (filtroActual === 'equipo')      lista = lista.filter(t => t.tipoParticipacion === 'equipo');
+    if (filtroActual === 'inscripcion') lista = lista.filter(t => t.estado === 'inscripcion');
+    if (filtroActual === 'en_curso')    lista = lista.filter(t => t.estado === 'en_curso');
+    if (filtroActual === 'gratis')      lista = lista.filter(t => t.precio === 0);
+
+    if (filtroBusqueda.trim()) {
+      const q = filtroBusqueda.toLowerCase().trim();
+      lista = lista.filter(t =>
+        (t.nombre || '').toLowerCase().includes(q) ||
+        (t.deporte || '').toLowerCase().includes(q) ||
+        (t.lugar || '').toLowerCase().includes(q)
+      );
+    }
 
     if (lista.length === 0) {
       contDisponibles.innerHTML = `
         <div class="card" style="grid-column: 1 / -1;">
           <div class="empty-state">
-            <div class="empty-state__icon">🏆</div>
-            <p>No hay torneos con este filtro.</p>
+            <div class="empty-state__icon">${ICONOS.buscar}</div>
+            <p>No hay torneos con estos filtros.</p>
           </div>
         </div>`;
       return;
@@ -320,7 +334,9 @@ export async function init() {
 
   function renderCreados() {
     const misCreados = torneos.filter(t =>
-      t.soyOrganizador || String(t.organizador?.id) === String(user?.id)
+      t.soyOrganizador
+      || t.soySubOrganizador
+      || String(t.organizador?.id) === String(user?.id)
     );
 
     const countEl = document.getElementById('count-torneos-creados');
@@ -339,15 +355,20 @@ export async function init() {
       return;
     }
 
-    contCreados.innerHTML = misCreados.map(t =>
-      renderCard(t, { mostrarBadgeRol: '👑' })
-    ).join('');
+    contCreados.innerHTML = misCreados.map(t => {
+      const esSubOrg = t.soySubOrganizador && !t.soyOrganizador;
+      return renderCard(t, {
+        mostrarBadgeRol: esSubOrg
+          ? `${ICONOS.escudo} Sub-organizador`
+          : `${ICONOS.corona} Creado por vos`,
+      });
+    }).join('');
     conectarAcciones(contCreados);
   }
 
   function renderInscritos() {
     const misInscritos = torneos.filter(t => {
-      if (t.soyOrganizador || String(t.organizador?.id) === String(user?.id)) return false;
+      if (t.soyOrganizador || t.soySubOrganizador || String(t.organizador?.id) === String(user?.id)) return false;
       return t.miEquipoInscrito || t.miSolicitudPendiente || t.miInvitacionPendiente;
     });
 
@@ -358,7 +379,7 @@ export async function init() {
       contInscritos.innerHTML = `
         <div class="card" style="grid-column: 1 / -1;">
           <div class="empty-state">
-            <div class="empty-state__icon">✅</div>
+            <div class="empty-state__icon">${ICONOS.check}</div>
             <p>No estás inscrito en ningún torneo.</p>
             <button class="btn btn--primary mt-4" id="btn-vacio-disponibles-torneos">Ver torneos disponibles</button>
           </div>
@@ -368,7 +389,7 @@ export async function init() {
     }
 
     contInscritos.innerHTML = misInscritos.map(t =>
-      renderCard(t, { mostrarBadgeRol: '✅' })
+      renderCard(t, { mostrarBadgeRol: `${ICONOS.check} Inscrito` })
     ).join('');
     conectarAcciones(contInscritos);
   }
@@ -423,6 +444,11 @@ export async function init() {
     panelDisponibles.classList.toggle('subpanel--active', tab === 'disponibles');
     panelCreados.classList.toggle('subpanel--active', tab === 'creados');
     panelInscritos.classList.toggle('subpanel--active', tab === 'inscritos');
+
+    if (tab !== 'disponibles') {
+      filtroBusqueda = '';
+      if (inputBuscar) inputBuscar.value = '';
+    }
   }
   subtabs.forEach(st => st.addEventListener('click', () => cambiarTab(st.dataset.tabTorneos)));
 
@@ -433,6 +459,11 @@ export async function init() {
     renderDisponibles();
   }
   chips.forEach(c => c.addEventListener('click', handleChip));
+
+  inputBuscar?.addEventListener('input', (e) => {
+    filtroBusqueda = e.target.value;
+    renderDisponibles();
+  });
 
   /* =========================================================
      MODAL CREAR / EDITAR — REFS
@@ -529,9 +560,9 @@ export async function init() {
   function actualizarHintSistema() {
     if (!sistemaHint) return;
     const textos = {
-      simple: '🎯 Se juega con marcador (goles, puntos, sets).',
-      tiempo: '⏱️ El MENOR tiempo gana. El organizador carga minutos, segundos y centésimas.',
-      puntos: '🏅 El MAYOR puntaje gana.',
+      simple: 'Se juega con marcador (goles, puntos, sets).',
+      tiempo: 'El MENOR tiempo gana. El organizador carga minutos, segundos y centésimas.',
+      puntos: 'El MAYOR puntaje gana.',
     };
     sistemaHint.textContent = textos[sistemaClasificacionSeleccionado] || '';
   }
@@ -557,9 +588,9 @@ export async function init() {
   function actualizarHintTipoParticipacion() {
     if (!hintTipoParticipacion) return;
     if (tipoParticipacionSeleccionado === 'individual') {
-      hintTipoParticipacion.textContent = '👤 Los usuarios se inscriben solos, sin necesidad de equipo.';
+      hintTipoParticipacion.innerHTML = `${ICONOS.usuario} Los usuarios se inscriben solos, sin necesidad de equipo.`;
     } else {
-      hintTipoParticipacion.textContent = '👥 Los equipos se inscriben al torneo (capitán o admin).';
+      hintTipoParticipacion.innerHTML = `${ICONOS.usuarios} Los equipos se inscriben al torneo (capitán o admin).`;
     }
   }
 
@@ -763,7 +794,7 @@ export async function init() {
     const datos = leerFormulario();
     if (!datos) return;
 
-    const emoji = emojiDeporte[datos.deporte] || '🏆';
+    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
 
     const btn = document.getElementById('btn-guardar-torneo');
     btn.disabled = true;
@@ -792,7 +823,7 @@ export async function init() {
     const datos = leerFormulario();
     if (!datos) return;
 
-    const emoji = emojiDeporte[datos.deporte] || '🏆';
+    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
 
     const btn = document.getElementById('btn-guardar-torneo');
     btn.disabled = true;
@@ -882,7 +913,6 @@ export async function init() {
 
   /* ---------- CONECTAR BOTONES CREAR ---------- */
   btnCrear?.addEventListener('click', abrirModalCrear);
-  btnCrear2?.addEventListener('click', abrirModalCrear);
 
   document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
     btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));

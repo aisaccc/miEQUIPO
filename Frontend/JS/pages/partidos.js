@@ -3,6 +3,7 @@ import { deportes, posicionesPorDeporte, nivelesPartido } from '../data-mock.js'
 import { getSesion } from '../auth.js';
 import { listarGrupos } from '../services/grupos.service.js';
 import { api } from '../api.js';
+import { ICONOS } from '../utils/iconos.js';
 import {
   listarPartidos,
   crearPartido as crearPartidoAPI,
@@ -16,27 +17,53 @@ import {
   cancelarInteres as cancelarInteresAPI,
 } from '../services/partidos.service.js';
 
-/* =========================================================
-   ICONOS SVG
-   ========================================================= */
-const ICONOS = {
-  fecha: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  ubicacion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
-  organizador: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-  lapiz: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+const COLOR_DEPORTE = {
+  'Fútbol':            { bg: '#FFEDD5', fg: '#C2410C' },
+  'Fútbol americano':  { bg: '#FEE2E2', fg: '#991B1B' },
+  'Básquetbol':        { bg: '#DBEAFE', fg: '#1E40AF' },
+  'Tenis':             { bg: '#DCFCE7', fg: '#166534' },
+  'Tenis de mesa':     { bg: '#FCE7F3', fg: '#9D174D' },
+  'Vóleibol':          { bg: '#FEF3C7', fg: '#92400E' },
+  'Pádel':             { bg: '#E0E7FF', fg: '#3730A3' },
+  'Squash':            { bg: '#CFFAFE', fg: '#155E75' },
+  'Bádminton':         { bg: '#F3E8FF', fg: '#6B21A8' },
+  'Golf':              { bg: '#D1FAE5', fg: '#065F46' },
+  'Béisbol':           { bg: '#FEF9C3', fg: '#854D0E' },
+  'Hockey':            { bg: '#E0F2FE', fg: '#075985' },
+  'Handball':          { bg: '#FFE4E6', fg: '#9F1239' },
+  'Rugby':             { bg: '#EDE9FE', fg: '#5B21B6' },
+  'Boxeo':             { bg: '#FEE2E2', fg: '#7F1D1D' },
+  'Ciclismo':          { bg: '#ECFCCB', fg: '#3F6212' },
+  'Natación':          { bg: '#CFFAFE', fg: '#0E7490' },
+  'Atletismo':         { bg: '#FFE4E6', fg: '#BE123C' },
+  'Surf':              { bg: '#CFFAFE', fg: '#0369A1' },
+  'Escalada':          { bg: '#FEF3C7', fg: '#B45309' },
 };
+
+const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
+
+function colorDeporte(deporte) {
+  return COLOR_DEPORTE[deporte] || COLOR_DEFAULT;
+}
+
+function slugDeporte(deporte) {
+  if (!deporte) return '';
+  return deporte
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
 
 export async function init() {
   console.log('[partidos] init() arrancó');
 
-  /* ---------- ESTADO ---------- */
   let partidos = [];
   let filtroActual = 'todos';
   let filtroTipoActual = 'todos';
+  let filtroBusqueda = '';
   let tabActual = 'disponibles';
   const user = getSesion();
 
-  /* ---------- CARGAR DESDE EL BACKEND ---------- */
   try {
     const { data } = await listarPartidos({ limit: 50 });
     partidos = data;
@@ -47,7 +74,6 @@ export async function init() {
     partidos = [];
   }
 
-  /* ---------- REFS ---------- */
   const contDisponibles  = document.getElementById('lista-partidos');
   const contCreados      = document.getElementById('lista-creados');
   const contInscritos    = document.getElementById('lista-inscritos');
@@ -58,20 +84,10 @@ export async function init() {
   const chips            = document.querySelectorAll('[data-filtro]');
   const chipsTipo        = document.querySelectorAll('[data-filtro-tipo]');
   const btnCrear         = document.getElementById('btn-crear-partido');
-  const btnCrear2        = document.getElementById('btn-crear-partido-2');
+  const inputBuscar      = document.getElementById('buscar-partidos');
 
-  console.log('[partidos] contDisponibles:', contDisponibles);
-  console.log('[partidos] contCreados:', contCreados);
-  console.log('[partidos] contInscritos:', contInscritos);
+  if (!contDisponibles) return null;
 
-  if (!contDisponibles) {
-    console.error('[partidos] NO se encontró #lista-partidos → return null');
-    return null;
-  }
-
-  /* =========================================================
-     FECHA DEL DÍA EN EL HERO
-     ========================================================= */
   const eyebrow = document.getElementById('partidos-eyebrow');
   if (eyebrow) {
     const hoy = new Date();
@@ -82,7 +98,6 @@ export async function init() {
       `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
-  /* ---------- HELPERS ---------- */
   async function misEquiposComoCapitanOAdmin() {
     try {
       const { data } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 });
@@ -147,18 +162,18 @@ export async function init() {
     return emoji;
   }
 
-  /* =========================================================
-     RENDER DE UNA CARD DE PARTIDO
-     ========================================================= */
   function renderCard(p, opciones = {}) {
     try {
       const { mostrarBadgeRol = null } = opciones;
+      const color = colorDeporte(p.deporte);
+      
       const totalInsc = totalInscritosReal(p);
+      const esLleno = totalInsc >= p.cupos;
       const porcentaje = Math.min(100, Math.round((totalInsc / p.cupos) * 100));
+      
       const deEquipo = esDeEquipo(p);
       const enModoOrganizar = esModoOrganizar(p);
       const confirmado = estaConfirmado(p);
-
       const soyOrganizador = String(p.organizador?.id) === String(user?.id);
 
       const yoEstoyInscrito = !!p.yoInscrito;
@@ -167,40 +182,17 @@ export async function init() {
       const miEquipoPostulado = !!p.miEquipoPostulado;
       const yoInteresado = !!p.yoInteresado;
 
-      /* ---------- BADGE DE ESTADO ---------- */
-      const badgeClase =
-        enModoOrganizar ? 'badge--warning' :
-        p.estado === 'lleno'      ? 'badge--danger'  :
-        p.estado === 'finalizado' ? 'badge--neutral' :
-                                    'badge--success';
-
-      const badgeTexto =
-        enModoOrganizar ? 'Organizando' :
-        p.estado === 'lleno'      ? 'Lleno'      :
-        p.estado === 'finalizado' ? 'Finalizado' :
-                                    'Abierto';
-
-      /* ---------- NIVEL ---------- */
-      const nivelLabel = {
-        amistoso: 'Amistoso',
-        semiprofesional: 'Semiprofesional',
-        profesional: 'Profesional'
-      }[p.nivel] || p.nivel;
-
-      /* ---------- PRECIO ---------- */
-      const precioTexto = enModoOrganizar
-        ? 'A coordinar'
-        : (p.precio === 0 ? 'Gratis' : `$${p.precio.toLocaleString('es-CL')}`);
-
-      /* ---------- CUPOS LIBRES ---------- */
+      // ⚡ Usamos esLleno calculado dinámicamente
+      const badgeClase = enModoOrganizar ? 'badge--warning' : esLleno ? 'badge--danger' : p.estado === 'finalizado' ? 'badge--neutral' : 'badge--success';
+      const badgeTexto = enModoOrganizar ? 'Organizando' : esLleno ? 'Lleno' : p.estado === 'finalizado' ? 'Finalizado' : 'Abierto';
+      
+      const nivelLabel = { amistoso: 'Amistoso', semiprofesional: 'Semiprofesional', profesional: 'Profesional' }[p.nivel] || p.nivel;
+      const precioTexto = enModoOrganizar ? 'A coordinar' : (p.precio === 0 ? 'Gratis' : `$${p.precio.toLocaleString('es-CL')}`);
       const cuposLibres = Math.max(0, p.cupos - totalInsc);
-
-      /* ---------- META ---------- */
       const fechaTexto = enModoOrganizar ? 'A coordinar' : formatearFecha(p.fecha);
       const lugarTexto = enModoOrganizar ? 'A coordinar' : (p.lugar || 'Sin lugar');
       const orgNombre = p.organizador?.nombre || 'Organizador';
 
-      /* ---------- BOTONES DE ACCIÓN ---------- */
       let botonPrincipal = '';
       let botonSecundario = '';
 
@@ -211,36 +203,38 @@ export async function init() {
         botonSecundario = '';
       } else if (enModoOrganizar) {
         if (yoInteresado) {
-          botonPrincipal = `<span class="badge badge--warning" style="padding:8px 12px">🙋 Interesado</span>`;
+          botonPrincipal = `<span class="badge badge--warning" style="padding:8px 12px">${ICONOS.mano} Interesado</span>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-interes" data-id="${p.id}">Cancelar interés</button>`;
         } else {
-          botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="interesarse" data-id="${p.id}">🙋 Me interesa</button>`;
+          if (deEquipo) {
+            botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="interesarse" data-id="${p.id}">${ICONOS.mano} Interesarse con equipo</button>`;
+          } else {
+            botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="interesarse" data-id="${p.id}">${ICONOS.mano} Me interesa</button>`;
+          }
         }
       } else if (deEquipo) {
         if (miEquipoInscrito) {
-          botonPrincipal = `<span class="badge badge--success" style="padding:8px 12px">✅ Tu equipo está inscrito</span>`;
+          botonPrincipal = `<span class="badge badge--success" style="padding:8px 12px">${ICONOS.check} Tu equipo está inscrito</span>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="desinscribirse" data-id="${p.id}" style="color:var(--color-danger)">Salir</button>`;
         } else if (miEquipoPostulado) {
-          botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>⏳ Pendiente</button>`;
+          botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>${ICONOS.reloj} Pendiente</button>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion-equipo" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>`;
-        } else if (p.estado === 'abierto' && totalInsc < p.cupos) {
-          botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="postular-equipo" data-id="${p.id}">📝 Postular equipo</button>`;
+        } else if (p.estado !== 'finalizado' && !esLleno) {
+          botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="postular-equipo" data-id="${p.id}">${ICONOS.documento} Postular equipo</button>`;
         } else {
-          botonPrincipal = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 No disponible</span>`;
+          botonPrincipal = `<span class="badge badge--neutral" style="padding:8px 12px">${ICONOS.candado} No disponible</span>`;
         }
       } else {
         if (yoEstoyInscrito) {
-          botonPrincipal = `<span class="badge badge--success" style="padding:8px 12px">✅ Inscrito</span>`;
+          botonPrincipal = `<span class="badge badge--success" style="padding:8px 12px">${ICONOS.check} Inscrito</span>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="desinscribirse" data-id="${p.id}" style="color:var(--color-danger)">Salir</button>`;
         } else if (yoPostule) {
-          botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>⏳ Pendiente</button>`;
+          botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>${ICONOS.reloj} Pendiente</button>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>`;
-        } else if (p.estado === 'abierto' && totalInsc < p.cupos) {
-          botonPrincipal = p.aprobacionRequerida
-            ? `<button class="btn btn--primary btn--sm" data-accion="postularse" data-id="${p.id}">📝 Postularme</button>`
-            : `<button class="btn btn--primary btn--sm" data-accion="inscribirse" data-id="${p.id}">✅ Inscribirme</button>`;
+        } else if (p.estado !== 'finalizado' && !esLleno) {
+          botonPrincipal = p.aprobacionRequerida ? `<button class="btn btn--primary btn--sm" data-accion="postularse" data-id="${p.id}">${ICONOS.documento} Postularme</button>` : `<button class="btn btn--primary btn--sm" data-accion="inscribirse" data-id="${p.id}">${ICONOS.check} Inscribirme</button>`;
         } else {
-          botonPrincipal = `<span class="badge badge--neutral" style="padding:8px 12px">🔒 No disponible</span>`;
+          botonPrincipal = `<span class="badge badge--neutral" style="padding:8px 12px">${ICONOS.candado} No disponible</span>`;
         }
       }
 
@@ -252,23 +246,12 @@ export async function init() {
         </div>
       ` : '';
 
-      /* ---------- LÁPIZ (solo organizador) ---------- */
-      const lapizHtml = soyOrganizador ? `
-        <button class="match-card__edit" data-accion="editar" data-id="${p.id}" title="Editar partido">
-          ${ICONOS.lapiz}
-        </button>
-      ` : '';
-
-      /* ---------- HTML FINAL ---------- */
-      const deporteSlug = (p.deporte || '')
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '-');
+      const lapizHtml = soyOrganizador ? `<button class="match-card__edit" data-accion="editar" data-id="${p.id}" title="Editar partido">${ICONOS.lapiz}</button>` : '';
+      const deporteSlug = slugDeporte(p.deporte);
 
       return `
-        <article class="match-card" data-id="${p.id}" data-deporte="${deporteSlug}">
+        <article class="match-card" data-id="${p.id}" data-deporte="${deporteSlug}" style="--deporte-bg: ${color.bg}; --deporte-fg: ${color.fg};">
           ${lapizHtml}
-
           <div class="match-card__badges-top">
             <span class="badge ${badgeClase}">${badgeTexto}</span>
             <span class="badge badge--neutral">${nivelLabel}</span>
@@ -279,26 +262,18 @@ export async function init() {
             <div class="match-card__sport">${renderEmoji(p.emoji)}</div>
             <div class="match-card__content">
               <h3 class="match-card__title">${p.titulo}</h3>
-
               <div class="match-card__meta">
-                <span>${ICONOS.fecha} ${fechaTexto}</span>
+                <span>${ICONOS.calendario} ${fechaTexto}</span>
                 <span>${ICONOS.ubicacion} ${lugarTexto}</span>
-                <span>${ICONOS.organizador} Organiza ${orgNombre}</span>
+                <span>${ICONOS.usuario} Organiza ${orgNombre}</span>
               </div>
-
               <div class="match-card__progress-row">
-                <span class="text-xs text-muted">${totalInsc} de ${p.cupos} ${deEquipo ? 'equipos' : 'jugadores'}</span>
-                ${cuposLibres > 0
-                  ? `<span class="text-xs" style="color:var(--color-success); font-weight:600">${cuposLibres} cupos libres</span>`
-                  : `<span class="text-xs" style="color:var(--color-danger); font-weight:600">Sin cupos</span>`}
+                <span class="match-card__progress-label">${totalInsc} de ${p.cupos} ${deEquipo ? 'equipos' : 'jugadores'}</span>
+                ${cuposLibres > 0 ? `<span class="match-card__cupos match-card__cupos--disponibles">${cuposLibres} cupos libres</span>` : `<span class="match-card__cupos match-card__cupos--lleno">Sin cupos</span>`}
               </div>
-
-              <div class="match-card__progress">
-                <div class="match-card__progress-bar" style="width:${porcentaje}%"></div>
-              </div>
+              <div class="match-card__progress"><div class="match-card__progress-bar" style="width:${porcentaje}%"></div></div>
             </div>
           </div>
-
           ${botonesHtml}
         </article>
       `;
@@ -308,9 +283,6 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     HELPER: Recargar partidos desde el backend
-     ========================================================= */
   async function recargarPartidos() {
     try {
       const { data } = await listarPartidos({ limit: 50 });
@@ -323,27 +295,40 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     RENDERS DE PANELES
-     ========================================================= */
   function renderDisponibles() {
     try {
-      console.log('[partidos] renderDisponibles() arrancó. Total partidos:', partidos.length);
-
       let lista = partidos;
 
-      if (filtroActual === 'abiertos')      lista = lista.filter(p => p.estado === 'abierto' && !esModoOrganizar(p));
-      if (filtroActual === 'llenos')        lista = lista.filter(p => p.estado === 'lleno' && !esModoOrganizar(p));
-      if (filtroActual === 'finalizados')   lista = lista.filter(p => p.estado === 'finalizado');
-      if (filtroActual === 'organizando')   lista = lista.filter(p => esModoOrganizar(p));
-      if (filtroActual === 'confirmados')   lista = lista.filter(p => estaConfirmado(p));
+      // ⚡ Lógica de filtros robusta usando totalInscritosReal
+      if (filtroActual === 'abiertos') {
+        lista = lista.filter(p => totalInscritosReal(p) < p.cupos && p.estado !== 'finalizado' && !esModoOrganizar(p));
+      }
+      if (filtroActual === 'llenos') {
+        lista = lista.filter(p => totalInscritosReal(p) >= p.cupos && p.estado !== 'finalizado' && !esModoOrganizar(p));
+      }
+      if (filtroActual === 'finalizados') {
+        lista = lista.filter(p => p.estado === 'finalizado');
+      }
+      if (filtroActual === 'organizando') {
+        lista = lista.filter(p => esModoOrganizar(p));
+      }
+      if (filtroActual === 'confirmados') {
+        lista = lista.filter(p => estaConfirmado(p));
+      }
 
       if (filtroTipoActual === 'jugador')  lista = lista.filter(p => !esDeEquipo(p));
       if (filtroTipoActual === 'equipo')   lista = lista.filter(p => esDeEquipo(p));
       if (filtroTipoActual === 'publico')  lista = lista.filter(p => !p.aprobacionRequerida);
       if (filtroTipoActual === 'privado')  lista = lista.filter(p => p.aprobacionRequerida);
 
-      console.log('[partidos] Lista después de filtros:', lista.length);
+      if (filtroBusqueda.trim()) {
+        const q = filtroBusqueda.toLowerCase().trim();
+        lista = lista.filter(p =>
+          (p.titulo || '').toLowerCase().includes(q) ||
+          (p.deporte || '').toLowerCase().includes(q) ||
+          (p.lugar || '').toLowerCase().includes(q)
+        );
+      }
 
       if (lista.length === 0) {
         contDisponibles.innerHTML = `
@@ -356,13 +341,7 @@ export async function init() {
         return;
       }
 
-      const htmlFinal = lista.map(p => renderCard(p)).join('');
-      console.log('[partidos] HTML generado, largo:', htmlFinal.length);
-
-      contDisponibles.innerHTML = htmlFinal;
-
-      console.log('[partidos] innerHTML del contenedor después:', contDisponibles.innerHTML.substring(0, 200));
-
+      contDisponibles.innerHTML = lista.map(p => renderCard(p)).join('');
       conectarClicksCards(contDisponibles);
       conectarAccionesCard(contDisponibles);
     } catch (err) {
@@ -372,10 +351,7 @@ export async function init() {
 
   function renderCreados() {
     try {
-      const misCreados = partidos.filter(p =>
-        String(p.organizador?.id) === String(user?.id)
-      );
-
+      const misCreados = partidos.filter(p => String(p.organizador?.id) === String(user?.id));
       const countEl = document.getElementById('count-creados');
       if (countEl) countEl.textContent = misCreados.length;
 
@@ -385,7 +361,7 @@ export async function init() {
         contCreados.innerHTML = `
           <div class="card" style="grid-column: 1 / -1;">
             <div class="empty-state">
-              <div class="empty-state__icon">👑</div>
+              <div class="empty-state__icon">${ICONOS.corona}</div>
               <p>Aún no has creado ningún partido.</p>
               <button class="btn btn--primary mt-4" id="btn-vacio-crear">+ Crear mi primer partido</button>
             </div>
@@ -394,10 +370,7 @@ export async function init() {
         return;
       }
 
-      contCreados.innerHTML = misCreados.map(p =>
-        renderCard(p, { mostrarBadgeRol: '👑 Organizador' })
-      ).join('');
-
+      contCreados.innerHTML = misCreados.map(p => renderCard(p, { mostrarBadgeRol: `${ICONOS.corona} Organizador` })).join('');
       conectarClicksCards(contCreados);
       conectarAccionesCard(contCreados);
     } catch (err) {
@@ -409,11 +382,7 @@ export async function init() {
     try {
       const misInscritos = partidos.filter(p => {
         if (String(p.organizador?.id) === String(user?.id)) return false;
-
-        if (!esDeEquipo(p)) {
-          return !!p.yoInscrito || !!p.yoPostule;
-        }
-
+        if (!esDeEquipo(p)) return !!p.yoInscrito || !!p.yoPostule;
         return !!p.miEquipoInscrito || !!p.miEquipoPostulado;
       });
 
@@ -426,21 +395,16 @@ export async function init() {
         contInscritos.innerHTML = `
           <div class="card" style="grid-column: 1 / -1;">
             <div class="empty-state">
-              <div class="empty-state__icon">✅</div>
+              <div class="empty-state__icon">${ICONOS.check}</div>
               <p>No estás inscrito en ningún partido todavía.</p>
               <button class="btn btn--primary mt-4" id="btn-vacio-disponibles">Ver partidos disponibles</button>
             </div>
           </div>`;
-        document.getElementById('btn-vacio-disponibles')?.addEventListener('click', () => {
-          cambiarTab('disponibles');
-        });
+        document.getElementById('btn-vacio-disponibles')?.addEventListener('click', () => cambiarTab('disponibles'));
         return;
       }
 
-      contInscritos.innerHTML = misInscritos.map(p =>
-        renderCard(p, { mostrarBadgeRol: '✅ Inscrito' })
-      ).join('');
-
+      contInscritos.innerHTML = misInscritos.map(p => renderCard(p, { mostrarBadgeRol: `${ICONOS.check} Inscrito` })).join('');
       conectarClicksCards(contInscritos);
       conectarAccionesCard(contInscritos);
     } catch (err) {
@@ -448,22 +412,15 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     CONECTAR CLICKS EN LAS CARDS
-     ========================================================= */
   function conectarClicksCards(contenedor) {
     contenedor.querySelectorAll('.match-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion]')) return;
-        const id = card.dataset.id;
-        window.location.hash = `#/partido/${id}`;
+        window.location.hash = `#/partido/${card.dataset.id}`;
       });
     });
   }
 
-  /* =========================================================
-     CONECTAR BOTONES DE ACCIÓN EN LAS CARDS
-     ========================================================= */
   function conectarAccionesCard(contenedor) {
     contenedor.querySelectorAll('[data-accion]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
@@ -555,13 +512,10 @@ export async function init() {
 
           if (accion === 'cancelar-postulacion-equipo') {
             if (!confirm('¿Cancelar la postulación del equipo?')) return;
-
             const partido = partidos.find(p => String(p.id) === String(id));
             if (!partido) return toast('Partido no encontrado', 'error');
-
             const equipoId = partido.miEquipoPostuladoId;
             if (!equipoId) return toast('No hay postulación pendiente para cancelar', 'error');
-
             await api.delete(`/partidos/${id}/equipos-postulantes/${equipoId}`);
             toast('Postulación cancelada', 'info');
             await recargarPartidos();
@@ -569,8 +523,32 @@ export async function init() {
           }
 
           if (accion === 'interesarse') {
+            const partido = partidos.find(p => String(p.id) === String(id));
+            if (!partido) return;
+
+            let equipoId = null;
+            if (partido.tipoPartido === 'equipo') {
+              const { data: todosEquipos } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 });
+              const misEquiposDeporte = (todosEquipos || []).filter(g => g.deporte === partido.deporte);
+
+              if (misEquiposDeporte.length === 0) {
+                return toast('No tenés equipos de ' + partido.deporte, 'error');
+              }
+
+              let eqElegido = misEquiposDeporte[0];
+              if (misEquiposDeporte.length > 1) {
+                const opciones = misEquiposDeporte.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
+                const eleccion = prompt(`¿Con qué equipo querés interesarte?\n\n${opciones}\n\nEscribí el número:`);
+                if (!eleccion) return;
+                const idx = Number(eleccion) - 1;
+                if (isNaN(idx) || !misEquiposDeporte[idx]) return toast('Opción inválida', 'error');
+                eqElegido = misEquiposDeporte[idx];
+              }
+              equipoId = eqElegido.id;
+            }
+
             try {
-              await interesarseAPI(id);
+              await interesarseAPI(id, equipoId);
               toast('¡Te marcaste como interesado!', 'success');
               await recargarPartidos();
             } catch (err) {
@@ -601,24 +579,19 @@ export async function init() {
     });
   }
 
-  /* =========================================================
-     SUB-PESTAÑAS Y FILTROS
-     ========================================================= */
   function cambiarTab(tab) {
     tabActual = tab;
-
-    subtabs.forEach(st => {
-      st.classList.toggle('subtab--active', st.dataset.tabPartidos === tab);
-    });
-
+    subtabs.forEach(st => st.classList.toggle('subtab--active', st.dataset.tabPartidos === tab));
     panelDisponibles?.classList.toggle('subpanel--active', tab === 'disponibles');
     panelCreados?.classList.toggle('subpanel--active', tab === 'creados');
     panelInscritos?.classList.toggle('subpanel--active', tab === 'inscritos');
+    if (tab !== 'disponibles') {
+      filtroBusqueda = '';
+      if (inputBuscar) inputBuscar.value = '';
+    }
   }
 
-  subtabs.forEach(st => {
-    st.addEventListener('click', () => cambiarTab(st.dataset.tabPartidos));
-  });
+  subtabs.forEach(st => st.addEventListener('click', () => cambiarTab(st.dataset.tabPartidos)));
 
   function handleChip(e) {
     chips.forEach(c => c.classList.remove('chip--active'));
@@ -636,9 +609,11 @@ export async function init() {
   }
   chipsTipo.forEach(chip => chip.addEventListener('click', handleChipTipo));
 
-  /* =========================================================
-     MODAL CREAR PARTIDO — SETUP
-     ========================================================= */
+  inputBuscar?.addEventListener('input', (e) => {
+    filtroBusqueda = e.target.value;
+    renderDisponibles();
+  });
+
   const selectDeporte = document.getElementById('partido-deporte');
   if (selectDeporte) {
     selectDeporte.innerHTML = '<option value="">Selecciona un deporte...</option>' +
@@ -671,12 +646,10 @@ export async function init() {
   function nivelRequiereAprobacion() {
     const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
     if (!nivel) return false;
-
     if (nivel.eleccionAprobacion) {
       const check = document.getElementById('partido-requiere-aprobacion');
       return check ? check.checked : false;
     }
-
     return nivel.requiereAprobacion === true;
   }
 
@@ -686,7 +659,6 @@ export async function init() {
       document.getElementById('eleccion-aprobacion')?.classList.add('hidden');
       return;
     }
-
     const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
     const aviso = document.getElementById('aviso-aprobacion');
     const eleccion = document.getElementById('eleccion-aprobacion');
@@ -719,12 +691,8 @@ export async function init() {
 
     if (posiciones.length > 0) {
       wrapper?.classList.remove('hidden');
-
       if (lista) {
-        lista.innerHTML = posiciones.map(p => `
-          <button type="button" class="posicion-chip" data-posicion="${p}">${p}</button>
-        `).join('');
-
+        lista.innerHTML = posiciones.map(p => `<button type="button" class="posicion-chip" data-posicion="${p}">${p}</button>`).join('');
         lista.querySelectorAll('.posicion-chip').forEach(chip => {
           chip.addEventListener('click', () => {
             const pos = chip.dataset.posicion;
@@ -743,9 +711,6 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     MODO ORGANIZAR
-     ========================================================= */
   const checkModoOrganizar = document.getElementById('partido-modo-organizar');
   const avisoModoOrganizar = document.getElementById('aviso-modo-organizar');
 
@@ -761,10 +726,8 @@ export async function init() {
 
     if (modoOrganizar) {
       grupos.forEach(g => g?.classList.add('hidden'));
-
       avisoAprob?.classList.remove('show');
       eleccionAprob?.classList.add('hidden');
-
       avisoModoOrganizar?.classList.add('show');
 
       const btnGuardar = document.getElementById('btn-guardar-partido');
@@ -772,12 +735,9 @@ export async function init() {
 
       const labelCupos = document.getElementById('label-partido-cupos');
       if (labelCupos) labelCupos.textContent = 'Cupos estimados *';
-
     } else {
       grupos.forEach(g => g?.classList.remove('hidden'));
-
       avisoModoOrganizar?.classList.remove('show');
-
       actualizarAvisoAprobacion();
 
       const btnGuardar = document.getElementById('btn-guardar-partido');
@@ -793,9 +753,6 @@ export async function init() {
     aplicarModoOrganizar();
   });
 
-  /* =========================================================
-     TIPO DE PARTIDO (jugador o equipo)
-     ========================================================= */
   let tipoPartidoSeleccionado = 'jugador';
   let equipoOrganizadorSel = null;
 
@@ -812,26 +769,12 @@ export async function init() {
     if (tipoPartidoSeleccionado === 'equipo') {
       const misEq = await misEquiposComoCapitanOAdmin();
       const deporteSeleccionado = document.getElementById('partido-deporte')?.value || '';
-      const misEqDelDeporte = deporteSeleccionado
-        ? misEq.filter(e => String(e.deporte) === String(deporteSeleccionado))
-        : [];
+      const misEqDelDeporte = deporteSeleccionado ? misEq.filter(e => String(e.deporte) === String(deporteSeleccionado)) : [];
 
       if (misEqDelDeporte.length === 0) {
         campoEquipoOrg?.classList.remove('hidden');
-        dropdownContent.innerHTML = `
-          <span class="equipo-dropdown__placeholder">
-            ${deporteSeleccionado
-              ? `No tenés equipos de ${deporteSeleccionado}`
-              : 'Elegí un deporte primero'}
-          </span>
-        `;
-        dropdownPanel.innerHTML = `
-          <div style="padding:16px; text-align:center; color:var(--color-text-muted); font-size:13px">
-            ${deporteSeleccionado
-              ? `No sos capitán de ningún equipo de ${deporteSeleccionado}.`
-              : 'Primero elegí un deporte.'}
-          </div>
-        `;
+        dropdownContent.innerHTML = `<span class="equipo-dropdown__placeholder">${deporteSeleccionado ? `No tenés equipos de ${deporteSeleccionado}` : 'Elegí un deporte primero'}</span>`;
+        dropdownPanel.innerHTML = `<div style="padding:16px; text-align:center; color:var(--color-text-muted); font-size:13px">${deporteSeleccionado ? `No sos capitán de ningún equipo de ${deporteSeleccionado}.` : 'Primero elegí un deporte.'}</div>`;
         equipoOrganizadorSel = null;
       } else {
         campoEquipoOrg?.classList.remove('hidden');
@@ -840,17 +783,11 @@ export async function init() {
 
         dropdownPanel.innerHTML = misEqDelDeporte.map(e => {
           const esImagen = typeof e.escudo === 'string' && /\.(png|svg|jpg|jpeg|gif|webp)$/i.test(e.escudo);
-          const iconoHtml = esImagen
-            ? `<img src="${e.escudo}" alt="" class="equipo-opcion__icono" />`
-            : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${e.escudo || '🛡️'}</span>`;
-
+          const iconoHtml = esImagen ? `<img src="${e.escudo}" alt="" class="equipo-opcion__icono" />` : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${e.escudo || '🛡️'}</span>`;
           return `
             <button type="button" class="equipo-opcion" data-equipo-id="${e.id}">
               ${iconoHtml}
-              <div class="equipo-opcion__nombre">
-                <div class="equipo-opcion__nombre-principal">${e.nombre}</div>
-                <div class="equipo-opcion__deporte">${e.deporte}${e.ciudad ? ' · ' + e.ciudad : ''}</div>
-              </div>
+              <div class="equipo-opcion__nombre"><div class="equipo-opcion__nombre-principal">${e.nombre}</div><div class="equipo-opcion__deporte">${e.deporte}${e.ciudad ? ' · ' + e.ciudad : ''}</div></div>
             </button>
           `;
         }).join('');
@@ -859,10 +796,8 @@ export async function init() {
           btn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             const id = btn.dataset.equipoId;
-
             dropdownPanel.querySelectorAll('.equipo-opcion').forEach(el => el.classList.remove('active'));
             btn.classList.add('active');
-
             equipoOrganizadorSel = id;
             renderEquipoDropdownSeleccionado(misEqDelDeporte.find(e => String(e.id) === String(id)));
             cerrarEquipoDropdown();
@@ -901,18 +836,9 @@ export async function init() {
       renderEquipoDropdownPlaceholder();
       return;
     }
-
     const esImagen = typeof equipo.escudo === 'string' && /\.(png|svg|jpg|jpeg|gif|webp)$/i.test(equipo.escudo);
-    const iconoHtml = esImagen
-      ? `<img src="${equipo.escudo}" alt="" class="equipo-opcion__icono" />`
-      : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${equipo.escudo || '🛡️'}</span>`;
-
-    dropdownContent.innerHTML = `
-      <div class="equipo-dropdown__selected">
-        ${iconoHtml}
-        <span class="equipo-dropdown__selected-nombre">${equipo.nombre}</span>
-      </div>
-    `;
+    const iconoHtml = esImagen ? `<img src="${equipo.escudo}" alt="" class="equipo-opcion__icono" />` : `<span class="equipo-opcion__icono equipo-opcion__icono--emoji">${equipo.escudo || '🛡️'}</span>`;
+    dropdownContent.innerHTML = `<div class="equipo-dropdown__selected">${iconoHtml}<span class="equipo-dropdown__selected-nombre">${equipo.nombre}</span></div>`;
   }
 
   function abrirEquipoDropdown() {
@@ -963,10 +889,8 @@ export async function init() {
     });
   });
 
-  /* ---------- LISTENERS ---------- */
   selectDeporte?.addEventListener('change', async () => {
     actualizarPosiciones();
-
     if (tipoPartidoSeleccionado === 'equipo') {
       equipoOrganizadorSel = null;
       await actualizarTipoPartido();
@@ -974,33 +898,23 @@ export async function init() {
   });
 
   const checkRequiereAprob = document.getElementById('partido-requiere-aprobacion');
-  checkRequiereAprob?.addEventListener('change', () => {
-    actualizarAvisoAprobacion();
-  });
+  checkRequiereAprob?.addEventListener('change', () => actualizarAvisoAprobacion());
 
   const checkGratis = document.getElementById('partido-gratis');
   const precioWrapper = document.getElementById('precio-wrapper');
-  checkGratis?.addEventListener('change', () => {
-    precioWrapper?.classList.toggle('hidden', checkGratis.checked);
-  });
+  checkGratis?.addEventListener('change', () => precioWrapper?.classList.toggle('hidden', checkGratis.checked));
 
   const checkPedirPos = document.getElementById('partido-pedir-posiciones');
   const selectorPos   = document.getElementById('posiciones-selector');
-  checkPedirPos?.addEventListener('change', () => {
-    selectorPos?.classList.toggle('hidden', !checkPedirPos.checked);
-  });
+  checkPedirPos?.addEventListener('change', () => selectorPos?.classList.toggle('hidden', !checkPedirPos.checked));
 
-  /* ---------- RESET FORMULARIO ---------- */
   async function resetearFormulario() {
     tipoPartidoSeleccionado = 'jugador';
     equipoOrganizadorSel = null;
     modoOrganizar = false;
-
     if (checkModoOrganizar) checkModoOrganizar.checked = false;
     aplicarModoOrganizar();
-
     await actualizarTipoPartido();
-
     document.getElementById('partido-deporte').value = '';
     document.getElementById('partido-titulo').value = '';
     document.getElementById('partido-fecha').value = '';
@@ -1019,35 +933,20 @@ export async function init() {
     document.getElementById('eleccion-aprobacion').classList.add('hidden');
 
     nivelSeleccionado = 'amistoso';
-    document.querySelectorAll('#nivel-grid .nivel-opcion').forEach((o, i) => {
-      o.classList.toggle('active', i === 0);
-    });
-
+    document.querySelectorAll('#nivel-grid .nivel-opcion').forEach((o, i) => o.classList.toggle('active', i === 0));
     posicionesActivas = [];
   }
 
-  /* ---------- ABRIR MODAL ---------- */
   async function abrirModalCrear() {
     await resetearFormulario();
     abrirModal('modal-crear-partido');
   }
 
   btnCrear?.addEventListener('click', () => abrirModalCrear());
-  btnCrear2?.addEventListener('click', () => abrirModalCrear());
 
-  document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-    btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal));
-  });
+  document.querySelectorAll('[data-cerrar-modal]').forEach(btn => btn.addEventListener('click', () => cerrarModal(btn.dataset.cerrarModal)));
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.classList.remove('open'); }));
 
-  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.classList.remove('open');
-    });
-  });
-
-  /* =========================================================
-     GUARDAR PARTIDO
-     ========================================================= */
   document.getElementById('btn-guardar-partido')?.addEventListener('click', async () => {
     const deporte     = document.getElementById('partido-deporte').value;
     const titulo      = document.getElementById('partido-titulo').value.trim();
@@ -1095,12 +994,8 @@ export async function init() {
       precio: modoOrganizar ? 0 : precio,
       nivel: nivelSeleccionado,
       tipoPartido: tipoPartidoSeleccionado,
-      organizadorEquipoId: (tipoPartidoSeleccionado === 'equipo' && equipoOrganizadorSel)
-        ? String(equipoOrganizadorSel)
-        : null,
-      aprobacionRequerida: modoOrganizar
-        ? false
-        : (nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo'),
+      organizadorEquipoId: (tipoPartidoSeleccionado === 'equipo' && equipoOrganizadorSel) ? String(equipoOrganizadorSel) : null,
+      aprobacionRequerida: modoOrganizar ? false : (nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo'),
       pedirPosiciones: pedirPos,
       posiciones: pedirPos ? [...posicionesActivas] : [],
       estadoPartido: modoOrganizar ? 'buscando_jugadores' : 'confirmado',
@@ -1113,13 +1008,7 @@ export async function init() {
 
     try {
       await crearPartidoAPI(payload);
-      toast(
-        modoOrganizar
-          ? '¡Convocatoria publicada! Los interesados podrán marcar "Me interesa".'
-          : '¡Partido publicado!',
-        'success'
-      );
-
+      toast(modoOrganizar ? '¡Convocatoria publicada! Los interesados podrán marcar "Me interesa".' : '¡Partido publicado!', 'success');
       cerrarModal('modal-crear-partido');
 
       const { data } = await listarPartidos({ limit: 50 });
@@ -1143,9 +1032,6 @@ export async function init() {
     }
   });
 
-  /* =========================================================
-     RENDER GLOBAL
-     ========================================================= */
   async function renderTodo() {
     try {
       const { data } = await listarPartidos({ limit: 50 });
@@ -1154,7 +1040,6 @@ export async function init() {
     } catch (err) {
       console.warn('[partidos] No se pudo recargar:', err.message);
     }
-
     renderDisponibles();
     renderCreados();
     renderInscritos();

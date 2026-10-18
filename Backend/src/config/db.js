@@ -3,16 +3,28 @@ import { env } from './env.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
-  host: env.DB.host,
-  port: env.DB.port,
-  database: env.DB.database,
-  user: env.DB.user,
-  password: env.DB.password,// ← si está vacío, no lo pasa
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-});
+// Si estamos en producción (Render), usamos DATABASE_URL y SSL.
+// Si estamos en desarrollo local, usamos las variables por separado.
+export const pool = new Pool(
+  process.env.DATABASE_URL
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }, // Obligatorio para Supabase
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+    : {
+        host: env.DB.host,
+        port: env.DB.port,
+        database: env.DB.database,
+        user: env.DB.user,
+        password: env.DB.password,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      }
+);
 
 /* Test de conexión al arrancar */
 export async function testConnection() {

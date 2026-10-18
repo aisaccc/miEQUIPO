@@ -1,22 +1,38 @@
 import { mismoId } from '../utils/id.js';
 import { getSesion } from '../auth.js';
-import { toast, abrirModal, cerrarModal, formatearFecha } from '../components.js';
+import {
+  toast,
+  abrirModal,
+  cerrarModal,
+  formatearFecha,
+} from '../components.js';
 import {
   deportes as todosLosDeportes,
   posicionesPorDeporte
 } from '../data-mock.js';
 import { statsPorDeporte } from '../stats-por-deporte.js';
-import {
-  getPartidos,
-  publicacionesDe,
-  migrarTodosLosUsuarios
-} from '../store.js';
+import { getPartidos } from '../store.js';
+import { ICONOS } from '../utils/iconos.js';
 import {
   obtenerMiPerfil,
   actualizarMiPerfil,
   actualizarMisDeportes,
 } from '../services/usuarios.service.js';
 import { obtenerHistorialPartidos } from '../services/partidos.service.js';
+import { listarPublicacionesDe } from '../services/publicaciones.service.js';
+
+// ⚡ IMPORTAMOS EL FEED COMPARTIDO Y EL MODAL
+import {
+  renderFeedPublicaciones,
+  abrirModalCrearPublicacionCompartido
+} from '../utils/publicaciones-ui.js';
+
+/* ---------- HELPER HTML ---------- */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
 
 /* ---------- LISTA DE PAÍSES ---------- */
 const PAISES = [
@@ -27,11 +43,30 @@ const PAISES = [
   'Venezuela', 'Otro'
 ];
 
+/* =========================================================
+   COLORES DEL HERO
+   ========================================================= */
+const HERO_COLORS = [
+  { key: 'navy',    label: 'Navy',     from: '#0F1B2D', to: '#1E2D45', text: 'light' },
+  { key: 'black',   label: 'Negro',    from: '#0A0A0A', to: '#1F1F1F', text: 'light' },
+  { key: 'carbon',  label: 'Carbón',   from: '#1F2937', to: '#374151', text: 'light' },
+  { key: 'blue',    label: 'Azul',     from: '#1E3A8A', to: '#2563EB', text: 'light' },
+  { key: 'forest',  label: 'Bosque',   from: '#064E3B', to: '#047857', text: 'light' },
+  { key: 'purple',  label: 'Púrpura',  from: '#4C1D95', to: '#7C3AED', text: 'light' },
+  { key: 'wine',    label: 'Vino',     from: '#7F1D1D', to: '#B91C1C', text: 'light' },
+  { key: 'coffee',  label: 'Café',     from: '#451A03', to: '#78350F', text: 'light' },
+  { key: 'mustard', label: 'Mostaza',  from: '#92400E', to: '#CA8A04', text: 'light' },
+  { key: 'red',     label: 'Rojo',     from: '#DC2626', to: '#EF4444', text: 'light' },
+  { key: 'orange',  label: 'Naranjo',  from: '#EA580C', to: '#FB923C', text: 'light' },
+  { key: 'white',   label: 'Blanco',   from: '#FFFFFF', to: '#F5F5F5', text: 'dark'  },
+];
+
+/* =========================================================
+   INIT
+   ========================================================= */
 export async function init() {
   let user = getSesion();
   if (!user) return null;
-
-  migrarTodosLosUsuarios();
 
   try {
     user = await obtenerMiPerfil();
@@ -41,17 +76,17 @@ export async function init() {
   }
 
   /* ---------- REFS ---------- */
+  const elHero            = document.getElementById('perfil-hero');
   const elAvatar          = document.getElementById('perfil-avatar');
   const elNombre          = document.getElementById('perfil-nombre');
   const elUsername        = document.getElementById('perfil-username');
   const elBio             = document.getElementById('perfil-bio');
-  const elCiudad          = document.getElementById('perfil-ciudad');
-  const elEdad            = document.getElementById('perfil-edad');
-  const elPais            = document.getElementById('perfil-pais');
+  const elMetaChips       = document.getElementById('perfil-meta-chips');
   const elDeportesChips   = document.getElementById('perfil-deportes-chips');
+  const elStatsHero       = document.getElementById('perfil-stats-hero');
+  const elDeportesLista   = document.getElementById('perfil-deportes-lista');
   const elStatsDeportes   = document.getElementById('perfil-stats-deportes');
-  const elPublicaciones   = document.getElementById('perfil-publicaciones');
-  const elActividad       = document.getElementById('perfil-actividad');
+  const elPubsGrid        = document.getElementById('perfil-publicaciones-grid');
 
   /* ---------- REFS HISTORIAL ---------- */
   const elHistorial       = document.getElementById('perfil-historial');
@@ -64,19 +99,39 @@ export async function init() {
   const btnHistLimpiar    = document.getElementById('btn-limpiar-filtros');
   const btnHistCargarMas  = document.getElementById('btn-historial-cargar-mas');
 
+  /* ---------- REFS SUBTABS ---------- */
+  const subtabsPerfil      = document.querySelectorAll('[data-tab-perfil]');
+  const panelPublicaciones = document.getElementById('panel-perfil-publicaciones');
+  const panelActividad     = document.getElementById('panel-perfil-actividad');
+  const panelHistorial     = document.getElementById('panel-perfil-historial');
+
   /* ---------- AVATARES MOCK ---------- */
   const AVATARES = Array.from({ length: 20 }, (_, i) => `https://i.pravatar.cc/150?img=${i + 1}`);
 
   /* ---------- ESTADO DEL HISTORIAL ---------- */
-  let histFiltros = {
-    rol: 'todos',
-    deporte: '',
-    desde: '',
-    hasta: '',
-  };
+  let histFiltros = { rol: 'todos', deporte: '', desde: '', hasta: '' };
   let histPagina = 1;
   let histPartidos = [];
   let histCargando = false;
+
+  /* ---------- ESTADO DE SUBTABS ---------- */
+  let tabActual = 'publicaciones';
+
+  /* ---------- ESTADO PUBLICACIONES ---------- */
+  let publicacionesCache = [];
+
+  /* =========================================================
+     APLICAR COLOR AL HERO
+     ========================================================= */
+  function aplicarColorHero(colorKey) {
+    if (!elHero) return;
+
+    const preset = HERO_COLORS.find(c => c.key === colorKey) || HERO_COLORS[0];
+
+    elHero.dataset.heroColor = preset.key;
+    elHero.style.background = `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)`;
+    elHero.classList.toggle('perfil-hero--dark-text', preset.text === 'dark');
+  }
 
   /* =========================================================
      RENDER PRINCIPAL
@@ -93,146 +148,202 @@ export async function init() {
 
     if (!u) return;
 
+    aplicarColorHero(u.heroColor || 'navy');
+
     if (elAvatar) elAvatar.src = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
     if (elNombre) elNombre.textContent = u.nombre;
-    if (elUsername) elUsername.textContent = '@' + u.username;
+    if (elUsername) {
+      const partes = ['@' + u.username];
+      if (u.ciudad || u.pais) {
+        const lugar = [u.ciudad, u.pais].filter(Boolean).join(', ');
+        partes.push(lugar);
+      }
+      elUsername.textContent = partes.join(' · ');
+    }
 
     if (elBio) {
       elBio.textContent = u.bio || 'Sin biografía todavía.';
+      elBio.style.opacity = u.bio ? '0.85' : '0.55';
       elBio.style.fontStyle = u.bio ? 'normal' : 'italic';
     }
 
-    if (elCiudad) {
-      elCiudad.textContent = '📍 ' + (u.ciudad || 'Sin ciudad');
+    if (elMetaChips) {
+      const chips = [];
+      if (u.edad) chips.push(`${ICONOS.calendario} ${u.edad} años`);
+      if (u.pais) chips.push(`${ICONOS.mundo} ${u.pais}`);
+      elMetaChips.innerHTML = chips.map(t => `<span class="perfil-hero__chip">${t}</span>`).join('');
     }
 
-    if (elEdad) {
-      if (u.edad) {
-        elEdad.textContent = '🎂 ' + u.edad + ' años';
-        elEdad.style.display = '';
-      } else {
-        elEdad.style.display = 'none';
-      }
-    }
-
-    if (elPais) {
-      if (u.pais) {
-        elPais.textContent = '🌎 ' + u.pais;
-        elPais.style.display = '';
-      } else {
-        elPais.style.display = 'none';
-      }
-    }
-
-    // Chips de deportes
     if (elDeportesChips) {
       const misDeportes = u.deportes || [];
       if (misDeportes.length === 0) {
-        elDeportesChips.innerHTML = `
-          <span class="badge badge--neutral">Sin deportes todavía</span>`;
+        elDeportesChips.innerHTML = '';
       } else {
-        elDeportesChips.innerHTML = misDeportes.map(d => {
-          const icono = iconoDeporte(d.deporte);
-          const posiciones = (d.posiciones || []).join(', ');
-          return `
-            <span class="badge badge--primary">
-              ${icono} ${d.deporte}
-            </span>
-            ${posiciones ? `<span class="badge badge--info">🎯 ${posiciones}</span>` : ''}
-          `;
-        }).join('');
+        elDeportesChips.innerHTML = misDeportes.map(d =>
+          `<span class="perfil-hero__chip perfil-hero__chip--deporte">${d.deporte}</span>`
+        ).join('');
       }
     }
 
-    // Stats por deporte
-    if (elStatsDeportes) {
-      renderStatsDeportes(u);
-    }
+    renderStatsHero(u);
+    await renderPublicaciones(u);
+    renderDeportesLista(u);
+    renderStatsDeportes(u);
 
-    // Publicaciones
-    if (elPublicaciones) {
-      const misPubs = publicacionesDe(u.id);
-
-      if (misPubs.length === 0) {
-        elPublicaciones.innerHTML = `
-          <div class="empty-state" style="padding:var(--space-5)">
-            <div class="empty-state__icon" style="font-size:36px">📝</div>
-            <p class="text-sm text-muted">Aún no has publicado nada</p>
-            <a href="#/inicio" class="btn btn--primary btn--sm mt-4">Ir al inicio</a>
-          </div>`;
-      } else {
-        elPublicaciones.innerHTML = misPubs.map(p => `
-          <div class="feed-item" style="cursor:pointer" data-pub="${p.id}">
-            <div style="font-size:24px">
-              ${p.tipo === 'partido' ? '⚽' : p.tipo === 'torneo' ? '🏆' : p.tipo === 'grupo' ? '👥' : '📝'}
-            </div>
-            <div style="flex:1; min-width:0">
-              <div class="feed-item__title">${(p.contenido || '').slice(0, 60)}${(p.contenido || '').length > 60 ? '...' : ''}</div>
-              <div class="feed-item__subtitle">
-                ${new Date(p.fecha).toLocaleDateString('es-CL')} · ❤️ ${p.likes || 0} · 💬 ${(p.comentarios || []).length}
-              </div>
-            </div>
-            ${p.imagen ? `<img src="${p.imagen}" style="width:40px; height:40px; border-radius:var(--radius-sm); object-fit:cover" />` : ''}
-            ${p.video ? `<div style="width:40px; height:40px; border-radius:var(--radius-sm); background:var(--color-primary-light); display:grid; place-items:center">🎥</div>` : ''}
-          </div>
-        `).join('');
-
-        elPublicaciones.querySelectorAll('[data-pub]').forEach(el => {
-          el.addEventListener('click', () => {
-            window.location.hash = '#/inicio';
-          });
-        });
-      }
-    }
-
-    // Actividad
-    if (elActividad) {
-      const misPartidos = getPartidos().filter(p =>
-        p.organizador?.id === u.id || (p.inscritos || []).includes(u.id)
-      );
-      const recientes = misPartidos.slice(0, 3);
-
-      if (recientes.length === 0) {
-        elActividad.innerHTML = `
-          <div class="empty-state" style="padding:var(--space-5)">
-            <div class="empty-state__icon" style="font-size:36px">📭</div>
-            <p class="text-sm text-muted">Sin actividad reciente</p>
-          </div>`;
-      } else {
-        elActividad.innerHTML = recientes.map(p => `
-          <div class="feed-item" style="cursor:pointer" data-partido="${p.id}">
-            <div style="font-size:24px">${p.emoji}</div>
-            <div style="flex:1; min-width:0">
-              <div class="feed-item__title">${p.titulo}</div>
-              <div class="feed-item__subtitle">
-                ${p.organizador?.id === u.id ? '👑 Organizador' : '✅ Inscrito'} · ${p.deporte}
-              </div>
-            </div>
-          </div>
-        `).join('');
-
-        elActividad.querySelectorAll('[data-partido]').forEach(el => {
-          el.addEventListener('click', () => {
-            window.location.hash = `#/partido/${el.dataset.partido}`;
-          });
-        });
-      }
-    }
-
-    // ⚡ Historial de partidos
     await cargarHistorial(true);
     poblarSelectDeportesHistorial();
+
+    cambiarTabPerfil(tabActual);
   }
-    /* ---------- Render de stats por deporte ---------- */
+
+  /* =========================================================
+     SUBTABS
+     ========================================================= */
+  function cambiarTabPerfil(tab) {
+    tabActual = tab;
+
+    subtabsPerfil.forEach(st => {
+      st.classList.toggle('subtab--active', st.dataset.tabPerfil === tab);
+    });
+
+    panelPublicaciones?.classList.toggle('subpanel--active', tab === 'publicaciones');
+    panelActividad?.classList.toggle('subpanel--active', tab === 'actividad');
+    panelHistorial?.classList.toggle('subpanel--active', tab === 'historial');
+  }
+
+  subtabsPerfil.forEach(st => {
+    st.addEventListener('click', () => cambiarTabPerfil(st.dataset.tabPerfil));
+  });
+
+  /* =========================================================
+     STATS DEL HERO
+     ========================================================= */
+  function renderStatsHero(u) {
+    if (!elStatsHero) return;
+
+    const base = u.statsHeroBase || {};
+    const auto = u.statsHero || { partidos: 0, torneos: 0, equipos: 0 };
+
+    const partidos = (Number(base.partidos) || 0) + (auto.partidos || 0);
+    const torneos = auto.torneos || 0;
+    const equipos = auto.equipos || 0;
+
+    elStatsHero.innerHTML = `
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${partidos}</div>
+        <div class="perfil-stat__label">Partidos jugados</div>
+      </div>
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${torneos}</div>
+        <div class="perfil-stat__label">Torneos</div>
+      </div>
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${equipos}</div>
+        <div class="perfil-stat__label">Equipos</div>
+      </div>
+    `;
+  }
+
+  /* =========================================================
+     PUBLICACIONES (UNIFICADO CON FEED)
+     ========================================================= */
+  async function renderPublicaciones(u) {
+    if (!elPubsGrid) return;
+
+    elPubsGrid.innerHTML = `
+      <div class="page-loader">
+        <div class="spinner"></div>
+        <span>Cargando publicaciones...</span>
+      </div>`;
+
+    try {
+      publicacionesCache = await listarPublicacionesDe(u.id);
+    } catch (err) {
+      console.error('[perfil] Error al cargar publicaciones:', err);
+      elPubsGrid.innerHTML = `
+        <div class="card">
+          <div class="empty-state" style="padding:var(--space-5)">
+            <div class="empty-state__icon" style="font-size:36px">${ICONOS.alerta}</div>
+            <p class="text-sm text-muted">No se pudieron cargar las publicaciones</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const esMiPerfil = String(u.id) === String(getSesion()?.id);
+
+    // Header con botón de crear
+    const headerHtml = esMiPerfil ? `
+      <div class="perfil-pubs-header mb-4" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <h3 class="card__title" style="margin:0">Mis publicaciones</h3>
+        <button class="btn btn--primary btn--sm" id="btn-nueva-publicacion">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva publicación
+        </button>
+      </div>
+    ` : '';
+
+    elPubsGrid.innerHTML = `${headerHtml}<div id="perfil-feed-container"></div>`;
+    
+    const feedCont = document.getElementById('perfil-feed-container');
+
+    // ⚡ Usamos el feed unificado
+    renderFeedPublicaciones(feedCont, publicacionesCache, {
+      onRefrescar: () => renderPublicaciones(u)
+    });
+
+    document.getElementById('btn-nueva-publicacion')?.addEventListener('click', () => {
+      abrirModalCrearPublicacionCompartido('perfil', null, () => renderPublicaciones(u), { tipo: 'post' });
+    });
+  }
+
+  /* =========================================================
+     LISTA DE DEPORTES Y POSICIONES
+     ========================================================= */
+  function renderDeportesLista(u) {
+    if (!elDeportesLista) return;
+
+    const misDeportes = u.deportes || [];
+
+    if (misDeportes.length === 0) {
+      elDeportesLista.innerHTML = `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">${ICONOS.medalla}</div>
+          <p class="text-sm text-muted">Aún no agregaste deportes</p>
+        </div>`;
+      return;
+    }
+
+    elDeportesLista.innerHTML = misDeportes.map(d => {
+      const posiciones = (d.posiciones || []).join(', ') || 'Sin posiciones';
+      return `
+        <div class="feed-item" style="cursor:default">
+          <div class="feed-item__icon">${iconoDeporte(d.deporte)}</div>
+          <div style="flex:1; min-width:0">
+            <div class="feed-item__title">${d.deporte}</div>
+            <div class="feed-item__subtitle">${posiciones}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* =========================================================
+     STATS POR DEPORTE
+     ========================================================= */
   function renderStatsDeportes(u) {
+    if (!elStatsDeportes) return;
+
     const misDeportes = u.deportes || [];
 
     if (misDeportes.length === 0) {
       elStatsDeportes.innerHTML = `
-        <div class="card mb-4">
-          <h3 class="card__title mb-4">📊 Mis estadísticas</h3>
+        <div class="card">
+          <h3 class="card__title mb-4" style="display:flex; align-items:center; gap:6px">
+            ${ICONOS.grafico} Mis estadísticas
+          </h3>
           <div class="empty-state" style="padding:var(--space-5)">
-            <div class="empty-state__icon" style="font-size:36px">📊</div>
+            <div class="empty-state__icon" style="font-size:36px">${ICONOS.grafico}</div>
             <p class="text-sm text-muted">Agrega un deporte en tu perfil para llevar estadísticas</p>
           </div>
         </div>`;
@@ -249,17 +360,17 @@ export async function init() {
       return `
         <div class="card mb-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="card__title" style="margin:0">
+            <h3 class="card__title" style="margin:0; display:flex; align-items:center; gap:6px">
               ${icono} Estadísticas de ${d.deporte}
             </h3>
-            <button class="btn btn--ghost btn--sm" data-editar-stats-deporte="${d.deporte}">
-              ✏️ Editar
+            <button class="btn btn--ghost btn--sm" data-editar-stats-deporte="${d.deporte}" style="display:flex; align-items:center; gap:6px">
+              ${ICONOS.lapiz} Editar
             </button>
           </div>
 
           ${cargadas.length === 0 ? `
             <div class="empty-state--sm">
-              <div class="empty-state__icon">📊</div>
+              <div class="empty-state__icon">${ICONOS.grafico}</div>
               <p class="text-sm text-muted">Sin registros cargados todavía</p>
             </div>
           ` : `
@@ -274,7 +385,7 @@ export async function init() {
                     <div class="stat-box__value">${stat.valor}</div>
                     <div class="stat-box__label">${s.nombre}</div>
                     ${esPrivada ? `
-                      <span style="position:absolute; top:6px; right:6px; font-size:12px" title="Privado">🔒</span>
+                      <span style="position:absolute; top:6px; right:6px; color:var(--color-text-muted)" title="Privado">${ICONOS.candado}</span>
                     ` : ''}
                   </div>
                 `;
@@ -292,7 +403,9 @@ export async function init() {
     });
   }
 
-  /* ---------- Helper: icono por deporte ---------- */
+  /* =========================================================
+     HELPER: icono por deporte
+     ========================================================= */
   function iconoDeporte(deporte) {
     const map = {
       'Fútbol': 'assets/icons/balon-de-futbol (2).png',
@@ -316,7 +429,7 @@ export async function init() {
       'Surf': 'assets/icons/tabla-de-surf.png',
       'Escalada': 'assets/icons/escalada.png'
     };
-    const valor = map[deporte] || '🏅';
+    const valor = map[deporte] || ICONOS.medalla;
     if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
       return `<img src="${valor}" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
     }
@@ -349,14 +462,13 @@ export async function init() {
       'Surf': 'assets/icons/tabla-de-surf.png',
       'Escalada': 'assets/icons/escalada.png'
     };
-    const valor = map[deporte] || '🏅';
+    const valor = map[deporte] || ICONOS.medalla;
     if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
       return `<img src="${valor}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
     }
     return valor;
   }
 
-  /* ---------- Cargar historial desde el backend ---------- */
   async function cargarHistorial(reset = false) {
     if (!elHistorial) return;
     if (histCargando) return;
@@ -377,11 +489,7 @@ export async function init() {
     }
 
     try {
-      const filtrosBackend = {
-        page: histPagina,
-        limit: 10,
-      };
-
+      const filtrosBackend = { page: histPagina, limit: 10 };
       if (histFiltros.deporte) filtrosBackend.deporte = histFiltros.deporte;
       if (histFiltros.desde)   filtrosBackend.desde = histFiltros.desde;
       if (histFiltros.hasta)   filtrosBackend.hasta = histFiltros.hasta;
@@ -419,7 +527,7 @@ export async function init() {
       console.error('[perfil] Error al cargar historial:', err);
       elHistorial.innerHTML = `
         <div class="empty-state--sm">
-          <div class="empty-state__icon">⚠️</div>
+          <div class="empty-state__icon">${ICONOS.alerta}</div>
           <p class="text-sm text-muted">No se pudo cargar el historial</p>
           <p class="text-xs text-muted mt-2">${err.message || ''}</p>
         </div>`;
@@ -428,14 +536,13 @@ export async function init() {
     }
   }
 
-  /* ---------- Render del historial ---------- */
   function renderHistorial() {
     if (!elHistorial) return;
 
     if (histPartidos.length === 0) {
       elHistorial.innerHTML = `
         <div class="empty-state--sm" style="padding:var(--space-5)">
-          <div class="empty-state__icon" style="font-size:36px">📅</div>
+          <div class="empty-state__icon">${ICONOS.calendario}</div>
           <p class="text-sm text-muted">Aún no tenés partidos jugados</p>
           <p class="text-xs text-muted mt-2">Los partidos aparecen acá cuando se finalizan</p>
         </div>`;
@@ -455,12 +562,11 @@ export async function init() {
     });
   }
 
-  /* ---------- Card individual del historial ---------- */
   function renderCardHistorial(p) {
     const rolLabel = {
-      organizador: '👑 Organizador',
-      jugador:     '👤 Jugador',
-      equipo:      '🛡️ Equipo',
+      organizador: `${ICONOS.corona} Organizador`,
+      jugador:     `${ICONOS.usuario} Jugador`,
+      equipo:      `${ICONOS.escudo} Equipo`,
     }[p.rol] || '—';
 
     const rolBadgeClase = {
@@ -469,7 +575,9 @@ export async function init() {
       equipo:      'badge--warning',
     }[p.rol] || 'badge--neutral';
 
-    const tipoLabel = p.tipoPartido === 'equipo' ? '🛡️ De equipos' : '👤 De jugadores';
+    const tipoLabel = p.tipoPartido === 'equipo' 
+      ? `${ICONOS.escudo} De equipos` 
+      : `${ICONOS.usuario} De jugadores`;
 
     return `
       <article class="match-card" data-id="${p.id}" style="cursor:pointer">
@@ -482,20 +590,19 @@ export async function init() {
 
         <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
           <span class="badge badge--neutral">${tipoLabel}</span>
-          <span class="badge badge--success">✅ Finalizado</span>
+          <span class="badge badge--success">${ICONOS.check} Finalizado</span>
         </div>
 
         <div class="match-card__info">
-          <span>🏅 ${p.deporte}</span>
-          <span>📅 ${formatearFecha(p.fecha)}</span>
-          ${p.lugar ? `<span>📍 ${p.lugar}</span>` : ''}
-          ${p.organizador?.nombre ? `<span>👤 ${p.organizador.nombre}</span>` : ''}
+          <span>${ICONOS.medalla} ${p.deporte}</span>
+          <span>${ICONOS.calendario} ${formatearFecha(p.fecha)}</span>
+          ${p.lugar ? `<span>${ICONOS.ubicacion} ${p.lugar}</span>` : ''}
+          ${p.organizador?.nombre ? `<span>${ICONOS.usuario} ${p.organizador.nombre}</span>` : ''}
         </div>
       </article>
     `;
   }
 
-  /* ---------- Poblar el select de deportes del historial ---------- */
   function poblarSelectDeportesHistorial() {
     if (!selHistDeporte) return;
 
@@ -505,7 +612,6 @@ export async function init() {
       deportesUnicos.map(d => `<option value="${d}">${d}</option>`).join('');
   }
 
-  /* ---------- Conectar eventos del historial ---------- */
   function conectarEventosHistorial() {
     chipsHistRol.forEach(chip => {
       chip.addEventListener('click', () => {
@@ -533,14 +639,11 @@ export async function init() {
 
     btnHistLimpiar?.addEventListener('click', () => {
       histFiltros = { rol: 'todos', deporte: '', desde: '', hasta: '' };
-
       chipsHistRol.forEach(c => c.classList.remove('chip--active'));
       chipsHistRol[0]?.classList.add('chip--active');
-
       if (selHistDeporte) selHistDeporte.value = '';
       if (inputHistDesde) inputHistDesde.value = '';
       if (inputHistHasta) inputHistHasta.value = '';
-
       cargarHistorial(true);
     });
 
@@ -553,14 +656,14 @@ export async function init() {
       btnHistCargarMas.textContent = 'Cargar más';
     });
   }
-    /* =========================================================
+
+  /* =========================================================
      MODAL EDITAR PERFIL
      ========================================================= */
   function abrirModalEditar() {
     const u = getSesion();
     if (!u) return;
 
-    /* ---------- Precargar campos ---------- */
     document.getElementById('edit-perf-nombre').value = u.nombre || '';
     document.getElementById('edit-perf-username').value = u.username || '';
     document.getElementById('edit-perf-bio').value = u.bio || '';
@@ -575,13 +678,10 @@ export async function init() {
         PAISES.map(p => `<option value="${p}" ${p === u.pais ? 'selected' : ''}>${p}</option>`).join('');
     }
 
-    /* ---------- Preview del avatar ---------- */
     const previewAvatar = document.getElementById('edit-perf-avatar-preview');
     previewAvatar.src = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
-
     let avatarSel = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
 
-    /* ---------- Galería de avatares ---------- */
     const contAv = document.getElementById('perfil-galeria-avatares');
     contAv.innerHTML = AVATARES.map(url => `
       <button type="button"
@@ -608,7 +708,6 @@ export async function init() {
     const activo = contAv.querySelector('.posicion-chip.active');
     if (activo) activo.style.background = 'var(--color-primary-light)';
 
-    /* ---------- Subir foto propia ---------- */
     const inputAvatarFile = document.getElementById('edit-perf-avatar-file');
     if (inputAvatarFile) {
       inputAvatarFile.onchange = (e) => {
@@ -631,7 +730,6 @@ export async function init() {
       };
     }
 
-    /* ---------- Quitar foto ---------- */
     const btnQuitar = document.getElementById('edit-perf-avatar-quitar');
     if (btnQuitar) {
       btnQuitar.onclick = () => {
@@ -644,7 +742,40 @@ export async function init() {
       };
     }
 
-    /* ---------- DEPORTES (multi) ---------- */
+    let colorSel = u.heroColor || 'navy';
+    const contColores = document.getElementById('edit-perf-hero-colores');
+    if (contColores) {
+      contColores.innerHTML = HERO_COLORS.map(c => `
+        <button type="button"
+                class="perfil-color-btn ${c.key === colorSel ? 'active' : ''}"
+                data-color="${c.key}"
+                title="${c.label}"
+                style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%)"></button>
+      `).join('');
+
+      contColores.querySelectorAll('[data-color]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          contColores.querySelectorAll('[data-color]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          colorSel = btn.dataset.color;
+        });
+      });
+    }
+
+    const base = u.statsHeroBase || {};
+    const privadas = u.statsHeroPrivadas || {};
+
+    const inputBasePartidos = document.getElementById('edit-perf-base-partidos');
+    if (inputBasePartidos) inputBasePartidos.value = base.partidos || 0;
+
+    const chkPrivPartidos = document.getElementById('edit-perf-priv-partidos');
+    const chkPrivTorneos  = document.getElementById('edit-perf-priv-torneos');
+    const chkPrivEquipos  = document.getElementById('edit-perf-priv-equipos');
+
+    if (chkPrivPartidos) chkPrivPartidos.checked = privadas.partidos === true;
+    if (chkPrivTorneos)  chkPrivTorneos.checked  = privadas.torneos === true;
+    if (chkPrivEquipos)  chkPrivEquipos.checked  = privadas.equipos === true;
+
     let deportesActuales = JSON.parse(JSON.stringify(u.deportes || []));
 
     const selNuevoDeporte = document.getElementById('edit-perf-nuevo-deporte');
@@ -655,14 +786,14 @@ export async function init() {
       selNuevoDeporte.innerHTML = '<option value="">Agregar deporte...</option>' +
         todosLosDeportes
           .filter(d => !elegidos.has(d))
-          .map(d => `<option value="${d}">${iconoDeporte(d)} ${d}</option>`).join('');
+          .map(d => `<option value="${d}">${d}</option>`).join('');
     }
 
     function renderDeportesElegidos() {
       if (deportesActuales.length === 0) {
         contDeportes.innerHTML = `
           <div class="empty-state--sm">
-            <div class="empty-state__icon">🏅</div>
+            <div class="empty-state__icon">${ICONOS.medalla}</div>
             <p class="text-sm text-muted">Aún no agregaste deportes</p>
           </div>`;
         return;
@@ -675,12 +806,8 @@ export async function init() {
         return `
           <div class="card" style="padding:var(--space-3); background:var(--color-surface-2); border:none">
             <div class="flex items-center justify-between mb-2">
-              <div style="font-weight:700; font-size:var(--fs-sm)">
-                ${iconoDeporte(d.deporte)} ${d.deporte}
-              </div>
-              <button class="btn btn--ghost btn--sm" data-quitar-deporte="${idx}" style="color:var(--color-danger)">
-                ✕
-              </button>
+              <div style="font-weight:700; font-size:var(--fs-sm)">${d.deporte}</div>
+              <button class="btn btn--ghost btn--sm" data-quitar-deporte="${idx}" style="color:var(--color-danger)">✕</button>
             </div>
 
             ${tienePosiciones ? `
@@ -690,7 +817,7 @@ export async function init() {
               <div class="posiciones-lista" style="padding:8px; gap:6px">
                 ${posicionesDisponibles.map(p => `
                   <button type="button"
-                          class="posicion-chip ${d.posiciones.includes(p) ? 'active' : ''}"
+                          class="posicion-chip ${(d.posiciones || []).includes(p) ? 'active' : ''}"
                           data-pos-idx="${idx}"
                           data-pos-nombre="${p}"
                           style="font-size:11px; padding:4px 10px">
@@ -698,9 +825,7 @@ export async function init() {
                   </button>
                 `).join('')}
               </div>
-            ` : `
-              <p class="text-xs text-muted">Este deporte no tiene posiciones</p>
-            `}
+            ` : `<p class="text-xs text-muted">Este deporte no tiene posiciones</p>`}
           </div>
         `;
       }).join('');
@@ -718,7 +843,7 @@ export async function init() {
         btn.addEventListener('click', () => {
           const idx = Number(btn.dataset.posIdx);
           const pos = btn.dataset.posNombre;
-          const lista = deportesActuales[idx].posiciones;
+          const lista = deportesActuales[idx].posiciones || (deportesActuales[idx].posiciones = []);
 
           if (lista.includes(pos)) {
             deportesActuales[idx].posiciones = lista.filter(p => p !== pos);
@@ -742,17 +867,11 @@ export async function init() {
         return toast('Ese deporte ya está agregado', 'error');
       }
 
-      deportesActuales.push({
-        deporte: dep,
-        posiciones: [],
-        stats: {}
-      });
-
+      deportesActuales.push({ deporte: dep, posiciones: [], stats: {} });
       renderDeportesElegidos();
       refrescarSelectDeportes();
     };
 
-    /* ---------- Guardar ---------- */
     document.getElementById('btn-guardar-perfil').onclick = async () => {
       const nombre = document.getElementById('edit-perf-nombre').value.trim();
       const username = document.getElementById('edit-perf-username').value.trim();
@@ -779,6 +898,15 @@ export async function init() {
           edad,
           pais: pais || null,
           avatar: avatarSel || null,
+          heroColor: colorSel,
+          statsHeroBase: {
+            partidos: Math.max(0, Number(inputBasePartidos?.value) || 0),
+          },
+          statsHeroPrivadas: {
+            partidos: !!chkPrivPartidos?.checked,
+            torneos:  !!chkPrivTorneos?.checked,
+            equipos:  !!chkPrivEquipos?.checked,
+          },
         });
 
         const usuarioActual = getSesion();
@@ -789,7 +917,7 @@ export async function init() {
           return {
             deporte: d.deporte,
             posiciones: d.posiciones || [],
-            stats: anterior?.stats || {}
+            stats: anterior?.stats || {},
           };
         });
 
@@ -808,7 +936,6 @@ export async function init() {
       }
     };
 
-    /* ---------- Cerrar ---------- */
     document.querySelectorAll('#modal-editar-perfil [data-cerrar-modal]').forEach(btn => {
       btn.onclick = () => cerrarModal('modal-editar-perfil');
     });
@@ -827,16 +954,12 @@ export async function init() {
     if (!u) return;
 
     const deporteData = (u.deportes || []).find(d => d.deporte === nombreDeporte);
-    if (!deporteData) {
-      console.warn('[stats] No se encontró el deporte:', nombreDeporte);
-      return;
-    }
+    if (!deporteData) return;
 
     const statsDisponibles = statsPorDeporte[nombreDeporte] || [];
     const statsUsuario = deporteData.stats || {};
 
-    document.getElementById('stats-deporte-titulo').textContent =
-      `📊 Stats de ${nombreDeporte}`;
+    document.getElementById('stats-deporte-titulo').textContent = `Stats de ${nombreDeporte}`;
 
     const contenedor = document.getElementById('stats-deporte-campos');
 
@@ -870,7 +993,6 @@ export async function init() {
 
     document.getElementById('btn-guardar-stats-deporte').onclick = async () => {
       const nuevasStats = {};
-
       statsDisponibles.forEach(s => {
         const inputValor = document.getElementById(`stat-${s.clave}`);
         const chkPublico = document.getElementById(`stat-publico-${s.clave}`);
@@ -878,17 +1000,14 @@ export async function init() {
 
         nuevasStats[s.clave] = {
           valor: Math.max(0, Number(inputValor.value) || 0),
-          publico: chkPublico?.checked || false
+          publico: chkPublico?.checked || false,
         };
       });
 
       const usuarioActual = getSesion();
       const deportesActuales = usuarioActual.deportes || [];
-
       const deportesActualizados = deportesActuales.map(d =>
-        d.deporte === nombreDeporte
-          ? { ...d, stats: nuevasStats }
-          : d
+        d.deporte === nombreDeporte ? { ...d, stats: nuevasStats } : d
       );
 
       const btn = document.getElementById('btn-guardar-stats-deporte');
@@ -897,7 +1016,6 @@ export async function init() {
 
       try {
         await actualizarMisDeportes(deportesActualizados);
-
         cerrarModal('modal-editar-stats-deporte');
         toast(`Stats de ${nombreDeporte} actualizadas`, 'success');
         await render();
@@ -924,8 +1042,8 @@ export async function init() {
      CONECTAR BOTONES
      ========================================================= */
   document.getElementById('btn-editar-perfil')?.addEventListener('click', abrirModalEditar);
+  document.getElementById('btn-editar-deportes')?.addEventListener('click', abrirModalEditar);
 
-  // ⚡ Conectar eventos del historial
   conectarEventosHistorial();
 
   /* =========================================================

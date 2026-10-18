@@ -21,6 +21,7 @@ import {
   initDropdowns,
   initNotificaciones,
   initConfiguracion,
+  initTheme, // ⚡ NUEVO
 } from './components.js';
 
 /* =========================================================
@@ -85,6 +86,7 @@ async function init() {
     initDropdowns();
     initNotificaciones();
     initConfiguracion();
+    initTheme(); // ⚡ NUEVO
   } catch (err) {
     console.warn('[main] Error inicializando componentes:', err.message);
   }

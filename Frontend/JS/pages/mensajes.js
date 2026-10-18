@@ -1,10 +1,11 @@
 /* =========================================================
-   mensajes.js — Chat 1 a 1 con backend
+   mensajes.js — Chat 1 a 1 con backend (+ imágenes)
    =========================================================
    - Lista de conversaciones (izquierda)
    - Panel de chat (derecha)
    - Modal "Nueva conversación"
-   */
+   - Envío de imágenes (dataURL, máx 3MB)
+   ========================================================= */
 
 import { getSesion } from '../auth.js';
 import { toast, abrirModal, cerrarModal } from '../components.js';
@@ -35,13 +36,17 @@ export async function init() {
   let intervaloRefresco = null;
   let filtroTexto = '';
   let conversaciones = [];
+  let menuAbiertoId = null;
+  let ultimoHashMensajes = null;
+  let ultimaConvRenderizada = null;
+  let imagenBase64 = null;   // imagen seleccionada para enviar
 
   /* =========================================================
      HELPERS
      ========================================================= */
   function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str == null ? '' : String(str);
     return div.innerHTML;
   }
 
@@ -61,6 +66,57 @@ export async function init() {
     return usuario?.avatar || 'assets/icons/usuario.svg';
   }
 
+  function labelDia(iso) {
+    const d = new Date(iso);
+    const hoy = new Date();
+    const ayer = new Date();
+    ayer.setDate(hoy.getDate() - 1);
+
+    const mismoDia = (a, b) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+
+    if (mismoDia(d, hoy))  return 'Hoy';
+    if (mismoDia(d, ayer)) return 'Ayer';
+
+    const difDias = Math.floor((hoy - d) / (1000 * 60 * 60 * 24));
+    if (difDias < 7) {
+      const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      return dias[d.getDay()];
+    }
+
+    return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+  }
+
+  function mismoDia(a, b) {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
+  /* =========================================================
+     MODAL: VER IMAGEN EN GRANDE
+     ========================================================= */
+  function abrirModalVerImagen(src) {
+    const img = document.getElementById('modal-imagen-img');
+    const modal = document.getElementById('modal-ver-imagen');
+    if (!img || !modal) return;
+
+    img.src = src;
+    abrirModal('modal-ver-imagen');
+
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+      btn.onclick = () => cerrarModal('modal-ver-imagen');
+    });
+
+    modal.onclick = (e) => {
+      if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen');
+    };
+  }
+
   /* =========================================================
      CARGAR CONVERSACIONES DESDE EL BACKEND
      ========================================================= */
@@ -77,7 +133,6 @@ export async function init() {
      RENDER: LISTA DE CONVERSACIONES
      ========================================================= */
   function renderListaConversaciones() {
-    // Filtrar por texto
     const filtradas = filtroTexto
       ? conversaciones.filter(c => {
           const otro = c.otroUsuario || {};
@@ -91,7 +146,7 @@ export async function init() {
 
     if (conversaciones.length === 0) {
       listaConversaciones.innerHTML = `
-        <div class="empty-state" style="padding:var(--space-5)">
+        <div class="empty-state" style="padding:var(--space-5) var(--space-3)">
           <div class="empty-state__icon" style="font-size:36px">💬</div>
           <p class="text-sm text-muted">No tenés conversaciones</p>
           <button class="btn btn--primary btn--sm mt-4" id="btn-empezar-conv">
@@ -110,113 +165,152 @@ export async function init() {
       return;
     }
 
-    listaConversaciones.innerHTML = `
-      <div class="text-xs text-muted" style="padding:var(--space-3) var(--space-3) var(--space-2); font-weight:700; text-transform:uppercase; letter-spacing:0.05em">
-        👤 Conversaciones
-      </div>
-      ${filtradas.map(c => {
-        const otro = c.otroUsuario || { nombre: 'Usuario', username: 'user', avatar: null };
-        const ultimo = c.ultimoMensaje;
-        const preview = ultimo
-          ? (ultimo.autorId === user.id ? 'Tú: ' : '') + ultimo.texto
-          : 'Sin mensajes aún';
+    listaConversaciones.innerHTML = filtradas.map(c => {
+      const otro = c.otroUsuario || { nombre: 'Usuario', username: 'user', avatar: null };
+      const ultimo = c.ultimoMensaje;
+      const preview = ultimo
+        ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? '📷 Imagen' : ''))
+        : 'Sin mensajes aún';
 
-        const vinculo = c.vinculadaNombre;
+      const vinculo = c.vinculadaNombre;
 
-        return `
-          <div class="conversation ${c.id === convActualId ? 'active' : ''}"
-               data-conv="${c.id}"
-               style="position:relative">
-            <img src="${avatarDe(otro)}" class="avatar avatar--md" alt="" />
-            <div class="conversation__info">
-              <div class="conversation__name">
-                ${escapeHtml(otro.nombre)}
-                ${vinculo ? `<span class="badge badge--warning" style="margin-left:6px; font-size:9px">📎 ${escapeHtml(vinculo).slice(0, 20)}</span>` : ''}
-              </div>
-              <div class="conversation__preview">${escapeHtml(preview).slice(0, 60)}</div>
+      return `
+        <div class="conv-item ${c.id === convActualId ? 'conv-item--active' : ''}"
+             data-conv="${c.id}">
+
+          <img src="${avatarDe(otro)}" class="conv-item__avatar" alt="" />
+
+          <div class="conv-item__info">
+            <div class="conv-item__top">
+              <div class="conv-item__name">${escapeHtml(otro.nombre)}</div>
+              ${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}
             </div>
-            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px">
-              ${ultimo ? `<span class="text-xs text-muted">${horaCorta(ultimo.createdAt)}</span>` : ''}
-              ${c.noLeidos > 0 ? `<span class="badge badge--primary">${c.noLeidos}</span>` : ''}
+            <div class="conv-item__bottom">
+              <div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>
+              ${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}
             </div>
-            <button class="conversation__delete"
-                    data-borrar-conv="${c.id}"
-                    title="Borrar chat"
-                    style="position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,0.5); color:white; display:none; align-items:center; justify-content:center; font-size:12px; cursor:pointer; border:none">🗑️</button>
+            ${vinculo ? `<div class="conv-item__vinculo">📎 ${escapeHtml(vinculo).slice(0, 30)}</div>` : ''}
           </div>
-        `;
-      }).join('')}
-    `;
 
-    // Mostrar botón al hacer hover
-    listaConversaciones.querySelectorAll('.conversation').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        const btn = el.querySelector('.conversation__delete');
-        if (btn) btn.style.display = 'flex';
-      });
-      el.addEventListener('mouseleave', () => {
-        const btn = el.querySelector('.conversation__delete');
-        if (btn) btn.style.display = 'none';
-      });
-    });
+          <button class="conv-item__menu-btn" data-menu="${c.id}" title="Opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <circle cx="5" cy="12" r="2"/>
+              <circle cx="12" cy="12" r="2"/>
+              <circle cx="19" cy="12" r="2"/>
+            </svg>
+          </button>
+        </div>
+      `;
+    }).join('');
 
-    // Borrar conversación privada (soft delete)
-    listaConversaciones.querySelectorAll('[data-borrar-conv]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const convId = btn.dataset.borrarConv;
-        if (!confirm('¿Borrar este chat? Solo se borrará para ti.')) return;
-
-        try {
-          await ocultarConversacion(convId);
-
-          if (convActualId === convId) {
-            convActualId = null;
-            panelMensajes.innerHTML = `
-              <div class="chat-empty">
-                <div style="font-size:48px">💬</div>
-                <p class="text-muted mt-4">Selecciona una conversación</p>
-              </div>`;
-          }
-          toast('Chat borrado', 'info');
-          await recargarConversaciones();
-          renderListaConversaciones();
-        } catch (err) {
-          console.error('[mensajes] Error al borrar:', err);
-          toast(err.message || 'No se pudo borrar', 'error');
-        }
-      });
-    });
-
-    // Conectar clicks para abrir conversación
-    listaConversaciones.querySelectorAll('.conversation').forEach(el => {
-      el.addEventListener('click', () => {
+    listaConversaciones.querySelectorAll('.conv-item').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-menu]') || e.target.closest('[data-menu-item]')) return;
         abrirConversacion(el.dataset.conv);
       });
     });
+
+    listaConversaciones.querySelectorAll('[data-menu]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        abrirMenuConv(btn.dataset.menu, btn);
+      });
+    });
   }
-    /* =========================================================
+
+  /* =========================================================
+     MENÚ DE OPCIONES DE CADA CONVERSACIÓN (⋯)
+     ========================================================= */
+  function abrirMenuConv(convId, btn) {
+    cerrarMenuConv();
+
+    const menu = document.createElement('div');
+    menu.className = 'conv-menu';
+    menu.innerHTML = `
+      <button class="conv-menu__item conv-menu__item--danger" data-menu-item="borrar">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Borrar chat
+      </button>
+    `;
+
+    document.body.appendChild(menu);
+    menuAbiertoId = convId;
+
+    const rect = btn.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.top = `${rect.bottom + 6}px`;
+    menu.style.left = `${rect.right - 160}px`;
+    menu.style.zIndex = '1000';
+
+    menu.querySelector('[data-menu-item="borrar"]').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      cerrarMenuConv();
+      await borrarConversacion(convId);
+    });
+
+    setTimeout(() => {
+      document.addEventListener('click', cerrarMenuConv, { once: true });
+    }, 10);
+  }
+
+  function cerrarMenuConv() {
+    document.querySelectorAll('.conv-menu').forEach(m => m.remove());
+    menuAbiertoId = null;
+  }
+
+  async function borrarConversacion(convId) {
+    if (!confirm('¿Borrar este chat? Solo se borrará para ti.')) return;
+
+    try {
+      await ocultarConversacion(convId);
+
+      if (convActualId === convId) {
+        convActualId = null;
+        panelMensajes.innerHTML = `
+          <div class="chat-empty">
+            <div class="chat-empty__icon">
+              <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h3 class="chat-empty__titulo">Tus mensajes</h3>
+            <p class="chat-empty__text">Seleccioná una conversación de la lista o iniciá una nueva.</p>
+          </div>`;
+      }
+      toast('Chat borrado', 'info');
+      await recargarConversaciones();
+      renderListaConversaciones();
+    } catch (err) {
+      console.error('[mensajes] Error al borrar:', err);
+      toast(err.message || 'No se pudo borrar', 'error');
+    }
+  }
+
+  /* =========================================================
      ABRIR CONVERSACIÓN
      ========================================================= */
   async function abrirConversacion(convId) {
     convActualId = convId;
+    ultimoHashMensajes = null;
+    ultimaConvRenderizada = null;
+    imagenBase64 = null;
+
     if (intervaloRefresco) clearInterval(intervaloRefresco);
 
-    // Marcar como leídos en el backend
     try {
       await marcarLeidos(convId);
     } catch (err) {
       console.warn('[mensajes] No se pudo marcar como leídos:', err.message);
     }
 
-    // Recargar la lista para actualizar el badge de no leídos
     await recargarConversaciones();
     renderListaConversaciones();
 
-    // Renderizar el panel
     await renderPanelChat(convId);
 
-    // Polling cada 3s para refrescar el chat
     intervaloRefresco = setInterval(async () => {
       if (convActualId === convId) {
         await refrescarMensajes(convId);
@@ -235,49 +329,142 @@ export async function init() {
       console.error('[mensajes] Error al obtener conversación:', err);
       panelMensajes.innerHTML = `
         <div class="chat-empty">
-          <div style="font-size:48px">⚠️</div>
-          <p class="text-muted mt-4">No se pudo cargar la conversación</p>
+          <div class="chat-empty__icon">
+            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <p class="chat-empty__text">No se pudo cargar la conversación</p>
         </div>`;
       return;
     }
 
     const otro = conv.otroUsuario || { nombre: 'Usuario', username: 'user', avatar: null };
+    const vinculo = conv.vinculadaNombre;
 
     panelMensajes.innerHTML = `
       <div class="chat-header">
-        <img src="${avatarDe(otro)}" class="avatar avatar--md" alt="" />
-        <div class="chat-header__info">
+        <img src="${avatarDe(otro)}" class="chat-header__avatar" alt=""
+             data-ver-perfil="${otro.id}" style="cursor:pointer" />
+        <div class="chat-header__info" data-ver-perfil="${otro.id}" style="cursor:pointer">
           <div class="chat-header__name">${escapeHtml(otro.nombre)}</div>
-          <div class="chat-header__sub">@${escapeHtml(otro.username)}</div>
+          <div class="chat-header__sub">@${escapeHtml(otro.username || 'usuario')}</div>
         </div>
       </div>
 
+      ${vinculo ? `
+        <div class="chat-vinculo">
+          <div class="chat-vinculo__icon">📎</div>
+          <div class="chat-vinculo__texto">
+            <div class="chat-vinculo__eyebrow">Conversación sobre</div>
+            <div class="chat-vinculo__titulo">${escapeHtml(vinculo)}</div>
+          </div>
+        </div>
+      ` : ''}
+
       <div class="chat-mensajes" id="chat-mensajes"></div>
 
+      <!-- Preview de imagen seleccionada -->
+      <div class="chat-input-preview hidden" id="chat-input-preview">
+        <div class="chat-input-preview__img-wrapper">
+          <img id="chat-input-preview-img" src="" alt="" />
+          <button type="button" class="chat-input-preview__del" id="chat-input-preview-del" title="Quitar">✕</button>
+        </div>
+      </div>
+
       <form class="chat-input" id="chat-form">
+        <label class="chat-input__attach" title="Adjuntar imagen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+          <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
+        </label>
+
         <input
           type="text"
           id="chat-input-texto"
-          placeholder="Escribe un mensaje..."
+          placeholder="Escribí un mensaje..."
           maxlength="2000"
           autocomplete="off"
         />
-        <button type="submit" class="chat-input__btn">➤</button>
+
+        <button type="submit" class="chat-input__btn" title="Enviar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
       </form>
     `;
 
-    // Conectar form
+    panelMensajes.querySelectorAll('[data-ver-perfil]').forEach(el => {
+      el.addEventListener('click', () => {
+        import('../components.js').then(({ verPerfilUsuario }) => {
+          verPerfilUsuario(el.dataset.verPerfil);
+        });
+      });
+    });
+
+    // Input file → guardar imagen
+    document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 3 * 1024 * 1024) {
+        toast('La imagen es muy grande (máx 3MB)', 'error');
+        e.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        imagenBase64 = ev.target.result;
+        mostrarPreviewImagen(imagenBase64);
+      };
+      reader.readAsDataURL(file);
+
+      // Reset input para poder elegir el mismo archivo otra vez
+      e.target.value = '';
+    });
+
+    document.getElementById('chat-input-preview-del')?.addEventListener('click', () => {
+      imagenBase64 = null;
+      ocultarPreviewImagen();
+    });
+
     document.getElementById('chat-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       await enviarMensajeDelPanel(convId);
     });
 
-    // Cargar mensajes
     await refrescarMensajes(convId);
   }
 
   /* =========================================================
-     REFRESCAR MENSAJES DEL CHAT
+     PREVIEW DE IMAGEN (arriba del input)
+     ========================================================= */
+  function mostrarPreviewImagen(src) {
+    const wrapper = document.getElementById('chat-input-preview');
+    const img = document.getElementById('chat-input-preview-img');
+    if (!wrapper || !img) return;
+
+    img.src = src;
+    wrapper.classList.remove('hidden');
+  }
+
+  function ocultarPreviewImagen() {
+    const wrapper = document.getElementById('chat-input-preview');
+    const img = document.getElementById('chat-input-preview-img');
+    if (!wrapper || !img) return;
+
+    img.src = '';
+    wrapper.classList.add('hidden');
+  }
+
+  /* =========================================================
+     REFRESCAR MENSAJES DEL CHAT (con hash anti-parpadeo)
      ========================================================= */
   async function refrescarMensajes(convId) {
     const cont = document.getElementById('chat-mensajes');
@@ -291,10 +478,27 @@ export async function init() {
       return;
     }
 
+    const hash = mensajes
+      .map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`)
+      .join('|');
+
+    const cambioDeConv = ultimaConvRenderizada !== convId;
+
+    if (!cambioDeConv && hash === ultimoHashMensajes) {
+      return;
+    }
+
+    ultimoHashMensajes = hash;
+    ultimaConvRenderizada = convId;
+
     if (mensajes.length === 0) {
       cont.innerHTML = `
         <div class="chat-mensajes__empty">
-          <div class="chat-mensajes__empty-icon">💬</div>
+          <div class="chat-mensajes__empty-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <p>Aún no hay mensajes.</p>
           <p class="text-xs" style="margin-top:4px">¡Saluda para empezar!</p>
         </div>`;
@@ -303,24 +507,64 @@ export async function init() {
 
     const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
 
-    cont.innerHTML = mensajes.map(m => {
+    let html = '';
+    let diaAnterior = null;
+
+    mensajes.forEach((m, idx) => {
+      const fecha = new Date(m.createdAt);
+      const dia = fecha.toDateString();
+
+      if (dia !== diaAnterior) {
+        html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`;
+        diaAnterior = dia;
+      }
+
       const esMio = String(m.autorId) === String(user.id);
-      return `
+      const esUltimoMio = esMio && idx === mensajes.length - 1;
+
+      let leidoHtml = '';
+      if (esUltimoMio && m.leidoPorOtro === true) {
+        leidoHtml = `<span class="msg__leido">Leído</span>`;
+      }
+
+      const tieneTexto = !!m.texto;
+      const tieneImagen = !!m.imagen;
+      const soloImagen = tieneImagen && !tieneTexto;
+
+      html += `
         <div class="msg ${esMio ? 'msg--yo' : ''}">
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
-          <div class="msg__burbuja">
-            <div class="msg__texto">${escapeHtml(m.texto)}</div>
-            <div class="msg__hora">${horaCorta(m.createdAt)}</div>
+          <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
+            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
+            ${tieneImagen ? `
+              <div class="msg__imagen-wrapper" data-ver-imagen="${idx}">
+                <img src="${m.imagen}" alt="" loading="lazy" />
+              </div>
+            ` : ''}
+            <div class="msg__meta">
+              <span class="msg__hora">${horaCorta(m.createdAt)}</span>
+              ${esUltimoMio ? leidoHtml : ''}
+            </div>
           </div>
         </div>
       `;
-    }).join('');
+    });
+
+    cont.innerHTML = html;
+
+    // Click en imagen → modal grande
+    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagen);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
 
     if (estabaAbajo || mensajes.length <= 2) {
       cont.scrollTop = cont.scrollHeight;
     }
 
-    // Marcar como leídos en el backend
     try {
       await marcarLeidos(convId);
     } catch (err) {
@@ -329,23 +573,25 @@ export async function init() {
   }
 
   /* =========================================================
-     ENVIAR MENSAJE
+     ENVIAR MENSAJE (texto + imagen)
      ========================================================= */
   async function enviarMensajeDelPanel(convId) {
     const input = document.getElementById('chat-input-texto');
     if (!input) return;
-    const texto = input.value.trim();
-    if (!texto) return;
 
-    // Limpiar input inmediatamente para UX
+    const texto = input.value.trim();
+    const imagen = imagenBase64;
+
+    if (!texto && !imagen) return;
+
     input.value = '';
+    imagenBase64 = null;
+    ocultarPreviewImagen();
     input.focus();
 
     try {
-      await enviarMensaje(convId, texto);
-      // Refrescar chat
+      await enviarMensaje(convId, texto || null, imagen || null);
       await refrescarMensajes(convId);
-      // Refrescar lista (para actualizar el preview)
       await recargarConversaciones();
       renderListaConversaciones();
     } catch (err) {
@@ -361,7 +607,6 @@ export async function init() {
     const input = document.getElementById('buscar-usuario');
     if (input) input.value = '';
 
-    // Cargar usuarios desde el backend
     await renderUsuariosModal('');
 
     abrirModal('modal-nueva-conv');
@@ -373,13 +618,10 @@ export async function init() {
 
     cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Cargando...</p>`;
 
-    // ⚡ Cargamos TODOS los grupos públicos para descubrir usuarios
-    // (el backend no tiene endpoint de "listar usuarios")
     let usuariosDescubiertos = [];
     try {
       const { data: grupos } = await listarGrupos({ limit: 50 });
 
-      // Extraer capitanes únicos de los grupos
       const mapaUsuarios = new Map();
       grupos.forEach(g => {
         if (g.capitan && g.capitan.id !== user.id) {
@@ -461,7 +703,6 @@ export async function init() {
 
   btnNuevaConv?.addEventListener('click', abrirModalNuevaConv);
 
-  /* ---------- Búsqueda de conversaciones ---------- */
   buscarConv?.addEventListener('input', (e) => {
     filtroTexto = e.target.value;
     renderListaConversaciones();
@@ -475,5 +716,6 @@ export async function init() {
 
   return () => {
     if (intervaloRefresco) clearInterval(intervaloRefresco);
+    cerrarMenuConv();
   };
 }

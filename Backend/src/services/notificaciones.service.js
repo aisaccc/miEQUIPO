@@ -1,10 +1,6 @@
 /* =========================================================
    notificaciones.service.js — Lógica de negocio de notificaciones
-   =========================================================
-   SEGURIDAD:
-   - Todas las queries parametrizadas
-   - Solo el dueño puede ver/modificar/eliminar sus notificaciones
-   */
+   ========================================================= */
 
 import { pool } from '../config/db.js';
 
@@ -45,7 +41,6 @@ export async function listarNotificaciones(usuarioId, filtros = {}) {
 
   const where = `WHERE ${condiciones.join(' AND ')}`;
 
-  // Contar total
   const { rows: countRows } = await pool.query(
     `SELECT COUNT(*)::int AS total FROM notificaciones ${where}`,
     valores
@@ -165,19 +160,10 @@ export async function eliminarLeidas(usuarioId) {
     mensaje: `${rowCount} notificación${rowCount !== 1 ? 'es' : ''} eliminada${rowCount !== 1 ? 's' : ''}`,
   };
 }
+
 /* =========================================================
    CREAR NOTIFICACIÓN (uso interno desde otros services)
-   =========================================================
-   Esta función NO se expone al cliente (no hay endpoint).
-   Se usa desde otros services para crear notificaciones
-   automáticamente cuando ocurre algo importante.
-
-   @param {string} usuarioId - UUID del usuario que recibe la notif
-   @param {string} tipo - 'confirmacion_partido', 'inscripcion', etc.
-   @param {string} mensaje - texto visible
-   @param {string|null} link - ruta hash (ej: '#/partido/abc123')
-   @returns {Promise<object>} la notificación creada
-   */
+   ========================================================= */
 export async function crearNotificacion(usuarioId, tipo, mensaje, link = null) {
   if (!usuarioId) {
     console.warn('[notificaciones] crearNotificacion sin usuarioId');
@@ -196,16 +182,12 @@ export async function crearNotificacion(usuarioId, tipo, mensaje, link = null) {
 
 /* =========================================================
    CREAR NOTIFICACIÓN A MÚLTIPLES USUARIOS
-   =========================================================
-   Útil cuando el partido se cierra y hay que avisar a varios
-   interesados que ya no fueron elegidos.
-   */
+   ========================================================= */
 export async function crearNotificacionMultiple(usuarioIds, tipo, mensaje, link = null) {
   if (!Array.isArray(usuarioIds) || usuarioIds.length === 0) {
     return [];
   }
 
-  // Construir VALUES dinámicamente
   const values = [];
   const placeholders = [];
   let i = 1;

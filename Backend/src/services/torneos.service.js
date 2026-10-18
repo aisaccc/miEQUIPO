@@ -3,10 +3,17 @@
    ========================================================= */
 
 import { pool } from '../config/db.js';
+import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js'; // ⚡ NUEVO
 import {
   crearNotificacion,
   crearNotificacionMultiple,
 } from './notificaciones.service.js';
+import {
+  agregarMiembrosACanal,
+  quitarMiembrosDeCanal,
+  obtenerCanalDeTorneo,
+  crearCanalParaTorneo,   // ⚡ NUEVO
+} from './mensajes.service.js';
 
 /* =========================================================
    HELPERS
@@ -35,7 +42,6 @@ function formatearTorneo(row, extras = {}) {
     nivel: row.nivel,
     libreInscripcion: row.libre_inscripcion,
     tipoParticipacion: row.tipo_participacion,
-    // ⚡ NUEVO (D.5)
     sistemaClasificacion: row.sistema_clasificacion ?? 'simple',
     puntosVictoria: row.puntos_victoria,
     puntosEmpate: row.puntos_empate,
@@ -79,9 +85,6 @@ function verificarOrganizador(torneo, usuarioId) {
   }
 }
 
-/* =========================================================
-   HELPER: verificar permiso organizador / sub-organizador
-   ========================================================= */
 async function verificarPermisoResultados(client, torneo, usuarioId) {
   if (String(torneo.organizador_id) === String(usuarioId)) return;
 
@@ -99,9 +102,6 @@ async function verificarPermisoResultados(client, torneo, usuarioId) {
   }
 }
 
-/* =========================================================
-   HELPER: IDs de equipos donde el usuario es capitán o admin
-   ========================================================= */
 async function obtenerMisEquipoIds(usuarioId) {
   const { rows } = await pool.query(
     `SELECT g.id
@@ -122,9 +122,6 @@ async function obtenerMisEquipoIds(usuarioId) {
   return new Set(rows.map(r => String(r.id)));
 }
 
-/* =========================================================
-   HELPER: usuario destino de una notificación
-   ========================================================= */
 async function obtenerUsuarioDestino(client, equipoId, esIndividual) {
   if (esIndividual) return equipoId;
 
@@ -135,9 +132,6 @@ async function obtenerUsuarioDestino(client, equipoId, esIndividual) {
   return rows[0]?.capitan_id || null;
 }
 
-/* =========================================================
-   HELPER: TODOS los destinatarios de un equipo (capitán + admins)
-   ========================================================= */
 async function obtenerUsuariosDeEquipo(client, equipoId) {
   const { rows } = await client.query(
     `SELECT g.capitan_id AS usuario_id
@@ -152,9 +146,6 @@ async function obtenerUsuariosDeEquipo(client, equipoId) {
   return rows.map(r => r.usuario_id).filter(Boolean);
 }
 
-/* =========================================================
-   HELPER: nombre "lindo" para mostrar en notificaciones
-   ========================================================= */
 async function obtenerNombreMostrar(client, equipoId, esIndividual) {
   if (esIndividual) {
     const { rows } = await client.query(
@@ -171,9 +162,6 @@ async function obtenerNombreMostrar(client, equipoId, esIndividual) {
   return rows[0]?.nombre || 'Un equipo';
 }
 
-/* =========================================================
-   HELPER: destinatarios de un torneo (inscritos + pendientes)
-   ========================================================= */
 async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
   const esIndividual = tipoParticipacion === 'individual';
   const ids = new Set();
@@ -208,9 +196,6 @@ async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
   return [...ids];
 }
 
-/* =========================================================
-   HELPER: participantes de un torneo
-   ========================================================= */
 async function obtenerParticipantes(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') {
     const { rows } = await client.query(
@@ -245,9 +230,6 @@ async function obtenerParticipantes(client, torneoId, tipoParticipacion) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: lista de espera
-   ========================================================= */
 async function obtenerListaEspera(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') {
     const { rows } = await client.query(
@@ -281,9 +263,6 @@ async function obtenerListaEspera(client, torneoId, tipoParticipacion) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: invitaciones
-   ========================================================= */
 async function obtenerInvitaciones(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') return [];
 
@@ -301,9 +280,6 @@ async function obtenerInvitaciones(client, torneoId, tipoParticipacion) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: partidos (con fase, jornada, y nombres)
-   ========================================================= */
 async function obtenerPartidos(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') {
     const { rows } = await client.query(
@@ -342,9 +318,6 @@ async function obtenerPartidos(client, torneoId, tipoParticipacion) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: tabla de posiciones
-   ========================================================= */
 async function obtenerTablaPosiciones(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') {
     const { rows } = await client.query(
@@ -373,9 +346,6 @@ async function obtenerTablaPosiciones(client, torneoId, tipoParticipacion) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: jornadas
-   ========================================================= */
 async function obtenerJornadas(client, torneoId) {
   const { rows } = await client.query(
     `SELECT id, numero, nombre, fecha, created_at
@@ -387,9 +357,6 @@ async function obtenerJornadas(client, torneoId) {
   return rows;
 }
 
-/* =========================================================
-   HELPER: calcular fases del bracket según INSCRITOS
-   ========================================================= */
 function calcularFasesEliminacionPorInscritos(cantidadInscritos) {
   if (cantidadInscritos <= 2)  return ['final'];
   if (cantidadInscritos <= 4)  return ['semis', 'final'];
@@ -400,17 +367,11 @@ function calcularFasesEliminacionPorInscritos(cantidadInscritos) {
   return ['64avos', '32avos', '16avos', '8vos', 'cuartos', 'semis', 'final'];
 }
 
-/* =========================================================
-   HELPER: calcular jornadas de liga
-   ========================================================= */
 function calcularJornadasLiga(cupos, idaYVuelta) {
   const base = Math.max(1, cupos - 1);
   return idaYVuelta ? base * 2 : base;
 }
 
-/* =========================================================
-   HELPER: mezclar array (Fisher-Yates)
-   ========================================================= */
 function mezclarArray(arr) {
   const copia = [...arr];
   for (let i = copia.length - 1; i > 0; i--) {
@@ -420,9 +381,6 @@ function mezclarArray(arr) {
   return copia;
 }
 
-/* =========================================================
-   HELPER: generar fixture round-robin (Berger)
-   ========================================================= */
 function generarRoundRobin(equipoIds, idaYVuelta = false) {
   const equipos = [...equipoIds];
   const esImpar = equipos.length % 2 !== 0;
@@ -464,9 +422,6 @@ function generarRoundRobin(equipoIds, idaYVuelta = false) {
   return jornadas;
 }
 
-/* =========================================================
-   ⚡ HELPER INTERNO: armar fixture aleatorio (reutilizable)
-   ========================================================= */
 async function armarFixtureAleatorioInterno(client, torneoId, torneo) {
   if (torneo.modalidad !== 'eliminacion') {
     const err = new Error('Solo los torneos de eliminación tienen bracket');
@@ -609,7 +564,7 @@ async function armarFixtureAleatorioInterno(client, torneoId, torneo) {
 
   return {
     fases,
-    totalPartidos: partidosPrimeraFase,
+    totalPartidos: partidosPrimerasFase,
   };
 }
 
@@ -619,7 +574,7 @@ async function armarFixtureAleatorioInterno(client, torneoId, torneo) {
 export async function listarTorneos(filtros, usuarioId) {
   const {
     deporte, estado, modalidad, nivel, tipoParticipacion,
-    sistemaClasificacion,             // ⚡ NUEVO
+    sistemaClasificacion,
     soloMios, soloInscritos, busqueda,
     page = 1, limit = 20
   } = filtros;
@@ -658,7 +613,6 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
-  // ⚡ NUEVO
   if (sistemaClasificacion) {
     condiciones.push(`t.sistema_clasificacion = $${i}`);
     valores.push(sistemaClasificacion);
@@ -672,7 +626,13 @@ export async function listarTorneos(filtros, usuarioId) {
   }
 
   if (soloMios === 'true') {
-    condiciones.push(`t.organizador_id = $${i}`);
+    condiciones.push(`(
+      t.organizador_id = $${i}
+      OR EXISTS (
+        SELECT 1 FROM torneo_organizadores to2
+        WHERE to2.torneo_id = t.id AND to2.usuario_id = $${i}
+      )
+    )`);
     valores.push(usuarioId);
     i++;
   }
@@ -706,6 +666,18 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
+  // ⚡ BLOQUEO: excluir torneos de organizadores bloqueados (en cualquier dirección)
+  const bloqueados = await idsBloqueadosTotales(usuarioId);
+  if (bloqueados.length > 0) {
+    const placeholders = [];
+    for (let j = 0; j < bloqueados.length; j++) {
+      placeholders.push(`$${i}`);
+      valores.push(bloqueados[j]);
+      i++;
+    }
+    condiciones.push(`t.organizador_id NOT IN (${placeholders.join(', ')})`);
+  }
+
   const where = condiciones.length > 0
     ? `WHERE ${condiciones.join(' AND ')}`
     : '';
@@ -730,6 +702,10 @@ export async function listarTorneos(filtros, usuarioId) {
        (SELECT COUNT(*)::int FROM torneo_lista_espera WHERE torneo_id = t.id AND estado = 'pendiente') AS total_lista_espera,
        (SELECT COUNT(*)::int FROM torneo_partidos WHERE torneo_id = t.id) AS total_partidos,
        (t.organizador_id = $${idxUser}) AS soy_organizador,
+       EXISTS (
+         SELECT 1 FROM torneo_organizadores to2
+         WHERE to2.torneo_id = t.id AND to2.usuario_id = $${idxUser}
+       ) AS soy_sub_organizador,
        (
          CASE
            WHEN t.tipo_participacion = 'individual' THEN
@@ -823,6 +799,7 @@ export async function listarTorneos(filtros, usuarioId) {
         totalPartidos: row.total_partidos,
       }),
       soyOrganizador: row.soy_organizador,
+      soySubOrganizador: row.soy_sub_organizador,
       miEquipoInscrito: row.mi_equipo_inscrito,
       miSolicitudPendiente: row.mi_solicitud_pendiente,
       miInvitacionPendiente: row.mi_invitacion_pendiente,
@@ -856,6 +833,14 @@ export async function obtenerTorneo(torneoId, usuarioId) {
   }
 
   const torneo = rows[0];
+
+  // ⚡ BLOQUEO: si hay bloqueo con el organizador, no se puede ver el detalle
+  if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
+    const err = new Error('Torneo no disponible');
+    err.status = 403;
+    throw err;
+  }
+
   const tipo = torneo.tipo_participacion || 'equipo';
   const esOrganizador = String(torneo.organizador_id) === String(usuarioId);
 
@@ -871,6 +856,30 @@ export async function obtenerTorneo(torneoId, usuarioId) {
      WHERE to2.torneo_id = $1`,
     [torneoId]
   );
+
+  /* ⚡ D.3: invitaciones pendientes a sub-organizadores (solo para el org principal) */
+  let invitacionesOrganizador = [];
+  if (esOrganizador) {
+    const { rows: invRows } = await pool.query(
+      `SELECT toi.invitado_id AS usuario_id, toi.permisos, toi.created_at AS creado,
+              u.nombre, u.username, u.avatar
+       FROM torneo_organizadores_invitaciones toi
+       JOIN usuarios u ON u.id = toi.invitado_id
+       WHERE toi.torneo_id = $1 AND toi.estado = 'pendiente'
+       ORDER BY toi.created_at DESC`,
+      [torneoId]
+    );
+    invitacionesOrganizador = invRows;
+  }
+
+  /* ⚡ D.3: ¿tengo yo una invitación pendiente? */
+  const { rows: miInvRows } = await pool.query(
+    `SELECT id, permisos, created_at AS creado
+     FROM torneo_organizadores_invitaciones
+     WHERE torneo_id = $1 AND invitado_id = $2 AND estado = 'pendiente'`,
+    [torneoId, usuarioId]
+  );
+  const miInvitacionOrganizador = miInvRows[0] || null;
 
   const partidos = await obtenerPartidos(pool, torneoId, tipo);
   const jornadas = await obtenerJornadas(pool, torneoId);
@@ -929,7 +938,7 @@ export async function obtenerTorneo(torneoId, usuarioId) {
   let listaEsperaVisible;
   let invitacionesVisibles;
 
-  if (esOrganizador) {
+  if (esOrganizador || soySubOrganizador) {
     listaEsperaVisible = listaEspera;
     invitacionesVisibles = invitaciones;
   } else if (tipo === 'individual') {
@@ -964,6 +973,7 @@ export async function obtenerTorneo(torneoId, usuarioId) {
     listaEspera: listaEsperaVisible,
     invitaciones: invitacionesVisibles,
     organizadores: esOrganizador ? organizadores : [],
+    invitacionesOrganizador,
     partidos,
     jornadas,
     tablaPosiciones,
@@ -977,6 +987,7 @@ export async function obtenerTorneo(torneoId, usuarioId) {
     miSolicitudPendienteDetalle,
     miInvitacionPendiente,
     miInvitacionPendienteDetalle,
+    miInvitacionOrganizador,
   };
 }
 
@@ -990,7 +1001,7 @@ export async function crearTorneo(datos, usuarioId) {
     cuposEquipos, precio,
     modalidad, nivel, libreInscripcion,
     tipoParticipacion, idaYVuelta, autoFixture,
-    sistemaClasificacion,             // ⚡ NUEVO
+    sistemaClasificacion,
     puntosVictoria, puntosEmpate, puntosDerrota,
     permiteEmpate, incluyeEstadisticas, equiposClasifican,
   } = datos;
@@ -1038,15 +1049,17 @@ export async function crearTorneo(datos, usuarioId) {
 
   const torneo = rows[0];
 
+  // ⚡ Crear el canal del torneo + agregar al organizador como miembro
+  const client = await pool.connect();
   try {
-    await pool.query(
-      `INSERT INTO canales (id, tipo, ref_id, nombre, icono)
-       VALUES ($1, 'torneo', $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      [canalChatId, torneo.id, torneo.nombre, torneo.emoji || '🏆']
-    );
+    await client.query('BEGIN');
+    await crearCanalParaTorneo(client, torneo, usuarioId);
+    await client.query('COMMIT');
   } catch (err) {
+    await client.query('ROLLBACK');
     console.warn('[torneos] No se pudo crear canal de chat:', err.message);
+  } finally {
+    client.release();
   }
 
   return obtenerTorneo(torneo.id, usuarioId);
@@ -1062,7 +1075,7 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
     await client.query('BEGIN');
 
     const torneoAntes = await obtenerTorneoOFallar(client, torneoId);
-    verificarOrganizador(torneoAntes, usuarioId);
+    await verificarPermisoResultados(client, torneoAntes, usuarioId);
 
     if (cambios.cuposEquipos !== undefined) {
       const { rows: equipos } = await client.query(
@@ -1123,7 +1136,7 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       tipoParticipacion: 'tipo_participacion',
       idaYVuelta: 'ida_y_vuelta',
       autoFixture: 'auto_fixture',
-      sistemaClasificacion: 'sistema_clasificacion',    // ⚡ NUEVO
+      sistemaClasificacion: 'sistema_clasificacion',
       puntosVictoria: 'puntos_victoria',
       puntosEmpate: 'puntos_empate',
       puntosDerrota: 'puntos_derrota',
@@ -1219,6 +1232,17 @@ export async function eliminarTorneo(torneoId, usuarioId) {
       `DELETE FROM torneos WHERE id = $1`,
       [torneoId]
     );
+        // ⚡ Borrar el canal del torneo y sus miembros
+    if (torneo.canal_chat_id) {
+      await client.query(
+        `DELETE FROM canal_miembros WHERE canal_id = $1`,
+        [torneo.canal_chat_id]
+      );
+      await client.query(
+        `DELETE FROM canales WHERE id = $1`,
+        [torneo.canal_chat_id]
+      );
+    }
 
     if (destinatarios.length > 0) {
       await crearNotificacionMultiple(
@@ -1238,6 +1262,7 @@ export async function eliminarTorneo(torneoId, usuarioId) {
     client.release();
   }
 }
+
 /* =========================================================
    CERRAR TORNEO + AUTO-FIXTURE
    ========================================================= */
@@ -1248,7 +1273,7 @@ export async function cerrarTorneo(torneoId, usuarioId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
-    verificarOrganizador(torneo, usuarioId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     if (torneo.estado !== 'inscripcion') {
       const err = new Error('El torneo no está en período de inscripción');
@@ -1321,6 +1346,14 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
+      const err = new Error('No podés inscribirte en este torneo');
+      err.status = 403;
+      throw err;
+    }
+
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
 
@@ -1389,6 +1422,12 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
              ON CONFLICT (torneo_id, equipo_id) DO NOTHING`,
             [torneoId, usuarioId]
           );
+        }
+
+        // ⚡ Agregar al canal del torneo (individual → solo él)
+        const canalIdInd = await obtenerCanalDeTorneo(torneoId);
+        if (canalIdInd) {
+          await agregarMiembrosACanal(client, canalIdInd, [usuarioId]);
         }
 
         if (inscritos + 1 >= torneo.cupos_equipos) {
@@ -1509,6 +1548,21 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
         );
       }
 
+      // ⚡ Agregar al canal del torneo (equipo → todos sus miembros)
+      const canalIdEq = await obtenerCanalDeTorneo(torneoId);
+      if (canalIdEq) {
+        const { rows: miembrosEq } = await client.query(
+          `SELECT gm.usuario_id
+           FROM grupo_miembros gm
+           WHERE gm.grupo_id = $1`,
+          [equipoId]
+        );
+        const uids = miembrosEq.map(r => r.usuario_id);
+        if (uids.length > 0) {
+          await agregarMiembrosACanal(client, canalIdEq, uids);
+        }
+      }
+
       if (inscritos + 1 >= torneo.cupos_equipos) {
         await client.query(
           `UPDATE torneos SET estado = 'en_curso' WHERE id = $1`,
@@ -1570,6 +1624,14 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
+      const err = new Error('No podés interactuar con este torneo');
+      err.status = 403;
+      throw err;
+    }
+
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
 
@@ -1607,6 +1669,25 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
       `DELETE FROM torneo_tabla_posiciones WHERE torneo_id = $1 AND equipo_id = $2`,
       [torneoId, idEfectivo]
     );
+
+    // ⚡ Quitar del canal del torneo
+    const canalIdCancel = await obtenerCanalDeTorneo(torneoId);
+    if (canalIdCancel && r1 > 0) {
+      if (esIndividual) {
+        await quitarMiembrosDeCanal(client, canalIdCancel, [usuarioId]);
+      } else {
+        const { rows: miembrosEq } = await client.query(
+          `SELECT gm.usuario_id
+           FROM grupo_miembros gm
+           WHERE gm.grupo_id = $1`,
+          [idEfectivo]
+        );
+        const uids = miembrosEq.map(r => r.usuario_id);
+        if (uids.length > 0) {
+          await quitarMiembrosDeCanal(client, canalIdCancel, uids);
+        }
+      }
+    }
 
     const { rows: conteo } = await client.query(
       `SELECT COUNT(*)::int AS total FROM torneo_equipos WHERE torneo_id = $1`,
@@ -1658,7 +1739,15 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
-    verificarOrganizador(torneo, usuarioId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
+
+    // ⚡ BLOQUEO: si hay bloqueo con el solicitante, no gestionar
+    // (usuarioId puede ser el organizador y no se bloquea a sí mismo, pero por si acaso)
+    if (await estanBloqueados(usuarioId, equipoId)) {
+      const err = new Error('No podés gestionar solicitudes de este usuario');
+      err.status = 403;
+      throw err;
+    }
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
@@ -1737,6 +1826,25 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
       );
     }
 
+    // ⚡ Agregar al canal del torneo
+    const canalIdApr = await obtenerCanalDeTorneo(torneoId);
+    if (canalIdApr) {
+      if (esIndividual) {
+        await agregarMiembrosACanal(client, canalIdApr, [equipoId]);
+      } else {
+        const { rows: miembrosEq } = await client.query(
+          `SELECT gm.usuario_id
+           FROM grupo_miembros gm
+           WHERE gm.grupo_id = $1`,
+          [equipoId]
+        );
+        const uids = miembrosEq.map(r => r.usuario_id);
+        if (uids.length > 0) {
+          await agregarMiembrosACanal(client, canalIdApr, uids);
+        }
+      }
+    }
+
     if (conteo[0].total + 1 >= torneo.cupos_equipos) {
       await client.query(
         `UPDATE torneos SET estado = 'en_curso' WHERE id = $1`,
@@ -1775,16 +1883,7 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
 }
 
 /* =========================================================
-   EXPULSAR
-   ========================================================= */
-/* =========================================================
    EXPULSAR PARTICIPANTE (organizador)
-   =========================================================
-   - Bloquea si el torneo ya arrancó (estado !== 'inscripcion'),
-     o si el fixture está bloqueado, o si hay partidos generados.
-   - Notifica a capitán + admins si es equipo. Al usuario directo
-     si es torneo individual.
-   - Borra también de lista de espera si había algo pendiente.
    ========================================================= */
 export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
   const client = await pool.connect();
@@ -1793,12 +1892,11 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
-    verificarOrganizador(torneo, usuarioId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
 
-    /* ---------- Bloqueos ---------- */
     if (torneo.estado !== 'inscripcion') {
       const err = new Error('No podés expulsar participantes con el torneo ya iniciado o finalizado');
       err.status = 400;
@@ -1825,10 +1923,8 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       throw err;
     }
 
-    /* ---------- Nombre para la notificación ---------- */
     const nombreMostrar = await obtenerNombreMostrar(client, equipoId, esIndividual);
 
-    /* ---------- Usuarios a notificar ---------- */
     let usuariosDestino = [];
     if (esIndividual) {
       usuariosDestino = [equipoId];
@@ -1836,7 +1932,6 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       usuariosDestino = await obtenerUsuariosDeEquipo(client, equipoId);
     }
 
-    /* ---------- Borrar de torneo_equipos ---------- */
     const { rowCount } = await client.query(
       `DELETE FROM torneo_equipos WHERE torneo_id = $1 AND equipo_id = $2`,
       [torneoId, equipoId]
@@ -1848,7 +1943,6 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       throw err;
     }
 
-    /* ---------- Limpiar tablas relacionadas ---------- */
     await client.query(
       `DELETE FROM torneo_tabla_posiciones WHERE torneo_id = $1 AND equipo_id = $2`,
       [torneoId, equipoId]
@@ -1864,7 +1958,25 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       [torneoId, equipoId]
     );
 
-    /* ---------- Si el torneo estaba lleno, vuelve a inscripción ---------- */
+    // ⚡ Quitar del canal del torneo
+    const canalIdExp = await obtenerCanalDeTorneo(torneoId);
+    if (canalIdExp) {
+      if (esIndividual) {
+        await quitarMiembrosDeCanal(client, canalIdExp, [equipoId]);
+      } else {
+        const { rows: miembrosEq } = await client.query(
+          `SELECT gm.usuario_id
+           FROM grupo_miembros gm
+           WHERE gm.grupo_id = $1`,
+          [equipoId]
+        );
+        const uids = miembrosEq.map(r => r.usuario_id);
+        if (uids.length > 0) {
+          await quitarMiembrosDeCanal(client, canalIdExp, uids);
+        }
+      }
+    }
+
     const { rows: conteo } = await client.query(
       `SELECT COUNT(*)::int AS total FROM torneo_equipos WHERE torneo_id = $1`,
       [torneoId]
@@ -1879,7 +1991,6 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
 
     await client.query('COMMIT');
 
-    /* ---------- Notificar ---------- */
     if (usuariosDestino.length > 0) {
       try {
         const mensaje = esIndividual
@@ -1905,6 +2016,7 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     client.release();
   }
 }
+
 /* =========================================================
    INVITAR EQUIPO
    ========================================================= */
@@ -1915,7 +2027,18 @@ export async function invitarEquipo(torneoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
-    verificarOrganizador(torneo, usuarioId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
+
+    // ⚡ BLOQUEO: el organizador no puede invitar a un equipo cuyo capitán lo tenga bloqueado
+    const { rows: capRows } = await client.query(
+      `SELECT capitan_id FROM grupos WHERE id = $1`,
+      [equipoId]
+    );
+    if (capRows[0] && await estanBloqueados(usuarioId, capRows[0].capitan_id)) {
+      const err = new Error('No podés invitar a ese equipo');
+      err.status = 403;
+      throw err;
+    }
 
     if ((torneo.tipo_participacion || 'equipo') === 'individual') {
       const err = new Error('Este torneo es individual. No se pueden invitar equipos.');
@@ -1975,7 +2098,7 @@ export async function invitarEquipo(torneoId, usuarioId, equipoId) {
 }
 
 /* =========================================================
-   RESPONDER INVITACIÓN
+   RESPONDER INVITACIÓN (a equipo)
    ========================================================= */
 export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar) {
   const client = await pool.connect();
@@ -1984,6 +2107,13 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
+      const err = new Error('No podés responder a esta invitación');
+      err.status = 403;
+      throw err;
+    }
 
     if ((torneo.tipo_participacion || 'equipo') === 'individual') {
       const err = new Error('Este torneo es individual. No maneja invitaciones.');
@@ -2062,6 +2192,21 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
       );
     }
 
+    // ⚡ Agregar al canal del torneo
+    const canalIdInv = await obtenerCanalDeTorneo(torneoId);
+    if (canalIdInv) {
+      const { rows: miembrosEq } = await client.query(
+        `SELECT gm.usuario_id
+         FROM grupo_miembros gm
+         WHERE gm.grupo_id = $1`,
+        [equipoId]
+      );
+      const uids = miembrosEq.map(r => r.usuario_id);
+      if (uids.length > 0) {
+        await agregarMiembrosACanal(client, canalIdInv, uids);
+      }
+    }
+
     if (conteo[0].total + 1 >= torneo.cupos_equipos) {
       await client.query(
         `UPDATE torneos SET estado = 'en_curso' WHERE id = $1`,
@@ -2092,9 +2237,9 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
 }
 
 /* =========================================================
-   SUB-ORGANIZADORES
+   SUB-ORGANIZADORES — INVITAR
    ========================================================= */
-export async function agregarOrganizador(torneoId, usuarioId, nuevoUsuarioId, permisos) {
+export async function invitarOrganizador(torneoId, usuarioId, invitadoId, permisos) {
   const client = await pool.connect();
 
   try {
@@ -2103,22 +2248,84 @@ export async function agregarOrganizador(torneoId, usuarioId, nuevoUsuarioId, pe
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     verificarOrganizador(torneo, usuarioId);
 
-    if (String(torneo.organizador_id) === String(nuevoUsuarioId)) {
+    if (String(torneo.organizador_id) === String(invitadoId)) {
       const err = new Error('Ese usuario ya es el organizador principal');
       err.status = 400;
       throw err;
     }
 
-    await client.query(
-      `INSERT INTO torneo_organizadores (torneo_id, usuario_id, permisos)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (torneo_id, usuario_id)
-       DO UPDATE SET permisos = EXCLUDED.permisos`,
-      [torneoId, nuevoUsuarioId, permisos || 'resultados']
+    // ⚡ BLOQUEO: no invitar a un usuario bloqueado
+    if (await estanBloqueados(usuarioId, invitadoId)) {
+      const err = new Error('No podés invitar a este usuario');
+      err.status = 403;
+      throw err;
+    }
+
+    const { rows: yaSub } = await client.query(
+      `SELECT 1 FROM torneo_organizadores
+       WHERE torneo_id = $1 AND usuario_id = $2`,
+      [torneoId, invitadoId]
     );
+    if (yaSub.length > 0) {
+      const err = new Error('Ese usuario ya es sub-organizador del torneo');
+      err.status = 409;
+      throw err;
+    }
+
+    const { rows: yaInvitado } = await client.query(
+      `SELECT 1 FROM torneo_organizadores_invitaciones
+       WHERE torneo_id = $1 AND invitado_id = $2 AND estado = 'pendiente'`,
+      [torneoId, invitadoId]
+    );
+    if (yaInvitado.length > 0) {
+      const err = new Error('Ya le enviaste una invitación a ese usuario');
+      err.status = 409;
+      throw err;
+    }
+
+    const { rows: existe } = await client.query(
+      `SELECT id FROM usuarios WHERE id = $1 AND activo = TRUE`,
+      [invitadoId]
+    );
+    if (!existe[0]) {
+      const err = new Error('El usuario invitado no existe');
+      err.status = 404;
+      throw err;
+    }
+
+    await client.query(
+      `INSERT INTO torneo_organizadores_invitaciones
+         (torneo_id, invitado_id, invitado_por, permisos)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (torneo_id, invitado_id)
+       DO UPDATE SET
+         estado = 'pendiente',
+         permisos = EXCLUDED.permisos,
+         invitado_por = EXCLUDED.invitado_por,
+         created_at = NOW(),
+         resuelta_en = NULL`,
+      [torneoId, invitadoId, usuarioId, permisos || 'completo']
+    );
+        // ⚡ Agregar al sub-organizador al canal del torneo
+    const canalIdSubOrg = await obtenerCanalDeTorneo(torneoId);
+    if (canalIdSubOrg) {
+      await agregarMiembrosACanal(client, canalIdSubOrg, [usuarioId]);
+    }
 
     await client.query('COMMIT');
-    return { ok: true, mensaje: 'Sub-organizador agregado' };
+
+    try {
+      await crearNotificacion(
+        invitadoId,
+        'invitacion_organizador',
+        `Te invitaron a ser sub-organizador de "${torneo.nombre}"`,
+        `#/torneo/${torneoId}`
+      );
+    } catch (e) {
+      console.warn('[torneos] No se pudo notificar invitación a organizador:', e.message);
+    }
+
+    return { ok: true, mensaje: 'Invitación enviada' };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -2127,6 +2334,154 @@ export async function agregarOrganizador(torneoId, usuarioId, nuevoUsuarioId, pe
   }
 }
 
+/* =========================================================
+   SUB-ORGANIZADORES — RESPONDER INVITACIÓN
+   ========================================================= */
+export async function responderInvitacionOrganizador(torneoId, usuarioId, aceptar) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
+
+    if (String(torneo.organizador_id) === String(usuarioId)) {
+      const err = new Error('Vos ya sos el organizador principal');
+      err.status = 400;
+      throw err;
+    }
+
+    // ⚡ BLOQUEO con el organizador
+    if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
+      const err = new Error('No podés responder a esta invitación');
+      err.status = 403;
+      throw err;
+    }
+
+    const { rows } = await client.query(
+      `SELECT * FROM torneo_organizadores_invitaciones
+       WHERE torneo_id = $1 AND invitado_id = $2 AND estado = 'pendiente'`,
+      [torneoId, usuarioId]
+    );
+
+    if (!rows[0]) {
+      const err = new Error('No tenés una invitación pendiente para este torneo');
+      err.status = 404;
+      throw err;
+    }
+
+    const inv = rows[0];
+
+    if (!aceptar) {
+      await client.query(
+        `UPDATE torneo_organizadores_invitaciones
+         SET estado = 'rechazada', resuelta_en = NOW()
+         WHERE id = $1`,
+        [inv.id]
+      );
+      await client.query('COMMIT');
+
+      try {
+        await crearNotificacion(
+          torneo.organizador_id,
+          'respuesta_invitacion_organizador',
+          `Rechazaron tu invitación a organizar "${torneo.nombre}"`,
+          `#/torneo/${torneoId}`
+        );
+      } catch (e) {
+        console.warn('[torneos] No se pudo notificar rechazo:', e.message);
+      }
+
+      return { ok: true, mensaje: 'Invitación rechazada' };
+    }
+
+    await client.query(
+      `UPDATE torneo_organizadores_invitaciones
+       SET estado = 'aceptada', resuelta_en = NOW()
+       WHERE id = $1`,
+      [inv.id]
+    );
+
+    await client.query(
+      `INSERT INTO torneo_organizadores (torneo_id, usuario_id, permisos)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (torneo_id, usuario_id)
+       DO UPDATE SET permisos = EXCLUDED.permisos`,
+      [torneoId, usuarioId, inv.permisos || 'completo']
+    );
+
+    await client.query('COMMIT');
+
+    try {
+      await crearNotificacion(
+        torneo.organizador_id,
+        'respuesta_invitacion_organizador',
+        `Aceptaron tu invitación a organizar "${torneo.nombre}"`,
+        `#/torneo/${torneoId}`
+      );
+    } catch (e) {
+      console.warn('[torneos] No se pudo notificar aceptación:', e.message);
+    }
+
+    return { ok: true, mensaje: 'Ahora sos sub-organizador' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* =========================================================
+   SUB-ORGANIZADORES — CANCELAR INVITACIÓN
+   ========================================================= */
+export async function cancelarInvitacionOrganizador(torneoId, usuarioId, invitadoId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
+    verificarOrganizador(torneo, usuarioId);
+
+    const { rowCount } = await client.query(
+      `UPDATE torneo_organizadores_invitaciones
+       SET estado = 'cancelada', resuelta_en = NOW()
+       WHERE torneo_id = $1 AND invitado_id = $2 AND estado = 'pendiente'`,
+      [torneoId, invitadoId]
+    );
+
+    if (rowCount === 0) {
+      const err = new Error('No hay una invitación pendiente para ese usuario');
+      err.status = 404;
+      throw err;
+    }
+
+    await client.query('COMMIT');
+
+    try {
+      await crearNotificacion(
+        invitadoId,
+        'respuesta_invitacion_organizador',
+        `El organizador de "${torneo.nombre}" canceló tu invitación`,
+        `#/torneo/${torneoId}`
+      );
+    } catch (e) {
+      console.warn('[torneos] No se pudo notificar cancelación:', e.message);
+    }
+
+    return { ok: true, mensaje: 'Invitación cancelada' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* =========================================================
+   SUB-ORGANIZADORES — QUITAR
+   ========================================================= */
 export async function quitarOrganizador(torneoId, usuarioId, usuarioIdQuitar) {
   const client = await pool.connect();
 
@@ -2135,6 +2490,12 @@ export async function quitarOrganizador(torneoId, usuarioId, usuarioIdQuitar) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     verificarOrganizador(torneo, usuarioId);
+
+    if (String(torneo.organizador_id) === String(usuarioIdQuitar)) {
+      const err = new Error('No podés quitarte a vos mismo del torneo');
+      err.status = 400;
+      throw err;
+    }
 
     const { rowCount } = await client.query(
       `DELETE FROM torneo_organizadores
@@ -2307,9 +2668,6 @@ export async function eliminarJornada(torneoId, jornadaId, usuarioId) {
   }
 }
 
-/* =========================================================
-   GUARDAR JORNADA BULK
-   ========================================================= */
 export async function guardarJornadaBulk(torneoId, jornadaId, usuarioId, datos) {
   const client = await pool.connect();
 
@@ -2386,7 +2744,6 @@ export async function guardarJornadaBulk(torneoId, jornadaId, usuarioId, datos) 
         }
 
         if (p.resultado !== undefined) {
-          // ⚡ Ahora pasa sistema_clasificacion
           const ganadorCalc = calcularGanadorPorDeporte(
             torneo.deporte,
             p.resultado,
@@ -2432,6 +2789,7 @@ export async function guardarJornadaBulk(torneoId, jornadaId, usuarioId, datos) 
     client.release();
   }
 }
+
 /* =========================================================
    FIXTURE — CRUD de partidos
    ========================================================= */
@@ -2618,9 +2976,6 @@ export async function eliminarPartidoTorneo(torneoId, partidoId, usuarioId) {
   }
 }
 
-/* =========================================================
-   EDITAR CRUCE INDIVIDUAL (eliminación)
-   ========================================================= */
 export async function editarCruce(torneoId, partidoId, usuarioId, cambios) {
   const client = await pool.connect();
 
@@ -2800,9 +3155,6 @@ export async function generarFixtureLiga(torneoId, usuarioId) {
   }
 }
 
-/* =========================================================
-   ARMAR FIXTURE ALEATORIO (endpoint público)
-   ========================================================= */
 export async function armarFixtureAleatorio(torneoId, usuarioId) {
   const client = await pool.connect();
 
@@ -2830,9 +3182,6 @@ export async function armarFixtureAleatorio(torneoId, usuarioId) {
   }
 }
 
-/* =========================================================
-   ARMAR FIXTURE MANUAL
-   ========================================================= */
 export async function armarFixtureManual(torneoId, usuarioId, datos) {
   const client = await pool.connect();
 
@@ -2993,9 +3342,6 @@ export async function armarFixtureManual(torneoId, usuarioId, datos) {
   }
 }
 
-/* =========================================================
-   CONFIRMAR FIXTURE
-   ========================================================= */
 export async function confirmarFixture(torneoId, usuarioId) {
   const client = await pool.connect();
 
@@ -3023,7 +3369,14 @@ export async function confirmarFixture(torneoId, usuarioId) {
     }
 
     await client.query(
-      `UPDATE torneos SET fixture_bloqueado = TRUE, updated_at = NOW() WHERE id = $1`,
+      `UPDATE torneos
+       SET fixture_bloqueado = TRUE,
+           estado = CASE
+             WHEN estado = 'inscripcion' THEN 'en_curso'
+             ELSE estado
+           END,
+           updated_at = NOW()
+       WHERE id = $1`,
       [torneoId]
     );
 
@@ -3037,15 +3390,6 @@ export async function confirmarFixture(torneoId, usuarioId) {
   }
 }
 
-/* =========================================================
-   ⚡ CARGAR RESULTADO con auto-avance
-   =========================================================
-   Calcula el ganador según:
-   - sistema_clasificacion = 'tiempo' → menor tiempo
-   - sistema_clasificacion = 'puntos' → mayor puntaje
-   - sistema_clasificacion = 'simple' → según deporte
-     (sets / penales / directo)
-   ========================================================= */
 export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
   const client = await pool.connect();
 
@@ -3068,7 +3412,6 @@ export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
 
     const partido = rows[0];
 
-    // ⚡ Pasa también el sistema de clasificación
     const resultadoFinal = calcularGanadorPorDeporte(
       torneo.deporte,
       datos.resultado,
@@ -3134,36 +3477,16 @@ export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
   }
 }
 
-/* =========================================================
-   ⚡ CALCULAR GANADOR POR DEPORTE / SISTEMA
-   =========================================================
-   Devuelve 'local' | 'visitante' | 'empate' | null.
-
-   Reglas:
-   - SISTEMA TIEMPO (natación, atletismo, ciclismo):
-       resultado.participantes = [{ id, tiempoSeg }]
-       Gana el MENOR tiempoSeg.
-   - SISTEMA PUNTOS (escalada, surf, boxeo):
-       resultado.participantes = [{ id, puntos }]
-       Gana el MAYOR puntaje.
-   - Sets (vóley, tenis, etc.) → cuenta sets ganados por cada lado.
-   - Simple con penales (fútbol, hockey, handball) → si empatan, mira penales.
-   - Simple sin empate (básquet, etc.) → compara directo.
-   ========================================================= */
 function calcularGanadorPorDeporte(deporte, resultado, sistemaClasificacion = 'simple') {
   if (!resultado) return null;
 
-  /* ---------- SISTEMA TIEMPO ---------- */
   if (sistemaClasificacion === 'tiempo') {
     return calcularGanadorPorTiempo(resultado);
   }
 
-  /* ---------- SISTEMA PUNTOS ---------- */
   if (sistemaClasificacion === 'puntos') {
     return calcularGanadorPorPuntos(resultado);
   }
-
-  /* ---------- SISTEMA SIMPLE (comportamiento previo) ---------- */
 
   const DEPORTES_SETS = new Set([
     'Vóleibol', 'Bádminton', 'Tenis de mesa', 'Tenis', 'Pádel', 'Squash',
@@ -3173,7 +3496,6 @@ function calcularGanadorPorDeporte(deporte, resultado, sistemaClasificacion = 's
     'Fútbol', 'Hockey', 'Handball',
   ]);
 
-  /* ---------- SETS ---------- */
   if (DEPORTES_SETS.has(deporte) && Array.isArray(resultado.sets)) {
     let setsLocal = 0;
     let setsVisitante = 0;
@@ -3193,7 +3515,6 @@ function calcularGanadorPorDeporte(deporte, resultado, sistemaClasificacion = 's
     return 'empate';
   }
 
-  /* ---------- SIMPLE (CON O SIN PENALES) ---------- */
   const local = Number(
     resultado.goles_local ??
     resultado.puntos_local ??
@@ -3221,9 +3542,6 @@ function calcularGanadorPorDeporte(deporte, resultado, sistemaClasificacion = 's
   return 'empate';
 }
 
-/* =========================================================
-   ⚡ GANADOR POR TIEMPO
-   ========================================================= */
 function calcularGanadorPorTiempo(resultado) {
   const partes = Array.isArray(resultado.participantes) ? resultado.participantes : [];
   if (partes.length < 2) return null;
@@ -3251,9 +3569,6 @@ function calcularGanadorPorTiempo(resultado) {
   return 'visitante';
 }
 
-/* =========================================================
-   ⚡ GANADOR POR PUNTOS
-   ========================================================= */
 function calcularGanadorPorPuntos(resultado) {
   const partes = Array.isArray(resultado.participantes) ? resultado.participantes : [];
   if (partes.length < 2) return null;
@@ -3281,13 +3596,7 @@ function calcularGanadorPorPuntos(resultado) {
   return 'visitante';
 }
 
-/* =========================================================
-   RECALCULAR TABLA DE POSICIONES
-   =========================================================
-   ⚡ Si el torneo es tiempo o puntos, no hay tabla clásica.
-   ========================================================= */
 async function recalcularTablaPosiciones(client, torneoId) {
-  // Los torneos por tiempo/puntos no tienen tabla de posiciones clásica
   const { rows: metaRows } = await client.query(
     `SELECT sistema_clasificacion FROM torneos WHERE id = $1`,
     [torneoId]

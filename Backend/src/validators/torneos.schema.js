@@ -334,3 +334,21 @@ export const schemaUuidParam = uuidValido;
 export const schemaEquipoIdParam = z
   .string()
   .max(100, 'ID de equipo inválido');
+
+
+/* =========================================================
+   SUB-ORGANIZADORES — INVITACIÓN (D.3)
+   ========================================================= */
+
+/* POST /api/torneos/:id/organizadores/invitaciones */
+export const schemaInvitarOrganizador = z.object({
+  usuarioId: uuidValido,
+  permisos: permisosValidos,
+}).strict();
+
+/* PATCH /api/torneos/:id/organizadores/invitaciones/responder */
+export const schemaResponderInvitacionOrganizador = z.object({
+  aceptar: z.boolean({
+    required_error: 'Tenés que indicar si aceptás o rechazás',
+  }),
+}).strict();

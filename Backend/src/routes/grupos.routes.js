@@ -1,16 +1,15 @@
 /* =========================================================
    grupos.routes.js — Rutas de grupos (equipos + comunidades)
-   =========================================================
    Base: /api/grupos
-*/
+   ========================================================= */
 
 import { Router } from 'express';
 import * as gruposController from '../controllers/grupos.controller.js';
+import * as publicacionesController from '../controllers/publicaciones.controller.js';
 import { requiereAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-/* Todas las rutas requieren autenticación */
 router.use(requiereAuth);
 
 /* =========================================================
@@ -50,5 +49,11 @@ router.patch('/:id/miembros/:usuarioId/rol', gruposController.cambiarRolMiembro)
    ========================================================= */
 router.get('/:id/solicitudes', gruposController.listarSolicitudes);
 router.patch('/:id/solicitudes/:usuarioId', gruposController.gestionarSolicitud);
+
+/* =========================================================
+   PUBLICACIONES (Fase E.4)
+   ========================================================= */
+router.get('/:grupoId/publicaciones', publicacionesController.listarPorGrupo);
+router.post('/:grupoId/publicaciones', publicacionesController.crearEnGrupo);
 
 export default router;

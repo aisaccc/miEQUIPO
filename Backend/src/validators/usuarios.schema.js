@@ -105,6 +105,30 @@ const deporteItem = z.object({
    ========================================================= */
 
 /* ---------- PATCH /api/usuarios/me ---------- */
+/* =========================================================
+   HERO COLOR — presets permitidos
+   ========================================================= */
+const HERO_COLORS = [
+  'navy', 'black', 'carbon', 'blue', 'forest',
+  'purple', 'wine', 'coffee', 'mustard', 'red',
+  'orange', 'white',
+];
+
+const heroColorValido = z.enum(HERO_COLORS, {
+  errorMap: () => ({ message: 'Color de hero inválido' })
+});
+
+const statsHeroBaseSchema = z.object({
+  partidos: z.number().int().min(0).max(1_000_000).optional(),
+}).strict();
+
+const statsHeroPrivadasSchema = z.object({
+  partidos: z.boolean().optional(),
+  torneos:  z.boolean().optional(),
+  equipos:  z.boolean().optional(),
+}).strict();
+
+/* ---------- PATCH /api/usuarios/me ---------- */
 export const schemaActualizarPerfil = z.object({
   nombre: nombreValido.optional(),
   username: usernameValido.optional(),
@@ -113,6 +137,10 @@ export const schemaActualizarPerfil = z.object({
   pais: paisValido,
   edad: edadValida,
   avatar: avatarValido,
+  // ⚡ Nuevos
+  heroColor: heroColorValido.optional(),
+  statsHeroBase: statsHeroBaseSchema.optional(),
+  statsHeroPrivadas: statsHeroPrivadasSchema.optional(),
 }).strict();
 
 /* ---------- PATCH /api/usuarios/me/deportes ---------- */
@@ -148,7 +176,17 @@ export const schemaEliminarCuenta = z.object({
       errorMap: () => ({ message: 'Escribí exactamente "ELIMINAR"' })
     }),
 }).strict();
-
+/* =========================================================
+   BUSCAR USUARIOS
+   ========================================================= */
+export const schemaBuscarUsuarios = z.object({
+  q: z
+    .string({ required_error: 'Ingresá un término de búsqueda' })
+    .min(2, 'Mínimo 2 caracteres')
+    .max(80, 'Máximo 80 caracteres')
+    .transform(v => v.trim()),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+}).strict();
 /* ---------- Param :id (UUID) ---------- */
 export const schemaUuidParam = z
   .string()

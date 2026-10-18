@@ -2,6 +2,8 @@ import { getSesion } from '../auth.js';
 import { formatearFecha, toast, abrirModal, cerrarModal } from '../components.js';
 import { listarGrupos, obtenerGrupo } from '../services/grupos.service.js';
 import { api } from '../api.js';
+import { ICONOS } from '../utils/iconos.js';
+import { renderGrupoPublico } from '../utils/grupo-publico.js';
 import {
   obtenerPartido,
   editarPartido as editarPartidoAPI,
@@ -31,20 +33,17 @@ export async function init(params = {}) {
   const contenedor = document.getElementById('detalle-partido');
   if (!contenedor || !id) return null;
 
-  /* ---------- MODALES ---------- */
   const modalEditar            = document.getElementById('modal-editar-partido');
   const modalPostulantes       = document.getElementById('modal-equipos-postulantes');
   const modalVerEquipo         = document.getElementById('modal-ver-equipo');
   const modalConfirmarPartido  = document.getElementById('modal-confirmar-partido');
 
-  /* ---------- ESTADO LOCAL ---------- */
   let partido = null;
   let misEquipos = [];
   let interesados = [];
   let interesadoSeleccionado = null;
   let confirmacionPendiente = null;
 
-  /* ---------- HELPERS ---------- */
   function esDeEquipo(p) { return p.tipoPartido === 'equipo'; }
   function esModoOrganizar(p) { return p.estadoPartido === 'buscando_jugadores'; }
   function estaConfirmado(p) { return p.estadoPartido === 'confirmado'; }
@@ -73,39 +72,40 @@ export async function init(params = {}) {
   }
 
   function renderEmoji(emoji, size = 32) {
-    if (!emoji) return '🏅';
+    if (!emoji) return ICONOS.medalla;
     if (typeof emoji === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(emoji)) {
       return `<img src="${emoji}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
     }
     return emoji;
   }
 
+  function renderEscudo(escudo, esIndividual, size = 40) {
+    if (esIndividual) {
+      return `<img src="${escudo || 'assets/icons/usuario.svg'}" alt="" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;display:block" />`;
+    }
+    if (typeof escudo === 'string' && /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(escudo)) {
+      return `<img src="${escudo}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block" />`;
+    }
+    return `<span style="font-size:${Math.round(size * 0.8)}px;line-height:1;display:inline-block">${escudo || ICONOS.escudo}</span>`;
+  }
+
   function avatarDe(u) {
     return u?.avatar || 'assets/icons/usuario.svg';
   }
 
-  /* =========================================================
-     RENDER: CARD DE PROPUESTA DE CONFIRMACIÓN
-     ========================================================= */
   function renderPropuesta(prop, esOrganizador) {
     const fechaTxt = prop.fecha ? formatearFecha(prop.fecha) : 'A coordinar';
     const lugarTxt = prop.lugar || 'A coordinar';
     const precioTxt = prop.precio === 0 ? 'Gratis' : `$${Number(prop.precio).toLocaleString('es-CL')}`;
 
     const titulo = esOrganizador
-      ? `⏳ Propuesta enviada a ${prop.interesadoNombre}`
-      : `⏳ ${prop.organizadorNombre} te propone confirmar este partido`;
+      ? `${ICONOS.reloj} Propuesta enviada a ${prop.interesadoNombre}`
+      : `${ICONOS.reloj} ${prop.organizadorNombre} te propone confirmar este partido`;
 
     const acciones = esOrganizador
-      ? `<button class="btn pd-propuesta__btn pd-propuesta__btn--danger" id="btn-cancelar-propuesta">
-           ❌ Cancelar propuesta
-         </button>`
-      : `<button class="btn pd-propuesta__btn pd-propuesta__btn--primary" id="btn-aprobar-propuesta">
-           ✅ Aprobar
-         </button>
-         <button class="btn pd-propuesta__btn pd-propuesta__btn--danger" id="btn-rechazar-propuesta">
-           ❌ Rechazar
-         </button>`;
+      ? `<button class="btn pd-propuesta__btn pd-propuesta__btn--danger" id="btn-cancelar-propuesta">${ICONOS.x} Cancelar propuesta</button>`
+      : `<button class="btn pd-propuesta__btn pd-propuesta__btn--primary" id="btn-aprobar-propuesta">${ICONOS.check} Aprobar</button>
+         <button class="btn pd-propuesta__btn pd-propuesta__btn--danger" id="btn-rechazar-propuesta">${ICONOS.x} Rechazar</button>`;
 
     return `
       <div class="pd-propuesta">
@@ -115,46 +115,26 @@ export async function init(params = {}) {
 
         <div class="pd-propuesta__datos">
           <div class="pd-propuesta__dato">
-            <span class="pd-propuesta__dato-icon">📅</span>
-            <div>
-              <div class="pd-propuesta__dato-label">Fecha</div>
-              <div class="pd-propuesta__dato-valor">${fechaTxt}</div>
-            </div>
+            <span class="pd-propuesta__dato-icon">${ICONOS.calendario}</span>
+            <div><div class="pd-propuesta__dato-label">Fecha</div><div class="pd-propuesta__dato-valor">${fechaTxt}</div></div>
           </div>
-
           <div class="pd-propuesta__dato">
-            <span class="pd-propuesta__dato-icon">📍</span>
-            <div>
-              <div class="pd-propuesta__dato-label">Lugar</div>
-              <div class="pd-propuesta__dato-valor">${lugarTxt}</div>
-            </div>
+            <span class="pd-propuesta__dato-icon">${ICONOS.ubicacion}</span>
+            <div><div class="pd-propuesta__dato-label">Lugar</div><div class="pd-propuesta__dato-valor">${lugarTxt}</div></div>
           </div>
-
           <div class="pd-propuesta__dato">
-            <span class="pd-propuesta__dato-icon">💰</span>
-            <div>
-              <div class="pd-propuesta__dato-label">Precio</div>
-              <div class="pd-propuesta__dato-valor">${precioTxt}</div>
-            </div>
+            <span class="pd-propuesta__dato-icon">${ICONOS.dinero}</span>
+            <div><div class="pd-propuesta__dato-label">Precio</div><div class="pd-propuesta__dato-valor">${precioTxt}</div></div>
           </div>
         </div>
 
-        ${prop.mensaje ? `
-          <div class="pd-propuesta__mensaje">
-            💬 "${prop.mensaje}"
-          </div>
-        ` : ''}
+        ${prop.mensaje ? `<div class="pd-propuesta__mensaje">${ICONOS.chat} "${prop.mensaje}"</div>` : ''}
 
-        <div class="pd-propuesta__acciones">
-          ${acciones}
-        </div>
+        <div class="pd-propuesta__acciones">${acciones}</div>
       </div>
     `;
   }
 
-  /* =========================================================
-     RENDER: CARD "ORGANIZADO POR"
-     ========================================================= */
   function renderOrganizadoPor(partido) {
     const org = partido.organizador;
     if (!org) return '';
@@ -165,23 +145,92 @@ export async function init(params = {}) {
       <div class="pd-card pd-organizado">
         <div class="pd-organizado__eyebrow">Organizado por</div>
         <div class="pd-organizado__contenido">
-          <img src="${avatarDe(org)}" class="pd-organizado__avatar" alt=""
-               data-ver-perfil="${org.id}" style="cursor:pointer" />
+          <img src="${avatarDe(org)}" class="pd-organizado__avatar" alt="" data-ver-perfil="${org.id}" style="cursor:pointer" />
           <div class="pd-organizado__info" data-ver-perfil="${org.id}" style="cursor:pointer">
             <div class="pd-organizado__nombre">${org.nombre}</div>
             <div class="pd-organizado__sub">Ver perfil</div>
           </div>
-          <button class="pd-organizado__chat" id="btn-chat-organizador" title="Enviar mensaje">
-            ${iconoChat}
-          </button>
+          <button class="pd-organizado__chat" id="btn-chat-organizador" title="Enviar mensaje">${iconoChat}</button>
         </div>
       </div>
     `;
   }
 
-  /* =========================================================
-     RENDER PRINCIPAL
-     ========================================================= */
+  function renderEquiposInscritos(partido, soyAdmin) {
+    const equiposInscritos = partido.equiposInscritos || [];
+    if (equiposInscritos.length === 0) return '';
+
+    return `
+      <div class="pd-card">
+        <div class="pd-card__eyebrow">Plantel</div>
+        <h3 class="pd-card__title">Equipos inscritos (${equiposInscritos.length})</h3>
+        <div class="pd-jugadores">
+          ${equiposInscritos.map(eq => `
+            <div class="pd-jugador">
+              <!-- ⚡ Avatar clickeable -->
+              <div class="pd-jugador__avatar" style="font-size:24px; overflow:hidden; cursor:pointer" data-ver-equipo="${eq.id}">
+                ${renderEscudo(eq.escudo, false, 44)}
+              </div>
+              <!-- ⚡ Info clickeable -->
+              <div class="pd-jugador__info" style="cursor:pointer" data-ver-equipo="${eq.id}">
+                <div class="pd-jugador__name">${eq.nombre}</div>
+                <div class="pd-jugador__sub">${eq.totalJugadores || 0} jugadores</div>
+              </div>
+              ${soyAdmin ? `<button class="pd-jugador__chevron" data-echar-equipo="${eq.id}" title="Eliminar equipo del partido" style="color:var(--color-danger)">${ICONOS.basura}</button>` : ''}
+              <button class="pd-jugador__chevron" data-ver-equipo="${eq.id}">›</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderJugadoresInscritos(partido, soyOrg, yoEstoyInscrito) {
+    const inscritos = partido.inscritos || [];
+    if (inscritos.length === 0) return '';
+
+    return `
+      <div class="pd-card">
+        <div class="pd-card__eyebrow">Plantel</div>
+        <h3 class="pd-card__title">${ICONOS.usuarios} ${inscritos.length} confirmado${inscritos.length !== 1 ? 's' : ''}</h3>
+
+        ${soyOrg ? `
+          <div class="pd-jugadores">
+            ${inscritos.map(j => {
+              const esOrganizador = String(j.id) === String(partido.organizador.id);
+              return `
+                <div class="pd-jugador">
+                  <img src="${avatarDe(j)}" class="pd-jugador__avatar pd-jugador__avatar--img" alt="" />
+                  <div class="pd-jugador__info">
+                    <div class="pd-jugador__name">${j.nombre || 'Jugador'} ${esOrganizador ? `<span class="badge badge--primary" style="margin-left:6px">${ICONOS.corona}</span>` : ''}</div>
+                    <div class="pd-jugador__sub">${j.posicion || 'Sin posición'}</div>
+                  </div>
+                  ${!esOrganizador ? `<button class="pd-jugador__chevron" data-echar-inscrito="${j.id}" title="Eliminar jugador del partido" style="color:var(--color-danger)">${ICONOS.basura}</button>` : ''}
+                  <button class="pd-jugador__chevron" data-ver-perfil="${j.id}">›</button>
+                </div>`;
+            }).join('')}
+          </div>
+        ` : yoEstoyInscrito ? `
+          <div class="pd-jugadores">
+            <div class="pd-jugador">
+              <img src="${avatarDe(user)}" class="pd-jugador__avatar pd-jugador__avatar--img" alt="" />
+              <div class="pd-jugador__info">
+                <div class="pd-jugador__name">${user.nombre} (tú)</div>
+                <div class="pd-jugador__sub">✅ Estás en la lista</div>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="pd-empty">
+            <div class="pd-empty__icon">${ICONOS.candado}</div>
+            <p class="pd-empty__text">La lista completa solo la ve el organizador.</p>
+            <p class="pd-empty__hint">Hay <strong>${inscritos.length}</strong> de <strong>${partido.cupos}</strong> cupos ocupados.</p>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
   async function render() {
     try {
       partido = await obtenerPartido(id);
@@ -232,17 +281,13 @@ export async function init(params = {}) {
     const totalInscritos = deEquipo ? equiposInscritos.length : inscritos.length;
     const cuposDisponibles = partido.cupos - totalInscritos;
 
-    /* ---------- Cantidad de solicitudes pendientes para el badge ---------- */
     let solicitudesPendientes = 0;
-
     if (soyAdminOGrupo) {
       if (enModoOrganizar) {
         try {
           const pendientes = await listarInteresadosAPI(partido.id);
           solicitudesPendientes = pendientes?.length || 0;
-        } catch (e) {
-          solicitudesPendientes = 0;
-        }
+        } catch (e) { solicitudesPendientes = 0; }
       } else if (deEquipo) {
         solicitudesPendientes = equiposPostulantes.filter(p => p.estado === 'pendiente').length;
       } else if (partido.aprobacionRequerida) {
@@ -250,37 +295,20 @@ export async function init(params = {}) {
       }
     }
 
-    /* ---------- ¿Mostrar botón de solicitudes? ---------- */
-    const mostrarBotonSolicitudes =
-      soyAdminOGrupo && (
-        enModoOrganizar ||
-        deEquipo ||
-        (!deEquipo && partido.aprobacionRequerida)
-      );
+    const mostrarBotonSolicitudes = soyAdminOGrupo && (
+      enModoOrganizar || deEquipo || (!deEquipo && partido.aprobacionRequerida)
+    );
 
     const nivelLabel = {
-      amistoso: 'Amistoso',
-      semiprofesional: 'Semiprofesional',
-      profesional: 'Profesional'
+      amistoso: 'Amistoso', semiprofesional: 'Semiprofesional', profesional: 'Profesional'
     }[partido.nivel] || partido.nivel;
 
-    const badgeEstado = enModoOrganizar ? 'badge--warning' :
-      confirmado ? 'badge--primary' :
-      {
-        abierto: 'badge--success',
-        lleno: 'badge--danger',
-        finalizado: 'badge--neutral'
-      }[partido.estado] || 'badge--neutral';
+    const badgeEstado = enModoOrganizar ? 'badge--warning' : confirmado ? 'badge--primary' : {
+      abierto: 'badge--success', lleno: 'badge--danger', finalizado: 'badge--neutral'
+    }[partido.estado] || 'badge--neutral';
 
-    const badgeTexto = enModoOrganizar
-      ? '📢 Organizando'
-      : confirmado
-        ? '✅ Confirmado'
-        : partido.estado.charAt(0).toUpperCase() + partido.estado.slice(1);
+    const badgeTexto = enModoOrganizar ? `${ICONOS.megafono} Organizando` : confirmado ? `${ICONOS.check} Confirmado` : partido.estado.charAt(0).toUpperCase() + partido.estado.slice(1);
 
-    /* =========================================================
-       BOTÓN DE ACCIÓN (NO-ORGANIZADOR)
-       ========================================================= */
     let botonAccion = '';
 
     if (!user) {
@@ -292,17 +320,20 @@ export async function init(params = {}) {
         botonAccion = '';
       } else if (yoInteresado) {
         botonAccion = `
-          <span class="pd-hero__action pd-hero__action--badge">🙋 Ya te interesaste</span>
-          <button class="btn pd-hero__action" id="btn-cancelar-interes" style="color:#FCA5A5">
-            Cancelar interés
-          </button>
+          <span class="pd-hero__action pd-hero__action--badge">${ICONOS.mano} Ya te interesaste</span>
+          <button class="btn pd-hero__action" id="btn-cancelar-interes" style="color:#FCA5A5">Cancelar interés</button>
         `;
       } else {
-        botonAccion = `
-          <button class="btn pd-hero__action pd-hero__action--primary" id="btn-interesarme">
-            🙋 Me interesa
-          </button>
-        `;
+        if (deEquipo) {
+          const misEqDelDeporte = equiposQuePuedoPostular(partido);
+          if (misEqDelDeporte.length === 0) {
+            botonAccion = `<span class="pd-hero__action pd-hero__action--badge">Necesitás un equipo de ${partido.deporte}</span>`;
+          } else {
+            botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-interesarme-equipo">${ICONOS.mano} Me interesa con mi equipo</button>`;
+          }
+        } else {
+          botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-interesarme">${ICONOS.mano} Me interesa</button>`;
+        }
       }
     } else if (deEquipo) {
       const misEqDeEsteDeporte = equiposQuePuedoPostular(partido);
@@ -312,44 +343,32 @@ export async function init(params = {}) {
         const yaInscrito = !!partido.miEquipoInscrito;
         const yaPostulado = !!partido.miEquipoPostulado;
         if (yaInscrito) {
-          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">✅ Tu equipo está inscrito</span>`;
+          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.check} Tu equipo está inscrito</span>`;
         } else if (yaPostulado) {
-          botonAccion = `
-            <span class="pd-hero__action pd-hero__action--badge">⏳ Postulación pendiente</span>
-            <button class="btn pd-hero__action" id="btn-cancelar-postulacion-equipo" style="color:#FCA5A5">Cancelar</button>
-          `;
+          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.reloj} Postulación pendiente</span><button class="btn pd-hero__action" id="btn-cancelar-postulacion-equipo" style="color:#FCA5A5">Cancelar</button>`;
         } else if (partido.estado !== 'abierto' || equiposInscritos.length >= partido.cupos) {
-          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">🔒 Partido lleno</span>`;
+          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.candado} Partido lleno</span>`;
         } else {
-          botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postular-equipo">📝 Postular mi equipo</button>`;
+          botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postular-equipo">${ICONOS.documento} Postular mi equipo</button>`;
         }
       }
     } else if (yoEstoyInscrito) {
-      botonAccion = `<button class="btn pd-hero__action" id="btn-salir-partido" style="color:#FCA5A5">❌ Salir del partido</button>`;
+      botonAccion = `<button class="btn pd-hero__action" id="btn-salir-partido" style="color:#FCA5A5">${ICONOS.x} Salir del partido</button>`;
     } else if (yoPostule && yoPostule.estado === 'pendiente') {
-      botonAccion = `
-        <span class="pd-hero__action pd-hero__action--badge">⏳ Postulación pendiente</span>
-        <button class="btn pd-hero__action" id="btn-cancelar-postulacion" style="color:#FCA5A5">Cancelar</button>
-      `;
+      botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.reloj} Postulación pendiente</span><button class="btn pd-hero__action" id="btn-cancelar-postulacion" style="color:#FCA5A5">Cancelar</button>`;
     } else if (yoPostule && yoPostule.estado === 'rechazado') {
-      botonAccion = `<span class="pd-hero__action pd-hero__action--badge">❌ Postulación rechazada</span>`;
+      botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.x} Postulación rechazada</span>`;
     } else if (partido.estado !== 'abierto') {
       botonAccion = `<span class="pd-hero__action pd-hero__action--badge">Partido ${partido.estado}</span>`;
     } else if (partido.aprobacionRequerida) {
-      botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postularme">📝 Postularme</button>`;
+      botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postularme">${ICONOS.documento} Postularme</button>`;
     } else {
-      botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-inscribirme">✅ Inscribirme</button>`;
+      botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-inscribirme">${ICONOS.check} Inscribirme</button>`;
     }
 
-    /* =========================================================
-       INFO HERO
-       ========================================================= */
     const infoFechaHero = enModoOrganizar ? `A coordinar` : formatearFecha(partido.fecha);
     const infoLugarHero = enModoOrganizar ? `A coordinar` : (partido.lugar || 'Sin lugar');
 
-    /* =========================================================
-       RENDER
-       ========================================================= */
     contenedor.innerHTML = `
       <div class="detalle__top">
         <button class="detalle__back" id="btn-volver">←</button>
@@ -362,16 +381,14 @@ export async function init(params = {}) {
           <div class="pd-hero__info">
             <div class="pd-hero__badges">
               <span class="badge ${badgeEstado}">${badgeTexto}</span>
-              <span class="badge badge--info">${deEquipo ? '🛡️ De equipos' : '👤 De jugadores'}</span>
-              ${enModoOrganizar ? '<span class="badge badge--primary">📢 Organizar</span>' : ''}
+              <span class="badge badge--info">${deEquipo ? `${ICONOS.escudo} De equipos` : `${ICONOS.usuario} De jugadores`}</span>
+              ${enModoOrganizar ? `<span class="badge badge--primary">${ICONOS.megafono} Organizar</span>` : ''}
             </div>
             <h1 class="pd-hero__title">${partido.titulo}</h1>
             <div class="pd-hero__meta">
-              <span>📅 ${infoFechaHero}</span>
-              <span>📍 ${infoLugarHero}</span>
-              <span class="pd-hero__organizador" data-ver-perfil="${partido.organizador.id}" style="cursor:pointer">
-                👤 ${partido.organizador.nombre}
-              </span>
+              <span>${ICONOS.calendario} ${infoFechaHero}</span>
+              <span>${ICONOS.ubicacion} ${infoLugarHero}</span>
+              <span class="pd-hero__organizador" data-ver-perfil="${partido.organizador.id}" style="cursor:pointer">${ICONOS.usuario} ${partido.organizador.nombre}</span>
             </div>
             ${confirmacionPendiente ? renderPropuesta(confirmacionPendiente, soyOrg) : ''}
           </div>
@@ -379,57 +396,30 @@ export async function init(params = {}) {
 
         <div class="pd-hero__actions">
           ${soyAdminOGrupo ? `
-            ${mostrarBotonSolicitudes ? `
-              <button class="btn pd-hero__action pd-hero__action--primary" id="btn-ver-solicitudes">
-                👥 Solicitudes ${solicitudesPendientes > 0 ? `<span class="badge badge--warning" style="margin-left:6px">${solicitudesPendientes}</span>` : ''}
-              </button>
-            ` : ''}
-            <button class="btn pd-hero__action ${mostrarBotonSolicitudes ? '' : 'pd-hero__action--primary'}" id="btn-editar-partido">
-              ✏️ Editar partido
-            </button>
-            <button class="btn pd-hero__action pd-hero__action--danger" id="btn-eliminar-partido">
-              🗑️ Eliminar
-            </button>
+            ${mostrarBotonSolicitudes ? `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-ver-solicitudes">${ICONOS.usuarios} Solicitudes ${solicitudesPendientes > 0 ? `<span class="badge badge--warning" style="margin-left:6px">${solicitudesPendientes}</span>` : ''}</button>` : ''}
+            <button class="btn pd-hero__action ${mostrarBotonSolicitudes ? '' : 'pd-hero__action--primary'}" id="btn-editar-partido">${ICONOS.lapiz} Editar partido</button>
+            <button class="btn pd-hero__action pd-hero__action--danger" id="btn-eliminar-partido">${ICONOS.basura} Eliminar</button>
           ` : botonAccion}
-          <button class="btn pd-hero__action" id="btn-compartir">
-            🔗 Compartir
-          </button>
+          <button class="btn pd-hero__action" id="btn-compartir">${ICONOS.compartir} Compartir</button>
         </div>
       </div>
 
       <div class="pd-stats">
         <div class="pd-stat">
-          <div class="pd-stat__icon">👥</div>
-          <div class="pd-stat__texto">
-            <div class="pd-stat__value">${totalInscritos} / ${partido.cupos}</div>
-            <div class="pd-stat__label">${deEquipo ? 'Equipos' : 'Jugadores'}</div>
-          </div>
+          <div class="pd-stat__icon">${ICONOS.usuarios}</div>
+          <div class="pd-stat__texto"><div class="pd-stat__value">${totalInscritos} / ${partido.cupos}</div><div class="pd-stat__label">${deEquipo ? 'Equipos' : 'Jugadores'}</div></div>
         </div>
-
         <div class="pd-stat">
-          <div class="pd-stat__icon">💰</div>
-          <div class="pd-stat__texto">
-            <div class="pd-stat__value">
-              ${enModoOrganizar ? 'A coordinar' : (partido.precio === 0 ? 'Gratis' : '$' + partido.precio.toLocaleString('es-CL'))}
-            </div>
-            <div class="pd-stat__label">Precio</div>
-          </div>
+          <div class="pd-stat__icon">${ICONOS.dinero}</div>
+          <div class="pd-stat__texto"><div class="pd-stat__value">${enModoOrganizar ? 'A coordinar' : (partido.precio === 0 ? 'Gratis' : '$' + partido.precio.toLocaleString('es-CL'))}</div><div class="pd-stat__label">Precio</div></div>
         </div>
-
         <div class="pd-stat">
-          <div class="pd-stat__icon">🏆</div>
-          <div class="pd-stat__texto">
-            <div class="pd-stat__value">${nivelLabel}</div>
-            <div class="pd-stat__label">Nivel</div>
-          </div>
+          <div class="pd-stat__icon">${ICONOS.trofeo}</div>
+          <div class="pd-stat__texto"><div class="pd-stat__value">${nivelLabel}</div><div class="pd-stat__label">Nivel</div></div>
         </div>
-
         <div class="pd-stat">
-          <div class="pd-stat__icon">🎯</div>
-          <div class="pd-stat__texto">
-            <div class="pd-stat__value">${partido.deporte}</div>
-            <div class="pd-stat__label">Deporte</div>
-          </div>
+          <div class="pd-stat__icon">${ICONOS.diana}</div>
+          <div class="pd-stat__texto"><div class="pd-stat__value">${partido.deporte}</div><div class="pd-stat__label">Deporte</div></div>
         </div>
       </div>
 
@@ -437,46 +427,23 @@ export async function init(params = {}) {
         <div class="pd-card">
           <div class="pd-card__eyebrow">Información</div>
           <h3 class="pd-card__title">Sobre el partido</h3>
-
-          ${partido.descripcion ? `
-            <p class="pd-card__description">${partido.descripcion}</p>
-          ` : `
-            <p class="pd-card__description text-muted">El organizador no dejó descripción.</p>
-          `}
-
+          ${partido.descripcion ? `<p class="pd-card__description">${partido.descripcion}</p>` : `<p class="pd-card__description text-muted">El organizador no dejó descripción.</p>`}
           <div class="pd-info-grid">
             <div class="pd-info-item">
-              <div class="pd-info-item__icon">📍</div>
-              <div>
-                <div class="pd-info-item__label">Lugar</div>
-                <div class="pd-info-item__value">${enModoOrganizar ? 'A coordinar' : (partido.lugar || '—')}</div>
-              </div>
+              <div class="pd-info-item__icon">${ICONOS.ubicacion}</div>
+              <div><div class="pd-info-item__label">Lugar</div><div class="pd-info-item__value">${enModoOrganizar ? 'A coordinar' : (partido.lugar || '—')}</div></div>
             </div>
-
             <div class="pd-info-item">
-              <div class="pd-info-item__icon">📅</div>
-              <div>
-                <div class="pd-info-item__label">Fecha</div>
-                <div class="pd-info-item__value">${enModoOrganizar ? 'A coordinar' : formatearFecha(partido.fecha)}</div>
-              </div>
+              <div class="pd-info-item__icon">${ICONOS.calendario}</div>
+              <div><div class="pd-info-item__label">Fecha</div><div class="pd-info-item__value">${enModoOrganizar ? 'A coordinar' : formatearFecha(partido.fecha)}</div></div>
             </div>
-
             <div class="pd-info-item">
-              <div class="pd-info-item__icon">👤</div>
-              <div>
-                <div class="pd-info-item__label">Organizador</div>
-                <div class="pd-info-item__value">${partido.organizador.nombre}</div>
-              </div>
+              <div class="pd-info-item__icon">${ICONOS.usuario}</div>
+              <div><div class="pd-info-item__label">Organizador</div><div class="pd-info-item__value">${partido.organizador.nombre}</div></div>
             </div>
-
             <div class="pd-info-item">
-              <div class="pd-info-item__icon">${partido.aprobacionRequerida ? '🔒' : '✅'}</div>
-              <div>
-                <div class="pd-info-item__label">Confirmación</div>
-                <div class="pd-info-item__value">
-                  ${partido.aprobacionRequerida ? 'Aprobación requerida' : 'Inscripción directa'}
-                </div>
-              </div>
+              <div class="pd-info-item__icon">${partido.aprobacionRequerida ? ICONOS.candado : ICONOS.check}</div>
+              <div><div class="pd-info-item__label">Confirmación</div><div class="pd-info-item__value">${partido.aprobacionRequerida ? 'Aprobación requerida' : 'Inscripción directa'}</div></div>
             </div>
           </div>
         </div>
@@ -491,106 +458,6 @@ export async function init(params = {}) {
     conectarEventos(partido);
   }
 
-  /* =========================================================
-     RENDER: EQUIPOS INSCRITOS
-     ========================================================= */
-  function renderEquiposInscritos(partido, soyAdmin) {
-    const equiposInscritos = partido.equiposInscritos || [];
-    if (equiposInscritos.length === 0) return '';
-
-    return `
-      <div class="pd-card">
-        <div class="pd-card__eyebrow">Plantel</div>
-        <h3 class="pd-card__title">Equipos inscritos (${equiposInscritos.length})</h3>
-        <div class="pd-jugadores">
-          ${equiposInscritos.map(eq => `
-            <div class="pd-jugador">
-              <div class="pd-jugador__avatar" style="font-size:24px">
-                ${eq.escudo || '🛡️'}
-              </div>
-              <div class="pd-jugador__info">
-                <div class="pd-jugador__name">${eq.nombre}</div>
-                <div class="pd-jugador__sub">${eq.totalJugadores || 0} jugadores</div>
-              </div>
-              ${soyAdmin ? `
-                <button class="pd-jugador__chevron" data-echar-equipo="${eq.id}"
-                        title="Eliminar equipo del partido"
-                        style="color:var(--color-danger)">🗑️</button>
-              ` : ''}
-              <button class="pd-jugador__chevron" data-ver-equipo="${eq.id}">›</button>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  /* =========================================================
-     RENDER: JUGADORES INSCRITOS
-     ========================================================= */
-  function renderJugadoresInscritos(partido, soyOrg, yoEstoyInscrito) {
-    const inscritos = partido.inscritos || [];
-    if (inscritos.length === 0) return '';
-
-    return `
-      <div class="pd-card">
-        <div class="pd-card__eyebrow">Plantel</div>
-        <h3 class="pd-card__title">
-          ${inscritos.length} confirmado${inscritos.length !== 1 ? 's' : ''}
-        </h3>
-
-        ${soyOrg ? `
-          <div class="pd-jugadores">
-            ${inscritos.map(j => {
-              const nombre = j.nombre || 'Jugador';
-              const avatar = j.avatar || 'assets/icons/usuario.svg';
-              const posicion = j.posicion || '';
-              const esOrganizador = String(j.id) === String(partido.organizador.id);
-              return `
-                <div class="pd-jugador">
-                  <img src="${avatar}" class="pd-jugador__avatar pd-jugador__avatar--img" alt="" />
-                  <div class="pd-jugador__info">
-                    <div class="pd-jugador__name">
-                      ${nombre}
-                      ${esOrganizador ? '<span class="badge badge--primary" style="margin-left:6px">👑</span>' : ''}
-                    </div>
-                    <div class="pd-jugador__sub">${posicion || 'Sin posición'}</div>
-                  </div>
-                  ${!esOrganizador ? `
-                    <button class="pd-jugador__chevron" data-echar-inscrito="${j.id}"
-                            title="Eliminar jugador del partido"
-                            style="color:var(--color-danger)">🗑️</button>
-                  ` : ''}
-                  <button class="pd-jugador__chevron" data-ver-perfil="${j.id}">›</button>
-                </div>`;
-            }).join('')}
-          </div>
-        ` : yoEstoyInscrito ? `
-          <div class="pd-jugadores">
-            <div class="pd-jugador">
-              <img src="${user.avatar || 'assets/icons/usuario.svg'}" class="pd-jugador__avatar pd-jugador__avatar--img" alt="" />
-              <div class="pd-jugador__info">
-                <div class="pd-jugador__name">${user.nombre} (tú)</div>
-                <div class="pd-jugador__sub">✅ Estás en la lista</div>
-              </div>
-            </div>
-          </div>
-        ` : `
-          <div class="pd-empty">
-            <div class="pd-empty__icon">🔒</div>
-            <p class="pd-empty__text">La lista completa solo la ve el organizador.</p>
-            <p class="pd-empty__hint">
-              Hay <strong>${inscritos.length}</strong> de <strong>${partido.cupos}</strong> cupos ocupados.
-            </p>
-          </div>
-        `}
-      </div>
-    `;
-  }
-
-  /* =========================================================
-     CONECTAR EVENTOS
-     ========================================================= */
   function conectarEventos(partido) {
     document.getElementById('btn-volver')?.addEventListener('click', () => {
       if (window.history.length > 1) window.history.back();
@@ -652,8 +519,7 @@ export async function init(params = {}) {
         e.stopPropagation();
         const usuarioId = btn.dataset.echarInscrito;
         const jugador = (partido.inscritos || []).find(j => String(j.id) === String(usuarioId));
-        const nombre = jugador?.nombre || 'este jugador';
-        if (!confirm(`¿Eliminar a ${nombre} del partido? Le va a llegar una notificación.`)) return;
+        if (!confirm(`¿Eliminar a ${jugador?.nombre || 'este jugador'} del partido? Le va a llegar una notificación.`)) return;
         try {
           const r = await echarInscritoAPI(partido.id, usuarioId);
           toast(r?.mensaje || 'Jugador eliminado', 'info');
@@ -670,8 +536,7 @@ export async function init(params = {}) {
         e.stopPropagation();
         const equipoId = btn.dataset.echarEquipo;
         const equipo = (partido.equiposInscritos || []).find(eq => String(eq.id) === String(equipoId));
-        const nombre = equipo?.nombre || 'este equipo';
-        if (!confirm(`¿Eliminar a "${nombre}" del partido? El capitán y admins van a recibir una notificación.`)) return;
+        if (!confirm(`¿Eliminar a "${equipo?.nombre || 'este equipo'}" del partido? El capitán y admins van a recibir una notificación.`)) return;
         try {
           const r = await echarEquipoInscritoAPI(partido.id, equipoId);
           toast(r?.mensaje || 'Equipo eliminado', 'info');
@@ -683,17 +548,15 @@ export async function init(params = {}) {
       });
     });
 
-    /* ---------- BOTÓN ÚNICO DE SOLICITUDES ---------- */
     document.getElementById('btn-ver-solicitudes')?.addEventListener('click', () => abrirModalSolicitudes(partido));
 
-    /* ---------- BOTONES MODO ORGANIZAR ---------- */
     document.getElementById('btn-interesarme')?.addEventListener('click', () => interesarse(partido));
+    document.getElementById('btn-interesarme-equipo')?.addEventListener('click', () => interesarse(partido));
     document.getElementById('btn-cancelar-interes')?.addEventListener('click', () => cancelarInteres(partido));
     document.getElementById('btn-aprobar-propuesta')?.addEventListener('click', () => aprobarPropuesta(partido));
     document.getElementById('btn-rechazar-propuesta')?.addEventListener('click', () => rechazarPropuesta(partido));
     document.getElementById('btn-cancelar-propuesta')?.addEventListener('click', () => cancelarPropuesta(partido));
 
-    /* ---------- BOTONES ORGANIZADOR ---------- */
     document.getElementById('btn-editar-partido')?.addEventListener('click', () => abrirModalEditar(partido));
 
     document.getElementById('btn-eliminar-partido')?.addEventListener('click', async () => {
@@ -708,7 +571,6 @@ export async function init(params = {}) {
       }
     });
 
-    /* ---------- BOTONES JUGADOR ---------- */
     document.getElementById('btn-inscribirme')?.addEventListener('click', () => inscribirme(partido));
     document.getElementById('btn-salir-partido')?.addEventListener('click', () => salirDelPartido(partido));
     document.getElementById('btn-postularme')?.addEventListener('click', () => postularme(partido));
@@ -727,9 +589,6 @@ export async function init(params = {}) {
     });
   }
 
-  /* =========================================================
-     MODAL ÚNICO: SOLICITUDES
-     ========================================================= */
   async function abrirModalSolicitudes(partido) {
     const deEquipo = esDeEquipo(partido);
     const enModoOrganizar = esModoOrganizar(partido);
@@ -741,9 +600,6 @@ export async function init(params = {}) {
     toast('Este partido no tiene solicitudes pendientes', 'info');
   }
 
-  /* =========================================================
-     MODAL: INTERESADOS (modo Organizar)
-     ========================================================= */
   async function abrirModalInteresados(partido) {
     const body = document.getElementById('equipos-postulantes-body');
     if (!body) return;
@@ -763,51 +619,61 @@ export async function init(params = {}) {
     if (interesados.length === 0) {
       body.innerHTML = `
         <div class="empty-state--sm">
-          <div class="empty-state__icon">🙋</div>
+          <div class="empty-state__icon">${ICONOS.mano}</div>
           <p>Aún no hay interesados</p>
         </div>`;
     } else {
       body.innerHTML = `
-        ${hayPropuesta ? `
-          <div class="aviso-aprobacion show mb-4">
-            <span class="aviso-aprobacion__icon">⏳</span>
-            <div>
-              <strong>Ya hay una propuesta enviada a ${confirmacionPendiente.interesadoNombre}.</strong>
-            </div>
-          </div>
-        ` : ''}
+        ${hayPropuesta ? `<div class="aviso-aprobacion show mb-4"><span class="aviso-aprobacion__icon">${ICONOS.reloj}</span><div><strong>Ya hay una propuesta enviada a ${confirmacionPendiente.interesadoNombre}.</strong></div></div>` : ''}
 
         ${interesados.map(int => {
-          const esElDeLaPropuesta = hayPropuesta &&
-            String(confirmacionPendiente.interesadoId) === String(int.id);
+          const esElDeLaPropuesta = hayPropuesta && String(confirmacionPendiente.interesadoId) === String(int.id);
+          const esEquipo = !!int.equipo_id;
+          const nombreMostrar = esEquipo ? int.equipo_nombre : int.nombre;
+          
+          // ⚡ Hacemos el avatar clickeable
+          const iconoHtml = esEquipo 
+            ? `<div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:22px; cursor:pointer" data-ver-equipo-interesado="${int.equipo_id}">${renderEscudo(int.equipo_escudo, false, 40)}</div>`
+            : `<img src="${avatarDe(int)}" class="avatar avatar--md" alt="" />`;
+          
+          const chatTargetId = esEquipo ? int.capitan_id : int.id;
 
           return `
             <div class="solicitud-item" style="align-items:flex-start">
-              <img src="${avatarDe(int)}" class="avatar avatar--md" alt="" />
+              ${iconoHtml}
               <div class="solicitud-item__info">
                 <div class="solicitud-item__nombre">
-                  ${int.nombre || 'Usuario'}
-                  ${esElDeLaPropuesta ? '<span class="badge badge--warning" style="margin-left:6px">⏳ Propuesta</span>' : ''}
+                  ${esEquipo 
+                    ? `<span data-ver-equipo-interesado="${int.equipo_id}" style="cursor:pointer; text-decoration: underline; text-decoration-style: dotted;">${nombreMostrar || 'Equipo'}</span>`
+                    : `${nombreMostrar || 'Usuario'}`
+                  }
+                  ${esElDeLaPropuesta ? `<span class="badge badge--warning" style="margin-left:6px">${ICONOS.reloj} Propuesta</span>` : ''}
                 </div>
-                <div class="solicitud-item__meta">@${int.username || 'usuario'}</div>
+                <div class="solicitud-item__meta">
+                  ${esEquipo ? `Representa a un equipo` : `@${int.username || 'usuario'}`}
+                </div>
               </div>
               <div class="solicitud-item__actions" style="flex-direction:column; align-items:flex-end; gap:6px">
-                <button class="btn btn--ghost btn--sm" data-chat-interesado="${int.id}">💬 Chat</button>
-                <button class="btn btn--primary btn--sm"
-                        data-confirmar-interesado="${int.id}"
-                        ${hayPropuesta ? 'disabled' : ''}>
-                  ✅ Confirmar
-                </button>
-                <button class="btn btn--ghost btn--sm"
-                        data-borrar-interesado="${int.id}"
-                        style="color:var(--color-danger)">
-                  🗑️ Borrar
-                </button>
+                <button class="btn btn--ghost btn--sm" data-chat-interesado="${chatTargetId}">${ICONOS.chat} Chat</button>
+                <button class="btn btn--primary btn--sm" data-confirmar-interesado="${int.id}" data-equipo-id="${int.equipo_id || ''}" ${hayPropuesta ? 'disabled' : ''}>${ICONOS.check} Confirmar</button>
+                <button class="btn btn--ghost btn--sm" data-borrar-interesado="${int.id}" style="color:var(--color-danger)">${ICONOS.basura} Borrar</button>
               </div>
             </div>
           `;
         }).join('')}
       `;
+
+      // ⚡ Listener para ver el perfil del equipo interesado (funciona en avatar y nombre)
+      body.querySelectorAll('[data-ver-equipo-interesado]').forEach(el => {
+        el.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const equipoId = el.dataset.verEquipoInteresado;
+          if (equipoId) {
+            cerrarModal('modal-equipos-postulantes');
+            await verEquipo(equipoId);
+          }
+        });
+      });
 
       body.querySelectorAll('[data-chat-interesado]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -830,20 +696,18 @@ export async function init(params = {}) {
       body.querySelectorAll('[data-confirmar-interesado]').forEach(btn => {
         btn.addEventListener('click', () => {
           const intId = btn.dataset.confirmarInteresado;
+          const equipoId = btn.dataset.equipoId;
           const interesado = interesados.find(i => String(i.id) === String(intId));
           if (!interesado) return;
           cerrarModal('modal-equipos-postulantes');
-          abrirModalConfirmar(partido, interesado);
+          abrirModalConfirmar(partido, interesado, !!equipoId);
         });
       });
 
       body.querySelectorAll('[data-borrar-interesado]').forEach(btn => {
         btn.addEventListener('click', async () => {
           const intId = btn.dataset.borrarInteresado;
-          const interesado = interesados.find(i => String(i.id) === String(intId));
-          const nombre = interesado?.nombre || 'este interesado';
-          if (!confirm(`¿Borrar a ${nombre} de la lista de interesados? Le va a llegar una notificación.`)) return;
-
+          if (!confirm(`¿Borrar a este interesado de la lista? Le va a llegar una notificación.`)) return;
           try {
             const r = await echarInteresadoAPI(partido.id, intId);
             toast(r?.mensaje || 'Interesado eliminado', 'info');
@@ -864,9 +728,6 @@ export async function init(params = {}) {
     abrirModal('modal-equipos-postulantes');
   }
 
-  /* =========================================================
-     MODAL: POSTULANTES JUGADORES
-     ========================================================= */
   function abrirModalPostulantesJugadores(partido) {
     const body = document.getElementById('equipos-postulantes-body');
     if (!body) return;
@@ -877,49 +738,28 @@ export async function init(params = {}) {
     const pendientes = postulantes.filter(p => p.estado === 'pendiente');
 
     if (postulantes.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state--sm">
-          <div class="empty-state__icon">📝</div>
-          <p>Aún no hay postulantes</p>
-        </div>`;
+      body.innerHTML = `<div class="empty-state--sm"><div class="empty-state__icon">${ICONOS.documento}</div><p>Aún no hay postulantes</p></div>`;
     } else {
       body.innerHTML = `
         <p class="text-sm text-muted mb-4">${pendientes.length} postulante(s) esperando aprobación</p>
-
         ${postulantes.map(post => `
           <div class="solicitud-item" style="align-items:flex-start">
             <img src="${avatarDe(post)}" class="avatar avatar--md" alt="" />
             <div class="solicitud-item__info">
               <div class="solicitud-item__nombre">${post.nombre || 'Jugador'}</div>
-              <div class="solicitud-item__meta">
-                @${post.username || 'usuario'}
-                ${post.posicion ? ` · ${post.posicion}` : ''}
-              </div>
+              <div class="solicitud-item__meta">@${post.username || 'usuario'} ${post.posicion ? ` · ${post.posicion}` : ''}</div>
             </div>
             <div class="solicitud-item__actions" style="flex-direction:column; align-items:flex-end; gap:6px">
-              ${post.estado === 'pendiente' ? `
-                <div class="flex gap-2">
-                  <button class="btn btn--primary btn--sm" data-aprobar-post="${post.id}">Aprobar</button>
-                  <button class="btn btn--ghost btn--sm" data-rechazar-post="${post.id}" style="color:var(--color-danger)">🗑️ Borrar</button>
-                </div>
-              ` : `<span class="badge badge--${post.estado === 'aprobado' ? 'success' : 'danger'}">${post.estado}</span>`}
+              ${post.estado === 'pendiente' ? `<div class="flex gap-2"><button class="btn btn--primary btn--sm" data-aprobar-post="${post.id}">Aprobar</button><button class="btn btn--ghost btn--sm" data-rechazar-post="${post.id}" style="color:var(--color-danger)">${ICONOS.basura} Borrar</button></div>` : `<span class="badge badge--${post.estado === 'aprobado' ? 'success' : 'danger'}">${post.estado}</span>`}
             </div>
           </div>
         `).join('')}
       `;
-
-      body.querySelectorAll('[data-aprobar-post]').forEach(btn => {
-        btn.addEventListener('click', () => aprobarPostulante(partido, btn.dataset.aprobarPost));
-      });
-      body.querySelectorAll('[data-rechazar-post]').forEach(btn => {
-        btn.addEventListener('click', () => rechazarPostulante(partido, btn.dataset.rechazarPost));
-      });
+      body.querySelectorAll('[data-aprobar-post]').forEach(btn => btn.addEventListener('click', () => aprobarPostulante(partido, btn.dataset.aprobarPost)));
+      body.querySelectorAll('[data-rechazar-post]').forEach(btn => btn.addEventListener('click', () => rechazarPostulante(partido, btn.dataset.rechazarPost)));
     }
 
-    modalPostulantes.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-equipos-postulantes');
-    });
-
+    modalPostulantes.querySelectorAll('[data-cerrar-modal]').forEach(btn => btn.onclick = () => cerrarModal('modal-equipos-postulantes'));
     abrirModal('modal-equipos-postulantes');
   }
 
@@ -930,29 +770,23 @@ export async function init(params = {}) {
       cerrarModal('modal-equipos-postulantes');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al aprobar postulante:', err);
       toast(err.message || 'No se pudo aprobar', 'error');
     }
   }
 
   async function rechazarPostulante(partido, postulanteId) {
     const post = (partido.postulantes || []).find(p => String(p.id) === String(postulanteId));
-    const nombre = post?.nombre || 'este postulante';
-    if (!confirm(`¿Borrar la postulación de ${nombre}? Le va a llegar una notificación.`)) return;
+    if (!confirm(`¿Borrar la postulación de ${post?.nombre || 'este postulante'}?`)) return;
     try {
       await gestionarPostulanteAPI(partido.id, postulanteId, 'rechazar');
       toast('Postulación borrada', 'info');
       cerrarModal('modal-equipos-postulantes');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al rechazar postulante:', err);
-      toast(err.message || 'No se pudo borrar la postulación', 'error');
+      toast(err.message || 'No se pudo borrar', 'error');
     }
   }
 
-  /* =========================================================
-     MODAL: EQUIPOS POSTULANTES
-     ========================================================= */
   function abrirModalEquiposPostulantes(partido) {
     const body = document.getElementById('equipos-postulantes-body');
     if (!body) return;
@@ -963,48 +797,46 @@ export async function init(params = {}) {
     const pendientes = postulantes.filter(p => p.estado === 'pendiente');
 
     if (postulantes.length === 0) {
-      body.innerHTML = `
-        <div class="empty-state--sm">
-          <div class="empty-state__icon">🛡️</div>
-          <p>Aún no hay equipos postulantes</p>
-        </div>`;
+      body.innerHTML = `<div class="empty-state--sm"><div class="empty-state__icon">${ICONOS.escudo}</div><p>Aún no hay equipos postulantes</p></div>`;
     } else {
       body.innerHTML = `
         <p class="text-sm text-muted mb-4">${pendientes.length} equipo(s) esperando aprobación</p>
-
         ${postulantes.map((post) => `
           <div class="solicitud-item" style="align-items:flex-start">
-            <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:22px; flex-shrink:0">
+            <!-- ⚡ Avatar clickeable -->
+            <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:22px; flex-shrink:0; cursor:pointer" data-ver-equipo-post="${post.equipoId || post.equipo_id}">
               ${post.escudo || '🛡️'}
             </div>
             <div class="solicitud-item__info">
-              <div class="solicitud-item__nombre">${post.nombre || 'Equipo'}</div>
-              <div class="solicitud-item__meta">${post.deporte ? `🏅 ${post.deporte}` : ''}</div>
+              <div class="solicitud-item__nombre" data-ver-equipo-post="${post.equipoId || post.equipo_id}" style="cursor:pointer; text-decoration: underline; text-decoration-style: dotted;">
+                ${post.nombre || 'Equipo'}
+              </div>
+              <div class="solicitud-item__meta">${post.deporte ? `${ICONOS.medalla} ${post.deporte}` : ''}</div>
             </div>
             <div class="solicitud-item__actions" style="flex-direction:column; align-items:flex-end">
-              ${post.estado === 'pendiente' ? `
-                <div class="flex gap-2">
-                  <button class="btn btn--primary btn--sm" data-aceptar-eq="${post.equipoId || post.equipo_id}">Aprobar</button>
-                  <button class="btn btn--ghost btn--sm" data-rechazar-eq="${post.equipoId || post.equipo_id}" style="color:var(--color-danger)">🗑️ Borrar</button>
-                </div>
-              ` : `<span class="badge badge--${post.estado === 'aceptado' ? 'success' : 'danger'}">${post.estado}</span>`}
+              ${post.estado === 'pendiente' ? `<div class="flex gap-2"><button class="btn btn--primary btn--sm" data-aceptar-eq="${post.equipoId || post.equipo_id}">Aprobar</button><button class="btn btn--ghost btn--sm" data-rechazar-eq="${post.equipoId || post.equipo_id}" style="color:var(--color-danger)">${ICONOS.basura} Borrar</button></div>` : `<span class="badge badge--${post.estado === 'aceptado' ? 'success' : 'danger'}">${post.estado}</span>`}
             </div>
           </div>
         `).join('')}
       `;
 
-      body.querySelectorAll('[data-aceptar-eq]').forEach(btn => {
-        btn.addEventListener('click', () => aprobarEquipo(partido, btn.dataset.aceptarEq));
+      // ⚡ Listener para ver el perfil del equipo postulante
+      body.querySelectorAll('[data-ver-equipo-post]').forEach(el => {
+        el.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const equipoId = el.dataset.verEquipoPost;
+          if (equipoId) {
+            cerrarModal('modal-equipos-postulantes');
+            await verEquipo(equipoId);
+          }
+        });
       });
-      body.querySelectorAll('[data-rechazar-eq]').forEach(btn => {
-        btn.addEventListener('click', () => rechazarEquipo(partido, btn.dataset.rechazarEq));
-      });
+
+      body.querySelectorAll('[data-aceptar-eq]').forEach(btn => btn.addEventListener('click', () => aprobarEquipo(partido, btn.dataset.aceptarEq)));
+      body.querySelectorAll('[data-rechazar-eq]').forEach(btn => btn.addEventListener('click', () => rechazarEquipo(partido, btn.dataset.rechazarEq)));
     }
 
-    modalPostulantes.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-equipos-postulantes');
-    });
-
+    modalPostulantes.querySelectorAll('[data-cerrar-modal]').forEach(btn => btn.onclick = () => cerrarModal('modal-equipos-postulantes'));
     abrirModal('modal-equipos-postulantes');
   }
 
@@ -1015,41 +847,37 @@ export async function init(params = {}) {
       cerrarModal('modal-equipos-postulantes');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al aprobar equipo:', err);
       toast(err.message || 'No se pudo aprobar', 'error');
     }
   }
 
   async function rechazarEquipo(partido, equipoId) {
     const eq = (partido.equiposPostulantes || []).find(e => String(e.equipoId || e.equipo_id) === String(equipoId));
-    const nombre = eq?.nombre || 'este equipo';
-    if (!confirm(`¿Borrar la postulación de "${nombre}"? El capitán y admins van a recibir una notificación.`)) return;
+    if (!confirm(`¿Borrar la postulación de "${eq?.nombre || 'este equipo'}"?`)) return;
     try {
       await gestionarEquipoPostulanteAPI(partido.id, equipoId, 'rechazar');
       toast('Postulación borrada', 'info');
       cerrarModal('modal-equipos-postulantes');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al rechazar equipo:', err);
-      toast(err.message || 'No se pudo borrar la postulación', 'error');
+      toast(err.message || 'No se pudo borrar', 'error');
     }
   }
 
-  /* =========================================================
-     MODAL: CONFIRMAR
-     ========================================================= */
-  function abrirModalConfirmar(partido, interesado) {
+  function abrirModalConfirmar(partido, interesado, esEquipo = false) {
     if (!modalConfirmarPartido) return;
     interesadoSeleccionado = interesado;
-
-    document.getElementById('confirmar-titulo').textContent = `Confirmar partido con ${interesado.nombre}`;
+    
+    const nombreParaTitulo = esEquipo ? interesado.equipo_nombre : interesado.nombre;
+    document.getElementById('confirmar-titulo').textContent = `Confirmar partido con ${nombreParaTitulo}`;
+    
     document.getElementById('confirmar-fecha').value = '';
     document.getElementById('confirmar-hora').value = '';
     document.getElementById('confirmar-lugar').value = partido.lugar || '';
     document.getElementById('confirmar-precio').value = partido.precio || 0;
     document.getElementById('confirmar-mensaje').value = '';
 
-    document.getElementById('btn-confirmar-partido').onclick = () => enviarConfirmacion(partido);
+    document.getElementById('btn-confirmar-partido').onclick = () => enviarConfirmacion(partido, esEquipo);
 
     modalConfirmarPartido.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
       btn.onclick = () => cerrarModal('modal-confirmar-partido');
@@ -1058,7 +886,7 @@ export async function init(params = {}) {
     abrirModal('modal-confirmar-partido');
   }
 
-  async function enviarConfirmacion(partido) {
+  async function enviarConfirmacion(partido, esEquipo) {
     if (!interesadoSeleccionado) return;
 
     const fechaVal = document.getElementById('confirmar-fecha').value;
@@ -1081,8 +909,8 @@ export async function init(params = {}) {
     try {
       await confirmarPartidoAPI(partido.id, {
         interesadoId: interesadoSeleccionado.id,
-        interesadoTipo: 'usuario',
-        equipoId: null,
+        interesadoTipo: esEquipo ? 'equipo' : 'usuario',
+        equipoId: esEquipo ? interesadoSeleccionado.equipo_id : null,
         lugar: lugarVal,
         fecha: fechaISO,
         precio: precioVal,
@@ -1090,25 +918,43 @@ export async function init(params = {}) {
       });
 
       cerrarModal('modal-confirmar-partido');
-      toast(`Propuesta enviada a ${interesadoSeleccionado.nombre}.`, 'success');
+      toast(`Propuesta enviada.`, 'success');
       await render();
     } catch (err) {
       console.error('[partido-detalle] Error al confirmar:', err);
       toast(err.message || 'No se pudo confirmar el partido', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '✅ Confirmar partido';
+      btn.innerHTML = `${ICONOS.check} Confirmar partido`;
     }
   }
 
-  /* =========================================================
-     INTERESARSE / CANCELAR
-     ========================================================= */
   async function interesarse(partido) {
     if (!user) return;
+
+    let equipoId = null;
+
+    if (esDeEquipo(partido)) {
+      const misEqDelDeporte = equiposQuePuedoPostular(partido);
+      if (misEqDelDeporte.length === 0) {
+        return toast(`No tenés equipos de ${partido.deporte} para interesarte`, 'error');
+      }
+
+      let eqElegido = misEqDelDeporte[0];
+      if (misEqDelDeporte.length > 1) {
+        const opciones = misEqDelDeporte.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
+        const eleccion = prompt(`¿Con qué equipo querés interesarte?\n\n${opciones}\n\nEscribí el número:`);
+        if (!eleccion) return;
+        const idx = Number(eleccion) - 1;
+        if (isNaN(idx) || !misEqDelDeporte[idx]) return toast('Opción inválida', 'error');
+        eqElegido = misEqDelDeporte[idx];
+      }
+      equipoId = eqElegido.id;
+    }
+
     try {
-      await interesarseAPI(partido.id);
-      toast('¡Te marcaste como interesado! El organizador podrá contactarte.', 'success');
+      await interesarseAPI(partido.id, equipoId);
+      toast(`¡Te marcaste como interesado! ${equipoId ? 'con tu equipo' : ''}`, 'success');
       await render();
     } catch (err) {
       console.error('[partido-detalle] Error al interesarse:', err);
@@ -1129,9 +975,6 @@ export async function init(params = {}) {
     }
   }
 
-  /* =========================================================
-     APROBAR / RECHAZAR / CANCELAR PROPUESTA
-     ========================================================= */
   async function aprobarPropuesta(partido) {
     if (!confirmacionPendiente) return;
     if (!confirm('¿Confirmás el partido?')) return;
@@ -1140,7 +983,6 @@ export async function init(params = {}) {
       toast('¡Partido confirmado!', 'success');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al aprobar:', err);
       toast(err.message || 'No se pudo aprobar', 'error');
     }
   }
@@ -1153,7 +995,6 @@ export async function init(params = {}) {
       toast('Propuesta rechazada', 'info');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al rechazar:', err);
       toast(err.message || 'No se pudo rechazar', 'error');
     }
   }
@@ -1166,14 +1007,10 @@ export async function init(params = {}) {
       toast('Propuesta cancelada', 'info');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al cancelar:', err);
       toast(err.message || 'No se pudo cancelar', 'error');
     }
   }
 
-  /* =========================================================
-     INSCRIBIRME / SALIR / POSTULARME
-     ========================================================= */
   async function inscribirme(partido) {
     if (!user) return;
     try {
@@ -1181,7 +1018,6 @@ export async function init(params = {}) {
       toast('¡Te inscribiste en el partido!', 'success');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al inscribirse:', err);
       toast(err.message || 'No se pudo inscribir', 'error');
     }
   }
@@ -1194,7 +1030,6 @@ export async function init(params = {}) {
       toast(resultado?.mensaje || 'Saliste del partido', 'info');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al salir:', err);
       toast(err.message || 'No se pudo salir del partido', 'error');
     }
   }
@@ -1212,7 +1047,6 @@ export async function init(params = {}) {
       toast('Postulación enviada', 'success');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al postularse:', err);
       toast(err.message || 'No se pudo enviar la postulación', 'error');
     }
   }
@@ -1224,15 +1058,13 @@ export async function init(params = {}) {
       toast('Postulación cancelada', 'info');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al cancelar postulación:', err);
       toast(err.message || 'No se pudo cancelar', 'error');
     }
   }
 
   function abrirModalPostularMiEquipo(partido) {
     const misEqDisponibles = equiposQuePuedoPostular(partido).filter(eq =>
-      !miEquipoEstaPostulado(partido, eq.id) &&
-      !miEquipoEstaInscrito(partido, eq.id)
+      !miEquipoEstaPostulado(partido, eq.id) && !miEquipoEstaInscrito(partido, eq.id)
     );
 
     if (misEqDisponibles.length === 0) {
@@ -1243,17 +1075,11 @@ export async function init(params = {}) {
       return postularEquipo(partido, misEqDisponibles[0]);
     }
 
-    const opciones = misEqDisponibles.map((eq, i) =>
-      `${i + 1}. ${eq.escudo || '🛡️'} ${eq.nombre}`
-    ).join('\n');
-
+    const opciones = misEqDisponibles.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
     const elegido = prompt(`¿Con cuál equipo querés postular?\n\n${opciones}\n\nEscribí el número:`);
     if (!elegido) return;
-
     const idx = Number(elegido) - 1;
-    if (isNaN(idx) || !misEqDisponibles[idx]) {
-      return toast('Opción inválida', 'error');
-    }
+    if (isNaN(idx) || !misEqDisponibles[idx]) return toast('Opción inválida', 'error');
 
     postularEquipo(partido, misEqDisponibles[idx]);
   }
@@ -1264,7 +1090,6 @@ export async function init(params = {}) {
       toast(`Postulación enviada con ${equipo.nombre}`, 'success');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al postular equipo:', err);
       toast(err.message || 'No se pudo postular el equipo', 'error');
     }
   }
@@ -1279,74 +1104,24 @@ export async function init(params = {}) {
       toast('Postulación cancelada', 'info');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al cancelar:', err);
       toast(err.message || 'No se pudo cancelar', 'error');
     }
   }
 
-  /* =========================================================
-     VER EQUIPO
-     ========================================================= */
   async function verEquipo(equipoId) {
-    let equipo;
-    try {
-      equipo = await obtenerGrupo(equipoId);
-    } catch (err) {
-      console.error('[partido-detalle] Error al cargar equipo:', err);
-      return toast('Equipo no encontrado', 'error');
-    }
-    if (!equipo) return toast('Equipo no encontrado', 'error');
+    const body = document.getElementById('ver-equipo-body');
+    if (!body) return;
 
-    document.getElementById('ver-equipo-titulo').textContent = `${equipo.escudo || '🛡️'} ${equipo.nombre}`;
-
-    const jugadores = equipo.miembros || [];
-
-    document.getElementById('ver-equipo-body').innerHTML = `
-      <div class="ver-equipo__header">
-        <div class="ver-equipo__escudo">${equipo.escudo || '🛡️'}</div>
-        <div>
-          <div class="ver-equipo__nombre">${equipo.nombre}</div>
-          <div class="ver-equipo__meta">${equipo.deporte}${equipo.ciudad ? ' · ' + equipo.ciudad : ''}</div>
-        </div>
-      </div>
-      <div class="detalle__seccion-titulo mb-4">👥 Plantilla (${jugadores.length} jugadores)</div>
-      ${jugadores.length === 0 ? `
-        <p class="text-sm text-muted text-center">Sin información de jugadores</p>
-      ` : `
-        <div class="player-list">
-          ${jugadores.map(j => `
-            <div class="player-row">
-              <div class="player-row__pos">${j.posicion ? j.posicion.slice(0, 3).toUpperCase() : '—'}</div>
-              <img src="${j.avatar || 'assets/icons/usuario.svg'}" class="avatar avatar--md" alt="" data-ver-perfil="${j.id}" style="cursor:pointer" />
-              <div style="flex:1; min-width:0">
-                <div class="feed-item__title">${j.nombre}</div>
-                <div class="feed-item__subtitle">${j.posicion || 'Sin posición'}</div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `}
-    `;
-
-    document.getElementById('ver-equipo-body').querySelectorAll('[data-ver-perfil]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(el.dataset.verPerfil);
-        });
-      });
-    });
-
-    modalVerEquipo.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-ver-equipo');
-    });
-
+    document.getElementById('ver-equipo-titulo').textContent = 'Perfil del equipo';
+    
     abrirModal('modal-ver-equipo');
+
+    // ⚡ Llamamos a nuestro módulo compartido
+    await renderGrupoPublico(body, equipoId, {
+      onVolver: () => cerrarModal('modal-ver-equipo')
+    });
   }
 
-  /* =========================================================
-     MODAL EDITAR
-     ========================================================= */
   function abrirModalEditar(partido) {
     if (!modalEditar) return;
 
@@ -1366,12 +1141,8 @@ export async function init(params = {}) {
       document.getElementById('edit-precio-wrapper').classList.toggle('hidden', gratis);
     }
 
-    const inscritosCount = esDeEquipo(partido)
-      ? (partido.equiposInscritos || []).length
-      : (partido.inscritos || []).length;
-
-    document.getElementById('edit-cupos-hint').textContent =
-      `Actualmente hay ${inscritosCount} ${esDeEquipo(partido) ? 'equipos' : 'inscritos'}.`;
+    const inscritosCount = esDeEquipo(partido) ? (partido.equiposInscritos || []).length : (partido.inscritos || []).length;
+    document.getElementById('edit-cupos-hint').textContent = `Actualmente hay ${inscritosCount} ${esDeEquipo(partido) ? 'equipos' : 'inscritos'}.`;
 
     const checkGratis = document.getElementById('edit-gratis');
     checkGratis.onchange = () => {
@@ -1380,12 +1151,8 @@ export async function init(params = {}) {
 
     document.getElementById('btn-guardar-edicion').onclick = () => guardarEdicion(partido);
 
-    modalEditar.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-editar-partido');
-    });
-    modalEditar.onclick = (e) => {
-      if (e.target === modalEditar) cerrarModal('modal-editar-partido');
-    };
+    modalEditar.querySelectorAll('[data-cerrar-modal]').forEach(btn => btn.onclick = () => cerrarModal('modal-editar-partido'));
+    modalEditar.onclick = (e) => { if (e.target === modalEditar) cerrarModal('modal-editar-partido'); };
 
     abrirModal('modal-editar-partido');
   }
@@ -1393,7 +1160,6 @@ export async function init(params = {}) {
   async function guardarEdicion(partido) {
     const nuevoTitulo = document.getElementById('edit-titulo').value.trim();
     const nuevaDescripcion = document.getElementById('edit-descripcion').value.trim();
-
     const cambios = { titulo: nuevoTitulo, descripcion: nuevaDescripcion || null };
 
     if (!esModoOrganizar(partido)) {
@@ -1422,17 +1188,12 @@ export async function init(params = {}) {
       toast('Partido actualizado', 'success');
       await render();
     } catch (err) {
-      console.error('[partido-detalle] Error al editar:', err);
       toast(err.message || 'No se pudo actualizar el partido', 'error');
     }
   }
 
-  /* =========================================================
-     INIT
-     ========================================================= */
   await render();
 
-  /* ---------- AUTO-ABRIR MODAL DE EDICIÓN ---------- */
   const partidoAEditar = sessionStorage.getItem('partidoAEditar');
   if (partidoAEditar && String(partidoAEditar) === String(id) && soyOrganizador(partido)) {
     sessionStorage.removeItem('partidoAEditar');

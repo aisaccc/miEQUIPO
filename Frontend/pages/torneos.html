@@ -44,13 +44,26 @@
 
 <!-- ================= PANEL: DISPONIBLES ================= -->
 <div class="subpanel subpanel--active" id="panel-torneos-disponibles">
-  <div class="toolbar mb-4" style="justify-content:flex-start">
+  <div class="toolbar mb-4" style="flex-direction:column; align-items:stretch; gap:var(--space-3)">
+    <div class="grupo-toolbar__search" style="max-width:420px; position:relative;">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--color-text-soft); pointer-events:none;">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        id="buscar-torneos"
+        class="grupo-toolbar__input"
+        placeholder="Buscar por nombre, deporte o lugar..."
+        autocomplete="off"
+      />
+    </div>
+
     <div class="toolbar__filters">
       <button class="chip chip--active" data-filtro-torneo="todos">Todos</button>
       <button class="chip" data-filtro-torneo="individual">Individual</button>
       <button class="chip" data-filtro-torneo="equipo">Equipos</button>
       <button class="chip" data-filtro-torneo="inscripcion">Inscripción abierta</button>
-      <button class="chip" data-filtro-torneo="en_curso">En curso</button>
       <button class="chip" data-filtro-torneo="gratis">Gratis</button>
     </div>
   </div>
@@ -62,13 +75,6 @@
 <div class="subpanel" id="panel-torneos-creados">
   <div class="toolbar mb-4">
     <p class="text-sm text-muted">Torneos que tú organizas</p>
-    <button class="btn btn--primary" id="btn-crear-torneo-2">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Crear torneo
-    </button>
   </div>
   <div id="lista-torneos-creados" class="tournament-grid"></div>
 </div>
@@ -86,7 +92,12 @@
   <div class="modal" style="max-width: 580px;">
     <div class="modal__header">
       <h3 class="modal__title" id="torneo-modal-titulo">Crear torneo</h3>
-      <button class="modal__close" data-cerrar-modal="modal-crear-torneo">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-crear-torneo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body">
@@ -95,11 +106,25 @@
         <label class="field__label">Tipo de participación *</label>
         <div class="nivel-grid" style="grid-template-columns:repeat(2, 1fr); gap:var(--space-2)">
           <div class="tipo-partido-opcion active" data-tipo-participacion="equipo">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👥 Por equipos</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Por equipos
+            </h3>
             <div class="nivel-opcion__desc">Se inscriben equipos (Fútbol, Básquetbol, etc.)</div>
           </div>
           <div class="tipo-partido-opcion" data-tipo-participacion="individual">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">👤 Individual</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Individual
+            </h3>
             <div class="nivel-opcion__desc">Se inscriben personas (Tenis, Boxeo, etc.)</div>
           </div>
         </div>
@@ -113,15 +138,42 @@
         <label class="field__label">Modalidad del torneo *</label>
         <div class="nivel-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
           <div class="tipo-partido-opcion active" data-modalidad="liga">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⚽ Liga</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="4"/>
+                <line x1="12" y1="2" x2="12" y2="8"/>
+                <line x1="12" y1="16" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="8" y2="12"/>
+                <line x1="16" y1="12" x2="22" y2="12"/>
+              </svg>
+              Liga
+            </h3>
             <div class="nivel-opcion__desc">Tabla de puntos</div>
           </div>
           <div class="tipo-partido-opcion" data-modalidad="eliminacion">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏆 Eliminación</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                <path d="M4 22h16"/>
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+              </svg>
+              Eliminación
+            </h3>
             <div class="nivel-opcion__desc">Bracket directo</div>
           </div>
           <div class="tipo-partido-opcion" data-modalidad="custom">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🔧 Custom</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/>
+                <path d="M17.64 15 22 10.64"/>
+                <path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/>
+              </svg>
+              Custom
+            </h3>
             <div class="nivel-opcion__desc">Vos organizás</div>
           </div>
         </div>
@@ -160,7 +212,12 @@
         </div>
 
         <div class="aviso-aprobacion mt-4" id="aviso-pago">
-          <span class="aviso-aprobacion__icon">💰</span>
+          <span class="aviso-aprobacion__icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </span>
           <div>
             <strong>Torneo de pago.</strong>
             Todas las inscripciones van a lista de espera. Coordiná el pago con el capitán por chat antes de aprobarlas.
@@ -170,8 +227,12 @@
 
       <div class="field">
         <details>
-          <summary style="cursor:pointer; font-weight:600; font-size:var(--fs-sm); padding:var(--space-2) 0; user-select:none">
-            ⚙️ Configuración avanzada
+          <summary style="cursor:pointer; font-weight:600; font-size:var(--fs-sm); padding:var(--space-2) 0; user-select:none; display:flex; align-items:center; gap:6px">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Configuración avanzada
           </summary>
 
           <div style="padding:var(--space-3) 0 0 0; display:flex; flex-direction:column; gap:var(--space-3)">
@@ -248,15 +309,36 @@
 
         <div class="nivel-grid" id="sistema-clasificacion-grid" style="grid-template-columns:repeat(3, 1fr); gap:var(--space-2)">
           <div class="tipo-partido-opcion active" data-sistema-clasificacion="simple">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🎯 Simple</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+              Simple
+            </h3>
             <div class="nivel-opcion__desc">Goles, puntos o sets</div>
           </div>
           <div class="tipo-partido-opcion" data-sistema-clasificacion="tiempo">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">⏱️ Tiempo</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="13" r="8"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="13" x2="16" y2="15"/>
+                <line x1="9" y1="2" x2="15" y2="2"/>
+              </svg>
+              Tiempo
+            </h3>
             <div class="nivel-opcion__desc">Menor tiempo gana</div>
           </div>
           <div class="tipo-partido-opcion" data-sistema-clasificacion="puntos">
-            <h3 class="card__title mb-4" style="font-size:var(--fs-sm)">🏅 Puntos</h3>
+            <h3 class="card__title mb-4" style="font-size:var(--fs-sm); display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="6"/>
+                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+              </svg>
+              Puntos
+            </h3>
             <div class="nivel-opcion__desc">Mayor puntaje gana</div>
           </div>
         </div>

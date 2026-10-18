@@ -1,11 +1,6 @@
 /* =========================================================
    mensajes.controller.js — Manejo de req/res de mensajería
-   =========================================================
-   Los controllers SOLO:
-   - Extraen datos de req
-   - Llaman al service
-   - Devuelven res
-*/
+   ========================================================= */
 
 import * as mensajesService from '../services/mensajes.service.js';
 import { validar } from '../validators/index.js';
@@ -13,6 +8,7 @@ import {
   schemaCrearConversacion,
   schemaEnviarMensaje,
   schemaUuidParam,
+  schemaCanalIdParam,
 } from '../validators/mensajes.schema.js';
 
 /* =========================================================
@@ -29,10 +25,7 @@ export async function listarConversaciones(req, res, next) {
 
 /* =========================================================
    POST /api/mensajes/conversaciones
-   =========================================================
-   Crea (o devuelve) la conversación entre el usuario autenticado
-   y el usuario indicado en el body.
-   */
+   ========================================================= */
 export async function crearConversacion(req, res, next) {
   try {
     const datos = validar(schemaCrearConversacion, req.body);
@@ -91,12 +84,13 @@ export async function listarMensajes(req, res, next) {
 export async function enviarMensaje(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
-    const { texto } = validar(schemaEnviarMensaje, req.body);
+    const { texto, imagen } = validar(schemaEnviarMensaje, req.body);
 
     const mensaje = await mensajesService.enviarMensaje(
       id,
       req.usuario.id,
-      texto
+      texto || null,
+      imagen || null
     );
 
     res.status(201).json({
@@ -110,9 +104,7 @@ export async function enviarMensaje(req, res, next) {
 
 /* =========================================================
    PATCH /api/mensajes/conversaciones/:id/leidos
-   =========================================================
-   Marca todos los mensajes de la conversación como leídos por mí.
-   */
+   ========================================================= */
 export async function marcarLeidos(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -125,9 +117,7 @@ export async function marcarLeidos(req, res, next) {
 
 /* =========================================================
    DELETE /api/mensajes/conversaciones/:id
-   =========================================================
-   Oculta la conversación para el usuario (soft delete).
-   */
+   ========================================================= */
 export async function ocultarConversacion(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -143,13 +133,93 @@ export async function ocultarConversacion(req, res, next) {
 
 /* =========================================================
    GET /api/mensajes/no-leidos
-   =========================================================
-   Cuenta total de mensajes no leídos (para el badge del header).
-   */
+   ========================================================= */
 export async function contarNoLeidos(req, res, next) {
   try {
     const total = await mensajesService.contarNoLeidos(req.usuario.id);
     res.json({ total });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   GET /api/mensajes/canales
+   ========================================================= */
+export async function listarCanales(req, res, next) {
+  try {
+    const canales = await mensajesService.listarCanales(req.usuario.id);
+    res.json({ canales });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   GET /api/mensajes/canales/:id
+   ========================================================= */
+export async function obtenerCanal(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const canal = await mensajesService.obtenerCanal(id, req.usuario.id);
+    res.json({ canal });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   GET /api/mensajes/canales/:id/mensajes
+   ========================================================= */
+export async function listarMensajesDeCanal(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const limit = Math.min(Number(req.query.limit) || 100, 200);
+
+    const mensajes = await mensajesService.listarMensajesDeCanal(
+      id,
+      req.usuario.id,
+      { limit }
+    );
+
+    res.json({ mensajes });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   POST /api/mensajes/canales/:id/mensajes
+   ========================================================= */
+export async function enviarMensajeACanal(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const { texto, imagen } = validar(schemaEnviarMensaje, req.body);
+
+    const mensaje = await mensajesService.enviarMensajeACanal(
+      id,
+      req.usuario.id,
+      texto || null,
+      imagen || null
+    );
+
+    res.status(201).json({
+      mensaje: 'Mensaje enviado',
+      data: mensaje,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   PATCH /api/mensajes/canales/:id/leidos
+   ========================================================= */
+export async function marcarCanalLeido(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const resultado = await mensajesService.marcarCanalLeido(id, req.usuario.id);
+    res.json(resultado);
   } catch (err) {
     next(err);
   }

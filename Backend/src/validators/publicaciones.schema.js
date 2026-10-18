@@ -1,12 +1,4 @@
-/* =========================================================
-   publicaciones.schema.js — Validación estricta con Zod
-   ========================================================= */
-
 import { z } from 'zod';
-
-/* =========================================================
-   CAMPOS REUTILIZABLES
-   ========================================================= */
 
 const uuidValido = z.string().uuid('El ID debe ser un UUID válido');
 
@@ -21,50 +13,71 @@ const imagenValida = z
   .string()
   .max(4_200_000, 'La imagen es demasiado grande (máx ~3MB)')
   .refine(
-    val => {
-      if (!val) return true;
-      return /^https?:\/\//i.test(val) ||
-             /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val);
-    },
+    val => !val || /^https?:\/\//i.test(val) || /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val),
     { message: 'La imagen debe ser una URL válida o una imagen' }
   )
   .nullable()
   .optional();
 
-/* =========================================================
-   SCHEMAS
-   ========================================================= */
+const videoValido = z
+  .string()
+  .max(6_300_000, 'El video es demasiado grande (máx ~5MB)')
+  .refine(
+    val => !val || /^https?:\/\//i.test(val) || /^data:video\/(mp4|webm|ogg);base64,/i.test(val),
+    { message: 'El video debe ser una URL válida o un video' }
+  )
+  .nullable()
+  .optional();
 
-/* ---------- POST /api/publicaciones  (perfil) ---------- */
+// ⚡ Nueva regla unificada de privacidad
+const privacidadValida = z.enum(['publico', 'amigos', 'privado', 'miembros', 'staff'], {
+  errorMap: () => ({ message: 'Privacidad inválida' }),
+}).optional().default('publico');
+
+/* ---------- POST /api/publicaciones (perfil / inicio) ---------- */
 export const schemaCrearPublicacion = z.object({
   contenido: contenidoValido,
   imagen: imagenValida,
+  video: videoValido,
+  tipo: z.enum(['post', 'partido', 'torneo', 'grupo']).optional().default('post'),
+  privacidad: privacidadValida,
 }).strict().refine(
-  data => (data.contenido && data.contenido.length > 0) || data.imagen,
-  { message: 'La publicación debe tener texto o imagen' }
+  data => (data.contenido && data.contenido.length > 0) || data.imagen || data.video,
+  { message: 'La publicación debe tener texto, imagen o video' }
 );
 
 /* ---------- POST /api/grupos/:id/publicaciones ---------- */
 export const schemaCrearPublicacionGrupo = z.object({
   contenido: contenidoValido,
   imagen: imagenValida,
+  video: videoValido,
+  tipo: z.enum(['post', 'partido', 'torneo', 'grupo']).optional().default('post'),
+  privacidad: privacidadValida,
 }).strict().refine(
-  data => (data.contenido && data.contenido.length > 0) || data.imagen,
-  { message: 'La publicación debe tener texto o imagen' }
+  data => (data.contenido && data.contenido.length > 0) || data.imagen || data.video,
+  { message: 'La publicación debe tener texto, imagen o video' }
 );
 
 /* ---------- POST /api/torneos/:id/publicaciones ---------- */
 export const schemaCrearPublicacionTorneo = z.object({
   contenido: contenidoValido,
   imagen: imagenValida,
+  video: videoValido,
+  tipo: z.enum(['post', 'partido', 'torneo', 'grupo']).optional().default('post'),
+  privacidad: privacidadValida,
 }).strict().refine(
-  data => (data.contenido && data.contenido.length > 0) || data.imagen,
-  { message: 'La publicación debe tener texto o imagen' }
+  data => (data.contenido && data.contenido.length > 0) || data.imagen || data.video,
+  { message: 'La publicación debe tener texto, imagen o video' }
 );
 
-/* ---------- PATCH /api/publicaciones/:id ---------- */
+/* ---------- PATCH /api/publicaciones/:id (contenido) ---------- */
 export const schemaEditarPublicacion = z.object({
   contenido: contenidoValido,
+}).strict();
+
+/* ---------- PATCH /api/publicaciones/:id/privacidad ---------- */
+export const schemaEditarPrivacidad = z.object({
+  privacidad: z.enum(['publico', 'amigos', 'privado', 'miembros', 'staff']),
 }).strict();
 
 /* ---------- POST /api/publicaciones/:id/comentarios ---------- */

@@ -7,7 +7,12 @@
   <div class="modal" style="max-width: 600px;">
     <div class="modal__header">
       <h3 class="modal__title">Editar partido</h3>
-      <button class="modal__close" data-cerrar-modal="modal-editar-partido">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-editar-partido">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body">
@@ -60,7 +65,12 @@
       </div>
 
       <div class="aviso-aprobacion show" id="edit-aviso-cambios">
-        <span class="aviso-aprobacion__icon">🔔</span>
+        <span class="aviso-aprobacion__icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+        </span>
         <div>
           Los <strong>inscritos</strong> recibirán una notificación con los cambios que hagas.
         </div>
@@ -79,7 +89,12 @@
   <div class="modal" style="max-width: 660px;">
     <div class="modal__header">
       <h3 class="modal__title">Equipos postulantes</h3>
-      <button class="modal__close" data-cerrar-modal="modal-equipos-postulantes">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-equipos-postulantes">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body" id="equipos-postulantes-body">
@@ -92,32 +107,46 @@
   </div>
 </div>
 
-<!-- ================= MODAL: VER EQUIPO (con plantilla) ================= -->
+<!-- ================= MODAL: VER EQUIPO (PERFIL PÚBLICO) ================= -->
 <div class="modal-backdrop" id="modal-ver-equipo">
-  <div class="modal" style="max-width: 520px;">
-    <div class="modal__header">
-      <h3 class="modal__title" id="ver-equipo-titulo">Detalles del equipo</h3>
-      <button class="modal__close" data-cerrar-modal="modal-ver-equipo">✕</button>
+  <div class="modal" style="max-width: 760px; width: 95%;">
+    <div class="modal__header" style="padding-bottom: 0; border-bottom: none;">
+      <h3 class="modal__title" id="ver-equipo-titulo" style="font-size: var(--fs-base);">Perfil del equipo</h3>
+      <button class="modal__close" data-cerrar-modal="modal-ver-equipo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
-    <div class="modal__body" id="ver-equipo-body"></div>
-
-    <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-ver-equipo">Cerrar</button>
+    <div class="modal__body" id="ver-equipo-body" style="padding: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden;">
+      <!-- Se llena dinámicamente con renderGrupoPublico -->
     </div>
   </div>
 </div>
+
 <!-- ================= MODAL: CONFIRMAR PARTIDO (modo Organizar) ================= -->
 <div class="modal-backdrop" id="modal-confirmar-partido">
   <div class="modal" style="max-width: 520px;">
     <div class="modal__header">
       <h3 class="modal__title" id="confirmar-titulo">Confirmar partido</h3>
-      <button class="modal__close" data-cerrar-modal="modal-confirmar-partido">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-confirmar-partido">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body">
       <div class="aviso-aprobacion show mb-4">
-        <span class="aviso-aprobacion__icon">📢</span>
+        <span class="aviso-aprobacion__icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 11 18-5v12L3 14v-3z"/>
+            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+          </svg>
+        </span>
         <div>
           Al confirmar, <strong>se cierra el partido</strong> y el interesado
           recibirá una notificación para aprobar la confirmación.
@@ -157,7 +186,12 @@
 
     <div class="modal__footer">
       <button class="btn btn--ghost" data-cerrar-modal="modal-confirmar-partido">Cancelar</button>
-      <button class="btn btn--primary" id="btn-confirmar-partido">✅ Confirmar partido</button>
+      <button class="btn btn--primary" id="btn-confirmar-partido">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Confirmar partido
+      </button>
     </div>
   </div>
 </div>

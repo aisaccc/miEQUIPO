@@ -2,11 +2,11 @@
 export function errorHandler(err, req, res, next) {
   console.error('[ERROR]', err.message);
 
-  /* Error de validación (nuestro helper o zod directo) */
-  if (err.name === 'ValidationError' || err.name === 'ZodError') {
+  /* Error de validación (Zod) */
+  if (err.name === 'ZodError' || err.name === 'ValidationError' || Array.isArray(err.errors)) {
     return res.status(400).json({
       error: 'Datos inválidos',
-      detalles: err.detalles || err.errors || [],
+      detalles: err.errors || err.detalles || [],
     });
   }
 
@@ -18,7 +18,6 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Referencia inválida' });
   }
   if (err.code === '22P02') {
-    // UUID inválido, por ejemplo
     return res.status(400).json({ error: 'Formato inválido' });
   }
 

@@ -4,7 +4,7 @@
   <div class="page-hero__row">
     <div>
       <h1 class="page-title page-title--xl">Partidos</h1>
-      <p class="page-subtitle">Explorá todo lo relacionado con partidos.</p>
+      <p class="page-subtitle">Explorá todos los partidos</p>
     </div>
     <button class="btn btn--primary" id="btn-crear-partido">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -45,6 +45,20 @@
 <!-- ================= PANEL: DISPONIBLES ================= -->
 <div class="subpanel subpanel--active" id="panel-disponibles">
   <div class="toolbar mb-4" style="flex-direction:column; align-items:stretch; gap:var(--space-3)">
+    <div class="grupo-toolbar__search" style="max-width:420px; position:relative;">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--color-text-soft); pointer-events:none;">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        id="buscar-partidos"
+        class="grupo-toolbar__input"
+        placeholder="Buscar por título, deporte o lugar..."
+        autocomplete="off"
+      />
+    </div>
+
     <div class="flex items-center justify-between" style="flex-wrap:wrap; gap:var(--space-3)">
       <div class="toolbar__filters" id="filtros-estado">
         <button class="chip chip--active" data-filtro="todos">Todos</button>
@@ -70,13 +84,6 @@
 <div class="subpanel" id="panel-creados">
   <div class="toolbar mb-4">
     <p class="text-sm text-muted">Partidos que tú organizas</p>
-    <button class="btn btn--primary" id="btn-crear-partido-2">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Crear partido
-    </button>
   </div>
   <div id="lista-creados" class="match-list"></div>
 </div>
@@ -97,7 +104,12 @@
         <div class="modal__eyebrow">Administrar</div>
         <h3 class="modal__title">Crear partido</h3>
       </div>
-      <button class="modal__close" data-cerrar-modal="modal-crear-partido">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-crear-partido">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body">
@@ -107,7 +119,13 @@
           <input type="checkbox" id="partido-modo-organizar" />
           <span class="switch__slider"></span>
           <div>
-            <div class="switch__label">📢 Modo Organizar partido</div>
+            <div class="switch__label" style="display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 11 18-5v12L3 14v-3z"/>
+                <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+              </svg>
+              Modo Organizar partido
+            </div>
             <div class="switch__hint">
               Publicá sin fecha ni lugar. Los interesados marcan "Me interesa"
               y cuando llegues a un acuerdo con uno, confirmás el partido.
@@ -116,11 +134,16 @@
         </label>
 
         <div class="aviso-aprobacion" id="aviso-modo-organizar">
-          <span class="aviso-aprobacion__icon">📢</span>
+          <span class="aviso-aprobacion__icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 11 18-5v12L3 14v-3z"/>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+            </svg>
+          </span>
           <div>
             <strong>Modo Organizar activado.</strong>
             No hace falta cargar fecha, hora, lugar ni precio.
-            Los interesados verán el partido con el botón <strong>"🙋 Me interesa"</strong>.
+            Los interesados verán el partido con el botón <strong>"Me interesa"</strong>.
             Cuando llegues a un acuerdo con uno por chat, confirmás el partido.
           </div>
         </div>
@@ -130,11 +153,22 @@
         <label class="field__label">¿Cómo publicás este partido?</label>
         <div class="nivel-grid" style="grid-template-columns:1fr 1fr">
           <div class="tipo-partido-opcion active" data-tipo-partido="jugador">
-            <h3 class="card__title mb-4">👤 Como jugador</h3>
+            <h3 class="card__title mb-4" style="display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Como jugador
+            </h3>
             <div class="nivel-opcion__desc">Se inscriben jugadores individuales</div>
           </div>
           <div class="tipo-partido-opcion" data-tipo-partido="equipo" style="display:none">
-            <h3 class="card__title mb-4">🛡️ Como equipo</h3>
+            <h3 class="card__title mb-4" style="display:flex; align-items:center; gap:6px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              Como equipo
+            </h3>
             <div class="nivel-opcion__desc">Solo se postulan otros equipos</div>
           </div>
         </div>
@@ -208,7 +242,13 @@
         <div class="nivel-grid" id="nivel-grid" style="grid-template-columns:repeat(3, 1fr)"></div>
 
         <div class="aviso-aprobacion mt-4" id="aviso-aprobacion">
-          <span class="aviso-aprobacion__icon">⚠️</span>
+          <span class="aviso-aprobacion__icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </span>
           <div>
             <strong>Este nivel siempre requiere aprobación.</strong>
             Los interesados se postularán y tú decidirás quién entra
@@ -268,7 +308,12 @@
         <div class="modal__eyebrow">Administrar</div>
         <h3 class="modal__title">Gestionar postulantes</h3>
       </div>
-      <button class="modal__close" data-cerrar-modal="modal-postulantes">✕</button>
+      <button class="modal__close" data-cerrar-modal="modal-postulantes">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
     <div class="modal__body" id="postulantes-body"></div>

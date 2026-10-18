@@ -7,7 +7,7 @@
 import { Router } from 'express';
 import * as torneosController from '../controllers/torneos.controller.js';
 import { requiereAuth } from '../middlewares/auth.middleware.js';
-
+import * as publicacionesController from '../controllers/publicaciones.controller.js';
 const router = Router();
 
 /* Todas las rutas requieren autenticación */
@@ -44,15 +44,21 @@ router.patch('/:id/solicitudes/:equipoId', torneosController.gestionarSolicitud)
 router.delete('/:id/equipos/:equipoId', torneosController.expulsarEquipo);
 
 /* =========================================================
-   INVITACIONES
+   INVITACIONES (a equipos)
    ========================================================= */
 router.post('/:id/invitaciones', torneosController.invitarEquipo);
 router.patch('/:id/invitaciones/:equipoId', torneosController.responderInvitacion);
 
 /* =========================================================
-   SUB-ORGANIZADORES
+   SUB-ORGANIZADORES (D.3)
+   =========================================================
+   ⚠️ IMPORTANTE: /invitaciones/responder va ANTES que
+   cualquier ruta con /:usuarioId dinámico, si no lo matchea.
    ========================================================= */
-router.post('/:id/organizadores', torneosController.agregarOrganizador);
+router.post('/:id/organizadores/invitaciones', torneosController.invitarOrganizador);
+router.patch('/:id/organizadores/invitaciones/responder', torneosController.responderInvitacionOrganizador);
+router.delete('/:id/organizadores/invitaciones/:usuarioId', torneosController.cancelarInvitacionOrganizador);
+
 router.delete('/:id/organizadores/:usuarioId', torneosController.quitarOrganizador);
 
 /* =========================================================
@@ -64,10 +70,7 @@ router.delete('/:id/partidos/:partidoId', torneosController.eliminarPartidoTorne
 router.patch('/:id/partidos/:partidoId/resultado', torneosController.cargarResultado);
 
 /* =========================================================
-   ⚡ FIXTURE — EDITAR CRUCE INDIVIDUAL (eliminación)
-   =========================================================
-   Permite cambiar local/visitante de un cruce existente
-   mientras el fixture NO esté confirmado.
+   FIXTURE — EDITAR CRUCE INDIVIDUAL (eliminación)
    ========================================================= */
 router.patch('/:id/cruces/:partidoId', torneosController.editarCruce);
 
@@ -93,9 +96,13 @@ router.delete('/:id/jornadas/:jornadaId', torneosController.eliminarJornada);
 /* =========================================================
    GUARDAR JORNADA BULK
    =========================================================
-   IMPORTANTE: va DESPUÉS de las rutas de jornadas normales
+   ⚠️ IMPORTANTE: va DESPUÉS de las rutas de jornadas normales
    para no confundirse con /jornadas/:jornadaId.
    ========================================================= */
 router.patch('/:id/jornadas/:jornadaId/bulk', torneosController.guardarJornadaBulk);
-
+/* =========================================================
+   PUBLICACIONES DEL TORNEO (Fase E.4)
+   ========================================================= */
+router.get('/:torneoId/publicaciones', publicacionesController.listarPorTorneo);
+router.post('/:torneoId/publicaciones', publicacionesController.crearEnTorneo);
 export default router;
