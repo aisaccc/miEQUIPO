@@ -1527,10 +1527,22 @@ export async function init() {
       console.warn('[mi-equipo] No se pudo marcar como leído:', err.message);
     }
 
-    await cargarCanales();
-    renderListaCanales();
+    // En lugar de buscar un panel fijo, reemplazamos el contenido del contenedor del chat
+    const panelChat = document.getElementById('panel-chat');
+    if (panelChat) {
+      // En móvil, ocultamos la lista de canales y mostramos el chat
+      const listaCanales = document.querySelector('.chat-layout__list');
+      if (listaCanales) listaCanales.classList.add('chat-layout__list--oculto');
+    }
 
+    await cargarCanales();
+    
+    // ⚡ ACÁ ESTÁ EL FIX: Forzamos el render del panel del canal
     await renderPanelCanalGlobal(canalId);
+
+    // Y le decimos al CSS que lo muestre
+    const panelCanalEl = document.getElementById('panel-canal');
+    if (panelCanalEl) panelCanalEl.classList.add('chat-layout__panel--abierto');
 
     intervaloCanal = setInterval(async () => {
       if (canalActualId === canalId) {
@@ -1539,7 +1551,7 @@ export async function init() {
     }, 3000);
   }
 
-  async function renderPanelCanalGlobal(canalId) {
+async function renderPanelCanalGlobal(canalId) {
     if (!panelCanalEl) return;
 
     let canal;
@@ -1568,6 +1580,14 @@ export async function init() {
 
     panelCanalEl.innerHTML = `
       <div class="chat-header">
+        <!-- ⚡ Botón Volver (Solo visible en móvil) -->
+        <button class="chat-back-btn" id="btn-volver-canal-global">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+
         <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
           ${iconoHtml}
         </div>
@@ -1604,6 +1624,14 @@ export async function init() {
         </button>
       </form>
     `;
+
+    // ⚡ Lógica del botón Volver
+    document.getElementById('btn-volver-canal-global')?.addEventListener('click', () => {
+      panelCanalEl.classList.remove('chat-layout__panel--abierto');
+      const listaCanales = document.querySelector('.chat-layout__list');
+      if (listaCanales) listaCanales.classList.remove('chat-layout__list--oculto');
+      canalActualId = null; // Deseleccionamos el canal actual
+    });
 
     document.getElementById('chat-canal-file')?.addEventListener('change', (e) => {
       const file = e.target.files[0];

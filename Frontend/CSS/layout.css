@@ -917,42 +917,30 @@ body {
 /* =========================================================
    FIXES GENERALES PARA MÓVIL (Ajustes de altura y scroll)
    ========================================================= */
-/* =========================================================
-   FIXES GENERALES PARA MÓVIL (Ajustes de altura y scroll)
-   ========================================================= */
 @media (max-width: 768px) {
-  
-  /* 1. EVITAR DESPLAZAMIENTO HORIZONTAL (El bug de "Actividad") */
+  /* 1. EVITAR DESPLAZAMIENTO HORIZONTAL GLOBAL */
   html, body {
     overflow-x: hidden !important;
     width: 100vw !important;
-    position: relative;
+    max-width: 100% !important;
   }
 
   .app-main {
     height: calc(100dvh - 60px - 64px) !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important; /* Esto evita que se mueva a la derecha */
+    overflow-x: hidden !important;
     padding-bottom: 24px !important; 
   }
 
-  /* 2. Arreglar el menú de usuario */
-  .user-menu__dropdown {
-    position: fixed !important;
-    top: 70px !important;
-    right: 16px !important;
-    left: auto !important;
-    width: calc(100vw - 32px) !important; 
-    max-width: 300px !important;
-  }
-
-  /* 3. ARREGLAR EL LAYOUT DEL CHAT (Estilo WhatsApp/Instagram) */
+  /* 2. ARREGLAR EL LAYOUT DEL CHAT (Mensajes) */
   .chat-layout {
-    display: block !important; /* Quita el grid de 2 columnas */
+    display: block !important; 
     height: 100% !important;
-    max-height: calc(100dvh - 140px) !important;
-    margin-bottom: 10px;
-    border-radius: 0;
+    max-height: 100% !important; /* Que ocupe todo */
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important; /* Quitar bordes redondeados */
+    background: var(--color-bg) !important;
   }
 
   .chat-layout__list {
@@ -961,31 +949,47 @@ body {
     border-right: none !important;
   }
 
-  .chat-layout__panel {
-    display: none !important; /* El chat está oculto por defecto */
-    width: 100% !important;
-    height: 100% !important;
-    background: var(--color-surface);
-  }
-
-  /* Cuando el JS agrega esta clase, mostramos el chat y ocultamos la lista */
-  .chat-layout__panel.chat-layout__panel--abierto {
+  /* 3. ARREGLAR CHATS EMBEBIDOS (Torneos y Equipos) */
+  /* Como tienen la clase --torneo, los forzamos a mostrarse siempre */
+  .chat-layout--torneo {
     display: flex !important;
-    flex-direction: column;
+    flex-direction: column !important;
+  }
+  
+  .chat-layout--torneo .chat-layout__panel {
+    display: flex !important; /* Siempre visible */
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
   }
 
-  .chat-layout__list.chat-layout__list--oculto {
+  /* Solo ocultar el panel en Mensajes (el que tiene lista) */
+  .chat-layout:not(.chat-layout--torneo) .chat-layout__panel {
     display: none !important;
   }
 
-  /* 4. Los Subtabs scrolleables, pero encerrados para que no rompan la pantalla */
+  .chat-layout:not(.chat-layout--torneo) .chat-layout__panel.chat-layout__panel--abierto {
+    display: flex !important;
+    flex-direction: column;
+    height: 100% !important;
+  }
+
+  .chat-layout:not(.chat-layout--torneo) .chat-layout__list.chat-layout__list--oculto {
+    display: none !important;
+  }
+
+  /* 4. ARREGLAR LOS SUBTABS (Que no se corten) */
   .subtabs, .toolbar__filters {
     display: flex !important;
-    overflow-x: auto !important;
     flex-wrap: nowrap !important;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px !important;
-    max-width: 100% !important; /* No deja que se estiren de más */
+    max-width: 100vw !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    margin-left: -16px !important; /* Tira hacia los bordes */
+    margin-right: -16px !important;
+    box-sizing: content-box !important;
   }
   
   .subtabs::-webkit-scrollbar, 
@@ -993,7 +997,27 @@ body {
     display: none;
   }
 
-  /* 5. Imágenes y Títulos */
+  /* Evitar que las palabras de los tabs se rompan en 2 líneas */
+  .subtab, .chip {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 5. Menú de usuario y Header */
+  .user-menu__dropdown {
+    position: fixed !important;
+    top: 70px !important;
+    right: 16px !important;
+    width: calc(100vw - 32px) !important; 
+    max-width: 300px !important;
+  }
+
+  .app-header {
+    height: 60px !important;
+    padding: 0 16px !important;
+  }
+
+  /* 6. Ajustar altura de imágenes y textos */
   .feed-post__media img, 
   .feed-post__media video,
   .tournament-card__image,
@@ -1004,16 +1028,6 @@ body {
 
   .page-title--xl, .pd-hero__title, .td-hero__title {
     font-size: 28px !important;
-    line-height: 1.2 !important;
-  }
-
-  /* 6. Header */
-  .app-header {
-    height: 60px !important;
-    padding: 0 16px !important;
-  }
-  .app-header__logo .logo-text {
-    font-size: 18px !important;
   }
 
   /* 7. Grids a 1 columna */
@@ -1021,21 +1035,5 @@ body {
   .tournament-grid, 
   .match-list {
     grid-template-columns: 1fr !important;
-  }
-
-  /* 8. Tarjeta de partido */
-  .match-card {
-    grid-template-columns: 1fr !important;
-    padding: 16px !important;
-  }
-  
-  .match-card__acciones-col {
-    grid-column: 1 !important;
-    grid-row: auto !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    margin-top: 12px !important;
-    padding-top: 12px !important;
-    border-top: 1px solid var(--color-border) !important;
   }
 }
