@@ -924,20 +924,30 @@ body {
    FIXES MÓVIL DEFINITIVOS (V3 - Scroll y Layout Perfecto)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 1. Dejamos que el celular scrollee naturalmente */
+  /* 1. EL FIN DEL SCROLL CORTADO: Desbloqueamos la altura de la página */
   html, body {
-    overflow-x: hidden !important; /* Solo bloqueamos el deslizamiento lateral */
     height: auto !important;
+    overflow-y: auto !important; /* Permite el scroll nativo del celular */
+    overflow-x: hidden !important;
     margin: 0;
     padding: 0;
   }
 
-  .app-main {
-    padding: 16px 16px 100px 16px !important; /* 100px de espacio abajo para que la barra no tape nada */
+  /* El contenedor de la app tampoco debe tener altura fija */
+  .app-shell {
     height: auto !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
-  /* 2. Barra inferior fija */
+  .app-main {
+    height: auto !important;
+    overflow: visible !important; /* Dejamos que el scroll sea de la ventana */
+    padding: 16px 16px 120px 16px !important; /* 120px abajo para que NADA quede tapado por la barra */
+  }
+
+  /* 2. La barra inferior flota por encima del contenido */
   .app-bottom-nav {
     display: flex;
     position: fixed;
@@ -963,22 +973,23 @@ body {
     border: none !important;
     background: var(--color-bg) !important;
     box-shadow: none !important;
+  }
+
+  /* Chats de pantalla completa (Mensajes) */
+  .chat-layout:not(.chat-layout--torneo) {
+    height: calc(100vh - 140px) !important; /* Altura fija para que el chat scrollee por dentro */
+    display: flex !important;
+    flex-direction: column !important;
     margin-bottom: 10px !important;
   }
 
-  /* Para el chat de Mensajes (el que tiene lista al lado) */
-  .chat-layout:not(.chat-layout--torneo) {
-    height: calc(100vh - 140px) !important; /* Altura ajustada */
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  /* ⚡ EL FIX PARA EL CHAT DE EQUIPOS/TORNEOS: Obligar a que se vea */
+  /* Chats dentro de detalles (Equipos y Torneos) */
   .chat-layout--torneo {
     display: flex !important;
     flex-direction: column !important;
-    height: 500px !important; /* Altura generosa para que no se aplaste */
+    height: 500px !important; 
     max-height: 70vh !important;
+    margin-bottom: 20px !important;
   }
 
   .chat-layout--torneo .chat-layout__panel {
