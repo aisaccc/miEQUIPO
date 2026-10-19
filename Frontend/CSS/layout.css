@@ -921,33 +921,22 @@ body {
    FIXES MÓVIL DEFINITIVOS (Fase QA Mobile)
    ========================================================= */
 /* =========================================================
-   FIXES MÓVIL DEFINITIVOS (V2 - Scroll y Chats)
+   FIXES MÓVIL DEFINITIVOS (V3 - Scroll y Layout Perfecto)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 1. El secreto del scroll perfecto: Fijar el body y usar flex */
+  
+  /* 1. Desbloqueamos el scroll vertical, solo ocultamos el horizontal */
   html, body {
-    height: 100dvh !important;
-    overflow: hidden !important; /* Bloquea el scroll de la ventana */
-    width: 100vw !important;
+    overflow-x: hidden !important;
+    width: 100% !important;
     margin: 0;
     padding: 0;
-  }
-
-  .app-shell {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100dvh !important;
-  }
-
-  .app-header {
-    flex-shrink: 0 !important;
-    height: 60px !important;
+    /* ¡OJO! Ya NO usamos overflow: hidden acá. Dejamos que el celular scrollee. */
   }
 
   .app-main {
-    flex: 1 !important;
-    overflow-y: auto !important; /* El scroll ahora ocurre ACÁ adentro */
-    padding: 16px 16px 100px 16px !important; /* 100px abajo para librar la barra inferior */
+    /* El scroll es natural. Solo dejamos un padding enorme abajo para librar la barra de navegación */
+    padding: 16px 16px 100px 16px !important; 
     height: auto !important;
   }
 
@@ -969,35 +958,30 @@ body {
   }
 
   /* 3. Chats (Mensajes, Equipos, Torneos) */
-  /* Ocupan el 100% del ancho, sin bordes redondeados */
+  /* Ocupan el 100% del ancho, sin bordes redondeados, y con un alto calculado */
   .chat-layout, 
   .chat-layout--torneo {
     display: flex !important;
     flex-direction: column !important;
-    width: calc(100% + 32px) !important; /* Compensa el padding del app-main */
+    width: calc(100% + 32px) !important; 
     margin-left: -16px !important;
     margin-right: -16px !important;
     border-radius: 0 !important;
     border: none !important;
     background: var(--color-bg) !important;
     box-shadow: none !important;
-    height: calc(100dvh - 130px) !important; /* Altura exacta restando Header y Nav */
+    /* Altura exacta: 100% del viewport - Header - BottomNav */
+    height: calc(100dvh - 124px) !important; 
     max-height: none !important;
+    margin-bottom: 0 !important;
   }
 
-  /* Si el chat está dentro de un detalle de equipo o torneo, evitamos que colapse */
-  .chat-layout--torneo {
-    height: 60vh !important;
-    min-height: 400px !important;
-  }
-
-  /* Forzar a que el panel del chat ocupe todo el espacio */
-  .chat-layout__panel,
-  .chat-layout--torneo .chat-layout__panel {
-    display: flex !important;
-    flex-direction: column !important;
+  /* Forzar a que la lista y el panel se manejen bien */
+  .chat-layout__list,
+  .chat-layout__panel {
     height: 100% !important;
-    width: 100% !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
   }
 
   /* 4. Arreglar el input para que el botón de enviar no se corte */
@@ -1005,6 +989,7 @@ body {
     padding: 10px 12px !important;
     gap: 8px !important;
     border-radius: 0 !important;
+    flex-shrink: 0 !important; /* Evita que el input se aplaste */
   }
   .chat-input input {
     width: 100% !important;
@@ -1027,6 +1012,9 @@ body {
     margin-left: -16px !important;
     margin-right: -16px !important;
     max-width: none !important;
+    display: flex !important;
+    overflow-x: auto !important; /* Scroll horizontal */
+    flex-wrap: nowrap !important;
   }
 
   .subtab {
@@ -1044,7 +1032,7 @@ body {
     box-shadow: none !important;
   }
 
-  /* 6. Filtros (Chips) */
+  /* 6. Filtros (Chips) con scroll horizontal */
   .toolbar__filters {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -1055,7 +1043,7 @@ body {
   .toolbar__filters::-webkit-scrollbar { display: none; }
   .chip { flex-shrink: 0 !important; }
 
-  /* 7. Modales (El problema de los comentarios cortados) */
+  /* 7. Modales (Para poder comentar) */
   .modal {
     max-height: 90dvh !important;
     display: flex !important;
@@ -1064,10 +1052,10 @@ body {
   .modal__body {
     overflow-y: auto !important;
     max-height: calc(90dvh - 120px) !important;
-    padding-bottom: 40px !important; /* Espacio extra para llegar al botón */
+    padding-bottom: 40px !important; 
   }
-
-  /* 8. Botones de Volver en Chats */
+  
+  /* Botón de volver en el chat */
   .chat-back-btn {
     display: flex !important;
   }
