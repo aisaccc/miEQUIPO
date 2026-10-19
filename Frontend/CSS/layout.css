@@ -1100,3 +1100,19 @@ body {
     max-width: 100% !important;
   }
 }
+/* =========================================================
+   LOGO EN EL LOGIN PARA MÓVIL
+   ========================================================= */
+.auth__mobile-logo {
+  display: none; /* Oculto por defecto en PC */
+}
+
+@media (max-width: 900px) {
+  /* Cuando se oculta la columna izquierda, mostramos el logo arriba */
+  .auth__mobile-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px; /* Separación con las pestañas */
+    margin-top: 10px;
+  }
+}
