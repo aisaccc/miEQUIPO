@@ -56,6 +56,7 @@ const HERO_COLORS = [
 ];
 
 export async function init() {
+  // 1. Arrancamos SÍ O SÍ con lo que dice tu localStorage
   let user = getSesion();
   if (!user) {
     window.location.href = 'index.html';
@@ -63,10 +64,15 @@ export async function init() {
   }
 
   try {
-    user = await obtenerMiPerfil();
+    const perfilBackend = await obtenerMiPerfil();
+    // 2. Solo pisamos el `user` local si el backend devolvió un ID válido
+    if (perfilBackend && perfilBackend.id) {
+      user = perfilBackend;
+    } else {
+      console.warn('[perfil] El backend no devolvió un ID válido. Manteniendo sesión local.');
+    }
   } catch (err) {
-    console.warn('[perfil] No se pudo obtener el perfil desde el backend:', err.message);
-    user = getSesion();
+    console.warn('[perfil] Error del backend. Manteniendo sesión local:', err.message);
   }
 
   const elHero            = document.getElementById('perfil-hero');
@@ -114,6 +120,10 @@ export async function init() {
   }
 
   async function render(u) {
+    // ⚡ BLINDAJE EXTREMO: Si no hay usuario, lo sacamos del localStorage
+    if (!u || !u.id) {
+      u = getSesion();
+    }
     if (!u) {
       u = { nombre: 'Usuario', username: 'usuario', id: null, heroColor: 'navy' };
     }

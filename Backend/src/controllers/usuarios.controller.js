@@ -5,7 +5,8 @@ import { schemaUuidParam } from '../validators/usuarios.schema.js';
 export async function obtenerMiPerfil(req, res, next) {
   try {
     const perfil = await usuariosService.obtenerMiPerfil(req.usuario.id);
-    res.json(perfil);
+    // ⚡ FIX: Envolvemos en { usuario: ... }
+    res.json({ usuario: perfil }); 
   } catch (err) {
     next(err);
   }
@@ -14,7 +15,6 @@ export async function obtenerMiPerfil(req, res, next) {
 export async function obtener(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id || req.params.usuarioId);
-    // ⚡ LE PASAMOS EL USUARIO LOGUEADO
     const perfil = await usuariosService.obtenerPerfilPublico(id, req.usuario.id);
     res.json({ usuario: perfil });
   } catch (err) {
@@ -25,7 +25,8 @@ export async function obtener(req, res, next) {
 export async function actualizarMiPerfil(req, res, next) {
   try {
     const perfil = await usuariosService.actualizarMiPerfil(req.usuario.id, req.body);
-    res.json(perfil);
+    // ⚡ FIX: Envolvemos en { usuario: ... }
+    res.json({ usuario: perfil });
   } catch (err) {
     next(err);
   }
@@ -34,7 +35,8 @@ export async function actualizarMiPerfil(req, res, next) {
 export async function actualizarMisDeportes(req, res, next) {
   try {
     const perfil = await usuariosService.actualizarMisDeportes(req.usuario.id, req.body.deportes);
-    res.json(perfil);
+    // ⚡ FIX: Envolvemos en { usuario: ... }
+    res.json({ usuario: perfil });
   } catch (err) {
     next(err);
   }
