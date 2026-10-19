@@ -118,50 +118,50 @@ export async function init() {
     try {
       u = await obtenerMiPerfil();
     } catch (err) {
-      console.warn('[perfil] Error obteniendo perfil (usando caché local):', err.message);
-      u = getSesion(); 
-      
-      // ⚡ Si el error es que Render está despertando, no hacemos nada, solo mostramos el perfil local
-      if (!u) {
-        toast('Sesión expirada. Iniciá sesión de nuevo.', 'error');
-        window.location.href = 'index.html';
-        return;
-      }
+      console.warn('[perfil] Fallback a sesión local:', err.message);
+      u = getSesion();
     }
 
-    aplicarColorHero(u.heroColor || 'navy');
+    // ⚡ FIX DEFINITIVO: Si u no es un objeto válido, redirigimos.
+    if (!u || typeof u !== 'object') {
+      toast('Sesión expirada. Iniciá sesión de nuevo.', 'error');
+      window.location.href = 'index.html';
+      return;
+    }
 
-    // ⚡ FIX: Fallback de avatar con iniciales si no hay foto
+    // ⚡ Usamos "u?.heroColor" para que no rompa NUNCA
+    aplicarColorHero(u?.heroColor || 'navy');
+
     if (elAvatar) {
-      elAvatar.src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
+      elAvatar.src = u?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
     }
     
-    if (elNombre) elNombre.textContent = u.nombre || 'Usuario';
+    if (elNombre) elNombre.textContent = u?.nombre || 'Usuario';
     
     if (elUsername) {
-      const partes = ['@' + (u.username || 'usuario')];
-      if (u.ciudad || u.pais) {
-        const lugar = [u.ciudad, u.pais].filter(Boolean).join(', ');
+      const partes = ['@' + (u?.username || 'usuario')];
+      if (u?.ciudad || u?.pais) {
+        const lugar = [u?.ciudad, u?.pais].filter(Boolean).join(', ');
         partes.push(lugar);
       }
       elUsername.textContent = partes.join(' · ');
     }
 
     if (elBio) {
-      elBio.textContent = u.bio || 'Sin biografía todavía.';
-      elBio.style.opacity = u.bio ? '0.85' : '0.55';
-      elBio.style.fontStyle = u.bio ? 'normal' : 'italic';
+      elBio.textContent = u?.bio || 'Sin biografía todavía.';
+      elBio.style.opacity = u?.bio ? '0.85' : '0.55';
+      elBio.style.fontStyle = u?.bio ? 'normal' : 'italic';
     }
 
     if (elMetaChips) {
       const chips = [];
-      if (u.edad) chips.push(`${ICONOS.calendario} ${u.edad} años`);
-      if (u.pais) chips.push(`${ICONOS.mundo} ${u.pais}`);
+      if (u?.edad) chips.push(`${ICONOS.calendario} ${u.edad} años`);
+      if (u?.pais) chips.push(`${ICONOS.mundo} ${u.pais}`);
       elMetaChips.innerHTML = chips.map(t => `<span class="perfil-hero__chip">${t}</span>`).join('');
     }
 
     if (elDeportesChips) {
-      const misDeportes = u.deportes || [];
+      const misDeportes = u?.deportes || [];
       if (misDeportes.length === 0) {
         elDeportesChips.innerHTML = '';
       } else {
