@@ -21,20 +21,17 @@ import {
 import { obtenerHistorialPartidos } from '../services/partidos.service.js';
 import { listarPublicacionesDe } from '../services/publicaciones.service.js';
 
-// ⚡ IMPORTAMOS EL FEED COMPARTIDO Y EL MODAL
 import {
   renderFeedPublicaciones,
   abrirModalCrearPublicacionCompartido
 } from '../utils/publicaciones-ui.js';
 
-/* ---------- HELPER HTML ---------- */
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
 }
 
-/* ---------- LISTA DE PAÍSES ---------- */
 const PAISES = [
   'Argentina', 'Bolivia', 'Brasil', 'Canadá', 'Chile', 'Colombia',
   'Costa Rica', 'Cuba', 'Ecuador', 'El Salvador', 'España', 'Estados Unidos',
@@ -43,9 +40,6 @@ const PAISES = [
   'Venezuela', 'Otro'
 ];
 
-/* =========================================================
-   COLORES DEL HERO
-   ========================================================= */
 const HERO_COLORS = [
   { key: 'navy',    label: 'Navy',     from: '#0F1B2D', to: '#1E2D45', text: 'light' },
   { key: 'black',   label: 'Negro',    from: '#0A0A0A', to: '#1F1F1F', text: 'light' },
@@ -61,12 +55,12 @@ const HERO_COLORS = [
   { key: 'white',   label: 'Blanco',   from: '#FFFFFF', to: '#F5F5F5', text: 'dark'  },
 ];
 
-/* =========================================================
-   INIT
-   ========================================================= */
 export async function init() {
   let user = getSesion();
-  if (!user) return null;
+  if (!user) {
+    window.location.href = 'index.html';
+    return null;
+  }
 
   try {
     user = await obtenerMiPerfil();
@@ -75,7 +69,6 @@ export async function init() {
     user = getSesion();
   }
 
-  /* ---------- REFS ---------- */
   const elHero            = document.getElementById('perfil-hero');
   const elAvatar          = document.getElementById('perfil-avatar');
   const elNombre          = document.getElementById('perfil-nombre');
@@ -88,7 +81,6 @@ export async function init() {
   const elStatsDeportes   = document.getElementById('perfil-stats-deportes');
   const elPubsGrid        = document.getElementById('perfil-publicaciones-grid');
 
-  /* ---------- REFS HISTORIAL ---------- */
   const elHistorial       = document.getElementById('perfil-historial');
   const elHistorialCount  = document.getElementById('historial-count');
   const elHistorialCargar = document.getElementById('historial-cargar-mas-wrapper');
@@ -99,46 +91,30 @@ export async function init() {
   const btnHistLimpiar    = document.getElementById('btn-limpiar-filtros');
   const btnHistCargarMas  = document.getElementById('btn-historial-cargar-mas');
 
-  /* ---------- REFS SUBTABS ---------- */
   const subtabsPerfil      = document.querySelectorAll('[data-tab-perfil]');
   const panelPublicaciones = document.getElementById('panel-perfil-publicaciones');
   const panelActividad     = document.getElementById('panel-perfil-actividad');
   const panelHistorial     = document.getElementById('panel-perfil-historial');
 
-  /* ---------- AVATARES MOCK ---------- */
   const AVATARES = Array.from({ length: 20 }, (_, i) => `https://i.pravatar.cc/150?img=${i + 1}`);
 
-  /* ---------- ESTADO DEL HISTORIAL ---------- */
   let histFiltros = { rol: 'todos', deporte: '', desde: '', hasta: '' };
   let histPagina = 1;
   let histPartidos = [];
   let histCargando = false;
-
-  /* ---------- ESTADO DE SUBTABS ---------- */
   let tabActual = 'publicaciones';
-
-  /* ---------- ESTADO PUBLICACIONES ---------- */
   let publicacionesCache = [];
 
-  /* =========================================================
-     APLICAR COLOR AL HERO
-     ========================================================= */
   function aplicarColorHero(colorKey) {
     if (!elHero) return;
-
     const preset = HERO_COLORS.find(c => c.key === colorKey) || HERO_COLORS[0];
-
     elHero.dataset.heroColor = preset.key;
     elHero.style.background = `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)`;
     elHero.classList.toggle('perfil-hero--dark-text', preset.text === 'dark');
   }
 
-  /* =========================================================
-     RENDER PRINCIPAL
-     ========================================================= */
   async function render() {
     let u;
-
     try {
       u = await obtenerMiPerfil();
     } catch (err) {
@@ -146,14 +122,24 @@ export async function init() {
       u = getSesion();
     }
 
-    if (!u) return;
+    // ⚡ FIX: Si no hay usuario (sesión muerta), redirigir al login
+    if (!u) {
+      toast('Sesión expirada. Iniciá sesión de nuevo.', 'error');
+      window.location.href = 'index.html';
+      return;
+    }
 
     aplicarColorHero(u.heroColor || 'navy');
 
-    if (elAvatar) elAvatar.src = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
-    if (elNombre) elNombre.textContent = u.nombre;
+    // ⚡ FIX: Fallback de avatar con iniciales si no hay foto
+    if (elAvatar) {
+      elAvatar.src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
+    }
+    
+    if (elNombre) elNombre.textContent = u.nombre || 'Usuario';
+    
     if (elUsername) {
-      const partes = ['@' + u.username];
+      const partes = ['@' + (u.username || 'usuario')];
       if (u.ciudad || u.pais) {
         const lugar = [u.ciudad, u.pais].filter(Boolean).join(', ');
         partes.push(lugar);
@@ -196,16 +182,11 @@ export async function init() {
     cambiarTabPerfil(tabActual);
   }
 
-  /* =========================================================
-     SUBTABS
-     ========================================================= */
   function cambiarTabPerfil(tab) {
     tabActual = tab;
-
     subtabsPerfil.forEach(st => {
       st.classList.toggle('subtab--active', st.dataset.tabPerfil === tab);
     });
-
     panelPublicaciones?.classList.toggle('subpanel--active', tab === 'publicaciones');
     panelActividad?.classList.toggle('subpanel--active', tab === 'actividad');
     panelHistorial?.classList.toggle('subpanel--active', tab === 'historial');
@@ -215,15 +196,10 @@ export async function init() {
     st.addEventListener('click', () => cambiarTabPerfil(st.dataset.tabPerfil));
   });
 
-  /* =========================================================
-     STATS DEL HERO
-     ========================================================= */
   function renderStatsHero(u) {
     if (!elStatsHero) return;
-
     const base = u.statsHeroBase || {};
     const auto = u.statsHero || { partidos: 0, torneos: 0, equipos: 0 };
-
     const partidos = (Number(base.partidos) || 0) + (auto.partidos || 0);
     const torneos = auto.torneos || 0;
     const equipos = auto.equipos || 0;
@@ -244,9 +220,6 @@ export async function init() {
     `;
   }
 
-  /* =========================================================
-     PUBLICACIONES (UNIFICADO CON FEED)
-     ========================================================= */
   async function renderPublicaciones(u) {
     if (!elPubsGrid) return;
 
@@ -272,7 +245,6 @@ export async function init() {
 
     const esMiPerfil = String(u.id) === String(getSesion()?.id);
 
-    // Header con botón de crear
     const headerHtml = esMiPerfil ? `
       <div class="perfil-pubs-header mb-4" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <h3 class="card__title" style="margin:0">Mis publicaciones</h3>
@@ -284,10 +256,8 @@ export async function init() {
     ` : '';
 
     elPubsGrid.innerHTML = `${headerHtml}<div id="perfil-feed-container"></div>`;
-    
     const feedCont = document.getElementById('perfil-feed-container');
 
-    // ⚡ Usamos el feed unificado
     renderFeedPublicaciones(feedCont, publicacionesCache, {
       onRefrescar: () => renderPublicaciones(u)
     });
@@ -297,12 +267,8 @@ export async function init() {
     });
   }
 
-  /* =========================================================
-     LISTA DE DEPORTES Y POSICIONES
-     ========================================================= */
   function renderDeportesLista(u) {
     if (!elDeportesLista) return;
-
     const misDeportes = u.deportes || [];
 
     if (misDeportes.length === 0) {
@@ -328,12 +294,8 @@ export async function init() {
     }).join('');
   }
 
-  /* =========================================================
-     STATS POR DEPORTE
-     ========================================================= */
   function renderStatsDeportes(u) {
     if (!elStatsDeportes) return;
-
     const misDeportes = u.deportes || [];
 
     if (misDeportes.length === 0) {
@@ -354,7 +316,6 @@ export async function init() {
       const statsDisponibles = statsPorDeporte[d.deporte] || [];
       const statsUsuario = d.stats || {};
       const icono = iconoDeporte(d.deporte);
-
       const cargadas = statsDisponibles.filter(s => statsUsuario[s.clave]?.valor > 0);
 
       return `
@@ -378,7 +339,6 @@ export async function init() {
               ${statsDisponibles.map(s => {
                 const stat = statsUsuario[s.clave];
                 if (!stat || !stat.valor) return '';
-
                 const esPrivada = !stat.publico;
                 return `
                   <div class="stat-box" style="position:relative">
@@ -403,9 +363,6 @@ export async function init() {
     });
   }
 
-  /* =========================================================
-     HELPER: icono por deporte
-     ========================================================= */
   function iconoDeporte(deporte) {
     const map = {
       'Fútbol': 'assets/icons/balon-de-futbol (2).png',
@@ -436,9 +393,6 @@ export async function init() {
     return valor;
   }
 
-  /* =========================================================
-     HISTORIAL DE PARTIDOS
-     ========================================================= */
   function iconoDeporteHistorial(deporte) {
     const map = {
       'Fútbol': 'assets/icons/balon-de-futbol (2).png',
@@ -538,7 +492,6 @@ export async function init() {
 
   function renderHistorial() {
     if (!elHistorial) return;
-
     if (histPartidos.length === 0) {
       elHistorial.innerHTML = `
         <div class="empty-state--sm" style="padding:var(--space-5)">
@@ -605,9 +558,7 @@ export async function init() {
 
   function poblarSelectDeportesHistorial() {
     if (!selHistDeporte) return;
-
     const deportesUnicos = [...new Set(histPartidos.map(p => p.deporte).filter(Boolean))].sort();
-
     selHistDeporte.innerHTML = '<option value="">Todos los deportes</option>' +
       deportesUnicos.map(d => `<option value="${d}">${d}</option>`).join('');
   }
@@ -657,9 +608,6 @@ export async function init() {
     });
   }
 
-  /* =========================================================
-     MODAL EDITAR PERFIL
-     ========================================================= */
   function abrirModalEditar() {
     const u = getSesion();
     if (!u) return;
@@ -679,8 +627,8 @@ export async function init() {
     }
 
     const previewAvatar = document.getElementById('edit-perf-avatar-preview');
-    previewAvatar.src = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
-    let avatarSel = u.avatar || `https://i.pravatar.cc/150?u=${u.id}`;
+    previewAvatar.src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
+    let avatarSel = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
 
     const contAv = document.getElementById('perfil-galeria-avatares');
     contAv.innerHTML = AVATARES.map(url => `
@@ -733,7 +681,7 @@ export async function init() {
     const btnQuitar = document.getElementById('edit-perf-avatar-quitar');
     if (btnQuitar) {
       btnQuitar.onclick = () => {
-        avatarSel = `https://i.pravatar.cc/150?u=${u.id}`;
+        avatarSel = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
         previewAvatar.src = avatarSel;
         contAv.querySelectorAll('[data-avatar]').forEach(b => {
           b.classList.remove('active');
@@ -946,9 +894,6 @@ export async function init() {
     abrirModal('modal-editar-perfil');
   }
 
-  /* =========================================================
-     MODAL EDITAR STATS DE UN DEPORTE
-     ========================================================= */
   function abrirModalEditarStatsDeporte(nombreDeporte) {
     const u = getSesion();
     if (!u) return;
@@ -1038,17 +983,11 @@ export async function init() {
     abrirModal('modal-editar-stats-deporte');
   }
 
-  /* =========================================================
-     CONECTAR BOTONES
-     ========================================================= */
   document.getElementById('btn-editar-perfil')?.addEventListener('click', abrirModalEditar);
   document.getElementById('btn-editar-deportes')?.addEventListener('click', abrirModalEditar);
 
   conectarEventosHistorial();
 
-  /* =========================================================
-     INIT
-     ========================================================= */
   await render();
 
   return null;
