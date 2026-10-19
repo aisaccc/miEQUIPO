@@ -2,7 +2,8 @@
 <div class="perfil-hero" id="perfil-hero" data-hero-color="navy">
   <div class="perfil-hero__inner">
     <div class="perfil-hero__left">
-      <img id="perfil-avatar" src="" alt="" class="perfil-hero__avatar" />
+      <!-- ⚡ FIX: src con imagen por defecto para evitar recargas -->
+      <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="perfil-hero__avatar" />
 
       <div class="perfil-hero__info">
         <h1 id="perfil-nombre" class="perfil-hero__nombre"></h1>
@@ -175,7 +176,8 @@
         <label class="field__label">Foto de perfil</label>
 
         <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4)">
-          <img id="edit-perf-avatar-preview" src="" alt="" class="avatar avatar--lg" />
+          <!-- ⚡ FIX: src con placeholder por defecto -->
+          <img id="edit-perf-avatar-preview" src="assets/icons/usuario.svg" alt="" class="avatar avatar--lg" />
           <div style="flex:1">
             <label class="btn btn--primary btn--sm" style="cursor:pointer; display:inline-flex">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
