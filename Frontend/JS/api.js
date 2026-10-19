@@ -104,30 +104,19 @@ async function request(endpoint, options = {}) {
   } = options;
 
   const url = `${API_URL}${endpoint}`;
-
-  const finalHeaders = {
-    'Content-Type': 'application/json',
-    ...headers,
-  };
+  const finalHeaders = { 'Content-Type': 'application/json', ...headers };
 
   if (auth) {
     const token = getAccessToken();
-    if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
   }
 
-  const config = {
-    method,
-    headers: finalHeaders,
-  };
-
-  if (body !== null) {
-    config.body = JSON.stringify(body);
-  }
+  const config = { method, headers: finalHeaders };
+  if (body !== null) config.body = JSON.stringify(body);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  // ⚡ SUBIMOS A 50 SEGUNDOS PARA QUE RENDER DESPIERTE SIN CORTAR LA PETICIÓN
+  const timeoutId = setTimeout(() => controller.abort(), 50000); 
   config.signal = controller.signal;
 
   let res;
@@ -136,9 +125,9 @@ async function request(endpoint, options = {}) {
   } catch (netErr) {
     clearTimeout(timeoutId);
     if (netErr.name === 'AbortError') {
-      throw new ApiError('La petición tardó demasiado. Revisá tu conexión.', 0);
+      throw new ApiError('El servidor tardó demasiado en responder (Render despertando).', 0);
     }
-    throw new ApiError('No se pudo conectar con el servidor. Verificá tu conexión.', 0);
+    throw new ApiError('No se pudo conectar con el servidor.', 0);
   }
   clearTimeout(timeoutId);
 
@@ -146,32 +135,21 @@ async function request(endpoint, options = {}) {
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
     try {
       await intentarRefresh();
-      // Reintentar con el nuevo token
       return request(endpoint, { ...options, sinRefresh: true });
     } catch (refreshErr) {
-      // Si el refresh falló por error del servidor, no borramos sesión.
-      if (refreshErr.status === 429 || refreshErr.status >= 500) {
-        throw refreshErr;
-      }
-      // El refresh falló → sesión muerta
+      if (refreshErr.status === 429 || refreshErr.status >= 500) throw refreshErr;
       limpiarTokens();
       redirigirALogin();
       throw new ApiError('Sesión expirada. Iniciá sesión de nuevo.', 401);
     }
   }
 
-  // Parsear respuesta
   let data = null;
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
+    try { data = await res.json(); } catch { data = null; }
   }
 
-  // Si la respuesta no es OK, lanzar error
   if (!res.ok) {
     const mensaje = data?.error || data?.mensaje || `Error ${res.status}`;
     throw new ApiError(mensaje, res.status, data?.detalles);
