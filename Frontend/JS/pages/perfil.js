@@ -65,8 +65,8 @@ export async function init() {
   try {
     user = await obtenerMiPerfil();
   } catch (err) {
-    console.warn('[perfil] No se pudo obtener el perfil desde el backend:', err.message);
-    user = getSesion();
+    console.warn('[perfil] Fallback a sesión local:', err.message);
+    user = getSesion(); // ⚡ Usa la sesión local si el backend tarda
   }
 
   const elHero            = document.getElementById('perfil-hero');
@@ -118,15 +118,15 @@ export async function init() {
     try {
       u = await obtenerMiPerfil();
     } catch (err) {
-      console.warn('[perfil] Fallback a sesión local:', err.message);
-      u = getSesion();
-    }
-
-    // ⚡ FIX: Si no hay usuario (sesión muerta), redirigir al login
-    if (!u) {
-      toast('Sesión expirada. Iniciá sesión de nuevo.', 'error');
-      window.location.href = 'index.html';
-      return;
+      console.warn('[perfil] Error obteniendo perfil (usando caché local):', err.message);
+      u = getSesion(); 
+      
+      // ⚡ Si el error es que Render está despertando, no hacemos nada, solo mostramos el perfil local
+      if (!u) {
+        toast('Sesión expirada. Iniciá sesión de nuevo.', 'error');
+        window.location.href = 'index.html';
+        return;
+      }
     }
 
     aplicarColorHero(u.heroColor || 'navy');

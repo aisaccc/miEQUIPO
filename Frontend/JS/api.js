@@ -1,40 +1,24 @@
 /* =========================================================
-   api.js — Cliente HTTP centralizado (v3)
-   =========================================================
-   Todos los servicios (auth, partidos, grupos...) usan esto.
-   NUNCA hacer fetch() directo en componentes/páginas.
-*/
+   api.js — Cliente HTTP centralizado (v4 - A PRUEBA DE BALAS)
+   ========================================================= */
 
 const API_URL = 'https://miequipo.onrender.com/api';
 
 const KEY_ACCESS  = 'miejquipo_access_token';
 const KEY_REFRESH = 'miejquipo_refresh_token';
-const TIMEOUT_MS  = 20000;
+const TIMEOUT_MS  = 60000; // ⚡ 60 segundos para que Render despierte
 
-/* =========================================================
-   TOKEN HELPERS
-   ========================================================= */
-export function getAccessToken() {
-  return localStorage.getItem(KEY_ACCESS);
-}
-
-export function getRefreshToken() {
-  return localStorage.getItem(KEY_REFRESH);
-}
-
+export function getAccessToken() { return localStorage.getItem(KEY_ACCESS); }
+export function getRefreshToken() { return localStorage.getItem(KEY_REFRESH); }
 export function setTokens({ accessToken, refreshToken }) {
   if (accessToken)  localStorage.setItem(KEY_ACCESS, accessToken);
   if (refreshToken) localStorage.setItem(KEY_REFRESH, refreshToken);
 }
-
 export function limpiarTokens() {
   localStorage.removeItem(KEY_ACCESS);
   localStorage.removeItem(KEY_REFRESH);
 }
 
-/* =========================================================
-   ERROR CUSTOM
-   ========================================================= */
 export class ApiError extends Error {
   constructor(mensaje, status, detalles) {
     super(mensaje);
@@ -44,18 +28,13 @@ export class ApiError extends Error {
   }
 }
 
-/* =========================================================
-   REFRESH AUTOMÁTICO
-   ========================================================= */
-let refreshEnCurso = null; // evita múltiples refresh en paralelo
+let refreshEnCurso = null;
 
 async function intentarRefresh() {
   if (refreshEnCurso) return refreshEnCurso;
 
   const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    throw new ApiError('No hay refresh token', 401);
-  }
+  if (!refreshToken) throw new ApiError('No hay refresh token', 401);
 
   refreshEnCurso = (async () => {
     try {
@@ -65,24 +44,25 @@ async function intentarRefresh() {
         body: JSON.stringify({ refreshToken }),
       });
 
-      // ⚡ Si es rate limit (429) o error del servidor (5xx), NO borramos sesión.
+      // ⚡ Si es 429, 500, 502 o 503, NO BORRAMOS SESIÓN. Solo avisamos.
       if (res.status === 429 || res.status >= 500) {
-        throw new ApiError('Servidor ocupado. Intentá de nuevo en unos segundos.', res.status);
+        throw new ApiError('Servidor ocupado o despertando. Intentá de nuevo.', res.status);
       }
 
-      // ⚡ Solo si es 401 o 403 significa que el refresh token de verdad murió.
+      // Solo borramos si el token de refresco de verdad expiró (401/403)
       if (!res.ok) {
         limpiarTokens();
         throw new ApiError('Sesión expirada', 401);
       }
 
       const data = await res.json();
-      setTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-
+      setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
       return data;
+    } catch (netErr) {
+      // ⚡ Error de red o timeout: NO BORRAMOS LA SESIÓN
+      if (netErr.name === 'AbortError') throw new ApiError('El servidor tardó demasiado.', 0);
+      if (netErr instanceof ApiError) throw netErr;
+      throw new ApiError('Error de conexión con el servidor.', 0);
     } finally {
       refreshEnCurso = null;
     }
@@ -91,17 +71,8 @@ async function intentarRefresh() {
   return refreshEnCurso;
 }
 
-/* =========================================================
-   FETCH PRINCIPAL
-   ========================================================= */
 async function request(endpoint, options = {}) {
-  const {
-    method = 'GET',
-    body = null,
-    headers = {},
-    auth = true,
-    sinRefresh = false,
-  } = options;
+  const { method = 'GET', body = null, headers = {}, auth = true, sinRefresh = false } = options;
 
   const url = `${API_URL}${endpoint}`;
   const finalHeaders = { 'Content-Type': 'application/json', ...headers };
@@ -115,8 +86,7 @@ async function request(endpoint, options = {}) {
   if (body !== null) config.body = JSON.stringify(body);
 
   const controller = new AbortController();
-  // ⚡ SUBIMOS A 50 SEGUNDOS PARA QUE RENDER DESPIERTE SIN CORTAR LA PETICIÓN
-  const timeoutId = setTimeout(() => controller.abort(), 50000); 
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS); 
   config.signal = controller.signal;
 
   let res;
@@ -125,19 +95,23 @@ async function request(endpoint, options = {}) {
   } catch (netErr) {
     clearTimeout(timeoutId);
     if (netErr.name === 'AbortError') {
-      throw new ApiError('El servidor tardó demasiado en responder (Render despertando).', 0);
+      throw new ApiError('El servidor está despertando (Render). Esperá unos segundos e intentá de nuevo.', 0);
     }
     throw new ApiError('No se pudo conectar con el servidor.', 0);
   }
   clearTimeout(timeoutId);
 
-  // Si es 401 y tenemos refresh token, intentamos renovar y reintentar
+  // Si es 401, intentamos refrescar el token
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
     try {
       await intentarRefresh();
       return request(endpoint, { ...options, sinRefresh: true });
     } catch (refreshErr) {
-      if (refreshErr.status === 429 || refreshErr.status >= 500) throw refreshErr;
+      // ⚡ Si el refresh falló por servidor ocupado o red, NO te sacamos al login.
+      if (refreshErr.status === 0 || refreshErr.status === 429 || refreshErr.status >= 500) {
+        throw refreshErr;
+      }
+      // Si el token de verdad murió (401), te sacamos.
       limpiarTokens();
       redirigirALogin();
       throw new ApiError('Sesión expirada. Iniciá sesión de nuevo.', 401);
@@ -158,26 +132,16 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
-/* =========================================================
-   REDIRIGIR AL LOGIN
-   ========================================================= */
 function redirigirALogin() {
   const path = window.location.pathname;
   if (path.endsWith('index.html') || path.endsWith('/')) return;
   window.location.href = 'index.html';
 }
 
-/* =========================================================
-   MÉTODOS CORTOS
-   ========================================================= */
 export const api = {
   get:    (endpoint, opts = {}) => request(endpoint, { ...opts, method: 'GET' }),
   post:   (endpoint, body, opts = {}) => request(endpoint, { ...opts, method: 'POST', body }),
   put:    (endpoint, body, opts = {}) => request(endpoint, { ...opts, method: 'PUT', body }),
   patch:  (endpoint, body, opts = {}) => request(endpoint, { ...opts, method: 'PATCH', body }),
-  delete: (endpoint, opts = {}) => request(endpoint, {
-    ...opts,
-    method: 'DELETE',
-    body: opts.body ?? null,
-  }),
+  delete: (endpoint, opts = {}) => request(endpoint, { ...opts, method: 'DELETE', body: opts.body ?? null }),
 };
