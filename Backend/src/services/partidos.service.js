@@ -1538,6 +1538,7 @@ export async function cancelarInteres(partidoId, usuarioId) {
 
 /* ---------- GET /api/partidos/:id/interesados ---------- */
 /* ---------- GET /api/partidos/:id/interesados ---------- */
+/* ---------- GET /api/partidos/:id/interesados ---------- */
 export async function listarInteresados(partidoId, usuarioId) {
   const { rows: partidoRows } = await pool.query(
     `SELECT organizador_id, tipo_partido FROM partidos WHERE id = $1`,
@@ -1558,10 +1559,11 @@ export async function listarInteresados(partidoId, usuarioId) {
     throw err;
   }
 
+  // ⚡ FIX: Quitamos pi.created_at del ORDER BY y usamos u.nombre para ordenar
   const { rows } = await pool.query(
     `SELECT
        u.id, u.nombre, u.username, u.avatar, u.ciudad,
-       pi.mensaje, pi.created_at AS fecha,
+       pi.mensaje,
        pi.equipo_id,
        g.nombre AS equipo_nombre,
        g.escudo AS equipo_escudo,
@@ -1570,7 +1572,7 @@ export async function listarInteresados(partidoId, usuarioId) {
      JOIN usuarios u ON u.id = pi.usuario_id
      LEFT JOIN grupos g ON g.id = pi.equipo_id
      WHERE pi.partido_id = $1
-     ORDER BY pi.created_at ASC`,
+     ORDER BY u.nombre ASC`,
     [partidoId]
   );
 
