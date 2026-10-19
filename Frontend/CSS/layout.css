@@ -914,3 +914,115 @@ body {
     display: none; /* Ocultar botón crear en móvil (o moverlo al perfil) */
   }
 }
+/* =========================================================
+   FIXES GENERALES PARA MÓVIL (Ajustes de altura y scroll)
+   ========================================================= */
+@media (max-width: 768px) {
+  
+  /* 1. El problema del scroll y la barra inferior */
+  .app-main {
+    /* Restamos el alto del header (aprox 60px) y la barra inferior (64px) */
+    height: calc(100dvh - 60px - 64px) !important;
+    overflow-y: auto !important;
+    /* Damos un respiro al final de cada página */
+    padding-bottom: 24px !important; 
+  }
+
+  /* Evitamos que la página entera haga scroll, solo el main */
+  body {
+    overflow: hidden;
+  }
+
+  /* 2. Arreglar el menú de usuario que se sale de la pantalla */
+  .user-menu__dropdown {
+    position: fixed !important;
+    top: 70px !important;
+    right: 16px !important;
+    left: auto !important;
+    width: calc(100vw - 32px) !important; /* Ocupa el ancho de la pantalla menos los bordes */
+    max-width: 300px !important;
+  }
+
+  /* 3. Arreglar la altura de los Chats (Mensajes y Torneos) */
+  .chat-layout, 
+  .chat-layout--torneo {
+    /* El chat ahora ocupa el 100% del espacio disponible */
+    height: 100% !important; 
+    max-height: calc(100dvh - 140px) !important;
+    margin-bottom: 10px;
+  }
+
+  /* 4. Evitar que las imágenes rompan la pantalla */
+  .feed-post__media img, 
+  .feed-post__media video,
+  .tournament-card__image,
+  .pub-card__img {
+    max-height: 350px !important;
+    object-fit: cover !important;
+  }
+
+  /* 5. Achicar los textos gigantes de los Héroes (Torneos y Partidos) */
+  .page-title--xl, .pd-hero__title, .td-hero__title {
+    font-size: 28px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 6. Ajustar el Header de la App (achicar el logo y los iconos) */
+  .app-header {
+    height: 60px !important;
+    padding: 0 16px !important;
+  }
+  .app-header__logo .logo-text {
+    font-size: 18px !important;
+  }
+  .app-header__icon-btn {
+    padding: 6px !important;
+  }
+
+  /* 7. Achicar el botón "Crear" flotante del header */
+  .app-header__create .btn {
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+  }
+
+  /* 8. Hacer que los subtabs y chips scrolleen de lado (horizontal) en lugar de bajar de línea */
+  .subtabs, .toolbar__filters {
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+    padding-bottom: 8px !important;
+    margin-right: -16px; /* Tira el scroll hasta el borde */
+    padding-right: 16px;
+  }
+  
+  /* Ocultar la barra de scroll fea */
+  .subtabs::-webkit-scrollbar, 
+  .toolbar__filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 9. Las tarjetas del grid pasan a ser de 1 sola columna */
+  .grupo-grid, 
+  .tournament-grid, 
+  .match-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 10. La tarjeta del partido en móvil */
+  .match-card {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+  
+  /* En móvil, las acciones del partido (botón ver) se ponen abajo de todo */
+  .match-card__acciones-col {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid var(--color-border) !important;
+  }
+}
