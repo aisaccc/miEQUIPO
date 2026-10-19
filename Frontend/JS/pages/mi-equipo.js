@@ -33,10 +33,8 @@ import {
   abrirModalCrearPublicacionCompartido,
 } from '../utils/publicaciones-ui.js';
 
-// ⚡ IMPORTAMOS EL NUEVO MÓDULO COMPARTIDO
 import { renderGrupoPublico } from '../utils/grupo-publico.js';
 
-/* ---------- CONSTANTES ---------- */
 const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
 
@@ -121,7 +119,6 @@ export async function init() {
       `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
-  /* ---------- ESTADO ---------- */
   let misEquipos = [];
   let misComunidades = [];
   let filtroBusquedaEquipo = '';
@@ -147,7 +144,6 @@ export async function init() {
 
   let publicacionesEquipoCache = [];
 
-  // ⚡ Imágenes en chat (una por panel)
   let imagenBase64Canal = null;
   let imagenBase64Detalle = null;
 
@@ -161,7 +157,6 @@ export async function init() {
   const panelCanalEl   = document.getElementById('panel-canal');
   const inputBuscarCanal = document.getElementById('buscar-canal-equipo');
 
-  /* ---------- HELPERS ---------- */
   function esIconoImagen(valor) {
     return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
   }
@@ -221,7 +216,6 @@ export async function init() {
     return usuario?.avatar || AVATAR_FALLBACK;
   }
 
-  /* ---------- MODAL: VER IMAGEN EN GRANDE ---------- */
   function abrirModalVerImagen(src) {
     const img = document.getElementById('modal-imagen-img');
     const modal = document.getElementById('modal-ver-imagen');
@@ -239,7 +233,6 @@ export async function init() {
     };
   }
 
-  /* ---------- PREVIEW DE IMAGEN EN EL CHAT ---------- */
   function mostrarPreviewImagen(panelId, src) {
     const wrapper = document.getElementById(`${panelId}-preview`);
     const img = document.getElementById(`${panelId}-preview-img`);
@@ -258,9 +251,6 @@ export async function init() {
     wrapper.classList.add('hidden');
   }
 
-  /* =========================================================
-     CARGAR GRUPOS
-     ========================================================= */
   async function recargarGrupos() {
     try {
       const [resEquipos, resComunidades] = await Promise.all([
@@ -278,7 +268,6 @@ export async function init() {
     }
   }
 
-  // ⚡ Filtro actualizado: ahora busca por nombre, deporte o ciudad
   function filtrarGrupos(lista, texto) {
     if (!texto) return lista;
     const q = texto.toLowerCase().trim();
@@ -402,8 +391,9 @@ export async function init() {
 
   async function renderDetalleGrupo(grupo, esComunidad, volverFn, esPublico = false) {
     if (esPublico) {
-      // ⚡ Delegamos al módulo compartido
-      await renderGrupoPublico(contenedorBuscar, grupo.id, {
+      const contenedor = document.getElementById('resultados-busqueda');
+      if (!contenedor) return;
+      await renderGrupoPublico(contenedor, grupo.id, {
         onVolver: () => {
           grupoAbiertoBuscar = null;
           renderPanelBuscar();
@@ -478,7 +468,8 @@ export async function init() {
       `;
     }
 
-    const contenedor = esComunidad ? contenedorComunidad : contenedorEquipo;
+    const contenedor = esComunidad ? document.getElementById('comunidad-contenido') : document.getElementById('equipo-contenido');
+    if (!contenedor) return;
 
     const botonesSubtabs = esComunidad ? [
       { id: 'publicaciones', icono: SVG.image, label: 'Publicaciones' },
@@ -1204,7 +1195,11 @@ export async function init() {
     }
   }
 
+  // ⚡ FIX: renderPanelEquipo con chequeo de null
   async function renderPanelEquipo() {
+    const contenedor = document.getElementById('equipo-contenido');
+    if (!contenedor) return;
+
     if (grupoAbiertoEquipo) {
       const grupo = misEquipos.find(g => String(g.id) === String(grupoAbiertoEquipo));
       if (!grupo) {
@@ -1225,7 +1220,7 @@ export async function init() {
 
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
-    contenedorEquipo.innerHTML = `
+    contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1320,7 +1315,11 @@ export async function init() {
     });
   }
 
+  // ⚡ FIX: renderPanelComunidad con chequeo de null
   async function renderPanelComunidad() {
+    const contenedor = document.getElementById('comunidad-contenido');
+    if (!contenedor) return;
+
     if (grupoAbiertoComunidad) {
       const grupo = misComunidades.find(g => String(g.id) === String(grupoAbiertoComunidad));
       if (!grupo) {
@@ -1341,7 +1340,7 @@ export async function init() {
 
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
-    contenedorComunidad.innerHTML = `
+    contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1442,9 +1441,6 @@ export async function init() {
     await renderPanelComunidad();
   }
 
-  /* =========================================================
-     ⚡ CHAT GLOBAL (tab superior)
-     ========================================================= */
   async function cargarCanales() {
     try {
       const todos = await listarCanalesAPI();
@@ -1776,9 +1772,6 @@ export async function init() {
       </div>`;
   }
 
-  /* =========================================================
-     MODALES: CREAR / EDITAR GRUPO
-     ========================================================= */
   const ICONOS_GRUPO = [
     'assets/icons/balon-de-futbol (2).png',
     'assets/icons/balocensto.svg',
@@ -2027,9 +2020,6 @@ export async function init() {
     abrirModal('modal-crear-comunidad');
   }
 
-  /* =========================================================
-     MODAL: GESTIONAR MIEMBROS
-     ========================================================= */
   let grupoEnGestion = null;
 
   async function abrirModalGestionar(grupo) {
@@ -2212,9 +2202,6 @@ export async function init() {
     });
   });
 
-  /* =========================================================
-     MODAL: EDITAR STATS
-     ========================================================= */
   function abrirModalStats(grupo) {
     const modal = document.getElementById('modal-grupo-stats');
     if (!modal) return;
@@ -2264,9 +2251,6 @@ export async function init() {
     abrirModal('modal-grupo-stats');
   }
 
-  /* =========================================================
-     CONFIRMAR ELIMINAR / SALIR / CANCELAR SOLICITUD
-     ========================================================= */
   async function confirmarEliminarGrupo(grupo, esComunidad) {
     if (!confirm(`¿Eliminar "${grupo.nombre}"? Esta acción no se puede deshacer.`)) return;
 
@@ -2360,10 +2344,11 @@ export async function init() {
     }
   }
 
-  /* =========================================================
-     RENDER: BUSCAR GRUPOS
-     ========================================================= */
+  // ⚡ FIX: renderPanelBuscar con chequeo de null
   async function renderPanelBuscar() {
+    const contenedor = document.getElementById('resultados-busqueda');
+    if (!contenedor) return;
+
     if (grupoAbiertoBuscar) {
       const grupo = listaBusquedaActual.find(g => String(g.id) === String(grupoAbiertoBuscar));
       if (!grupo) {
@@ -2383,7 +2368,6 @@ export async function init() {
     const chipsAcceso = document.querySelectorAll('[data-filtro-acceso]');
     if (!input || !resultados) return;
 
-    // Leer estado actual de los filtros
     let filtroTipo = 'todos';
     let filtroAcceso = 'todos';
     let textoBusqueda = '';
@@ -2497,8 +2481,6 @@ export async function init() {
       }
     }
 
-    // Usamos onclick y oninput para evitar que se apilen listeners cada vez
-    // que se vuelve a entrar a la pestaña Buscar.
     input.oninput = () => {
       textoBusqueda = input.value;
       pintar();
@@ -2525,9 +2507,6 @@ export async function init() {
     pintar();
   }
 
-  /* =========================================================
-     CAMBIAR SUB-PESTAÑA
-     ========================================================= */
   async function cambiarTab(tab) {
     if (tab !== 'equipo')     grupoAbiertoEquipo = null;
     if (tab !== 'comunidad')  grupoAbiertoComunidad = null;
@@ -2572,9 +2551,6 @@ export async function init() {
     renderListaCanales();
   });
 
-  /* =========================================================
-     INIT
-     ========================================================= */
   await recargarGrupos();
   await renderPanelEquipo();
   await renderPanelComunidad();
