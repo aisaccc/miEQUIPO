@@ -1537,6 +1537,7 @@ export async function cancelarInteres(partidoId, usuarioId) {
 }
 
 /* ---------- GET /api/partidos/:id/interesados ---------- */
+/* ---------- GET /api/partidos/:id/interesados ---------- */
 export async function listarInteresados(partidoId, usuarioId) {
   const { rows: partidoRows } = await pool.query(
     `SELECT organizador_id, tipo_partido FROM partidos WHERE id = $1`,
@@ -1560,7 +1561,7 @@ export async function listarInteresados(partidoId, usuarioId) {
   const { rows } = await pool.query(
     `SELECT
        u.id, u.nombre, u.username, u.avatar, u.ciudad,
-       pi.mensaje, pi.estado, pi.created_at AS fecha,
+       pi.mensaje, pi.created_at AS fecha,
        pi.equipo_id,
        g.nombre AS equipo_nombre,
        g.escudo AS equipo_escudo,
