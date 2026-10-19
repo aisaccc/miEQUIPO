@@ -117,3 +117,29 @@ async function init() {
 }
 
 init();
+/* =========================================================
+   SCROLL INTELIGENTE (Ocultar barra inferior en móvil)
+   ========================================================= */
+let lastScrollY = window.scrollY;
+const bottomNav = document.querySelector('.app-bottom-nav');
+
+if (bottomNav) {
+  window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+
+    // Si estamos en la parte de arriba de todo, siempre mostrar
+    if (currentScrollY < 50) {
+      bottomNav.classList.remove('app-bottom-nav--hidden');
+    } 
+    // Si scrolleamos hacia abajo, ocultar
+    else if (currentScrollY > lastScrollY) {
+      bottomNav.classList.add('app-bottom-nav--hidden');
+    } 
+    // Si scrolleamos hacia arriba, mostrar
+    else {
+      bottomNav.classList.remove('app-bottom-nav--hidden');
+    }
+
+    lastScrollY = currentScrollY;
+  }, { passive: true });
+}

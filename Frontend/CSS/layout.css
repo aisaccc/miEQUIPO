@@ -924,16 +924,15 @@ body {
    FIXES MÓVIL DEFINITIVOS (V3 - Scroll y Layout Perfecto)
    ========================================================= */
 @media (max-width: 768px) {
-  /* 1. EL FIN DEL SCROLL CORTADO: Desbloqueamos la altura de la página */
+  /* 1. Scroll natural de la ventana */
   html, body {
     height: auto !important;
-    overflow-y: auto !important; /* Permite el scroll nativo del celular */
+    overflow-y: auto !important; 
     overflow-x: hidden !important;
     margin: 0;
     padding: 0;
   }
 
-  /* El contenedor de la app tampoco debe tener altura fija */
   .app-shell {
     height: auto !important;
     min-height: 100vh !important;
@@ -943,11 +942,12 @@ body {
 
   .app-main {
     height: auto !important;
-    overflow: visible !important; /* Dejamos que el scroll sea de la ventana */
-    padding: 16px 16px 120px 16px !important; /* 120px abajo para que NADA quede tapado por la barra */
+    overflow: visible !important; 
+    /* 100px extra para que la barra inferior no tape el último párrafo */
+    padding: 16px 16px 100px 16px !important; 
   }
 
-  /* 2. La barra inferior flota por encima del contenido */
+  /* 2. LA BARRA INFERIOR CON ANIMACIÓN */
   .app-bottom-nav {
     display: flex;
     position: fixed;
@@ -962,9 +962,18 @@ body {
     align-items: center;
     padding-bottom: env(safe-area-inset-bottom); 
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    /* ⚡ Agregamos la animación de deslizamiento */
+    transition: transform 0.3s ease-in-out !important; 
   }
 
-  /* 3. Chats (Mensajes, Equipos, Torneos) */
+  /* ⚡ Clase que usará el JS para esconderla */
+  .app-bottom-nav.app-bottom-nav--hidden {
+    transform: translateY(100%) !important;
+  }
+
+  /* ==========================================
+     CHATS (Se quedan exactamente como están)
+     ========================================== */
   .chat-layout {
     width: calc(100% + 32px) !important; 
     margin-left: -16px !important;
@@ -975,15 +984,13 @@ body {
     box-shadow: none !important;
   }
 
-  /* Chats de pantalla completa (Mensajes) */
   .chat-layout:not(.chat-layout--torneo) {
-    height: calc(100vh - 140px) !important; /* Altura fija para que el chat scrollee por dentro */
+    height: calc(100vh - 140px) !important;
     display: flex !important;
     flex-direction: column !important;
     margin-bottom: 10px !important;
   }
 
-  /* Chats dentro de detalles (Equipos y Torneos) */
   .chat-layout--torneo {
     display: flex !important;
     flex-direction: column !important;
@@ -1006,25 +1013,19 @@ body {
     overflow-y: auto !important;
   }
 
-  /* 4. Input del chat */
   .chat-input {
     padding: 10px 12px !important;
     gap: 8px !important;
     border-radius: 0 !important;
     flex-shrink: 0 !important; 
   }
-  .chat-input input {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  .chat-input__btn, 
-  .chat-input__attach {
+  .chat-input input { width: 100% !important; min-width: 0 !important; }
+  .chat-input__btn, .chat-input__attach {
     flex-shrink: 0 !important;
     width: 40px !important;
     height: 40px !important;
   }
 
-  /* 5. Subtabs Rectangulares */
   .subtabs {
     background: var(--color-surface) !important;
     border-radius: 0 !important;
@@ -1054,7 +1055,6 @@ body {
     box-shadow: none !important;
   }
 
-  /* 6. Filtros (Chips) */
   .toolbar__filters {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -1065,19 +1065,12 @@ body {
   .toolbar__filters::-webkit-scrollbar { display: none; }
   .chip { flex-shrink: 0 !important; }
 
-  /* 7. Modales (Comentarios) */
-  .modal {
-    max-height: 90vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
+  .modal { max-height: 90vh !important; display: flex !important; flex-direction: column !important; }
   .modal__body {
     overflow-y: auto !important;
     max-height: calc(90vh - 120px) !important;
     padding-bottom: 40px !important; 
   }
   
-  .chat-back-btn {
-    display: flex !important;
-  }
+  .chat-back-btn { display: flex !important; }
 }
