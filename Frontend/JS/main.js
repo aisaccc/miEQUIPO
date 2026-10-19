@@ -1,12 +1,10 @@
 /* =========================================================
-   main.js — Punto de entrada de la app (app.html)
+   main.js — Punto de entrada de la app (app.html) (v2)
    =========================================================
-   Se encarga de:
-   - Verificar sesión antes de mostrar la app
-   - Refrescar datos del usuario desde el backend
-   - Inicializar componentes (header, dropdowns, notificaciones)
-   - Conectar el botón de logout
-   - Iniciar el router SPA
+   Cambios v2:
+   - El router arranca PRIMERO (UI más rápida)
+   - Componentes con requests escalonados (no todos en el ms 0)
+   - Componentes sin requests, inmediatos
 */
 
 import { iniciarRouter } from './router.js';
@@ -21,21 +19,14 @@ import {
   initDropdowns,
   initNotificaciones,
   initConfiguracion,
-  initTheme, // ⚡ NUEVO
+  initTheme,
 } from './components.js';
-
-/* =========================================================
-   GUARD: SI NO HAY SESIÓN → LOGIN
-   ========================================================= */
 
 if (!estaAutenticado()) {
   window.location.href = 'index.html';
   throw new Error('Sin sesión — redirigiendo a login');
 }
 
-/* =========================================================
-   PINTAR USUARIO EN EL HEADER
-   ========================================================= */
 function pintarUsuarioEnHeader(usuario) {
   if (!usuario) return;
 
@@ -55,24 +46,21 @@ function pintarUsuarioEnHeader(usuario) {
   }
 }
 
-/* =========================================================
-   LOGOUT
-   ========================================================= */
 async function cerrarSesionYRedirigir() {
   const { logout } = await import('./services/auth.service.js');
   await logout();
   window.location.href = 'index.html';
 }
 
-/* =========================================================
-   INICIALIZACIÓN
-   ========================================================= */
 async function init() {
-  // 1. Pintar el usuario guardado en localStorage (rápido)
+  // 1. Pintar el usuario guardado (instantáneo, sin request)
   let usuario = getSesion();
   pintarUsuarioEnHeader(usuario);
 
-  // 2. Refrescar datos desde el backend
+  // 2. ⚡ Arrancar el router PRIMERO (renderiza HTML y muestra loader)
+  iniciarRouter();
+
+  // 3. Refrescar usuario desde backend (1 request)
   try {
     usuario = await obtenerUsuarioActual();
     pintarUsuarioEnHeader(usuario);
@@ -80,27 +68,32 @@ async function init() {
     console.warn('[main] No se pudo refrescar el usuario:', err.message);
   }
 
-  // 3. Inicializar componentes de UI (header, dropdowns, etc.)
+  // 4. Componentes sin requests — inmediatos
   try {
     initHeader();
-    initDropdowns();
-    initNotificaciones();
+    initTheme();
     initConfiguracion();
-    initTheme(); // ⚡ NUEVO
   } catch (err) {
-    console.warn('[main] Error inicializando componentes:', err.message);
+    console.warn('[main] Error inicializando componentes básicos:', err.message);
   }
 
-  // 4. Conectar botón de logout del sidebar
+  // 5. ⚡ Componentes CON requests — escalonados para no saturar
+  setTimeout(() => {
+    try { initDropdowns(); } catch (err) { console.warn('[main] initDropdowns:', err); }
+  }, 400);
+
+  setTimeout(() => {
+    try { initNotificaciones(); } catch (err) { console.warn('[main] initNotificaciones:', err); }
+  }, 900);
+
+  // 6. Logout del sidebar
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', async (e) => {
       e.preventDefault();
       if (!confirm('¿Cerrar sesión?')) return;
-
       btnLogout.disabled = true;
       btnLogout.textContent = 'Cerrando...';
-
       try {
         await cerrarSesionYRedirigir();
       } catch (err) {
@@ -110,12 +103,10 @@ async function init() {
     });
   }
 
-  // 5. Conectar logout del menú de usuario (data-action="logout")
-  //    Si components.js ya lo maneja, esto no hace nada.
+  // 7. Logout del menú de usuario
   document.addEventListener('click', async (e) => {
     const item = e.target.closest('[data-action="logout"]');
     if (!item) return;
-
     if (!confirm('¿Cerrar sesión?')) return;
     try {
       await cerrarSesionYRedirigir();
@@ -123,9 +114,6 @@ async function init() {
       window.location.href = 'index.html';
     }
   });
-
-  // 6. Iniciar el router
-  iniciarRouter();
 }
 
 init();

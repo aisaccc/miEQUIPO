@@ -1,22 +1,22 @@
 /* =========================================================
-   api.js — Cliente HTTP centralizado
+   api.js — Cliente HTTP centralizado (v2)
    =========================================================
-   Todos los servicios (auth, partidos, grupos...) usan esto.
-   NUNCA hacer fetch() directo en componentes/páginas.
+   Cambios v2:
+   - Timeout por request con AbortController
+   - Retry con backoff exponencial para 429/503 (solo GET)
+   - Refresh que distingue 429 (rate limit) de 401 (sesión muerta)
+   - Nunca limpia tokens ni redirige si el refresh falla por 429
 */
 
-/* =========================================================
-   CONFIGURACIÓN
-   ========================================================= */
 const API_URL = 'https://miequipo.onrender.com/api';
 
-/* Keys en localStorage */
 const KEY_ACCESS  = 'miejquipo_access_token';
 const KEY_REFRESH = 'miejquipo_refresh_token';
 
-/* =========================================================
-   TOKEN HELPERS
-   ========================================================= */
+/* Configuración de reintentos */
+const MAX_REINTENTOS_429 = 2;    // 2 reintentos → 2s + 4s
+const TIMEOUT_MS         = 20000; // 20s timeout por request
+
 export function getAccessToken() {
   return localStorage.getItem(KEY_ACCESS);
 }
@@ -35,9 +35,6 @@ export function limpiarTokens() {
   localStorage.removeItem(KEY_REFRESH);
 }
 
-/* =========================================================
-   ERROR CUSTOM
-   ========================================================= */
 export class ApiError extends Error {
   constructor(mensaje, status, detalles) {
     super(mensaje);
@@ -49,14 +46,10 @@ export class ApiError extends Error {
 
 /* =========================================================
    REFRESH AUTOMÁTICO
-   =========================================================
-   Si el access token expira, intentamos renovarlo UNA vez
-   con el refresh token antes de fallar.
-*/
-let refreshEnCurso = null; // evita múltiples refresh en paralelo
+   ========================================================= */
+let refreshEnCurso = null;
 
 async function intentarRefresh() {
-  // Si ya hay un refresh en curso, esperamos a ese
   if (refreshEnCurso) return refreshEnCurso;
 
   const refreshToken = getRefreshToken();
@@ -71,6 +64,11 @@ async function intentarRefresh() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });
+
+      // ⚡ 429 en refresh: NO es sesión expirada, es rate limit
+      if (res.status === 429 || res.status === 503) {
+        throw new ApiError('Servidor ocupado. Intentá de nuevo en unos segundos.', res.status);
+      }
 
       if (!res.ok) {
         limpiarTokens();
@@ -95,19 +93,14 @@ async function intentarRefresh() {
 /* =========================================================
    FETCH PRINCIPAL
    ========================================================= */
-/**
- * Hace una petición HTTP al backend.
- * @param {string} endpoint - ej: '/auth/login', '/partidos'
- * @param {object} options - { method, body, headers, auth, sinRefresh }
- * @returns {Promise<any>}
- */
-async function request(endpoint, options = {}) {
+async function request(endpoint, options = {}, _intento = 1) {
   const {
     method = 'GET',
     body = null,
     headers = {},
-    auth = true,        // ¿agregar Authorization?
-    sinRefresh = false, // ¿evitar intentar refresh si falla?
+    auth = true,
+    sinRefresh = false,
+    esPolling = false,   // ⚡ NUEVO: si true, no reintenta 429 y no loguea ruido
   } = options;
 
   const url = `${API_URL}${endpoint}`;
@@ -117,41 +110,56 @@ async function request(endpoint, options = {}) {
     ...headers,
   };
 
-  // Agregar token si corresponde
   if (auth) {
     const token = getAccessToken();
-    if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
   }
 
-  const config = {
-    method,
-    headers: finalHeaders,
-  };
+  const config = { method, headers: finalHeaders };
+  if (body !== null) config.body = JSON.stringify(body);
 
-  if (body !== null) {
-    config.body = JSON.stringify(body);
-  }
+  // ⚡ Timeout con AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  config.signal = controller.signal;
 
   let res;
   try {
     res = await fetch(url, config);
   } catch (netErr) {
-    throw new ApiError(
-      'No se pudo conectar con el servidor. Verificá tu conexión.',
-      0
-    );
+    clearTimeout(timeoutId);
+    if (netErr.name === 'AbortError') {
+      throw new ApiError('La petición tardó demasiado. Revisá tu conexión.', 0);
+    }
+    throw new ApiError('No se pudo conectar con el servidor. Verificá tu conexión.', 0);
+  }
+  clearTimeout(timeoutId);
+
+  // ⚡ Retry con backoff para 429/503 SOLO en GET y si NO es polling
+  const puedeReintentar =
+    !esPolling &&
+    method === 'GET' &&
+    (res.status === 429 || res.status === 503) &&
+    _intento <= MAX_REINTENTOS_429;
+
+  if (puedeReintentar) {
+    const espera = 1000 * Math.pow(2, _intento); // 2s, 4s
+    const jitter = Math.random() * 500;
+    console.warn(`[api] ${res.status} en ${endpoint} — reintento ${_intento}/${MAX_REINTENTOS_429} en ${Math.round(espera + jitter)}ms`);
+    await new Promise(r => setTimeout(r, espera + jitter));
+    return request(endpoint, options, _intento + 1);
   }
 
-  // Si es 401 y tenemos refresh token, intentamos renovar y reintentar
+  // 401 → intentar refresh UNA vez
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
     try {
       await intentarRefresh();
-      // Reintentar con el nuevo token
       return request(endpoint, { ...options, sinRefresh: true });
-    } catch {
-      // El refresh falló → sesión muerta
+    } catch (refreshErr) {
+      // ⚡ Si el refresh falló por 429/503 → NO limpiar sesión ni redirigir
+      if (refreshErr.status === 429 || refreshErr.status === 503) {
+        throw refreshErr;
+      }
       limpiarTokens();
       redirigirALogin();
       throw new ApiError('Sesión expirada. Iniciá sesión de nuevo.', 401);
@@ -162,14 +170,9 @@ async function request(endpoint, options = {}) {
   let data = null;
   const contentType = res.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
+    try { data = await res.json(); } catch { data = null; }
   }
 
-  // Si la respuesta no es OK, lanzar error
   if (!res.ok) {
     const mensaje = data?.error || data?.mensaje || `Error ${res.status}`;
     throw new ApiError(mensaje, res.status, data?.detalles);
@@ -178,19 +181,12 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
-/* =========================================================
-   REDIRIGIR AL LOGIN
-   ========================================================= */
 function redirigirALogin() {
-  // Si ya estamos en index.html, no redirigir
   const path = window.location.pathname;
   if (path.endsWith('index.html') || path.endsWith('/')) return;
   window.location.href = 'index.html';
 }
 
-/* =========================================================
-   MÉTODOS CORTOS
-   ========================================================= */
 export const api = {
   get:    (endpoint, opts = {}) => request(endpoint, { ...opts, method: 'GET' }),
   post:   (endpoint, body, opts = {}) => request(endpoint, { ...opts, method: 'POST', body }),
@@ -199,6 +195,6 @@ export const api = {
   delete: (endpoint, opts = {}) => request(endpoint, {
     ...opts,
     method: 'DELETE',
-    body: opts.body ?? null,  // ← ahora acepta body
+    body: opts.body ?? null,
   }),
 };

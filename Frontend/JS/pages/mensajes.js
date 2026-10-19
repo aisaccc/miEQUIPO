@@ -17,6 +17,12 @@ import {
   listarMensajes,
   enviarMensaje,
   marcarLeidos,
+  // ⚡ NUEVOS IMPORTS:
+  listarCanales,
+  obtenerCanal,
+  listarMensajesDeCanal,
+  enviarMensajeACanal,
+  marcarCanalLeido
 } from '../services/mensajes.service.js';
 import { listarGrupos } from '../services/grupos.service.js';
 
@@ -36,6 +42,9 @@ export async function init() {
   let intervaloRefresco = null;
   let filtroTexto = '';
   let conversaciones = [];
+  let canales = [];
+  let tabActual = 'conv'; // 'conv' o 'canal'
+  const listaCanalesEl = document.getElementById('lista-canales');
   let menuAbiertoId = null;
   let ultimoHashMensajes = null;
   let ultimaConvRenderizada = null;
@@ -217,6 +226,50 @@ export async function init() {
       });
     });
   }
+    /* =========================================================
+     RENDER: LISTA DE CANALES (Equipos y Torneos)
+     ========================================================= */
+  function renderListaCanales() {
+    if (!listaCanalesEl) return;
+
+    if (canales.length === 0) {
+      listaCanalesEl.innerHTML = `
+        <div class="empty-state" style="padding:var(--space-5) var(--space-3)">
+          <div class="empty-state__icon" style="font-size:36px">🛡️</div>
+          <p class="text-sm text-muted">No estás en ningún equipo o torneo</p>
+        </div>`;
+      return;
+    }
+
+    listaCanalesEl.innerHTML = canales.map(c => {
+      const ultimo = c.ultimoMensaje;
+      const preview = ultimo
+        ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? '📷 Imagen' : ''))
+        : 'Sin mensajes aún';
+
+      return `
+        <div class="conv-item" data-canal="${c.id}">
+          <div class="conv-item__avatar" style="display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--color-surface-2); border-radius:50%;">
+            ${c.icono || '💬'}
+          </div>
+          <div class="conv-item__info">
+            <div class="conv-item__top">
+              <div class="conv-item__name">${escapeHtml(c.nombre)}</div>
+              ${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}
+            </div>
+            <div class="conv-item__bottom">
+              <div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>
+              ${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    listaCanalesEl.querySelectorAll('.conv-item').forEach(el => {
+      el.addEventListener('click', () => abrirCanal(el.dataset.canal));
+    });
+  }
 
   /* =========================================================
      MENÚ DE OPCIONES DE CADA CONVERSACIÓN (⋯)
@@ -316,6 +369,39 @@ export async function init() {
         await refrescarMensajes(convId);
       }
     }, 3000);
+  }
+    async function abrirCanal(canalId) {
+    convActualId = canalId;
+    ultimoHashMensajes = null;
+    ultimaConvRenderizada = null;
+    imagenBase64 = null;
+
+    if (intervaloRefresco) clearInterval(intervaloRefresco);
+
+    try {
+      await marcarCanalLeido(canalId);
+      await recargarCanales(); // Recargamos para actualizar los badges
+      renderListaCanales();
+    } catch (err) {
+      console.warn('[mensajes] No se pudo marcar canal como leído:', err.message);
+    }
+
+    await renderPanelCanal(canalId);
+
+    intervaloRefresco = setInterval(async () => {
+      if (convActualId === canalId) {
+        await refrescarMensajesCanal(canalId);
+      }
+    }, 3000);
+  }
+
+  async function recargarCanales() {
+    try {
+      canales = await listarCanales();
+    } catch (err) {
+      console.error('[mensajes] Error al cargar canales:', err);
+      canales = [];
+    }
   }
 
   /* =========================================================

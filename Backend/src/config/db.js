@@ -3,16 +3,16 @@ import { env } from './env.js';
 
 const { Pool } = pg;
 
-// Si estamos en producción (Render), usamos DATABASE_URL y SSL.
-// Si estamos en desarrollo local, usamos las variables por separado.
+// ⚡ v2: max reducido de 20 → 10 (más conservador con el Pooler de Supabase)
+//    y connectionTimeoutMillis subido a 10s para tolerar picos.
 export const pool = new Pool(
   process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }, // Obligatorio para Supabase
-        max: 20,
+        ssl: { rejectUnauthorized: false },
+        max: 10,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 10000,
       }
     : {
         host: env.DB.host,
@@ -20,13 +20,12 @@ export const pool = new Pool(
         database: env.DB.database,
         user: env.DB.user,
         password: env.DB.password,
-        max: 20,
+        max: 10,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 10000,
       }
 );
 
-/* Test de conexión al arrancar */
 export async function testConnection() {
   try {
     const client = await pool.connect();
@@ -40,7 +39,6 @@ export async function testConnection() {
   }
 }
 
-/* Cerrar pool al apagar el servidor */
 process.on('SIGINT', () => {
   pool.end(() => {
     console.log('Pool de PostgreSQL cerrado');

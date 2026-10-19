@@ -1,6 +1,14 @@
 /* =========================================================
-   components.js — Header, menú, toasts, notifs, config
-   ========================================================= */
+   components.js — Header, menú, toasts, notifs, config (v2)
+   =========================================================
+   Cambios v2:
+   - Polling con setTimeout recursivo + jitter (no setInterval)
+   - Guards isFetching* para evitar solapamiento
+   - Pausa polling si document.hidden
+   - Recarga al volver a la pestaña (visibilitychange)
+   - Intervalos más largos (30s amigos/notifs, 20s mensajes)
+   - Flags para no re-inicializar
+*/
 
 import { getSesion, cerrarSesion } from './auth.js';
 import { ICONOS } from './utils/iconos.js';
@@ -32,9 +40,13 @@ import {
 
 import { renderFeedPublicaciones } from './utils/publicaciones-ui.js';
 
-/* =========================================================
-   TEMA
-   ========================================================= */
+/* ---------- CONSTANTES DE POLLING ---------- */
+const POLL_AMIGOS_MS   = 30000;
+const POLL_NOTIFS_MS   = 30000;
+const POLL_MENSAJES_MS = 20000;
+const JITTER_MS        = 10000;
+
+/* ---------- TEMA ---------- */
 const ICONO_SOL = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
 const ICONO_LUNA = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 
@@ -86,9 +98,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-/* =========================================================
-   HEADER
-   ========================================================= */
+/* ---------- HEADER ---------- */
 export function initHeader() {
   const user = getSesion();
   if (!user) return;
@@ -134,9 +144,7 @@ export function initHeader() {
   }
 }
 
-/* =========================================================
-   TOASTS
-   ========================================================= */
+/* ---------- TOASTS ---------- */
 export function toast(mensaje, tipo = 'info') {
   let contenedor = document.querySelector('.toast-container');
   if (!contenedor) {
@@ -144,12 +152,10 @@ export function toast(mensaje, tipo = 'info') {
     contenedor.className = 'toast-container';
     document.body.appendChild(contenedor);
   }
-
   const el = document.createElement('div');
   el.className = `toast toast--${tipo}`;
   el.textContent = mensaje;
   contenedor.appendChild(el);
-
   setTimeout(() => {
     el.style.opacity = '0';
     el.style.transform = 'translateX(40px)';
@@ -158,20 +164,11 @@ export function toast(mensaje, tipo = 'info') {
   }, 3000);
 }
 
-/* =========================================================
-   MODALES
-   ========================================================= */
-export function abrirModal(id) {
-  document.getElementById(id)?.classList.add('open');
-}
+/* ---------- MODALES ---------- */
+export function abrirModal(id) { document.getElementById(id)?.classList.add('open'); }
+export function cerrarModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
-export function cerrarModal(id) {
-  document.getElementById(id)?.classList.remove('open');
-}
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
+/* ---------- HELPERS ---------- */
 export function formatearFecha(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('es-CL', {
@@ -183,7 +180,14 @@ export function formatearFecha(iso) {
 /* =========================================================
    DROPDOWNS & AMIGOS
    ========================================================= */
+let dropdownsIniciados = false;
+let isFetchingAmigos = false;
+let amigosTimerId = null;
+
 export function initDropdowns() {
+  if (dropdownsIniciados) return;
+  dropdownsIniciados = true;
+
   const dropdowns = document.querySelectorAll('.dropdown');
 
   dropdowns.forEach(dd => {
@@ -193,9 +197,7 @@ export function initDropdowns() {
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
-      dropdowns.forEach(other => {
-        if (other !== dd) other.classList.remove('open');
-      });
+      dropdowns.forEach(other => { if (other !== dd) other.classList.remove('open'); });
       dd.classList.toggle('open');
     });
 
@@ -207,9 +209,7 @@ export function initDropdowns() {
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      dropdowns.forEach(dd => dd.classList.remove('open'));
-    }
+    if (e.key === 'Escape') dropdowns.forEach(dd => dd.classList.remove('open'));
   });
 
   const tabsAmigos = document.querySelectorAll('[data-tab-amigos]');
@@ -217,23 +217,35 @@ export function initDropdowns() {
     tab.addEventListener('click', () => {
       tabsAmigos.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-
-      document.querySelectorAll('.dropdown__pane[id^="pane-"]').forEach(p => {
-        p.classList.remove('active');
-      });
-
-      const paneId = 'pane-' + tab.dataset.tabAmigos;
-      document.getElementById(paneId)?.classList.add('active');
+      document.querySelectorAll('.dropdown__pane[id^="pane-"]').forEach(p => p.classList.remove('active'));
+      document.getElementById('pane-' + tab.dataset.tabAmigos)?.classList.add('active');
     });
   });
 
+  // Primera carga (inmediata, main.js ya la retrasó 400ms)
   cargarAmigosHeader();
-  setInterval(cargarAmigosHeader, 15000);
+
+  // ⚡ Polling recursivo con jitter
+  const loop = async () => {
+    if (!document.hidden) {
+      await cargarAmigosHeader(true);
+    }
+    amigosTimerId = setTimeout(loop, POLL_AMIGOS_MS + Math.random() * JITTER_MS);
+  };
+  amigosTimerId = setTimeout(loop, POLL_AMIGOS_MS);
+
+  // ⚡ Al volver a la pestaña, recargar
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) cargarAmigosHeader(true);
+  });
 }
 
-async function cargarAmigosHeader() {
+async function cargarAmigosHeader(desdePolling = false) {
+  if (desdePolling && isFetchingAmigos) return;
+  isFetchingAmigos = true;
+
   const user = getSesion();
-  if (!user) return;
+  if (!user) { isFetchingAmigos = false; return; }
 
   try {
     const [amigos, solicitudes] = await Promise.all([
@@ -268,8 +280,7 @@ async function cargarAmigosHeader() {
               <button class="btn btn--primary btn--sm" data-aceptar="${s.id}">Aceptar</button>
               <button class="btn btn--ghost btn--sm" data-rechazar="${s.id}">✕</button>
             </div>
-          </div>
-        `).join('');
+          </div>`).join('');
 
         paneSol.querySelectorAll('[data-aceptar]').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -306,15 +317,13 @@ async function cargarAmigosHeader() {
               <div class="amigo-item__sub">@${escapeHtml(a.username)}</div>
             </div>
             <button class="btn btn--ghost btn--sm" data-msg-id="${a.id}">Mensaje</button>
-            
             <div style="position:relative">
               <button class="btn btn--ghost btn--sm" data-menu-amigo="${a.id}" title="Opciones" style="padding:4px 8px; font-weight:bold">⋮</button>
               <div class="menu-amigo-dropdown hidden" id="menu-amigo-${a.id}" style="position:absolute; right:0; top:100%; background:var(--color-surface); border:1px solid var(--color-border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:100; padding:4px; min-width:150px">
                 <button class="btn btn--ghost btn--sm w-full" data-eliminar-amigo="${a.id}" style="color:red; justify-content:flex-start; padding:8px; width:100%">${ICONOS.basura} Eliminar amigo</button>
               </div>
             </div>
-          </div>
-        `).join('');
+          </div>`).join('');
 
         paneList.querySelectorAll('[data-autor-id]').forEach(el => {
           el.addEventListener('click', () => {
@@ -331,9 +340,7 @@ async function cargarAmigosHeader() {
               const conv = await crearConversacion(btn.dataset.msgId);
               document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
               window.location.hash = '#/mensajes';
-              setTimeout(() => {
-                document.querySelector(`[data-conv="${conv.id}"]`)?.click();
-              }, 400);
+              setTimeout(() => { document.querySelector(`[data-conv="${conv.id}"]`)?.click(); }, 400);
             } catch (err) { toast(err.message, 'error'); }
           });
         });
@@ -366,13 +373,22 @@ async function cargarAmigosHeader() {
     });
 
   } catch (err) {
-    console.error('[components] Error al cargar amigos header:', err);
+    if (desdePolling) {
+      console.warn('[components] Polling amigos falló (silencioso):', err.message);
+    } else {
+      console.error('[components] Error al cargar amigos header:', err);
+    }
+  } finally {
+    isFetchingAmigos = false;
   }
 }
-
 /* =========================================================
    NOTIFICACIONES
    ========================================================= */
+let notifsIniciadas = false;
+let isFetchingNotifs = false;
+let notifsTimerId = null;
+
 function iconoNotif(tipo) {
   return {
     inscripcion:   ICONOS.check,
@@ -409,11 +425,15 @@ function tiempoRelativoNotif(iso) {
   return new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
-export async function renderNotificaciones() {
+export async function renderNotificaciones(desdePolling = false) {
+  if (desdePolling && isFetchingNotifs) return;
+
   const lista = document.getElementById('lista-notificaciones');
   const badge = document.getElementById('badge-notif');
   const btnMarcar = document.getElementById('btn-marcar-leidas');
   if (!lista) return;
+
+  isFetchingNotifs = true;
 
   let notificaciones = [];
   let noLeidas = 0;
@@ -426,8 +446,13 @@ export async function renderNotificaciones() {
     notificaciones = resultadoLista.data || [];
     noLeidas = totalNoLeidas;
   } catch (err) {
-    console.error('[components] Error al cargar notificaciones:', err);
-    lista.innerHTML = `<div class="empty-state" style="padding:var(--space-5)"><div class="empty-state__icon" style="font-size:36px">${ICONOS.alerta}</div><p class="text-sm text-muted">No se pudieron cargar las notificaciones</p></div>`;
+    if (desdePolling) {
+      console.warn('[components] Polling notifs falló (silencioso):', err.message);
+    } else {
+      console.error('[components] Error al cargar notificaciones:', err);
+      lista.innerHTML = `<div class="empty-state" style="padding:var(--space-5)"><div class="empty-state__icon" style="font-size:36px">${ICONOS.alerta}</div><p class="text-sm text-muted">No se pudieron cargar las notificaciones</p></div>`;
+    }
+    isFetchingNotifs = false;
     return;
   }
 
@@ -439,6 +464,7 @@ export async function renderNotificaciones() {
 
   if (notificaciones.length === 0) {
     lista.innerHTML = `<div class="empty-state" style="padding:var(--space-5)"><div class="empty-state__icon" style="font-size:36px">${ICONOS.campana}</div><p class="text-sm text-muted">No tienes notificaciones</p></div>`;
+    isFetchingNotifs = false;
     return;
   }
 
@@ -461,9 +487,7 @@ export async function renderNotificaciones() {
       const id = el.dataset.notifId;
       const link = el.dataset.link;
       const eraNoLeida = el.classList.contains('notif-item--no-leida');
-      if (eraNoLeida) {
-        try { await marcarLeidaAPI(id); } catch (err) {}
-      }
+      if (eraNoLeida) { try { await marcarLeidaAPI(id); } catch (err) {} }
       document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
       await renderNotificaciones();
       if (link && link.startsWith('#/')) window.location.hash = link;
@@ -477,6 +501,8 @@ export async function renderNotificaciones() {
       catch (err) { toast(err.message, 'error'); }
     });
   });
+
+  isFetchingNotifs = false;
 }
 
 export async function marcarTodasLeidas() {
@@ -491,11 +517,26 @@ export async function marcarTodasLeidas() {
 }
 
 export function initNotificaciones() {
+  if (notifsIniciadas) return;
+  notifsIniciadas = true;
+
   document.getElementById('btn-marcar-leidas')?.addEventListener('click', (e) => { e.stopPropagation(); marcarTodasLeidas(); });
   document.getElementById('btn-ver-todas-notif')?.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open')); });
   document.getElementById('btn-campana')?.addEventListener('click', () => { renderNotificaciones(); });
-  setInterval(renderNotificaciones, 15000);
+
+  // Primera carga
   renderNotificaciones();
+
+  // ⚡ Polling recursivo con jitter
+  const loop = async () => {
+    if (!document.hidden) await renderNotificaciones(true);
+    notifsTimerId = setTimeout(loop, POLL_NOTIFS_MS + Math.random() * JITTER_MS);
+  };
+  notifsTimerId = setTimeout(loop, POLL_NOTIFS_MS);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) renderNotificaciones(true);
+  });
 }
 
 /* =========================================================
@@ -525,7 +566,6 @@ export async function verPerfilUsuario(usuarioOId) {
     } catch (err) {}
   }
 
-  // ⚡ Si me bloquearon, no cargo nada
   if (estadoAmistad === 'bloqueado') {
     body.innerHTML = `
       <div class="empty-state" style="padding:var(--space-5)">
@@ -547,7 +587,6 @@ export async function verPerfilUsuario(usuarioOId) {
     return;
   }
 
-  // ⚡ Si yo lo bloqueé, mostramos vista minimalista
   if (yoLoBloquee) {
     body.innerHTML = `
       <div class="empty-state" style="padding:var(--space-5)">
@@ -718,12 +757,10 @@ export async function verPerfilUsuario(usuarioOId) {
 function renderStatsHeroPublico(u) {
   const stats = u.statsHero || { partidos: null, torneos: null, equipos: null };
   if (stats.partidos === null && stats.torneos === null && stats.equipos === null) return '';
-
   const filas = [];
   if (stats.partidos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.partidos}</div><div class="perfil-stat__label">Partidos</div></div>`);
   if (stats.torneos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.torneos}</div><div class="perfil-stat__label">Torneos</div></div>`);
   if (stats.equipos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.equipos}</div><div class="perfil-stat__label">Equipos</div></div>`);
-
   return `<div class="perfil-stats mt-4">${filas.join('')}</div>`;
 }
 
@@ -737,12 +774,10 @@ function renderActividadVerPerfil(u) {
   const cont = document.getElementById('ver-perfil-actividad');
   if (!cont) return;
   const deportes = u.deportes || [];
-
   if (deportes.length === 0) {
     cont.innerHTML = `<div class="empty-state" style="padding:var(--space-5)"><div class="empty-state__icon" style="font-size:36px">${ICONOS.medalla}</div><p class="text-sm text-muted">Este usuario aún no agregó deportes</p></div>`;
     return;
   }
-
   cont.innerHTML = deportes.map(d => {
     const posiciones = (d.posiciones || []).join(', ') || 'Sin posiciones';
     const stats = Object.entries(d.stats || {});
@@ -751,15 +786,13 @@ function renderActividadVerPerfil(u) {
         <h3 class="card__title mb-4">${ICONOS.medalla} ${escapeHtml(d.deporte)}</h3>
         <div class="text-sm text-muted mb-3"><strong>Posiciones:</strong> ${escapeHtml(posiciones)}</div>
         ${stats.length > 0 ? `<div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(110px, 1fr))">${stats.map(([clave, v]) => `<div class="stat-box"><div class="stat-box__value">${v.valor || 0}</div><div class="stat-box__label">${escapeHtml(clave)}</div></div>`).join('')}</div>` : `<p class="text-xs text-muted">Sin estadísticas públicas</p>`}
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
 export async function abrirModalVerPublicacion(pubId, cache) {
   const body = document.getElementById('ver-publicacion-body');
   if (!body) return;
-
   const lista = cache || [];
   const pub = lista.find(p => String(p.id) === String(pubId));
   if (!pub) { toast('Publicación no encontrada', 'error'); return; }
@@ -786,8 +819,7 @@ export async function abrirModalVerPublicacion(pubId, cache) {
         <input type="text" id="ver-pub-input" placeholder="Escribí un comentario..." maxlength="500" autocomplete="off" />
         <button type="submit" class="btn btn--primary btn--sm">Enviar</button>
       </form>
-    </div>
-  `;
+    </div>`;
 
   document.getElementById('ver-pub-btn-like').onclick = async (e) => {
     e.preventDefault();
@@ -825,7 +857,6 @@ export async function abrirModalVerPublicacion(pubId, cache) {
 async function cargarComentariosVerPub(pubId) {
   const cont = document.getElementById('ver-pub-comentarios');
   if (!cont) return;
-
   try {
     const comentarios = await listarComentarios(pubId);
     if (comentarios.length === 0) {
@@ -838,27 +869,47 @@ async function cargarComentariosVerPub(pubId) {
   }
 }
 
+/* =========================================================
+   BADGE MENSAJES
+   ========================================================= */
+let isFetchingMensajes = false;
+
 export async function actualizarBadgeMensajes() {
+  if (isFetchingMensajes) return;
   const user = getSesion();
   if (!user) return;
   const badge = document.getElementById('badge-mensajes');
   if (!badge) return;
+
+  isFetchingMensajes = true;
   try {
     const total = await contarNoLeidos();
     badge.textContent = total;
     badge.classList.toggle('hidden', total === 0);
   } catch (err) {
     console.warn('[components] No se pudo actualizar badge mensajes:', err.message);
+  } finally {
+    isFetchingMensajes = false;
   }
 }
 
 export async function initBadgeMensajes() {
   document.getElementById('btn-header-mensajes')?.addEventListener('click', () => { window.location.hash = '#/mensajes'; });
   await actualizarBadgeMensajes();
-  setInterval(actualizarBadgeMensajes, 5000);
+
+  // ⚡ Polling recursivo cada 20s + jitter, pausado si la pestaña está oculta
+  const loop = async () => {
+    if (!document.hidden) await actualizarBadgeMensajes();
+    setTimeout(loop, POLL_MENSAJES_MS + Math.random() * JITTER_MS);
+  };
+  setTimeout(loop, POLL_MENSAJES_MS);
+
   window.addEventListener('hashchange', () => { setTimeout(actualizarBadgeMensajes, 200); });
 }
 
+/* =========================================================
+   CONFIGURACIÓN (sin cambios funcionales)
+   ========================================================= */
 export function initConfiguracion() {
   document.querySelectorAll('[data-toggle-pass]').forEach(btn => {
     btn.addEventListener('click', () => {
