@@ -1,12 +1,3 @@
-/* =========================================================
-   mensajes.js — Chat 1 a 1 con backend (+ imágenes)
-   =========================================================
-   - Lista de conversaciones (izquierda)
-   - Panel de chat (derecha)
-   - Modal "Nueva conversación"
-   - Envío de imágenes (dataURL, máx 3MB)
-   ========================================================= */
-
 import { getSesion } from '../auth.js';
 import { toast, abrirModal, cerrarModal } from '../components.js';
 import {
@@ -17,7 +8,6 @@ import {
   listarMensajes,
   enviarMensaje,
   marcarLeidos,
-  // ⚡ NUEVOS IMPORTS:
   listarCanales,
   obtenerCanal,
   listarMensajesDeCanal,
@@ -34,6 +24,7 @@ export async function init() {
   const panelMensajes = document.getElementById('panel-mensajes');
   const buscarConv = document.getElementById('buscar-conversacion');
   const btnNuevaConv = document.getElementById('btn-nueva-conv');
+  const layoutLista = document.querySelector('.chat-layout__list'); // ⚡ NUEVO
 
   if (!listaConversaciones) return null;
 
@@ -43,12 +34,12 @@ export async function init() {
   let filtroTexto = '';
   let conversaciones = [];
   let canales = [];
-  let tabActual = 'conv'; // 'conv' o 'canal'
+  let tabActual = 'conv'; 
   const listaCanalesEl = document.getElementById('lista-canales');
   let menuAbiertoId = null;
   let ultimoHashMensajes = null;
   let ultimaConvRenderizada = null;
-  let imagenBase64 = null;   // imagen seleccionada para enviar
+  let imagenBase64 = null; 
 
   /* =========================================================
      HELPERS
@@ -98,17 +89,13 @@ export async function init() {
     return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
   }
 
-  function mismoDia(a, b) {
-    return (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate()
-    );
+  // ⚡ Función para volver a la lista en móvil
+  function volverALista() {
+    panelMensajes.classList.remove('chat-layout__panel--abierto');
+    layoutLista.classList.remove('chat-layout__list--oculto');
+    convActualId = null; // Opcional: deseleccionar
   }
 
-  /* =========================================================
-     MODAL: VER IMAGEN EN GRANDE
-     ========================================================= */
   function abrirModalVerImagen(src) {
     const img = document.getElementById('modal-imagen-img');
     const modal = document.getElementById('modal-ver-imagen');
@@ -126,15 +113,21 @@ export async function init() {
     };
   }
 
-  /* =========================================================
-     CARGAR CONVERSACIONES DESDE EL BACKEND
-     ========================================================= */
   async function recargarConversaciones() {
     try {
       conversaciones = await listarConversaciones();
     } catch (err) {
       console.error('[mensajes] Error al cargar conversaciones:', err);
       conversaciones = [];
+    }
+  }
+
+  async function recargarCanales() {
+    try {
+      canales = await listarCanales();
+    } catch (err) {
+      console.error('[mensajes] Error al cargar canales:', err);
+      canales = [];
     }
   }
 
@@ -226,9 +219,7 @@ export async function init() {
       });
     });
   }
-    /* =========================================================
-     RENDER: LISTA DE CANALES (Equipos y Torneos)
-     ========================================================= */
+
   function renderListaCanales() {
     if (!listaCanalesEl) return;
 
@@ -272,7 +263,7 @@ export async function init() {
   }
 
   /* =========================================================
-     MENÚ DE OPCIONES DE CADA CONVERSACIÓN (⋯)
+     MENÚ DE OPCIONES (⋯)
      ========================================================= */
   function abrirMenuConv(convId, btn) {
     cerrarMenuConv();
@@ -322,6 +313,7 @@ export async function init() {
 
       if (convActualId === convId) {
         convActualId = null;
+        volverALista(); // ⚡ VOLVEMOS A LA LISTA
         panelMensajes.innerHTML = `
           <div class="chat-empty">
             <div class="chat-empty__icon">
@@ -343,13 +335,17 @@ export async function init() {
   }
 
   /* =========================================================
-     ABRIR CONVERSACIÓN
+     ABRIR CONVERSACIÓN / CANAL
      ========================================================= */
   async function abrirConversacion(convId) {
     convActualId = convId;
     ultimoHashMensajes = null;
     ultimaConvRenderizada = null;
     imagenBase64 = null;
+
+    // ⚡ EFECTO INSTAGRAM: Ocultar lista, mostrar panel
+    layoutLista.classList.add('chat-layout__list--oculto');
+    panelMensajes.classList.add('chat-layout__panel--abierto');
 
     if (intervaloRefresco) clearInterval(intervaloRefresco);
 
@@ -370,17 +366,22 @@ export async function init() {
       }
     }, 3000);
   }
-    async function abrirCanal(canalId) {
+
+  async function abrirCanal(canalId) {
     convActualId = canalId;
     ultimoHashMensajes = null;
     ultimaConvRenderizada = null;
     imagenBase64 = null;
 
+    // ⚡ EFECTO INSTAGRAM: Ocultar lista, mostrar panel
+    layoutLista.classList.add('chat-layout__list--oculto');
+    panelMensajes.classList.add('chat-layout__panel--abierto');
+
     if (intervaloRefresco) clearInterval(intervaloRefresco);
 
     try {
       await marcarCanalLeido(canalId);
-      await recargarCanales(); // Recargamos para actualizar los badges
+      await recargarCanales();
       renderListaCanales();
     } catch (err) {
       console.warn('[mensajes] No se pudo marcar canal como leído:', err.message);
@@ -395,17 +396,8 @@ export async function init() {
     }, 3000);
   }
 
-  async function recargarCanales() {
-    try {
-      canales = await listarCanales();
-    } catch (err) {
-      console.error('[mensajes] Error al cargar canales:', err);
-      canales = [];
-    }
-  }
-
   /* =========================================================
-     PANEL DE CHAT
+     PANEL DE CHAT (1 a 1)
      ========================================================= */
   async function renderPanelChat(convId) {
     let conv;
@@ -432,6 +424,14 @@ export async function init() {
 
     panelMensajes.innerHTML = `
       <div class="chat-header">
+        <!-- ⚡ BOTÓN VOLVER (Solo visible en móvil) -->
+        <button class="chat-back-btn" id="btn-volver-chat">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+
         <img src="${avatarDe(otro)}" class="chat-header__avatar" alt=""
              data-ver-perfil="${otro.id}" style="cursor:pointer" />
         <div class="chat-header__info" data-ver-perfil="${otro.id}" style="cursor:pointer">
@@ -452,7 +452,6 @@ export async function init() {
 
       <div class="chat-mensajes" id="chat-mensajes"></div>
 
-      <!-- Preview de imagen seleccionada -->
       <div class="chat-input-preview hidden" id="chat-input-preview">
         <div class="chat-input-preview__img-wrapper">
           <img id="chat-input-preview-img" src="" alt="" />
@@ -485,6 +484,9 @@ export async function init() {
       </form>
     `;
 
+    // ⚡ Evento del botón Volver
+    document.getElementById('btn-volver-chat')?.addEventListener('click', volverALista);
+
     panelMensajes.querySelectorAll('[data-ver-perfil]').forEach(el => {
       el.addEventListener('click', () => {
         import('../components.js').then(({ verPerfilUsuario }) => {
@@ -493,7 +495,6 @@ export async function init() {
       });
     });
 
-    // Input file → guardar imagen
     document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -510,8 +511,6 @@ export async function init() {
         mostrarPreviewImagen(imagenBase64);
       };
       reader.readAsDataURL(file);
-
-      // Reset input para poder elegir el mismo archivo otra vez
       e.target.value = '';
     });
 
@@ -526,6 +525,97 @@ export async function init() {
     });
 
     await refrescarMensajes(convId);
+  }
+
+  /* =========================================================
+     PANEL DE CANAL (Equipos/Torneos)
+     ========================================================= */
+  async function renderPanelCanal(canalId) {
+    let canal;
+    try {
+      canal = await obtenerCanal(canalId);
+    } catch (err) {
+      console.error('[mensajes] Error al obtener canal:', err);
+      panelMensajes.innerHTML = `<div class="chat-empty"><p class="chat-empty__text">No se pudo cargar el canal</p></div>`;
+      return;
+    }
+
+    panelMensajes.innerHTML = `
+      <div class="chat-header">
+        <!-- ⚡ BOTÓN VOLVER (Solo visible en móvil) -->
+        <button class="chat-back-btn" id="btn-volver-chat">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+
+        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden;font-size:20px;">
+          ${canal.icono || '💬'}
+        </div>
+        <div class="chat-header__info">
+          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
+          <div class="chat-header__sub">${canal.totalMiembros || 0} miembros</div>
+        </div>
+      </div>
+
+      <div class="chat-mensajes" id="chat-mensajes"></div>
+
+      <div class="chat-input-preview hidden" id="chat-input-preview">
+        <div class="chat-input-preview__img-wrapper">
+          <img id="chat-input-preview-img" src="" alt="" />
+          <button type="button" class="chat-input-preview__del" id="chat-input-preview-del" title="Quitar">✕</button>
+        </div>
+      </div>
+
+      <form class="chat-input" id="chat-form">
+        <label class="chat-input__attach" title="Adjuntar imagen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+          <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
+        </label>
+
+        <input
+          type="text"
+          id="chat-input-texto"
+          placeholder="Escribí un mensaje..."
+          maxlength="2000"
+          autocomplete="off"
+        />
+
+        <button type="submit" class="chat-input__btn" title="Enviar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </form>
+    `;
+
+    // ⚡ Evento del botón Volver
+    document.getElementById('btn-volver-chat')?.addEventListener('click', volverALista);
+
+    document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) { toast('La imagen es muy grande (máx 3MB)', 'error'); e.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => { imagenBase64 = ev.target.result; mostrarPreviewImagen(imagenBase64); };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
+    document.getElementById('chat-input-preview-del')?.addEventListener('click', () => {
+      imagenBase64 = null; ocultarPreviewImagen();
+    });
+
+    document.getElementById('chat-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await enviarMensajeDelCanal(canalId);
+    });
+
+    await refrescarMensajesCanal(canalId);
   }
 
   /* =========================================================
@@ -550,7 +640,7 @@ export async function init() {
   }
 
   /* =========================================================
-     REFRESCAR MENSAJES DEL CHAT (con hash anti-parpadeo)
+     REFRESCAR MENSAJES (1 a 1)
      ========================================================= */
   async function refrescarMensajes(convId) {
     const cont = document.getElementById('chat-mensajes');
@@ -564,30 +654,16 @@ export async function init() {
       return;
     }
 
-    const hash = mensajes
-      .map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`)
-      .join('|');
-
+    const hash = mensajes.map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`).join('|');
     const cambioDeConv = ultimaConvRenderizada !== convId;
 
-    if (!cambioDeConv && hash === ultimoHashMensajes) {
-      return;
-    }
+    if (!cambioDeConv && hash === ultimoHashMensajes) return;
 
     ultimoHashMensajes = hash;
     ultimaConvRenderizada = convId;
 
     if (mensajes.length === 0) {
-      cont.innerHTML = `
-        <div class="chat-mensajes__empty">
-          <div class="chat-mensajes__empty-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <p>Aún no hay mensajes.</p>
-          <p class="text-xs" style="margin-top:4px">¡Saluda para empezar!</p>
-        </div>`;
+      cont.innerHTML = `<div class="chat-mensajes__empty"><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Saluda para empezar!</p></div>`;
       return;
     }
 
@@ -599,19 +675,12 @@ export async function init() {
     mensajes.forEach((m, idx) => {
       const fecha = new Date(m.createdAt);
       const dia = fecha.toDateString();
-
-      if (dia !== diaAnterior) {
-        html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`;
-        diaAnterior = dia;
-      }
+      if (dia !== diaAnterior) { html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`; diaAnterior = dia; }
 
       const esMio = String(m.autorId) === String(user.id);
       const esUltimoMio = esMio && idx === mensajes.length - 1;
-
       let leidoHtml = '';
-      if (esUltimoMio && m.leidoPorOtro === true) {
-        leidoHtml = `<span class="msg__leido">Leído</span>`;
-      }
+      if (esUltimoMio && m.leidoPorOtro === true) leidoHtml = `<span class="msg__leido">Leído</span>`;
 
       const tieneTexto = !!m.texto;
       const tieneImagen = !!m.imagen;
@@ -622,11 +691,7 @@ export async function init() {
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
-            ${tieneImagen ? `
-              <div class="msg__imagen-wrapper" data-ver-imagen="${idx}">
-                <img src="${m.imagen}" alt="" loading="lazy" />
-              </div>
-            ` : ''}
+            ${tieneImagen ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
             <div class="msg__meta">
               <span class="msg__hora">${horaCorta(m.createdAt)}</span>
               ${esUltimoMio ? leidoHtml : ''}
@@ -638,7 +703,6 @@ export async function init() {
 
     cont.innerHTML = html;
 
-    // Click en imagen → modal grande
     cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
       el.addEventListener('click', () => {
         const idx = Number(el.dataset.verImagen);
@@ -647,27 +711,90 @@ export async function init() {
       });
     });
 
-    if (estabaAbajo || mensajes.length <= 2) {
-      cont.scrollTop = cont.scrollHeight;
-    }
-
-    try {
-      await marcarLeidos(convId);
-    } catch (err) {
-      // Silencioso
-    }
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarLeidos(convId); } catch (err) {}
   }
 
   /* =========================================================
-     ENVIAR MENSAJE (texto + imagen)
+     REFRESCAR MENSAJES (CANALES)
+     ========================================================= */
+  async function refrescarMensajesCanal(canalId) {
+    const cont = document.getElementById('chat-mensajes');
+    if (!cont) return;
+
+    let mensajes;
+    try {
+      mensajes = await listarMensajesDeCanal(canalId);
+    } catch (err) {
+      console.error('[mensajes] Error al cargar mensajes del canal:', err);
+      return;
+    }
+
+    const hash = mensajes.map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`).join('|');
+    const cambioDeCanal = ultimaConvRenderizada !== canalId;
+
+    if (!cambioDeCanal && hash === ultimoHashMensajes) return;
+
+    ultimoHashMensajes = hash;
+    ultimaConvRenderizada = canalId;
+
+    if (mensajes.length === 0) {
+      cont.innerHTML = `<div class="chat-mensajes__empty"><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`;
+      return;
+    }
+
+    const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
+
+    let html = '';
+    let diaAnterior = null;
+
+    mensajes.forEach((m, idx) => {
+      const fecha = new Date(m.createdAt);
+      const dia = fecha.toDateString();
+      if (dia !== diaAnterior) { html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`; diaAnterior = dia; }
+
+      const esMio = String(m.autorId) === String(user.id);
+      const tieneTexto = !!m.texto;
+      const tieneImagen = !!m.imagen;
+      const soloImagen = tieneImagen && !tieneTexto;
+
+      html += `
+        <div class="msg ${esMio ? 'msg--yo' : ''}">
+          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
+            ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
+            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
+            ${tieneImagen ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
+            <div class="msg__meta">
+              <span class="msg__hora">${horaCorta(m.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagen);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarCanalLeido(canalId); } catch (err) {}
+  }
+
+  /* =========================================================
+     ENVIAR MENSAJE
      ========================================================= */
   async function enviarMensajeDelPanel(convId) {
     const input = document.getElementById('chat-input-texto');
     if (!input) return;
-
     const texto = input.value.trim();
     const imagen = imagenBase64;
-
     if (!texto && !imagen) return;
 
     input.value = '';
@@ -686,15 +813,36 @@ export async function init() {
     }
   }
 
+  async function enviarMensajeDelCanal(canalId) {
+    const input = document.getElementById('chat-input-texto');
+    if (!input) return;
+    const texto = input.value.trim();
+    const imagen = imagenBase64;
+    if (!texto && !imagen) return;
+
+    input.value = '';
+    imagenBase64 = null;
+    ocultarPreviewImagen();
+    input.focus();
+
+    try {
+      await enviarMensajeACanal(canalId, texto || null, imagen || null);
+      await refrescarMensajesCanal(canalId);
+      await recargarCanales();
+      renderListaCanales();
+    } catch (err) {
+      console.error('[mensajes] Error al enviar al canal:', err);
+      toast(err.message || 'No se pudo enviar el mensaje', 'error');
+    }
+  }
+
   /* =========================================================
      MODAL: NUEVA CONVERSACIÓN
      ========================================================= */
   async function abrirModalNuevaConv() {
     const input = document.getElementById('buscar-usuario');
     if (input) input.value = '';
-
     await renderUsuariosModal('');
-
     abrirModal('modal-nueva-conv');
   }
 
@@ -707,40 +855,21 @@ export async function init() {
     let usuariosDescubiertos = [];
     try {
       const { data: grupos } = await listarGrupos({ limit: 50 });
-
       const mapaUsuarios = new Map();
-      grupos.forEach(g => {
-        if (g.capitan && g.capitan.id !== user.id) {
-          mapaUsuarios.set(g.capitan.id, g.capitan);
-        }
-      });
-
+      grupos.forEach(g => { if (g.capitan && g.capitan.id !== user.id) mapaUsuarios.set(g.capitan.id, g.capitan); });
       usuariosDescubiertos = Array.from(mapaUsuarios.values());
-    } catch (err) {
-      console.error('[mensajes] Error al cargar usuarios:', err);
-    }
+    } catch (err) {}
 
     if (usuariosDescubiertos.length === 0) {
-      cont.innerHTML = `
-        <p class="text-sm text-muted text-center" style="padding:var(--space-4)">
-          No hay usuarios disponibles todavía
-        </p>`;
+      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">No hay usuarios disponibles todavía</p>`;
       return;
     }
 
     const f = filtro.toLowerCase().trim();
-    const filtrados = f
-      ? usuariosDescubiertos.filter(u =>
-          (u.nombre || '').toLowerCase().includes(f) ||
-          (u.username || '').toLowerCase().includes(f)
-        )
-      : usuariosDescubiertos;
+    const filtrados = f ? usuariosDescubiertos.filter(u => (u.nombre || '').toLowerCase().includes(f) || (u.username || '').toLowerCase().includes(f)) : usuariosDescubiertos;
 
     if (filtrados.length === 0) {
-      cont.innerHTML = `
-        <p class="text-sm text-muted text-center" style="padding:var(--space-4)">
-          Sin usuarios que coincidan con "${escapeHtml(filtro)}"
-        </p>`;
+      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin usuarios que coincidan con "${escapeHtml(filtro)}"</p>`;
       return;
     }
 
@@ -757,15 +886,13 @@ export async function init() {
 
     cont.querySelectorAll('[data-user]').forEach(el => {
       el.addEventListener('click', async () => {
-        const otroId = el.dataset.user;
         try {
-          const conv = await crearConversacion(otroId);
+          const conv = await crearConversacion(el.dataset.user);
           cerrarModal('modal-nueva-conv');
           await recargarConversaciones();
           renderListaConversaciones();
           await abrirConversacion(conv.id);
         } catch (err) {
-          console.error('[mensajes] Error al crear conversación:', err);
           toast(err.message || 'No se pudo crear la conversación', 'error');
         }
       });
@@ -799,6 +926,30 @@ export async function init() {
      ========================================================= */
   await recargarConversaciones();
   renderListaConversaciones();
+  
+  // Lógica de las pestañas (Conv / Canales)
+  const tabsMsg = document.querySelectorAll('[data-tab-msg]');
+  tabsMsg.forEach(tab => {
+    tab.addEventListener('click', async () => {
+      tabActual = tab.dataset.tabMsg;
+      tabsMsg.forEach(t => {
+        t.classList.toggle('active', t === tab);
+        t.style.borderBottomColor = t === tab ? 'var(--color-primary)' : 'transparent';
+      });
+
+      if (tabActual === 'conv') {
+        listaConversaciones.style.display = 'block';
+        listaCanalesEl.style.display = 'none';
+        await recargarConversaciones();
+        renderListaConversaciones();
+      } else {
+        listaConversaciones.style.display = 'none';
+        listaCanalesEl.style.display = 'block';
+        await recargarCanales();
+        renderListaCanales();
+      }
+    });
+  });
 
   return () => {
     if (intervaloRefresco) clearInterval(intervaloRefresco);

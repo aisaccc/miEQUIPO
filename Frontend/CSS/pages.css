@@ -13433,3 +13433,49 @@ select.field__input {
   max-width: 100%;
   box-sizing: border-box;
 }
+/* =========================================================
+   BOTÓN VOLVER EN EL CHAT (Solo móvil)
+   ========================================================= */
+.chat-back-btn {
+  display: none; /* Oculto por defecto en escritorio */
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 4px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-back-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  /* Mostrar el botón de volver */
+  .chat-back-btn {
+    display: flex;
+  }
+
+  /* ⚡ ARREGLO DEL BUG VISUAL DEL SCROLL HORIZONTAL (Actividad) */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    max-width: 100% !important;
+  }
+
+  .app-main {
+    overflow-x: hidden !important;
+  }
+
+  /* Forzar a que los filtros y subtabs no se desborden */
+  .subtabs, 
+  .toolbar__filters {
+    max-width: 100vw !important;
+    margin-right: 0 !important; /* Quitamos el margen negativo que causaba el bug */
+    padding-right: 16px !important;
+  }
+}
