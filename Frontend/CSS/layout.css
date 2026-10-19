@@ -917,123 +917,112 @@ body {
 /* =========================================================
    FIXES GENERALES PARA MÓVIL (Ajustes de altura y scroll)
    ========================================================= */
+/* =========================================================
+   FIXES MÓVIL DEFINITIVOS (Fase QA Mobile)
+   ========================================================= */
+/* =========================================================
+   FIXES MÓVIL DEFINITIVOS (Fase QA Mobile)
+   ========================================================= */
 @media (max-width: 768px) {
-  /* 1. EVITAR DESPLAZAMIENTO HORIZONTAL GLOBAL */
+  /* 1. Evitar desbordes horizontales globales */
   html, body {
     overflow-x: hidden !important;
-    width: 100vw !important;
-    max-width: 100% !important;
-  }
-
-  .app-main {
-    height: calc(100dvh - 60px - 64px) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding-bottom: 24px !important; 
-  }
-
-  /* 2. ARREGLAR EL LAYOUT DEL CHAT (Mensajes) */
-  .chat-layout {
-    display: block !important; 
-    height: 100% !important;
-    max-height: 100% !important; /* Que ocupe todo */
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important; /* Quitar bordes redondeados */
-    background: var(--color-bg) !important;
-  }
-
-  .chat-layout__list {
     width: 100% !important;
-    height: 100% !important;
-    border-right: none !important;
+    max-width: 100vw !important;
   }
 
-  /* 3. ARREGLAR CHATS EMBEBIDOS (Torneos y Equipos) */
-  /* Como tienen la clase --torneo, los forzamos a mostrarse siempre */
+  /* 2. Ancho completo y sin bordes para TODOS los chats */
+  .chat-layout, 
   .chat-layout--torneo {
-    display: flex !important;
-    flex-direction: column !important;
+    /* Compensa el padding del contenedor para que ocupe toda la pantalla */
+    width: calc(100% + 32px) !important; 
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    height: calc(100dvh - 124px) !important; /* Altura exacta (Header + Bottom Nav) */
+    max-height: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: var(--color-bg) !important;
+    box-shadow: none !important;
   }
-  
-  .chat-layout--torneo .chat-layout__panel {
-    display: flex !important; /* Siempre visible */
-    flex-direction: column !important;
-    height: 100% !important;
+
+  /* 3. Ajustar el input para que el botón de enviar NUNCA se corte */
+  .chat-input {
+    padding: 10px 12px !important;
+    gap: 6px !important;
+    border-radius: 0 !important;
+  }
+  .chat-input input {
     width: 100% !important;
+    min-width: 0 !important; /* Permite que el input se achique */
+    padding: 10px 14px !important;
+  }
+  .chat-input__btn, 
+  .chat-input__attach {
+    flex-shrink: 0 !important; /* Evita que los botones se aplasten */
+    width: 38px !important;
+    height: 38px !important;
   }
 
-  /* Solo ocultar el panel en Mensajes (el que tiene lista) */
-  .chat-layout:not(.chat-layout--torneo) .chat-layout__panel {
-    display: none !important;
+  /* 4. Subtabs Rectangulares (Estilo Detalle de Equipo) */
+  .subtabs {
+    background: var(--color-surface) !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    /* Ocupa todo el ancho */
+    width: calc(100% + 32px) !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    max-width: none !important;
   }
 
-  .chat-layout:not(.chat-layout--torneo) .chat-layout__panel.chat-layout__panel--abierto {
-    display: flex !important;
-    flex-direction: column;
-    height: 100% !important;
+  .subtab {
+    border-radius: 0 !important;
+    border-bottom: 3px solid transparent !important;
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    background: transparent !important;
   }
 
-  .chat-layout:not(.chat-layout--torneo) .chat-layout__list.chat-layout__list--oculto {
-    display: none !important;
+  .subtab--active {
+    background: transparent !important;
+    border-bottom-color: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+    box-shadow: none !important;
   }
 
-  /* 4. ARREGLAR LOS SUBTABS (Que no se corten) */
-  .subtabs, .toolbar__filters {
-    display: flex !important;
+  /* 5. Filtros (Chips) con scroll horizontal sin romper la pantalla */
+  .toolbar__filters {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
+    padding-bottom: 8px !important;
     -webkit-overflow-scrolling: touch;
-    max-width: 100vw !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    margin-left: -16px !important; /* Tira hacia los bordes */
-    margin-right: -16px !important;
-    box-sizing: content-box !important;
+    width: 100%;
+    margin-top: 10px;
   }
-  
-  .subtabs::-webkit-scrollbar, 
-  .toolbar__filters::-webkit-scrollbar {
-    display: none;
+  .toolbar__filters::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0 !important; }
+
+  /* 6. Modales: Permitir scroll interno para ver comentarios */
+  .modal {
+    max-height: 90dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .modal__body {
+    overflow-y: auto !important;
+    max-height: calc(90dvh - 120px) !important; /* Resta header y footer */
+    padding-bottom: 24px !important; /* Espacio extra al final */
   }
 
-  /* Evitar que las palabras de los tabs se rompan en 2 líneas */
-  .subtab, .chip {
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
+  /* 7. Mostrar el botón "Volver" en los chats */
+  .chat-back-btn {
+    display: flex !important;
   }
 
-  /* 5. Menú de usuario y Header */
-  .user-menu__dropdown {
-    position: fixed !important;
-    top: 70px !important;
-    right: 16px !important;
-    width: calc(100vw - 32px) !important; 
-    max-width: 300px !important;
-  }
-
-  .app-header {
-    height: 60px !important;
-    padding: 0 16px !important;
-  }
-
-  /* 6. Ajustar altura de imágenes y textos */
-  .feed-post__media img, 
-  .feed-post__media video,
-  .tournament-card__image,
-  .pub-card__img {
-    max-height: 350px !important;
-    object-fit: cover !important;
-  }
-
-  .page-title--xl, .pd-hero__title, .td-hero__title {
-    font-size: 28px !important;
-  }
-
-  /* 7. Grids a 1 columna */
-  .grupo-grid, 
-  .tournament-grid, 
-  .match-list {
-    grid-template-columns: 1fr !important;
+  /* 8. Ajustar el tamaño del título en la vista de modal de publicación */
+  .ver-pub__contenido {
+    font-size: 14px !important;
   }
 }
