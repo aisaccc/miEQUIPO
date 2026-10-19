@@ -721,14 +721,9 @@ export async function init() {
     cont.innerHTML = `
       <div class="chat-layout chat-layout--torneo">
         <section class="chat-layout__panel" id="panel-canal-detalle">
-          <div class="chat-empty">
-            <div class="chat-empty__icon">
-              <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-            </div>
-            <h3 class="chat-empty__titulo">Chat del equipo</h3>
-            <p class="chat-empty__text">Cargando...</p>
+          <div class="page-loader" style="height: 100%; display: flex; align-items: center; justify-content: center;">
+            <div class="spinner"></div>
+            <span style="margin-left: 10px; color: var(--color-text-muted);">Cargando chat...</span>
           </div>
         </section>
       </div>
@@ -748,7 +743,41 @@ export async function init() {
       console.warn('[mi-equipo] No se pudo marcar como leído:', err.message);
     }
 
+    // ⚡ Forzamos el render
     await renderPanelCanalDetalle(canalId, grupo);
+
+    // Verificamos si el panel realmente se pintó
+    const panel = document.getElementById('panel-canal-detalle');
+    if (panel && !panel.querySelector('.chat-header')) {
+      // Si después de renderizar no hay un header, es porque el backend falló.
+      // Mostramos una vista de emergencia.
+      panel.innerHTML = `
+        <div class="chat-header">
+          <button class="chat-back-btn" id="btn-volver-chat-interno" style="display:flex">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <div class="chat-header__info">
+            <div class="chat-header__name">Chat de ${grupo.nombre}</div>
+            <div class="chat-header__sub">Equipo</div>
+          </div>
+        </div>
+        <div class="chat-empty">
+          <div class="chat-empty__icon">
+            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <p class="chat-empty__text">No se pudo conectar con el chat en este momento.</p>
+        </div>
+      `;
+      
+      document.getElementById('btn-volver-chat-interno')?.addEventListener('click', () => {
+        subTabDetalleEquipo = 'info';
+        renderDetalleGrupo(grupo, grupo.tipo === 'comunidad', () => {
+          grupoAbiertoEquipo = null;
+          subTabDetalleEquipo = 'info';
+          renderPanelEquipo();
+        });
+      });
+    }
 
     intervaloDetalle = setInterval(async () => {
       if (canalDetalleId === canalId) {

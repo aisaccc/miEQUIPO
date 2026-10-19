@@ -923,40 +923,21 @@ body {
 /* =========================================================
    FIXES MÓVIL DEFINITIVOS (V3 - Scroll y Layout Perfecto)
    ========================================================= */
-/* =========================================================
-   FIXES MÓVIL DEFINITIVOS (V4 - App Shell y Chats)
-   ========================================================= */
 @media (max-width: 768px) {
-  
-  /* 1. EL SECRETO DEL SCROLL: Bloqueamos el body y hacemos que la app sea un Flexbox */
+  /* 1. Dejamos que el celular scrollee naturalmente */
   html, body {
-    height: 100dvh !important;
-    overflow: hidden !important; /* No scroll en el body */
+    overflow-x: hidden !important; /* Solo bloqueamos el deslizamiento lateral */
+    height: auto !important;
     margin: 0;
     padding: 0;
   }
 
-  .app-shell {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100dvh !important;
-  }
-
-  .app-header {
-    flex-shrink: 0 !important;
-    height: 60px !important;
-  }
-
   .app-main {
-    flex: 1 !important; /* Toma todo el espacio restante */
-    overflow-y: auto !important; /* El scroll ocurre ACÁ adentro */
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    /* 100px abajo para que el último elemento no choque con la barra inferior */
-    padding: 16px 16px 100px 16px !important; 
+    padding: 16px 16px 100px 16px !important; /* 100px de espacio abajo para que la barra no tape nada */
+    height: auto !important;
   }
 
-  /* 2. La barra inferior fija */
+  /* 2. Barra inferior fija */
   .app-bottom-nav {
     display: flex;
     position: fixed;
@@ -973,11 +954,8 @@ body {
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
 
-  /* 3. CHATS INDIVIDUALES (Mensajes) y CHATS DE TORNEOS/EQUIPOS */
-  .chat-layout, 
-  .chat-layout--torneo {
-    display: flex !important;
-    flex-direction: column !important;
+  /* 3. Chats (Mensajes, Equipos, Torneos) */
+  .chat-layout {
     width: calc(100% + 32px) !important; 
     margin-left: -16px !important;
     margin-right: -16px !important;
@@ -985,21 +963,29 @@ body {
     border: none !important;
     background: var(--color-bg) !important;
     box-shadow: none !important;
-    /* En las subpestañas de equipos/torneos, le damos un alto fijo generoso */
-    height: 65vh !important;
-    max-height: 600px !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 10px !important;
   }
 
-  /* Para la pestaña de Mensajes, que ocupe toda la pantalla disponible */
-  #panel-mensajes {
-    height: calc(100dvh - 130px) !important;
-  }
-  
-  /* En la vista de Mensajes, ocultamos lo que sobra */
+  /* Para el chat de Mensajes (el que tiene lista al lado) */
   .chat-layout:not(.chat-layout--torneo) {
-    height: calc(100dvh - 130px) !important;
-    max-height: none !important;
+    height: calc(100vh - 140px) !important; /* Altura ajustada */
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* ⚡ EL FIX PARA EL CHAT DE EQUIPOS/TORNEOS: Obligar a que se vea */
+  .chat-layout--torneo {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 500px !important; /* Altura generosa para que no se aplaste */
+    max-height: 70vh !important;
+  }
+
+  .chat-layout--torneo .chat-layout__panel {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
   }
 
   .chat-layout__list,
@@ -1009,13 +995,12 @@ body {
     overflow-y: auto !important;
   }
 
-  /* 4. Input del chat (Evitar que se corte el botón enviar) */
+  /* 4. Input del chat */
   .chat-input {
     padding: 10px 12px !important;
     gap: 8px !important;
     border-radius: 0 !important;
     flex-shrink: 0 !important; 
-    padding-bottom: env(safe-area-inset-bottom) !important;
   }
   .chat-input input {
     width: 100% !important;
@@ -1028,7 +1013,7 @@ body {
     height: 40px !important;
   }
 
-  /* 5. Subtabs Rectangulares (Evitar el corte a la derecha) */
+  /* 5. Subtabs Rectangulares */
   .subtabs {
     background: var(--color-surface) !important;
     border-radius: 0 !important;
@@ -1058,7 +1043,7 @@ body {
     box-shadow: none !important;
   }
 
-  /* 6. Filtros (Chips) con scroll horizontal */
+  /* 6. Filtros (Chips) */
   .toolbar__filters {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -1069,15 +1054,15 @@ body {
   .toolbar__filters::-webkit-scrollbar { display: none; }
   .chip { flex-shrink: 0 !important; }
 
-  /* 7. Modales (Para poder comentar sin que se corte) */
+  /* 7. Modales (Comentarios) */
   .modal {
-    max-height: 90dvh !important;
+    max-height: 90vh !important;
     display: flex !important;
     flex-direction: column !important;
   }
   .modal__body {
     overflow-y: auto !important;
-    max-height: calc(90dvh - 120px) !important;
+    max-height: calc(90vh - 120px) !important;
     padding-bottom: 40px !important; 
   }
   
