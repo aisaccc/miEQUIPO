@@ -842,3 +842,75 @@ body {
     padding: 10px 14px;
   }
 }
+/* =========================================================
+   BARRA DE NAVEGACIÓN INFERIOR (MÓVIL)
+   ========================================================= */
+
+.app-bottom-nav {
+  display: none; /* Oculto por defecto en PC */
+}
+
+@media (max-width: 768px) {
+  /* 1. Ocultar el menú lateral en móvil */
+  .app-sidebar {
+    display: none !important;
+  }
+
+  /* 2. Mostrar y fijar la barra inferior */
+  .app-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 64px;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom); /* Soporte para el notch de iPhone */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  /* 3. Estilo de cada botón */
+  .app-bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 600;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+  }
+
+  /* 4. Estado activo (cuando estás en esa pestaña) */
+  .app-bottom-nav__item.active {
+    color: var(--color-primary);
+  }
+
+  .app-bottom-nav__item.active svg {
+    stroke: var(--color-primary);
+    transform: translateY(-2px);
+  }
+
+  /* 5. Ajustar el layout principal para que la barra no tape el contenido */
+  .app-main {
+    padding-bottom: 80px !important; /* Deja espacio para la barra */
+  }
+
+  /* 6. Achicar un poco el header en móvil */
+  .app-header {
+    padding: 0 16px;
+    height: 60px;
+  }
+  
+  .app-header__create {
+    display: none; /* Ocultar botón crear en móvil (o moverlo al perfil) */
+  }
+}

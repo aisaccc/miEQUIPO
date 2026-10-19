@@ -74,7 +74,13 @@ export async function navegar(hash) {
     appMain.dataset.page = ruta.script;   // 'inicio', 'partidos', 'torneos', etc.
   }
 
+// Actualizar menú lateral
   document.querySelectorAll('.sidebar-nav__item').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('href') === hash);
+  });
+
+  // ⚡ Actualizar barra inferior
+  document.querySelectorAll('.app-bottom-nav__item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('href') === hash);
   });
 
