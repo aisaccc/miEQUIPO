@@ -65,14 +65,19 @@ async function intentarRefresh() {
         body: JSON.stringify({ refreshToken }),
       });
 
-      // ⚡ 429 en refresh: NO es sesión expirada, es rate limit
-      if (res.status === 429 || res.status === 503) {
+      // ⚡ Si es rate limit (429) o error del servidor (5xx), NO borramos sesión.
+      if (res.status === 429 || res.status >= 500) {
         throw new ApiError('Servidor ocupado. Intentá de nuevo en unos segundos.', res.status);
       }
 
-      if (!res.ok) {
+      // ⚡ Solo si es 401 o 403 significa que el refresh token de verdad murió.
+      if (res.status === 401 || res.status === 403) {
         limpiarTokens();
         throw new ApiError('Sesión expirada', 401);
+      }
+
+      if (!res.ok) {
+        throw new ApiError('Error inesperado al renovar sesión', res.status);
       }
 
       const data = await res.json();
@@ -151,15 +156,17 @@ async function request(endpoint, options = {}, _intento = 1) {
   }
 
   // 401 → intentar refresh UNA vez
+  // 401 → intentar refresh UNA vez
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
     try {
       await intentarRefresh();
       return request(endpoint, { ...options, sinRefresh: true });
     } catch (refreshErr) {
-      // ⚡ Si el refresh falló por 429/503 → NO limpiar sesión ni redirigir
-      if (refreshErr.status === 429 || refreshErr.status === 503) {
+      // ⚡ Si el refresh falló por error del servidor, NO limpiamos sesión, solo tiramos el error.
+      if (refreshErr.status >= 500 || refreshErr.status === 429) {
         throw refreshErr;
       }
+      // Si llegó acá, el token de verdad murió.
       limpiarTokens();
       redirigirALogin();
       throw new ApiError('Sesión expirada. Iniciá sesión de nuevo.', 401);
