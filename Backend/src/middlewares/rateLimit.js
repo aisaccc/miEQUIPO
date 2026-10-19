@@ -12,12 +12,12 @@ import { env } from '../config/env.js';
 const esDev = env.NODE_ENV === 'development';
 
 /* Límite general:
-   - En producción: 100 peticiones por 15 minutos por IP
+   - En producción: 5000 peticiones por 15 minutos por IP
    - En desarrollo: 10000 peticiones por 15 minutos por IP
 */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: esDev ? 10000 : 100,
+  max: esDev ? 10000 : 5000,
   message: { error: 'Demasiadas peticiones, intentá más tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -26,12 +26,12 @@ export const generalLimiter = rateLimit({
 });
 
 /* Límite estricto para login/registro:
-   - En producción: 5 intentos por 15 minutos
+   - En producción: 10 intentos por 15 minutos
    - En desarrollo: 100 intentos por 15 minutos (para no bloquearnos al testear)
 */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: esDev ? 100 : 5,
+  max: esDev ? 100 : 10,
   message: { error: 'Demasiados intentos. Esperá 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
