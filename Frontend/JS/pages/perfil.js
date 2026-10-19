@@ -56,7 +56,6 @@ const HERO_COLORS = [
 ];
 
 export async function init() {
-  // 1. Intentar obtener datos frescos del backend
   let user = getSesion();
   if (!user) {
     window.location.href = 'index.html';
@@ -66,11 +65,10 @@ export async function init() {
   try {
     user = await obtenerMiPerfil();
   } catch (err) {
-    console.warn('[perfil] No se pudo obtener el perfil del backend, usando sesión local:', err.message);
-    // Mantenemos el `user` que sacamos de getSesion()
+    console.warn('[perfil] No se pudo obtener el perfil desde el backend:', err.message);
+    user = getSesion();
   }
 
-  // Referencias al DOM...
   const elHero            = document.getElementById('perfil-hero');
   const elAvatar          = document.getElementById('perfil-avatar');
   const elNombre          = document.getElementById('perfil-nombre');
@@ -115,7 +113,6 @@ export async function init() {
     elHero.classList.toggle('perfil-hero--dark-text', preset.text === 'dark');
   }
 
-  // ⚡ FIX: render ahora recibe el usuario por parámetro para no volver a pedirlo
   async function render(u) {
     if (!u) {
       u = { nombre: 'Usuario', username: 'usuario', id: null, heroColor: 'navy' };
@@ -173,12 +170,47 @@ export async function init() {
     cambiarTabPerfil(tabActual);
   }
 
-  // ... (las funciones cambiarTabPerfil, renderStatsHero, iconoDeporte, iconoDeporteHistorial, cargarHistorial, renderHistorial, renderCardHistorial, poblarSelectDeportesHistorial, conectarEventosHistorial, abrirModalEditarStatsDeporte quedan exactamente igual) ...
+  function cambiarTabPerfil(tab) {
+    tabActual = tab;
+    subtabsPerfil.forEach(st => {
+      st.classList.toggle('subtab--active', st.dataset.tabPerfil === tab);
+    });
+    panelPublicaciones?.classList.toggle('subpanel--active', tab === 'publicaciones');
+    panelActividad?.classList.toggle('subpanel--active', tab === 'actividad');
+    panelHistorial?.classList.toggle('subpanel--active', tab === 'historial');
+  }
+
+  subtabsPerfil.forEach(st => {
+    st.addEventListener('click', () => cambiarTabPerfil(st.dataset.tabPerfil));
+  });
+
+  function renderStatsHero(u) {
+    if (!elStatsHero) return;
+    const base = u.statsHeroBase || {};
+    const auto = u.statsHero || { partidos: 0, torneos: 0, equipos: 0 };
+    const partidos = (Number(base.partidos) || 0) + (auto.partidos || 0);
+    const torneos = auto.torneos || 0;
+    const equipos = auto.equipos || 0;
+
+    elStatsHero.innerHTML = `
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${partidos}</div>
+        <div class="perfil-stat__label">Partidos jugados</div>
+      </div>
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${torneos}</div>
+        <div class="perfil-stat__label">Torneos</div>
+      </div>
+      <div class="perfil-stat">
+        <div class="perfil-stat__value">${equipos}</div>
+        <div class="perfil-stat__label">Equipos</div>
+      </div>
+    `;
+  }
 
   async function renderPublicaciones(u) {
     if (!elPubsGrid) return;
 
-    // ⚡ FIX: Si no hay ID válido (es null o undefined), no consultamos el backend
     if (!u.id) {
       elPubsGrid.innerHTML = `
         <div class="card">
@@ -234,7 +266,346 @@ export async function init() {
     });
   }
 
-  // ... (las funciones renderDeportesLista, renderStatsDeportes quedan igual) ...
+  function renderDeportesLista(u) {
+    if (!elDeportesLista) return;
+    const misDeportes = u.deportes || [];
+
+    if (misDeportes.length === 0) {
+      elDeportesLista.innerHTML = `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">${ICONOS.medalla}</div>
+          <p class="text-sm text-muted">Aún no agregaste deportes</p>
+        </div>`;
+      return;
+    }
+
+    elDeportesLista.innerHTML = misDeportes.map(d => {
+      const posiciones = (d.posiciones || []).join(', ') || 'Sin posiciones';
+      return `
+        <div class="feed-item" style="cursor:default">
+          <div class="feed-item__icon">${iconoDeporte(d.deporte)}</div>
+          <div style="flex:1; min-width:0">
+            <div class="feed-item__title">${d.deporte}</div>
+            <div class="feed-item__subtitle">${posiciones}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderStatsDeportes(u) {
+    if (!elStatsDeportes) return;
+    const misDeportes = u.deportes || [];
+
+    if (misDeportes.length === 0) {
+      elStatsDeportes.innerHTML = `
+        <div class="card">
+          <h3 class="card__title mb-4" style="display:flex; align-items:center; gap:6px">
+            ${ICONOS.grafico} Mis estadísticas
+          </h3>
+          <div class="empty-state" style="padding:var(--space-5)">
+            <div class="empty-state__icon" style="font-size:36px">${ICONOS.grafico}</div>
+            <p class="text-sm text-muted">Agrega un deporte en tu perfil para llevar estadísticas</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    elStatsDeportes.innerHTML = misDeportes.map(d => {
+      const statsDisponibles = statsPorDeporte[d.deporte] || [];
+      const statsUsuario = d.stats || {};
+      const icono = iconoDeporte(d.deporte);
+      const cargadas = statsDisponibles.filter(s => statsUsuario[s.clave]?.valor > 0);
+
+      return `
+        <div class="card mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="card__title" style="margin:0; display:flex; align-items:center; gap:6px">
+              ${icono} Estadísticas de ${d.deporte}
+            </h3>
+            <button class="btn btn--ghost btn--sm" data-editar-stats-deporte="${d.deporte}" style="display:flex; align-items:center; gap:6px">
+              ${ICONOS.lapiz} Editar
+            </button>
+          </div>
+
+          ${cargadas.length === 0 ? `
+            <div class="empty-state--sm">
+              <div class="empty-state__icon">${ICONOS.grafico}</div>
+              <p class="text-sm text-muted">Sin registros cargados todavía</p>
+            </div>
+          ` : `
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr))">
+              ${statsDisponibles.map(s => {
+                const stat = statsUsuario[s.clave];
+                if (!stat || !stat.valor) return '';
+                const esPrivada = !stat.publico;
+                return `
+                  <div class="stat-box" style="position:relative">
+                    <div class="stat-box__value">${stat.valor}</div>
+                    <div class="stat-box__label">${s.nombre}</div>
+                    ${esPrivada ? `
+                      <span style="position:absolute; top:6px; right:6px; color:var(--color-text-muted)" title="Privado">${ICONOS.candado}</span>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }).join('');
+
+    elStatsDeportes.querySelectorAll('[data-editar-stats-deporte]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        abrirModalEditarStatsDeporte(btn.dataset.editarStatsDeporte);
+      });
+    });
+  }
+
+  function iconoDeporte(deporte) {
+    const map = {
+      'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+      'Básquetbol': 'assets/icons/balocensto.svg',
+      'Tenis': 'assets/icons/pelota-de-tenis.png',
+      'Vóleibol': 'assets/icons/voleibol.svg',
+      'Pádel': 'assets/icons/raqueta-de-padel.png',
+      'Golf': 'assets/icons/golf.png',
+      'Béisbol': 'assets/icons/beisbol.png',
+      'Hockey': 'assets/icons/disco.png',
+      'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+      'Bádminton': 'assets/icons/volante.png',
+      'Rugby': 'assets/icons/rugby.png',
+      'Ciclismo': 'assets/icons/bicicleta.svg',
+      'Natación': 'assets/icons/natacion.svg',
+      'Atletismo': 'assets/icons/corriendo.png',
+      'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+      'Squash': 'assets/icons/tenis-de-squash.png',
+      'Handball': 'assets/icons/balonmano.png',
+      'Fútbol americano': 'assets/icons/deporte.svg',
+      'Surf': 'assets/icons/tabla-de-surf.png',
+      'Escalada': 'assets/icons/escalada.png'
+    };
+    const valor = map[deporte] || ICONOS.medalla;
+    if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
+      return `<img src="${valor}" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+    }
+    return valor;
+  }
+
+  function iconoDeporteHistorial(deporte) {
+    const map = {
+      'Fútbol': 'assets/icons/balon-de-futbol (2).png',
+      'Básquetbol': 'assets/icons/balocensto.svg',
+      'Tenis': 'assets/icons/pelota-de-tenis.png',
+      'Vóleibol': 'assets/icons/voleibol.svg',
+      'Pádel': 'assets/icons/raqueta-de-padel.png',
+      'Golf': 'assets/icons/golf.png',
+      'Béisbol': 'assets/icons/beisbol.png',
+      'Hockey': 'assets/icons/disco.png',
+      'Boxeo': 'assets/icons/guantes-de-boxeo.png',
+      'Bádminton': 'assets/icons/volante.png',
+      'Rugby': 'assets/icons/rugby.png',
+      'Ciclismo': 'assets/icons/bicicleta.svg',
+      'Natación': 'assets/icons/natacion.svg',
+      'Atletismo': 'assets/icons/corriendo.png',
+      'Tenis de mesa': 'assets/icons/raqueta-de-tenis-de-mesa.png',
+      'Squash': 'assets/icons/tenis-de-squash.png',
+      'Handball': 'assets/icons/balonmano.png',
+      'Fútbol americano': 'assets/icons/deporte.svg',
+      'Surf': 'assets/icons/tabla-de-surf.png',
+      'Escalada': 'assets/icons/escalada.png'
+    };
+    const valor = map[deporte] || ICONOS.medalla;
+    if (/\.(svg|png|jpg|jpeg|gif|webp)$/i.test(valor)) {
+      return `<img src="${valor}" alt="" style="width:32px;height:32px;object-fit:contain;display:block" />`;
+    }
+    return valor;
+  }
+
+  async function cargarHistorial(reset = false) {
+    if (!elHistorial) return;
+    if (histCargando) return;
+
+    if (reset) {
+      histPagina = 1;
+      histPartidos = [];
+    }
+
+    histCargando = true;
+
+    if (reset) {
+      elHistorial.innerHTML = `
+        <div class="page-loader">
+          <div class="spinner"></div>
+          <span>Cargando historial...</span>
+        </div>`;
+    }
+
+    try {
+      const filtrosBackend = { page: histPagina, limit: 10 };
+      if (histFiltros.deporte) filtrosBackend.deporte = histFiltros.deporte;
+      if (histFiltros.desde)   filtrosBackend.desde = histFiltros.desde;
+      if (histFiltros.hasta)   filtrosBackend.hasta = histFiltros.hasta;
+      if (histFiltros.rol === 'jugador' || histFiltros.rol === 'equipo') {
+        filtrosBackend.tipo = histFiltros.rol;
+      }
+
+      const resultado = await obtenerHistorialPartidos(filtrosBackend);
+      const data = resultado.data || [];
+      const meta = resultado.meta || { total: 0, totalPages: 1 };
+
+      let filtrados = data;
+      if (histFiltros.rol && histFiltros.rol !== 'todos') {
+        filtrados = data.filter(p => p.rol === histFiltros.rol);
+      }
+
+      if (reset) {
+        histPartidos = filtrados;
+      } else {
+        histPartidos = [...histPartidos, ...filtrados];
+      }
+
+      if (elHistorialCount) {
+        elHistorialCount.textContent = `${meta.total} partido${meta.total !== 1 ? 's' : ''} jugado${meta.total !== 1 ? 's' : ''}`;
+      }
+
+      renderHistorial();
+
+      if (elHistorialCargar) {
+        const hayMas = histPagina < meta.totalPages;
+        elHistorialCargar.style.display = hayMas ? '' : 'none';
+      }
+
+    } catch (err) {
+      console.error('[perfil] Error al cargar historial:', err);
+      elHistorial.innerHTML = `
+        <div class="empty-state--sm">
+          <div class="empty-state__icon">${ICONOS.alerta}</div>
+          <p class="text-sm text-muted">No se pudo cargar el historial</p>
+          <p class="text-xs text-muted mt-2">${err.message || ''}</p>
+        </div>`;
+    } finally {
+      histCargando = false;
+    }
+  }
+
+  function renderHistorial() {
+    if (!elHistorial) return;
+    if (histPartidos.length === 0) {
+      elHistorial.innerHTML = `
+        <div class="empty-state--sm" style="padding:var(--space-5)">
+          <div class="empty-state__icon">${ICONOS.calendario}</div>
+          <p class="text-sm text-muted">Aún no tenés partidos jugados</p>
+          <p class="text-xs text-muted mt-2">Los partidos aparecen acá cuando se finalizan</p>
+        </div>`;
+      return;
+    }
+
+    elHistorial.innerHTML = `
+      <div class="card-grid">
+        ${histPartidos.map(p => renderCardHistorial(p)).join('')}
+      </div>
+    `;
+
+    elHistorial.querySelectorAll('.match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.hash = `#/partido/${card.dataset.id}`;
+      });
+    });
+  }
+
+  function renderCardHistorial(p) {
+    const rolLabel = {
+      organizador: `${ICONOS.corona} Organizador`,
+      jugador:     `${ICONOS.usuario} Jugador`,
+      equipo:      `${ICONOS.escudo} Equipo`,
+    }[p.rol] || '—';
+
+    const rolBadgeClase = {
+      organizador: 'badge--primary',
+      jugador:     'badge--info',
+      equipo:      'badge--warning',
+    }[p.rol] || 'badge--neutral';
+
+    const tipoLabel = p.tipoPartido === 'equipo' 
+      ? `${ICONOS.escudo} De equipos` 
+      : `${ICONOS.usuario} De jugadores`;
+
+    return `
+      <article class="match-card" data-id="${p.id}" style="cursor:pointer">
+        <div class="match-card__header">
+          <div class="match-card__sport">${iconoDeporteHistorial(p.deporte)}</div>
+          <span class="badge ${rolBadgeClase}">${rolLabel}</span>
+        </div>
+
+        <h3 class="match-card__title">${p.titulo}</h3>
+
+        <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+          <span class="badge badge--neutral">${tipoLabel}</span>
+          <span class="badge badge--success">${ICONOS.check} Finalizado</span>
+        </div>
+
+        <div class="match-card__info">
+          <span>${ICONOS.medalla} ${p.deporte}</span>
+          <span>${ICONOS.calendario} ${formatearFecha(p.fecha)}</span>
+          ${p.lugar ? `<span>${ICONOS.ubicacion} ${p.lugar}</span>` : ''}
+          ${p.organizador?.nombre ? `<span>${ICONOS.usuario} ${p.organizador.nombre}</span>` : ''}
+        </div>
+      </article>
+    `;
+  }
+
+  function poblarSelectDeportesHistorial() {
+    if (!selHistDeporte) return;
+    const deportesUnicos = [...new Set(histPartidos.map(p => p.deporte).filter(Boolean))].sort();
+    selHistDeporte.innerHTML = '<option value="">Todos los deportes</option>' +
+      deportesUnicos.map(d => `<option value="${d}">${d}</option>`).join('');
+  }
+
+  function conectarEventosHistorial() {
+    chipsHistRol.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chipsHistRol.forEach(c => c.classList.remove('chip--active'));
+        chip.classList.add('chip--active');
+        histFiltros.rol = chip.dataset.histRol;
+        cargarHistorial(true);
+      });
+    });
+
+    selHistDeporte?.addEventListener('change', () => {
+      histFiltros.deporte = selHistDeporte.value;
+      cargarHistorial(true);
+    });
+
+    inputHistDesde?.addEventListener('change', () => {
+      histFiltros.desde = inputHistDesde.value;
+      cargarHistorial(true);
+    });
+
+    inputHistHasta?.addEventListener('change', () => {
+      histFiltros.hasta = inputHistHasta.value;
+      cargarHistorial(true);
+    });
+
+    btnHistLimpiar?.addEventListener('click', () => {
+      histFiltros = { rol: 'todos', deporte: '', desde: '', hasta: '' };
+      chipsHistRol.forEach(c => c.classList.remove('chip--active'));
+      chipsHistRol[0]?.classList.add('chip--active');
+      if (selHistDeporte) selHistDeporte.value = '';
+      if (inputHistDesde) inputHistDesde.value = '';
+      if (inputHistHasta) inputHistHasta.value = '';
+      cargarHistorial(true);
+    });
+
+    btnHistCargarMas?.addEventListener('click', async () => {
+      histPagina++;
+      btnHistCargarMas.disabled = true;
+      btnHistCargarMas.textContent = 'Cargando...';
+      await cargarHistorial(false);
+      btnHistCargarMas.disabled = false;
+      btnHistCargarMas.textContent = 'Cargar más';
+    });
+  }
 
   function abrirModalEditar() {
     const u = getSesion();
@@ -502,7 +873,6 @@ export async function init() {
         cerrarModal('modal-editar-perfil');
         toast('Perfil actualizado', 'success');
 
-        // ⚡ FIX: Actualizamos la variable local `user` con los nuevos datos y volvemos a renderizar
         user = getSesion(); 
         await render(user); 
       } catch (err) {
@@ -525,7 +895,6 @@ export async function init() {
   }
 
   function abrirModalEditarStatsDeporte(nombreDeporte) {
-    // ... (igual que antes)
     const u = getSesion();
     if (!u) return;
 
@@ -595,7 +964,6 @@ export async function init() {
         cerrarModal('modal-editar-stats-deporte');
         toast(`Stats de ${nombreDeporte} actualizadas`, 'success');
         
-        // ⚡ FIX: Actualizamos variable local
         user = getSesion();
         await render(user);
       } catch (err) {
@@ -617,14 +985,11 @@ export async function init() {
     abrirModal('modal-editar-stats-deporte');
   }
 
-  // ... (las funciones renderDeportesLista, renderStatsDeportes que no cambian) ...
-
   document.getElementById('btn-editar-perfil')?.addEventListener('click', abrirModalEditar);
   document.getElementById('btn-editar-deportes')?.addEventListener('click', abrirModalEditar);
 
   conectarEventosHistorial();
 
-  // ⚡ Arrancamos el render con el usuario que ya obtuvimos
   await render(user);
 
   return null;
