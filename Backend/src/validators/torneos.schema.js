@@ -73,8 +73,8 @@ const modalidadValida = z
   .default('liga');
 
 const nivelValido = z
-  .enum(['amistoso', 'semiprofesional', 'profesional'], {
-    errorMap: () => ({ message: 'Nivel inválido. Debe ser "amistoso", "semiprofesional" o "profesional"' })
+  .enum(['amistoso', 'medio', 'avanzado'], {
+    errorMap: () => ({ message: 'Nivel inválido. Debe ser "amistoso", "medio" o "avanzado"' })
   })
   .default('amistoso');
 
@@ -238,7 +238,7 @@ export const schemaListarTorneos = z.object({
   deporte: z.string().max(50).optional(),
   estado: z.enum(['inscripcion', 'en_curso', 'finalizado']).optional(),
   modalidad: z.enum(['liga', 'eliminacion', 'custom']).optional(),
-  nivel: z.enum(['amistoso', 'semiprofesional', 'profesional']).optional(),
+  nivel: z.enum(['amistoso', 'medio', 'avanzado']).optional(),
   tipoParticipacion: z.enum(['equipo', 'individual']).optional(),
   sistemaClasificacion: z.enum(['simple', 'tiempo', 'puntos']).optional(),
   soloMios: z.enum(['true', 'false']).optional(),

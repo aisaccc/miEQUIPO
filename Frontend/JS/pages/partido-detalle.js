@@ -300,7 +300,7 @@ export async function init(params = {}) {
     );
 
     const nivelLabel = {
-      amistoso: 'Amistoso', semiprofesional: 'Semiprofesional', profesional: 'Profesional'
+      amistoso: 'Amistoso', medio: 'Nivel Medio', avanzado: 'Nivel Avanzado'
     }[partido.nivel] || partido.nivel;
 
     const badgeEstado = enModoOrganizar ? 'badge--warning' : confirmado ? 'badge--primary' : {

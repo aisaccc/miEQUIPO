@@ -1535,9 +1535,6 @@ export async function cancelarInteres(partidoId, usuarioId) {
 
   return { ok: true, mensaje: 'Interés cancelado' };
 }
-
-/* ---------- GET /api/partidos/:id/interesados ---------- */
-/* ---------- GET /api/partidos/:id/interesados ---------- */
 /* ---------- GET /api/partidos/:id/interesados ---------- */
 export async function listarInteresados(partidoId, usuarioId) {
   const { rows: partidoRows } = await pool.query(

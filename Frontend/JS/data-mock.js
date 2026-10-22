@@ -79,7 +79,7 @@ export const posicionesPorDeporte = {
    NIVELES DE PARTIDO
    ========================================================= */
 export const nivelesPartido = [
-  { valor: 'amistoso',        label: 'Amistoso',        descripcion: 'No requiere aprobación ',                    requiereAprobacion: false, eleccionAprobacion: false },
-  { valor: 'semiprofesional', label: 'Semiprofesional', descripcion: 'Tú decides si requiere aprobación',     requiereAprobacion: false, eleccionAprobacion: true  },
-  { valor: 'profesional',     label: 'Profesional',     descripcion: 'Requiere aprobación',           requiereAprobacion: true,  eleccionAprobacion: false },
+  { valor: 'amistoso', label: 'Amistoso', descripcion: 'Sin exigencia' },
+  { valor: 'medio', label: 'Nivel Medio', descripcion: 'Nivel intermedio' },
+  { valor: 'avanzado', label: 'Nivel Avanzado', descripcion: 'Alto nivel' },
 ];

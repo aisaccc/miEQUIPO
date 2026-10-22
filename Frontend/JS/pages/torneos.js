@@ -614,8 +614,8 @@ export async function init() {
 
   const NIVELES_TORNEO = [
     { valor: 'amistoso', label: 'Amistoso', descripcion: 'Sin exigencia' },
-    { valor: 'semiprofesional', label: 'Semiprofesional', descripcion: 'Nivel intermedio' },
-    { valor: 'profesional', label: 'Profesional', descripcion: 'Alto nivel' },
+    { valor: 'medio', label: 'Nivel Medio', descripcion: 'Nivel intermedio' },
+    { valor: 'avanzado', label: 'Nivel Avanzado', descripcion: 'Alto nivel' },
   ];
 
   if (nivelGridTorneo) {

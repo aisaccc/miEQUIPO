@@ -66,7 +66,7 @@ const precioValido = z
   .default(0);
 
 const nivelValido = z
-  .enum(['amistoso', 'semiprofesional', 'profesional'])
+  .enum(['amistoso', 'medio', 'avanzado'])
   .default('amistoso');
 
 const tipoPartidoValido = z
@@ -179,7 +179,7 @@ export const schemaListarPartidos = z.object({
   deporte: z.string().max(50).optional(),
   tipo: z.enum(['jugador', 'equipo']).optional(),
   estado: z.enum(['abierto', 'lleno', 'finalizado']).optional(),
-  nivel: z.enum(['amistoso', 'semiprofesional', 'profesional']).optional(),
+  nivel: z.enum(['amistoso', 'medio', 'avanzado']).optional(),
   soloMios: z.enum(['true', 'false']).optional(),
   soloInscritos: z.enum(['true', 'false']).optional(),
   busqueda: z.string().max(100).optional(),

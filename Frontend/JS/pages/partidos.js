@@ -186,7 +186,7 @@ export async function init() {
       const badgeClase = enModoOrganizar ? 'badge--warning' : esLleno ? 'badge--danger' : p.estado === 'finalizado' ? 'badge--neutral' : 'badge--success';
       const badgeTexto = enModoOrganizar ? 'Organizando' : esLleno ? 'Lleno' : p.estado === 'finalizado' ? 'Finalizado' : 'Abierto';
       
-      const nivelLabel = { amistoso: 'Amistoso', semiprofesional: 'Semiprofesional', profesional: 'Profesional' }[p.nivel] || p.nivel;
+      const nivelLabel = { amistoso: 'Amistoso', medio: 'Nivel Medio', avanzado: 'Nivel Avanzado' }[p.nivel] || p.nivel;
       const precioTexto = enModoOrganizar ? 'A coordinar' : (p.precio === 0 ? 'Gratis' : `$${p.precio.toLocaleString('es-CL')}`);
       const cuposLibres = Math.max(0, p.cupos - totalInsc);
       const fechaTexto = enModoOrganizar ? 'A coordinar' : formatearFecha(p.fecha);

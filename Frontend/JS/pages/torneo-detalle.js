@@ -110,8 +110,8 @@ const DEPORTES_PUNTOS_DET = new Set(['Escalada', 'Surf', 'Boxeo']);
 
 const NIVELES_TORNEO_DET = [
   { valor: 'amistoso', label: 'Amistoso', descripcion: 'Sin exigencia' },
-  { valor: 'semiprofesional', label: 'Semiprofesional', descripcion: 'Nivel intermedio' },
-  { valor: 'profesional', label: 'Profesional', descripcion: 'Alto nivel' },
+  { valor: 'medio', label: 'Nivel Medio', descripcion: 'Nivel intermedio' },
+  { valor: 'avanzado', label: 'Nivel Avanzado', descripcion: 'Alto nivel' },
 ];
 
 /* =========================================================
@@ -412,8 +412,8 @@ export async function init(params = {}) {
 
     const nivelBadge = {
       amistoso: '<span class="badge badge--success">Amistoso</span>',
-      semiprofesional: '<span class="badge badge--warning">Semiprofesional</span>',
-      profesional: '<span class="badge badge--danger">Profesional</span>',
+      medio: '<span class="badge badge--warning">Nivel Medio</span>',
+      avanzado: '<span class="badge badge--danger">Nivel Avanzado</span>',
     }[t.nivel] || '';
 
     const sistema = t.sistemaClasificacion || 'simple';
