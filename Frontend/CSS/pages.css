@@ -10827,28 +10827,28 @@ select.field__input {
 
 .app-main[data-page="partidos"],
 .app-main[data-page="partido-detalle"] {
-  --bg-photo: url('../assets/backgrounds/partidos-bg.jpg');
+  --bg-photo: url('../assets/backgrounds/inicio-bg2.jpg');
   --bg-pos:   center 35%;
 }
 
 .app-main[data-page="torneos"],
 .app-main[data-page="torneo-detalle"] {
-  --bg-photo: url('../assets/backgrounds/torneos-bg.jpg');
+  --bg-photo: url('../assets/backgrounds/inicio-bg2.jpg');
   --bg-pos:   center 35%;
 }
 
 .app-main[data-page="mi-equipo"] {
-  --bg-photo: url('../assets/backgrounds/equipo-bg.jpg');
+  --bg-photo: url('../assets/backgrounds/inicio-bg2.jpg');
   --bg-pos:   center 35%;
 }
 
 .app-main[data-page="mensajes"] {
-  --bg-photo: url('../assets/backgrounds/mensajes-bg.jpg');
+  --bg-photo: url('../assets/backgrounds/inicio-bg2.jpg');
   --bg-pos:   center 30%;
 }
 
 .app-main[data-page="perfil"] {
-  --bg-photo: url('../assets/backgrounds/perfil-bg.jpg');
+  --bg-photo: url('../assets/backgrounds/inicio-bg2.jpg');
   --bg-pos:   center 30%;
 }
 
