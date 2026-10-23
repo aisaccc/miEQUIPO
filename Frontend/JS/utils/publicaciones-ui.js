@@ -106,27 +106,20 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
         ${p.contenido ? `<div class="feed-post__contenido">${escapeHtml(p.contenido)}</div>` : ''}
         ${mediaHtml}
 
-        <div class="feed-post__stats">
-          <div class="feed-post__stats-likes">
-            <div class="feed-post__stats-icon"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-            <span>${p.totalLikes || 0}</span>
-          </div>
-          <div class="feed-post__stats-comments"><span>${p.totalComentarios || 0} comentarios</span></div>
-        </div>
-
         <div class="feed-post__acciones">
-          <button class="feed-post__btn ${p.yoLikee ? 'feed-post__btn--activo' : ''}" data-like="${p.id}">
+          <button class="feed-post__btn ${p.yoLikee ? 'feed-post__btn--activo' : ''}" data-like="${p.id}" title="Me gusta">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="${p.yoLikee ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            Me gusta
+            <span class="feed-post__btn-count">${p.totalLikes || 0}</span>
           </button>
-          <button class="feed-post__btn" data-ver-pub="${p.id}">
+
+          <button class="feed-post__btn" data-ver-pub="${p.id}" title="Comentar">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Comentar
+            <span class="feed-post__btn-count">${p.totalComentarios || 0}</span>
           </button>
+
           ${esPublica ? `
-          <button class="feed-post__btn" data-share="${p.id}">
+          <button class="feed-post__btn" data-share="${p.id}" title="Compartir">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            Compartir
           </button>
           ` : ''}
         </div>
@@ -140,7 +133,6 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
     });
   });
-
   contenedor.querySelectorAll('[data-like]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -154,7 +146,8 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
         }
         btn.classList.toggle('feed-post__btn--activo', res.yoLikee);
         btn.querySelector('svg').setAttribute('fill', res.yoLikee ? 'currentColor' : 'none');
-        const count = btn.closest('.feed-post').querySelector('.feed-post__stats-likes span');
+        // ⚡ El contador ahora está DENTRO del mismo botón
+        const count = btn.querySelector('.feed-post__btn-count');
         if (count && pub) count.textContent = pub.totalLikes;
       } catch (err) {
         toast(err.message || 'No se pudo dar like', 'error');
