@@ -13590,7 +13590,7 @@ select.field__input {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  /* overflow: hidden quitado a propósito: cortaba el menú ⋮ */
   margin-bottom: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -13598,6 +13598,9 @@ select.field__input {
 .perfil-header-card__banner {
   height: 140px;
   width: 100%;
+  /* Al quitar overflow:hidden de la card, el banner redondea sus esquinas */
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
 }
 
 .perfil-header-card__content {
@@ -13628,6 +13631,7 @@ select.field__input {
 }
 
 .perfil-header-card__info {
+  padding-top: 16px;
   padding-bottom: 8px;
 }
 
@@ -13635,10 +13639,11 @@ select.field__input {
   font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
   margin: 0 0 6px;
   color: var(--color-text);
   text-transform: uppercase;
+  word-break: break-word;
 }
 
 .perfil-header-card__sub {
