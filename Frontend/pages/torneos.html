@@ -66,6 +66,20 @@
       <button class="chip" data-filtro-torneo="inscripcion">Inscripción abierta</button>
       <button class="chip" data-filtro-torneo="gratis">Gratis</button>
     </div>
+        <!-- ⚡ NUEVO: Filtros de Fecha -->
+    <div class="toolbar__filters" id="filtros-fecha-torneos" style="flex-wrap:wrap; gap:8px; align-items:center;">
+      <span class="text-xs text-muted" style="font-weight:600; margin-right:4px;">Fecha:</span>
+      <button class="chip chip--active" data-filtro-fecha-torneo="todos">Todas</button>
+      <button class="chip" data-filtro-fecha-torneo="hoy">Hoy</button>
+      <button class="chip" data-filtro-fecha-torneo="manana">Mañana</button>
+      <button class="chip" data-filtro-fecha-torneo="semana">Esta semana</button>
+      
+      <div style="display:flex; align-items:center; gap:6px; margin-left:auto;">
+        <input type="date" id="filtro-fecha-desde-torneo" class="field__input" style="padding:6px 10px; font-size:12px; width:auto; min-height:0; height:32px;" title="Desde" />
+        <span class="text-xs text-muted">al</span>
+        <input type="date" id="filtro-fecha-hasta-torneo" class="field__input" style="padding:6px 10px; font-size:12px; width:auto; min-height:0; height:32px;" title="Hasta" />
+      </div>
+    </div>
   </div>
 
   <div id="lista-torneos" class="tournament-grid"></div>

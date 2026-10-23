@@ -576,7 +576,8 @@ export async function listarTorneos(filtros, usuarioId) {
     deporte, estado, modalidad, nivel, tipoParticipacion,
     sistemaClasificacion,
     soloMios, soloInscritos, busqueda,
-    page = 1, limit = 20
+    page = 1, limit = 20,
+    desde, hasta, // ⚡ NUEVO
   } = filtros;
 
   const condiciones = [];
@@ -588,7 +589,6 @@ export async function listarTorneos(filtros, usuarioId) {
     valores.push(deporte);
     i++;
   }
-
   if (estado) {
     condiciones.push(`t.estado = $${i}`);
     valores.push(estado);
@@ -622,6 +622,19 @@ export async function listarTorneos(filtros, usuarioId) {
   if (busqueda) {
     condiciones.push(`(t.nombre ILIKE $${i} OR t.lugar ILIKE $${i})`);
     valores.push(`%${busqueda}%`);
+    i++;
+  }
+
+  // ⚡ NUEVO: filtro por fecha (sobre fecha_inicio)
+  if (desde) {
+    condiciones.push(`t.fecha_inicio >= $${i}::date`);
+    valores.push(desde);
+    i++;
+  }
+
+  if (hasta) {
+    condiciones.push(`t.fecha_inicio < ($${i}::date + INTERVAL '1 day')`);
+    valores.push(hasta);
     i++;
   }
 

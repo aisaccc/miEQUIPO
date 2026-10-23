@@ -136,7 +136,8 @@ export async function listarPartidos(filtros, usuarioId) {
   const {
     deporte, tipo, estado, nivel,
     soloMios, soloInscritos, busqueda,
-    page = 1, limit = 20
+    page = 1, limit = 20,
+    desde, hasta, // ⚡ NUEVO
   } = filtros;
 
   const condiciones = [];
@@ -173,6 +174,20 @@ export async function listarPartidos(filtros, usuarioId) {
     i++;
   }
 
+  // ⚡ NUEVO: filtro por fecha
+  if (desde) {
+    condiciones.push(`p.fecha >= $${i}::date`);
+    valores.push(desde);
+    i++;
+  }
+
+  if (hasta) {
+    condiciones.push(`p.fecha < ($${i}::date + INTERVAL '1 day')`);
+    valores.push(hasta);
+    i++;
+  }
+
+  // ... el resto de la función QUEDA IGUAL desde soloMios en adelante
   if (soloMios === 'true') {
     condiciones.push(`p.organizador_id = $${i}`);
     valores.push(usuarioId);

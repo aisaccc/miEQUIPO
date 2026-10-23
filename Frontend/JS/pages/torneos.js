@@ -119,6 +119,8 @@ export async function init() {
   let torneos = [];
   let filtroActual = 'todos';
   let filtroBusqueda = '';
+  let filtroFechaDesde = ''; // ⚡ NUEVO
+  let filtroFechaHasta = ''; // ⚡ NUEVO
   let modalidadSeleccionada = 'liga';
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
@@ -139,7 +141,11 @@ export async function init() {
   /* ---------- CARGAR DESDE EL BACKEND ---------- */
   async function recargarTorneos() {
     try {
-      const { data } = await listarTorneos({ limit: 50 });
+      const filtros = { limit: 50 };
+      if (filtroFechaDesde) filtros.desde = filtroFechaDesde;
+      if (filtroFechaHasta) filtros.hasta = filtroFechaHasta;
+
+      const { data } = await listarTorneos(filtros);
       torneos = data;
       renderDisponibles();
       renderCreados();
@@ -448,6 +454,15 @@ export async function init() {
     if (tab !== 'disponibles') {
       filtroBusqueda = '';
       if (inputBuscar) inputBuscar.value = '';
+
+      // ⚡ NUEVO: resetear filtros de fecha al cambiar de tab
+      filtroFechaDesde = '';
+      filtroFechaHasta = '';
+      if (inputFechaDesdeTorneo) inputFechaDesdeTorneo.value = '';
+      if (inputFechaHastaTorneo) inputFechaHastaTorneo.value = '';
+      chipsFechaTorneo.forEach(c => {
+        c.classList.toggle('chip--active', c.dataset.filtroFechaTorneo === 'todos');
+      });
     }
   }
   subtabs.forEach(st => st.addEventListener('click', () => cambiarTab(st.dataset.tabTorneos)));
@@ -464,6 +479,70 @@ export async function init() {
     filtroBusqueda = e.target.value;
     renderDisponibles();
   });
+    // ⚡ NUEVO: Lógica de filtros de fecha para Torneos
+  // ⚡ NUEVO: Lógica de filtros de fecha para Torneos
+  const chipsFechaTorneo = document.querySelectorAll('[data-filtro-fecha-torneo]');
+  const inputFechaDesdeTorneo = document.getElementById('filtro-fecha-desde-torneo');
+  const inputFechaHastaTorneo = document.getElementById('filtro-fecha-hasta-torneo');
+
+  function calcularFechaRapidaTorneo(tipo) {
+    const hoy = new Date();
+    let desde = '';
+    let hasta = '';
+
+    // ⚡ FIX timezone: usar fecha LOCAL
+    const formatear = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    if (tipo === 'hoy') {
+      desde = formatear(hoy);
+      hasta = formatear(hoy);
+    } else if (tipo === 'manana') {
+      const manana = new Date(hoy);
+      manana.setDate(manana.getDate() + 1);
+      desde = formatear(manana);
+      hasta = formatear(manana);
+    } else if (tipo === 'semana') {
+      desde = formatear(hoy);
+      const finSemana = new Date(hoy);
+      finSemana.setDate(finSemana.getDate() + 7);
+      hasta = formatear(finSemana);
+    }
+
+    filtroFechaDesde = desde;
+    filtroFechaHasta = hasta;
+    if (inputFechaDesdeTorneo) inputFechaDesdeTorneo.value = desde;
+    if (inputFechaHastaTorneo) inputFechaHastaTorneo.value = hasta;
+  }
+
+  function handleChipFechaTorneoClick(e) {
+    chipsFechaTorneo.forEach(c => c.classList.remove('chip--active'));
+    e.currentTarget.classList.add('chip--active');
+    calcularFechaRapidaTorneo(e.currentTarget.dataset.filtroFechaTorneo);
+    recargarTorneos(); // ⚡ refetch al backend
+  }
+
+  function handleInputDesdeTorneoChange(e) {
+    filtroFechaDesde = e.target.value;
+    chipsFechaTorneo.forEach(c => c.classList.remove('chip--active'));
+    recargarTorneos();
+  }
+
+  function handleInputHastaTorneoChange(e) {
+    filtroFechaHasta = e.target.value;
+    chipsFechaTorneo.forEach(c => c.classList.remove('chip--active'));
+    recargarTorneos();
+  }
+
+  chipsFechaTorneo.forEach(chip => chip.addEventListener('click', handleChipFechaTorneoClick));
+  inputFechaDesdeTorneo?.addEventListener('change', handleInputDesdeTorneoChange);
+  inputFechaHastaTorneo?.addEventListener('change', handleInputHastaTorneoChange);
+
+
 
   /* =========================================================
      MODAL CREAR / EDITAR — REFS
@@ -940,5 +1019,8 @@ export async function init() {
 
   return () => {
     chips.forEach(c => c.removeEventListener('click', handleChip));
+    chipsFechaTorneo.forEach(chip => chip.removeEventListener('click', handleChipFechaTorneoClick));
+    inputFechaDesdeTorneo?.removeEventListener('change', handleInputDesdeTorneoChange);
+    inputFechaHastaTorneo?.removeEventListener('change', handleInputHastaTorneoChange);
   };
 }

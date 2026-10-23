@@ -72,8 +72,20 @@
       <button class="chip chip--active" data-filtro-tipo="todos">Todos</button>
       <button class="chip" data-filtro-tipo="jugador">De jugadores</button>
       <button class="chip" data-filtro-tipo="equipo">De equipos</button>
-      <button class="chip" data-filtro-tipo="publico">Públicos</button>
-      <button class="chip" data-filtro-tipo="privado">Privados</button>
+    </div>
+        <!-- ⚡ NUEVO: Filtros de Fecha -->
+    <div class="toolbar__filters" id="filtros-fecha" style="flex-wrap:wrap; gap:8px; align-items:center;">
+      <span class="text-xs text-muted" style="font-weight:600; margin-right:4px;">Fecha:</span>
+      <button class="chip chip--active" data-filtro-fecha="todos">Todas</button>
+      <button class="chip" data-filtro-fecha="hoy">Hoy</button>
+      <button class="chip" data-filtro-fecha="manana">Mañana</button>
+      <button class="chip" data-filtro-fecha="semana">Esta semana</button>
+      
+      <div style="display:flex; align-items:center; gap:6px; margin-left:auto;">
+        <input type="date" id="filtro-fecha-desde" class="field__input" style="padding:6px 10px; font-size:12px; width:auto; min-height:0; height:32px;" title="Desde" />
+        <span class="text-xs text-muted">al</span>
+        <input type="date" id="filtro-fecha-hasta" class="field__input" style="padding:6px 10px; font-size:12px; width:auto; min-height:0; height:32px;" title="Hasta" />
+      </div>
     </div>
   </div>
 

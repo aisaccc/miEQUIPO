@@ -61,6 +61,9 @@ export async function init() {
   let filtroActual = 'todos';
   let filtroTipoActual = 'todos';
   let filtroBusqueda = '';
+  let filtroFechaDesde = ''; // ⚡ NUEVO
+  let filtroFechaHasta = ''; // ⚡ NUEVO
+  let filtroFechaRapido = 'todos'; // ⚡ NUEVO
   let tabActual = 'disponibles';
   const user = getSesion();
 
@@ -285,7 +288,12 @@ export async function init() {
 
   async function recargarPartidos() {
     try {
-      const { data } = await listarPartidos({ limit: 50 });
+      const filtros = { limit: 50 };
+      // ⚡ NUEVO: enviar filtros de fecha al backend
+      if (filtroFechaDesde) filtros.desde = filtroFechaDesde;
+      if (filtroFechaHasta) filtros.hasta = filtroFechaHasta;
+
+      const { data } = await listarPartidos(filtros);
       partidos = data;
       renderDisponibles();
       renderCreados();
@@ -318,8 +326,6 @@ export async function init() {
 
       if (filtroTipoActual === 'jugador')  lista = lista.filter(p => !esDeEquipo(p));
       if (filtroTipoActual === 'equipo')   lista = lista.filter(p => esDeEquipo(p));
-      if (filtroTipoActual === 'publico')  lista = lista.filter(p => !p.aprobacionRequerida);
-      if (filtroTipoActual === 'privado')  lista = lista.filter(p => p.aprobacionRequerida);
 
       if (filtroBusqueda.trim()) {
         const q = filtroBusqueda.toLowerCase().trim();
@@ -1048,9 +1054,76 @@ export async function init() {
   await renderTodo();
 
   console.log('[partidos] init() terminó OK');
+    // ⚡ NUEVO: Lógica de filtros de fecha
+  // ⚡ NUEVO: Lógica de filtros de fecha
+  const chipsFecha = document.querySelectorAll('[data-filtro-fecha]');
+  const inputFechaDesde = document.getElementById('filtro-fecha-desde');
+  const inputFechaHasta = document.getElementById('filtro-fecha-hasta');
+
+  function calcularFechaRapida(tipo) {
+    const hoy = new Date();
+    let desde = '';
+    let hasta = '';
+
+    // ⚡ FIX timezone: usar fecha LOCAL, no UTC (evita bug nocturno en Chile)
+    const formatear = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    if (tipo === 'hoy') {
+      desde = formatear(hoy);
+      hasta = formatear(hoy);
+    } else if (tipo === 'manana') {
+      const manana = new Date(hoy);
+      manana.setDate(manana.getDate() + 1);
+      desde = formatear(manana);
+      hasta = formatear(manana);
+    } else if (tipo === 'semana') {
+      desde = formatear(hoy);
+      const finSemana = new Date(hoy);
+      finSemana.setDate(finSemana.getDate() + 7);
+      hasta = formatear(finSemana);
+    }
+
+    filtroFechaDesde = desde;
+    filtroFechaHasta = hasta;
+    if (inputFechaDesde) inputFechaDesde.value = desde;
+    if (inputFechaHasta) inputFechaHasta.value = hasta;
+  }
+
+  function handleChipFechaClick(e) {
+    chipsFecha.forEach(c => c.classList.remove('chip--active'));
+    e.currentTarget.classList.add('chip--active');
+    filtroFechaRapido = e.currentTarget.dataset.filtroFecha;
+    calcularFechaRapida(filtroFechaRapido);
+    recargarPartidos(); // ⚡ refetch al backend con fechas
+  }
+
+  function handleInputDesdeChange(e) {
+    filtroFechaDesde = e.target.value;
+    chipsFecha.forEach(c => c.classList.remove('chip--active'));
+    recargarPartidos();
+  }
+
+  function handleInputHastaChange(e) {
+    filtroFechaHasta = e.target.value;
+    chipsFecha.forEach(c => c.classList.remove('chip--active'));
+    recargarPartidos();
+  }
+
+  chipsFecha.forEach(chip => chip.addEventListener('click', handleChipFechaClick));
+  inputFechaDesde?.addEventListener('change', handleInputDesdeChange);
+  inputFechaHasta?.addEventListener('change', handleInputHastaChange);
 
   return () => {
     chips.forEach(chip => chip.removeEventListener('click', handleChip));
     chipsTipo.forEach(chip => chip.removeEventListener('click', handleChipTipo));
+    // ⚡ FIX memory leak: remover también los listeners de fecha
+    chipsFecha.forEach(chip => chip.removeEventListener('click', handleChipFechaClick));
+    inputFechaDesde?.removeEventListener('change', handleInputDesdeChange);
+    inputFechaHasta?.removeEventListener('change', handleInputHastaChange);
   };
 }
