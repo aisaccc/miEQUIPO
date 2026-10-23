@@ -882,14 +882,24 @@ export async function actualizarBadgeMensajes() {
   if (isFetchingMensajes) return;
   const user = getSesion();
   if (!user) return;
-  const badge = document.getElementById('badge-mensajes');
-  if (!badge) return;
 
   isFetchingMensajes = true;
   try {
     const total = await contarNoLeidos();
-    badge.textContent = total;
-    badge.classList.toggle('hidden', total === 0);
+    
+    // Buscamos los 3 posibles badges en el DOM
+    const badgeHeader = document.getElementById('badge-mensajes');
+    const badgeSidebar = document.getElementById('badge-mensajes-nav');
+    const badgeBottom = document.getElementById('badge-mensajes-bottom');
+
+    // Los actualizamos a todos
+    [badgeHeader, badgeSidebar, badgeBottom].forEach(badge => {
+      if (badge) {
+        badge.textContent = total;
+        badge.classList.toggle('hidden', total === 0);
+      }
+    });
+
   } catch (err) {
     console.warn('[components] No se pudo actualizar badge mensajes:', err.message);
   } finally {

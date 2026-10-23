@@ -259,7 +259,7 @@
             <polyline points="22,6 12,13 2,6"/>
           </svg>
           Mensajes
-          <span class="badge">3</span>
+          <span class="badge hidden" id="badge-mensajes-nav">0</span>
         </a>
         <a href="#/perfil" class="sidebar-nav__item">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -315,12 +315,12 @@
         </svg>
         <span>Mi Equipo</span>
       </a>
-      <a href="#/mensajes" class="app-bottom-nav__item">
+      <a href="#/mensajes" class="app-bottom-nav__item" style="position:relative;">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
         <span>Mensajes</span>
-        <!-- Si quieres mantener el contador de mensajes, puedes poner el badge acá -->
+        <span class="badge hidden" id="badge-mensajes-bottom" style="position:absolute; top:2px; right:20%; font-size:10px; padding:2px 6px;">0</span>
       </a>
       <a href="#/perfil" class="app-bottom-nav__item">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -728,6 +728,6 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="JS/main.js?v=94"></script>
+  <script type="module" src="JS/main.js?v=95"></script>
 </body>
 </html>
