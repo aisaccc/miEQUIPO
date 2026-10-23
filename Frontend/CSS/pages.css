@@ -9508,6 +9508,12 @@ select.field__input {
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 0;
+  overflow: visible !important; /* ⚡ Permite que el menú se salga del cuadro */
+}
+
+/* ⚡ Le quitamos el brillo de fondo SOLO al modal para que no se desborde */
+.perfil-hero--modal::after {
+  display: none !important; 
 }
 
 .perfil-hero__avatar--sm {

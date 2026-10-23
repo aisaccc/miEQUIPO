@@ -654,7 +654,7 @@ export async function verPerfilUsuario(usuarioOId) {
           </div>
           
           <!-- Menú de opciones flotante -->
-          <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:calc(100% + 6px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:100; padding:6px; min-width:200px; display:flex; flex-direction:column; gap:2px;">
+          <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:calc(100% + 10px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:999; padding:6px; min-width:200px; display:flex; flex-direction:column; gap:2px;">
             ${opcionesMenu}
           </div>
         </div>
