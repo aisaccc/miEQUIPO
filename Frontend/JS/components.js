@@ -130,13 +130,8 @@ export function initHeader() {
       btn.addEventListener('click', () => {
         const accion = btn.dataset.action;
         
-        if (accion === 'logout') {
-          // ⚡ FIX: Si el usuario toca "Cancelar", el return corta la ejecución y no cierra sesión
-          if (!confirm('¿Cerrar sesión?')) return; 
-          
-          cerrarSesion();
-          window.location.href = 'index.html';
-        } else if (accion === 'perfil') {
+        // ⚡ Dejamos que 'logout' se maneje globalmente en main.js para evitar doble confirmación
+        if (accion === 'perfil') {
           window.location.hash = '#/perfil';
           menu.classList.remove('open');
         } else if (accion === 'config') {
