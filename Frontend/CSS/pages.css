@@ -13547,3 +13547,301 @@ select.field__input {
 .match-card__sport, .tournament-card__sport {
   border-radius: var(--radius-lg) !important; /* Deja de ser un círculo perfecto y pasa a ser un cuadrado redondeado */
 }
+/* ═══════════════════════════════════════════════════════
+   FIX MODO OSCURO: TABLAS Y RESULTADOS
+   ═══════════════════════════════════════════════════════ */
+[data-theme="dark"] .tabla-posiciones thead {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .tabla-posiciones th {
+  color: var(--color-text-muted) !important;
+  border-bottom: 2px solid var(--color-border) !important;
+}
+[data-theme="dark"] .tabla-posiciones tbody tr {
+  background: var(--color-surface) !important;
+}
+[data-theme="dark"] .tabla-posiciones__fila--alt {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .tabla-posiciones td {
+  color: var(--color-text) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+[data-theme="dark"] .resultado-item {
+  background: transparent !important;
+}
+[data-theme="dark"] .resultado-item:hover {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .resultado-item__marcador--pendiente {
+  background: var(--color-surface-3) !important;
+  color: var(--color-text-muted) !important;
+}
+[data-theme="dark"] .partido-editable {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .tabla-posiciones-wrapper {
+  background: var(--color-surface) !important;
+}
+/* ═══════════════════════════════════════════════════════
+   NUEVO DISEÑO DE PERFIL (ESTILO RECTANGULAR)
+   ═══════════════════════════════════════════════════════ */
+.perfil-header-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.perfil-header-card__banner {
+  height: 140px;
+  width: 100%;
+}
+
+.perfil-header-card__content {
+  padding: 0 24px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: -40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.perfil-header-card__left {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.perfil-header-card__avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 24px; /* Esto hace que el avatar sea un cuadrado redondeado (squircle) */
+  border: 4px solid var(--color-surface);
+  object-fit: cover;
+  background: var(--color-surface-2);
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.perfil-header-card__info {
+  padding-bottom: 8px;
+}
+
+.perfil-header-card__name {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  color: var(--color-text);
+  text-transform: uppercase;
+}
+
+.perfil-header-card__sub {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.perfil-header-card__actions {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 8px;
+  align-items: center;
+}
+
+.perfil-header-card__actions .btn, 
+.perfil-header-card__actions .badge {
+  border-radius: 8px !important; /* Botones más rectangulares */
+  font-weight: 700;
+}
+
+/* Tarjetas de estadísticas separadas */
+.perfil-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.perfil-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.perfil-stat-card__value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.perfil-stat-card__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  margin-top: 6px;
+  text-transform: capitalize;
+}
+/* ═══════════════════════════════════════════════════════
+   FIX MODO OSCURO: TABLAS Y RESULTADOS
+   ═══════════════════════════════════════════════════════ */
+[data-theme="dark"] .tabla-posiciones thead {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .tabla-posiciones th {
+  color: var(--color-text-muted) !important;
+  border-bottom: 2px solid var(--color-border) !important;
+}
+[data-theme="dark"] .tabla-posiciones tbody tr {
+  background: var(--color-surface) !important;
+}
+[data-theme="dark"] .tabla-posiciones__fila--alt {
+  background: var(--color-surface-2) !important;
+}
+[data-theme="dark"] .tabla-posiciones td {
+  color: var(--color-text) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+[data-theme="dark"] .tabla-posiciones-wrapper {
+  background: var(--color-surface) !important;
+}
+[data-theme="dark"] .resultado-item:hover {
+  background: var(--color-surface-2) !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NUEVA TARJETA DE PERFIL (Estilo rectangular)
+   ═══════════════════════════════════════════════════════ */
+.profile-header-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  /* ⚡ QUITAMOS EL OVERFLOW HIDDEN para que el menú de 3 puntos no se corte */
+}
+
+.profile-header-card__banner {
+  height: 130px;
+  width: 100%;
+  /* ⚡ Ahora el banner tiene los bordes redondeados de arriba */
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
+
+.profile-header-card__body {
+  padding: 0 24px 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.profile-header-card__avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 20px; /* Avatar cuadrado redondeado */
+  border: 4px solid var(--color-surface);
+  background: var(--color-surface-2);
+  margin-top: -45px; /* Lo sube para que pise el banner */
+  object-fit: cover;
+  z-index: 2;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.profile-header-card__info {
+  flex: 1;
+  padding-top: 16px; /* ⚡ Más espacio arriba para que el nombre no se vea apretado */
+  min-width: 250px;
+  z-index: 1;
+}
+
+.profile-header-card__name {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  color: var(--color-text);
+  text-transform: uppercase;
+  word-break: break-word; /* ⚡ Si el nombre es muy largo, baja de línea en vez de cortarse */
+}
+
+.profile-header-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.profile-header-card__actions {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: relative; /* Para el menú */
+}
+
+.profile-header-card__actions .btn {
+  border-radius: 8px !important; /* Botones más rectangulares */
+  font-weight: 700;
+}
+
+/* Tarjetas de estadísticas separadas */
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* Bordes rectangulares */
+  padding: 20px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.profile-stat-card__value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.profile-stat-card__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

@@ -1,21 +1,20 @@
 <!-- ================= HERO DEL PERFIL ================= -->
-<div class="perfil-hero" id="perfil-hero" data-hero-color="navy">
-  <div class="perfil-hero__inner">
-    <div class="perfil-hero__left">
-      <!-- ⚡ FIX: src con imagen por defecto para evitar recargas -->
-      <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="perfil-hero__avatar" />
-
-      <div class="perfil-hero__info">
-        <h1 id="perfil-nombre" class="perfil-hero__nombre"></h1>
-        <p id="perfil-username" class="perfil-hero__sub"></p>
-        <p id="perfil-bio" class="perfil-hero__bio"></p>
-
-        <div class="perfil-hero__chips" id="perfil-deportes-chips"></div>
-        <div class="perfil-hero__chips" id="perfil-meta-chips"></div>
+<div class="profile-header-card">
+  <div class="profile-header-card__banner" id="perfil-hero" data-hero-color="navy"></div>
+  <div class="profile-header-card__body">
+    <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="profile-header-card__avatar" />
+    
+    <div class="profile-header-card__info">
+      <h1 id="perfil-nombre" class="profile-header-card__name"></h1>
+      <p id="perfil-username" class="profile-header-card__meta"></p>
+      <p id="perfil-bio" class="text-sm text-muted" style="margin:0 0 12px;"></p>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <div id="perfil-deportes-chips"></div>
+        <div id="perfil-meta-chips"></div>
       </div>
     </div>
 
-    <div class="perfil-hero__actions">
+    <div class="profile-header-card__actions">
       <button class="btn btn--primary" id="btn-editar-perfil">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 20h9"/>
@@ -26,6 +25,9 @@
     </div>
   </div>
 </div>
+
+<!-- ================= STATS DEL HERO ================= -->
+<div class="profile-stats-grid" id="perfil-stats-hero"></div>
 
 <!-- ================= STATS DEL HERO ================= -->
 <div class="perfil-stats" id="perfil-stats-hero"></div>

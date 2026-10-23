@@ -128,7 +128,11 @@ export async function init() {
       u = { nombre: 'Usuario', username: 'usuario', id: null, heroColor: 'navy' };
     }
 
-    aplicarColorHero(u.heroColor || 'navy');
+    // ⚡ Aplicamos el color solo al banner, no a toda la tarjeta
+    if (elHero) {
+      const preset = HERO_COLORS.find(c => c.key === (u.heroColor || 'navy')) || HERO_COLORS[0];
+      elHero.style.background = `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)`;
+    }
 
     if (elAvatar) {
       elAvatar.src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
@@ -203,17 +207,17 @@ export async function init() {
     const equipos = auto.equipos || 0;
 
     elStatsHero.innerHTML = `
-      <div class="perfil-stat">
-        <div class="perfil-stat__value">${partidos}</div>
-        <div class="perfil-stat__label">Partidos jugados</div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-card__value">${partidos}</div>
+        <div class="profile-stat-card__label">Partidos</div>
       </div>
-      <div class="perfil-stat">
-        <div class="perfil-stat__value">${torneos}</div>
-        <div class="perfil-stat__label">Torneos</div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-card__value">${torneos}</div>
+        <div class="profile-stat-card__label">Torneos</div>
       </div>
-      <div class="perfil-stat">
-        <div class="perfil-stat__value">${equipos}</div>
-        <div class="perfil-stat__label">Equipos</div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-card__value">${equipos}</div>
+        <div class="profile-stat-card__label">Equipos</div>
       </div>
     `;
   }

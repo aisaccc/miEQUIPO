@@ -1113,8 +1113,6 @@ export async function init() {
   inputFechaHasta?.addEventListener('change', handleInputHastaChange);
 
   return () => {
-    chips.forEach(chip => chip.removeEventListener('click', handleChip));
-    chipsTipo.forEach(chip => chip.removeEventListener('click', handleChipTipo));
     // ⚡ FIX memory leak: remover también los listeners de fecha
     chipsFecha.forEach(chip => chip.removeEventListener('click', handleChipFechaClick));
     inputFechaDesde?.removeEventListener('change', handleInputDesdeChange);

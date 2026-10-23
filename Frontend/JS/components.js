@@ -629,42 +629,35 @@ export async function verPerfilUsuario(usuarioOId) {
   }
   opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-bloquear-usuario" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.candado} Bloquear usuario</button>`;
 
-  // ⚡ Estilo dinámico para los botones según si el fondo es claro u oscuro
-  const btnStyle = isDarkText 
-    ? 'background: rgba(0,0,0,0.06); color: inherit; border: 1px solid rgba(0,0,0,0.12);' 
-    : 'background: rgba(255,255,255,0.15); color: inherit; border: 1px solid rgba(255,255,255,0.25);';
-
   body.innerHTML = `
-    <div class="perfil-hero perfil-hero--modal ${isDarkText ? 'perfil-hero--dark-text' : ''}" style="${heroStyle}">
-      <div class="perfil-hero__inner">
-        <div class="perfil-hero__left">
-          <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="perfil-hero__avatar perfil-hero__avatar--sm" />
-          <div class="perfil-hero__info">
-            <h1 class="perfil-hero__nombre perfil-hero__nombre--sm">${escapeHtml(u.nombre || 'Usuario')}</h1>
-            <p class="perfil-hero__sub">@${escapeHtml(u.username || 'usuario')}${u.ciudad ? ' · ' + escapeHtml(u.ciudad) : ''}${u.pais ? ', ' + escapeHtml(u.pais) : ''}</p>
-            ${u.bio ? `<p class="perfil-hero__bio perfil-hero__bio--sm">${escapeHtml(u.bio)}</p>` : ''}
-            <div class="perfil-hero__chips">
-              ${(u.deportes || []).slice(0, 4).map(d => `<span class="perfil-hero__chip perfil-hero__chip--deporte">${escapeHtml(d.deporte)}</span>`).join('')}
+    <div class="perfil-header-card">
+      <div class="perfil-header-card__banner" style="${heroStyle}"></div>
+      <div class="perfil-header-card__content">
+        <div class="perfil-header-card__left">
+          <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="perfil-header-card__avatar" />
+          <div class="perfil-header-card__info">
+            <h1 class="perfil-header-card__name">${escapeHtml(u.nombre || 'Usuario')}</h1>
+            <p class="perfil-header-card__sub">
+              ${ICONOS.ubicacion} ${escapeHtml(u.ciudad || 'Sin ciudad')}${u.pais ? ', ' + escapeHtml(u.pais) : ''}
+              ${u.bio ? ` · ${escapeHtml(u.bio)}` : ''}
+            </p>
+            <div class="perfil-hero__chips" style="margin-top:8px;">
+              ${(u.deportes || []).slice(0, 4).map(d => `<span class="perfil-hero__chip perfil-hero__chip--deporte" style="background:var(--color-surface-2); color:var(--color-text); border:1px solid var(--color-border);">${escapeHtml(d.deporte)}</span>`).join('')}
             </div>
           </div>
         </div>
-
-        <!-- ⚡ ACCIONES MOVIDAS ARRIBA A LA DERECHA -->
+        
         ${!esMiPerfil ? `
-        <div class="perfil-hero__actions" style="position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-          <div class="flex gap-2" style="flex-wrap:wrap; justify-content:flex-end;">
-            <button class="btn btn--primary btn--sm" id="btn-perfil-mensaje">${ICONOS.chat} Mensaje</button>
-            
-            ${estadoAmistad === 'ninguno' ? `<button class="btn btn--sm" id="btn-perfil-amigo" style="${btnStyle}">${ICONOS.usuarios} Agregar</button>` : ''}
-            ${estadoAmistad === 'amigos' ? `<span class="badge badge--success" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.check} Amigos</span>` : ''}
-            ${estadoAmistad === 'pendiente_enviada' ? `<span class="badge badge--warning" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.reloj} Enviada</span>` : ''}
-            ${estadoAmistad === 'pendiente_recibida' ? `<button class="btn btn--sm" id="btn-aceptar-amigo" style="${btnStyle}">${ICONOS.check} Aceptar</button>` : ''}
-            
-            <button class="btn btn--sm" id="btn-perfil-opciones" style="padding:8px 12px; font-weight:bold; ${btnStyle}">⋮</button>
-          </div>
+        <div class="perfil-header-card__actions" style="position:relative;">
+          <button class="btn btn--primary btn--sm" id="btn-perfil-mensaje" style="border-radius: 8px;">${ICONOS.chat} Mensaje</button>
+          ${estadoAmistad === 'ninguno' ? `<button class="btn btn--ghost btn--sm" id="btn-perfil-amigo" style="border-radius: 8px;">${ICONOS.usuarios} Agregar</button>` : ''}
+          ${estadoAmistad === 'amigos' ? `<span class="badge badge--success" style="padding:8px 12px; border-radius: 8px;">${ICONOS.check} Amigos</span>` : ''}
+          ${estadoAmistad === 'pendiente_enviada' ? `<span class="badge badge--warning" style="padding:8px 12px; border-radius: 8px;">${ICONOS.reloj} Enviada</span>` : ''}
+          ${estadoAmistad === 'pendiente_recibida' ? `<button class="btn btn--primary btn--sm" id="btn-aceptar-amigo" style="border-radius: 8px;">${ICONOS.check} Aceptar</button>` : ''}
           
-          <!-- Menú de opciones flotante -->
-          <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:calc(100% + 10px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:999; padding:6px; min-width:200px; display:flex; flex-direction:column; gap:2px;">
+          <button class="btn btn--ghost btn--sm" id="btn-perfil-opciones" style="padding:8px 12px; font-weight:bold; border-radius: 8px;">⋮</button>
+          
+          <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:calc(100% + 8px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:9999; padding:6px; min-width:200px; display:flex; flex-direction:column; gap:2px;">
             ${opcionesMenu}
           </div>
         </div>
@@ -721,7 +714,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       await enviarSolicitudAPI(u.id);
       toast('Solicitud enviada', 'success');
-      btn.outerHTML = `<span class="badge badge--warning" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.reloj} Enviada</span>`;
+      btn.outerHTML = `<span class="badge badge--warning" style="padding:8px 12px; border-radius: 8px;">${ICONOS.reloj} Enviada</span>`;
     } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
   });
 
@@ -731,7 +724,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       await responderSolicitudAPI(u.id, 'aceptar');
       toast('Ahora son amigos', 'success');
-      btn.outerHTML = `<span class="badge badge--success" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.check} Amigos</span>`;
+      btn.outerHTML = `<span class="badge badge--success" style="padding:8px 12px; border-radius: 8px;">${ICONOS.check} Amigos</span>`;
     } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
   });
 
@@ -775,11 +768,13 @@ export async function verPerfilUsuario(usuarioOId) {
 function renderStatsHeroPublico(u) {
   const stats = u.statsHero || { partidos: null, torneos: null, equipos: null };
   if (stats.partidos === null && stats.torneos === null && stats.equipos === null) return '';
+  
   const filas = [];
-  if (stats.partidos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.partidos}</div><div class="perfil-stat__label">Partidos</div></div>`);
-  if (stats.torneos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.torneos}</div><div class="perfil-stat__label">Torneos</div></div>`);
-  if (stats.equipos !== null) filas.push(`<div class="perfil-stat"><div class="perfil-stat__value">${stats.equipos}</div><div class="perfil-stat__label">Equipos</div></div>`);
-  return `<div class="perfil-stats mt-4">${filas.join('')}</div>`;
+  if (stats.partidos !== null) filas.push(`<div class="perfil-stat-card"><div class="perfil-stat-card__value">${stats.partidos}</div><div class="perfil-stat-card__label">Partidos</div></div>`);
+  if (stats.torneos !== null) filas.push(`<div class="perfil-stat-card"><div class="perfil-stat-card__value">${stats.torneos}</div><div class="perfil-stat-card__label">Torneos</div></div>`);
+  if (stats.equipos !== null) filas.push(`<div class="perfil-stat-card"><div class="perfil-stat-card__value">${stats.equipos}</div><div class="perfil-stat-card__label">Equipos</div></div>`);
+  
+  return `<div class="perfil-stats-grid mt-4">${filas.join('')}</div>`;
 }
 
 function renderPubsVerPerfil() {
