@@ -129,7 +129,11 @@ export function initHeader() {
     menu.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const accion = btn.dataset.action;
+        
         if (accion === 'logout') {
+          // ⚡ FIX: Si el usuario toca "Cancelar", el return corta la ejecución y no cierra sesión
+          if (!confirm('¿Cerrar sesión?')) return; 
+          
           cerrarSesion();
           window.location.href = 'index.html';
         } else if (accion === 'perfil') {
