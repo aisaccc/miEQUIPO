@@ -26,6 +26,37 @@ import {
   echarInteresado as echarInteresadoAPI,
   echarEquipoInscrito as echarEquipoInscritoAPI,
 } from '../services/partidos.service.js';
+/* =========================================================
+   COLORES POR DEPORTE (hero)
+   ========================================================= */
+const COLOR_DEPORTE_PARTIDO = {
+  'Fútbol':            { from: '#FF6B4A', to: '#C2410C' },
+  'Fútbol americano':  { from: '#DC2626', to: '#7F1D1D' },
+  'Básquetbol':        { from: '#3B82F6', to: '#1E40AF' },
+  'Tenis':             { from: '#22C55E', to: '#166534' },
+  'Tenis de mesa':     { from: '#EC4899', to: '#9D174D' },
+  'Vóleibol':          { from: '#F59E0B', to: '#92400E' },
+  'Pádel':             { from: '#6366F1', to: '#3730A3' },
+  'Squash':            { from: '#06B6D4', to: '#155E75' },
+  'Bádminton':         { from: '#A855F7', to: '#6B21A8' },
+  'Golf':              { from: '#10B981', to: '#065F46' },
+  'Béisbol':           { from: '#EAB308', to: '#854D0E' },
+  'Hockey':            { from: '#0EA5E9', to: '#075985' },
+  'Handball':          { from: '#F43F5E', to: '#9F1239' },
+  'Rugby':             { from: '#8B5CF6', to: '#5B21B6' },
+  'Boxeo':             { from: '#EF4444', to: '#7F1D1D' },
+  'Ciclismo':          { from: '#84CC16', to: '#3F6212' },
+  'Natación':          { from: '#06B6D4', to: '#0E7490' },
+  'Atletismo':         { from: '#F43F5E', to: '#BE123C' },
+  'Surf':              { from: '#0EA5E9', to: '#0369A1' },
+  'Escalada':          { from: '#F59E0B', to: '#B45309' },
+};
+
+const COLOR_DEPORTE_PARTIDO_DEFAULT = { from: '#FF6B4A', to: '#C2410C' };
+
+function colorDeportePartido(deporte) {
+  return COLOR_DEPORTE_PARTIDO[deporte] || COLOR_DEPORTE_PARTIDO_DEFAULT;
+}
 
 export async function init(params = {}) {
   const id = params.id;
@@ -369,13 +400,17 @@ export async function init(params = {}) {
     const infoFechaHero = enModoOrganizar ? `A coordinar` : formatearFecha(partido.fecha);
     const infoLugarHero = enModoOrganizar ? `A coordinar` : (partido.lugar || 'Sin lugar');
 
+    // ⚡ NUEVO: Calcular gradiente según el deporte
+    const color = colorDeportePartido(partido.deporte);
+    const heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+
     contenedor.innerHTML = `
       <div class="detalle__top">
         <button class="detalle__back" id="btn-volver">←</button>
         <h2 class="page-title" style="margin:0; font-size:var(--fs-lg)">Detalle del partido</h2>
       </div>
 
-      <div class="pd-hero">
+      <div class="pd-hero" style="${heroStyle}">
         <div class="pd-hero__left">
           <div class="pd-hero__sport">${renderEmoji(partido.emoji, 48)}</div>
           <div class="pd-hero__info">
