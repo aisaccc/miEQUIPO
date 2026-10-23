@@ -157,6 +157,19 @@ export async function init() {
   const panelCanalEl   = document.getElementById('panel-canal');
   const inputBuscarCanal = document.getElementById('buscar-canal-equipo');
 
+    /* ⚡ Oculta/muestra el hero de la pestaña y los subtabs superiores
+     cuando entramos/salimos del detalle inline de equipo/comunidad. */
+  function ocultarChromePagina() {
+    document.getElementById('mi-equipo-eyebrow')?.closest('.page-hero')?.classList.add('hidden');
+    document.querySelector('[data-tab-equipo]')?.closest('.subtabs')?.classList.add('hidden');
+  }
+
+  function mostrarChromePagina() {
+    document.getElementById('mi-equipo-eyebrow')?.closest('.page-hero')?.classList.remove('hidden');
+    document.querySelector('[data-tab-equipo]')?.closest('.subtabs')?.classList.remove('hidden');
+  }
+
+
   function esIconoImagen(valor) {
     return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
   }
@@ -401,6 +414,9 @@ export async function init() {
       });
       return;
     }
+
+    // ⚡ Full-page feel: ocultamos el hero de la pestaña y los subtabs
+    ocultarChromePagina();
 
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
@@ -743,24 +759,16 @@ export async function init() {
       console.warn('[mi-equipo] No se pudo marcar como leído:', err.message);
     }
 
-    // ⚡ Forzamos el render
+    // Render del chat (sin header, ya lo quitamos)
     await renderPanelCanalDetalle(canalId, grupo);
 
-    // Verificamos si el panel realmente se pintó
+    // ⚡ El chat NO tiene header a propósito. Por eso verificamos que se
+    // haya renderizado el contenedor de mensajes (#chat-mensajes-detalle),
+    // no el header. Si no está, es porque el backend falló.
     const panel = document.getElementById('panel-canal-detalle');
-    if (panel && !panel.querySelector('.chat-header')) {
-      // Si después de renderizar no hay un header, es porque el backend falló.
-      // Mostramos una vista de emergencia.
+    if (panel && !panel.querySelector('#chat-mensajes-detalle')) {
+      // ⚡ Sin header, sin flecha: solo el mensaje de error centrado.
       panel.innerHTML = `
-        <div class="chat-header">
-          <button class="chat-back-btn" id="btn-volver-chat-interno" style="display:flex">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-          </button>
-          <div class="chat-header__info">
-            <div class="chat-header__name">Chat de ${grupo.nombre}</div>
-            <div class="chat-header__sub">Equipo</div>
-          </div>
-        </div>
         <div class="chat-empty">
           <div class="chat-empty__icon">
             <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -768,15 +776,13 @@ export async function init() {
           <p class="chat-empty__text">No se pudo conectar con el chat en este momento.</p>
         </div>
       `;
-      
-      document.getElementById('btn-volver-chat-interno')?.addEventListener('click', () => {
-        subTabDetalleEquipo = 'info';
-        renderDetalleGrupo(grupo, grupo.tipo === 'comunidad', () => {
-          grupoAbiertoEquipo = null;
-          subTabDetalleEquipo = 'info';
-          renderPanelEquipo();
-        });
-      });
+
+      // No tiene sentido seguir poleando si el chat no cargó
+      if (intervaloDetalle) {
+        clearInterval(intervaloDetalle);
+        intervaloDetalle = null;
+      }
+      return;
     }
 
     intervaloDetalle = setInterval(async () => {
@@ -790,9 +796,9 @@ export async function init() {
     const panel = document.getElementById('panel-canal-detalle');
     if (!panel) return;
 
-    let canal;
+    // Validamos que el canal exista y tengamos acceso (si falla, mostramos error)
     try {
-      canal = await obtenerCanalAPI(canalId);
+      await obtenerCanalAPI(canalId);
     } catch (err) {
       console.error('[mi-equipo] Error al obtener canal:', err);
       panel.innerHTML = `
@@ -809,22 +815,9 @@ export async function init() {
       return;
     }
 
-    const iconoHtml = renderIconoHtml(canal.icono || RUTA_ESCUDO, 28);
-    const tipoLabel = canal.tipo === 'equipo' ? 'Equipo'
-                    : canal.tipo === 'comunidad' ? 'Comunidad'
-                    : 'Torneo';
-
+    // ⚡ Sin header: ya estamos dentro del detalle del grupo/comunidad,
+    // mostrar nombre + icono + tipo + miembros sería redundante.
     panel.innerHTML = `
-      <div class="chat-header">
-        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
-          ${iconoHtml}
-        </div>
-        <div class="chat-header__info">
-          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
-          <div class="chat-header__sub">${tipoLabel} · ${canal.totalMiembros || 0} miembros</div>
-        </div>
-      </div>
-
       <div class="chat-mensajes" id="chat-mensajes-detalle"></div>
 
       <div class="chat-input-preview hidden" id="chat-detalle-preview">
@@ -1247,6 +1240,9 @@ export async function init() {
       }
     }
 
+    // ⚡ Llegamos acá sólo si NO hay detalle abierto → mostrar chrome
+    mostrarChromePagina();
+
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
     contenedor.innerHTML = `
@@ -1313,7 +1309,7 @@ export async function init() {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion-grupo]')) return;
         grupoAbiertoEquipo = card.dataset.grupoId;
-        subTabDetalleEquipo = 'info';
+        subTabDetalleEquipo = 'chat';     // ⚡ equipo abre en Chat
         renderPanelEquipo();
       });
       card.addEventListener('keydown', (e) => {
@@ -1321,7 +1317,7 @@ export async function init() {
           e.preventDefault();
           if (e.target.closest('[data-accion-grupo]')) return;
           grupoAbiertoEquipo = card.dataset.grupoId;
-          subTabDetalleEquipo = 'info';
+          subTabDetalleEquipo = 'chat';   // ⚡ equipo abre en Chat
           renderPanelEquipo();
         }
       });
@@ -1366,6 +1362,9 @@ export async function init() {
         return;
       }
     }
+
+    // ⚡ Llegamos acá sólo si NO hay detalle abierto → mostrar chrome
+    mostrarChromePagina();
 
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
@@ -1433,7 +1432,7 @@ export async function init() {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion-grupo]')) return;
         grupoAbiertoComunidad = card.dataset.grupoId;
-        subTabDetalleEquipo = 'info';
+        subTabDetalleEquipo = 'publicaciones';   // ⚡ comunidad abre en Publicaciones
         renderPanelComunidad();
       });
       card.addEventListener('keydown', (e) => {
@@ -1441,7 +1440,7 @@ export async function init() {
           e.preventDefault();
           if (e.target.closest('[data-accion-grupo]')) return;
           grupoAbiertoComunidad = card.dataset.grupoId;
-          subTabDetalleEquipo = 'info';
+          subTabDetalleEquipo = 'publicaciones'; // ⚡ comunidad abre en Publicaciones
           renderPanelComunidad();
         }
       });
