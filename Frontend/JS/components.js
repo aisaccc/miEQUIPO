@@ -619,6 +619,11 @@ export async function verPerfilUsuario(usuarioOId) {
   }
   opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-bloquear-usuario" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.candado} Bloquear usuario</button>`;
 
+  // ⚡ Estilo dinámico para los botones según si el fondo es claro u oscuro
+  const btnStyle = isDarkText 
+    ? 'background: rgba(0,0,0,0.06); color: inherit; border: 1px solid rgba(0,0,0,0.12);' 
+    : 'background: rgba(255,255,255,0.15); color: inherit; border: 1px solid rgba(255,255,255,0.25);';
+
   body.innerHTML = `
     <div class="perfil-hero perfil-hero--modal ${isDarkText ? 'perfil-hero--dark-text' : ''}" style="${heroStyle}">
       <div class="perfil-hero__inner">
@@ -633,6 +638,27 @@ export async function verPerfilUsuario(usuarioOId) {
             </div>
           </div>
         </div>
+
+        <!-- ⚡ ACCIONES MOVIDAS ARRIBA A LA DERECHA -->
+        ${!esMiPerfil ? `
+        <div class="perfil-hero__actions" style="position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+          <div class="flex gap-2" style="flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn btn--primary btn--sm" id="btn-perfil-mensaje">${ICONOS.chat} Mensaje</button>
+            
+            ${estadoAmistad === 'ninguno' ? `<button class="btn btn--sm" id="btn-perfil-amigo" style="${btnStyle}">${ICONOS.usuarios} Agregar</button>` : ''}
+            ${estadoAmistad === 'amigos' ? `<span class="badge badge--success" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.check} Amigos</span>` : ''}
+            ${estadoAmistad === 'pendiente_enviada' ? `<span class="badge badge--warning" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.reloj} Enviada</span>` : ''}
+            ${estadoAmistad === 'pendiente_recibida' ? `<button class="btn btn--sm" id="btn-aceptar-amigo" style="${btnStyle}">${ICONOS.check} Aceptar</button>` : ''}
+            
+            <button class="btn btn--sm" id="btn-perfil-opciones" style="padding:8px 12px; font-weight:bold; ${btnStyle}">⋮</button>
+          </div>
+          
+          <!-- Menú de opciones flotante -->
+          <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:calc(100% + 6px); background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:100; padding:6px; min-width:200px; display:flex; flex-direction:column; gap:2px;">
+            ${opcionesMenu}
+          </div>
+        </div>
+        ` : ''}
       </div>
     </div>
 
@@ -651,23 +677,6 @@ export async function verPerfilUsuario(usuarioOId) {
 
     <div class="subpanel subpanel--active" id="panel-ver-publicaciones"><div id="ver-perfil-pubs-feed"></div></div>
     <div class="subpanel" id="panel-ver-actividad"><div id="ver-perfil-actividad"></div></div>
-
-    ${!esMiPerfil ? `
-    <div class="flex gap-2 mt-4" style="justify-content:center; flex-wrap:wrap; align-items:center;">
-      <button class="btn btn--primary btn--sm" id="btn-perfil-mensaje">${ICONOS.chat} Enviar mensaje</button>
-      ${estadoAmistad === 'ninguno' ? `<button class="btn btn--ghost btn--sm" id="btn-perfil-amigo">${ICONOS.usuarios} Agregar amigo</button>` : ''}
-      ${estadoAmistad === 'amigos' ? `<span class="badge badge--success" style="padding:10px 16px; display:flex; align-items:center; gap:6px">${ICONOS.check} Amigos</span>` : ''}
-      ${estadoAmistad === 'pendiente_enviada' ? `<span class="badge badge--warning" style="padding:10px 16px; display:flex; align-items:center; gap:6px">${ICONOS.reloj} Solicitud enviada</span>` : ''}
-      ${estadoAmistad === 'pendiente_recibida' ? `<button class="btn btn--primary btn--sm" id="btn-aceptar-amigo">${ICONOS.check} Aceptar amistad</button>` : ''}
-
-      <div style="position:relative; margin-left:auto;">
-        <button class="btn btn--ghost btn--sm" id="btn-perfil-opciones" style="padding:8px 12px; font-weight:bold" title="Más opciones">⋮</button>
-        <div id="menu-perfil-opciones" class="hidden" style="position:absolute; right:0; top:100%; background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:100; padding:6px; min-width:200px; margin-top:6px; display:flex; flex-direction:column; gap:2px;">
-          ${opcionesMenu}
-        </div>
-      </div>
-    </div>
-    ` : ''}
   `;
 
   renderPubsVerPerfil();
@@ -702,7 +711,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       await enviarSolicitudAPI(u.id);
       toast('Solicitud enviada', 'success');
-      btn.outerHTML = `<span class="badge badge--warning" style="padding:10px 16px; display:flex; align-items:center; gap:6px">${ICONOS.reloj} Solicitud enviada</span>`;
+      btn.outerHTML = `<span class="badge badge--warning" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.reloj} Enviada</span>`;
     } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
   });
 
@@ -712,7 +721,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       await responderSolicitudAPI(u.id, 'aceptar');
       toast('Ahora son amigos', 'success');
-      btn.outerHTML = `<span class="badge badge--success" style="padding:10px 16px; display:flex; align-items:center; gap:6px">${ICONOS.check} Amigos</span>`;
+      btn.outerHTML = `<span class="badge badge--success" style="padding:8px 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${ICONOS.check} Amigos</span>`;
     } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
   });
 
