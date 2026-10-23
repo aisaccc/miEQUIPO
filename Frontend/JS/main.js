@@ -20,6 +20,7 @@ import {
   initNotificaciones,
   initConfiguracion,
   initTheme,
+  initBadgeMensajes, // ⚡ AGREGAR ESTO
 } from './components.js';
 
 if (!estaAutenticado()) {
@@ -85,6 +86,12 @@ async function init() {
   setTimeout(() => {
     try { initNotificaciones(); } catch (err) { console.warn('[main] initNotificaciones:', err); }
   }, 900);
+
+  // ⚡ AGREGAR ESTO:
+  setTimeout(() => {
+    try { initBadgeMensajes(); } catch (err) { console.warn('[main] initBadgeMensajes:', err); }
+  }, 500);
+  
 
   // 6. Logout del sidebar
   const btnLogout = document.getElementById('btn-logout');
