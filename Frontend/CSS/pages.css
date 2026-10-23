@@ -13851,70 +13851,98 @@ select.field__input {
   letter-spacing: 0.05em;
 }
 /* =========================================================
-   PUBLICACIONES FULL-WIDTH EN MÓVIL (estilo Facebook / IG)
+   PUBLICACIONES FULL-WIDTH EN MÓVIL — Fotos borde a borde
    ---------------------------------------------------------
-   Todo va de borde a borde en celular:
-   - Posts de feed (.feed-post): Inicio, Equipo, Comunidad,
-     Torneo → Publicaciones, y modal "Ver perfil".
-   - Grid de publicaciones (.pubs-grid / .pub-card): perfil
-     propio y modal "Ver perfil".
+   Cubre TODOS los lugares:
+   - Inicio, Equipo→Pub, Comunidad→Pub, Torneo→Pub (feed)
+   - Perfil propio (grid de fotos)
+   - Modal "Ver perfil" (grid + feed)
    ========================================================= */
 @media (max-width: 768px) {
 
-  /* ---------- Posts de feed ---------- */
+  /* ==================== POSTS DE FEED ==================== */
+
+  /* Post edge-to-edge (rompe el padding de .app-main) */
   .feed-post,
   .post {
-    margin-left: -16px;
-    margin-right: -16px;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    box-shadow: none;
-    margin-bottom: 8px;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    margin-bottom: 8px !important;
   }
 
+  /* FOTO: ocupa todo el ancho del post sin padding ni bordes */
   .feed-post__media,
-  .feed-post__media img,
-  .feed-post__media video,
   .post__image {
-    border-radius: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
   }
 
+  .feed-post__media img,
+  .feed-post__media video {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    object-fit: cover !important;
+  }
+
+  /* Composer (crear publicación) también edge-to-edge */
   .composer {
-    margin-left: -16px;
-    margin-right: -16px;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    box-shadow: none;
-    margin-bottom: 8px;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    margin-bottom: 8px !important;
   }
 
-  /* ---------- Grid de publicaciones — perfil propio ----------
-     Vive dentro de #page-content → .app-main (16px de padding). */
+  /* ==================== GRID DE FOTOS - PERFIL PROPIO ==================== */
+
   #page-content .pubs-grid {
-    margin-left: -16px;
-    margin-right: -16px;
-    gap: 4px;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    gap: 2px !important;
   }
 
-  #page-content .pub-card {
-    border-radius: 0;
-  }
-
+  #page-content .pub-card,
   #page-content .pub-card__overlay {
-    border-radius: 0;
+    border-radius: 0 !important;
   }
 
-  /* ---------- Grid de publicaciones — modal "Ver perfil" ----------
-     Vive dentro de #modal-ver-perfil → .modal__body (24px lateral). */
+  #page-content .pub-card__img {
+    border-radius: 0 !important;
+  }
+
+  /* ==================== GRID DE FOTOS - MODAL VER PERFIL ==================== */
+
+  /* El modal tiene 24px de padding lateral (no 16), por eso -24px */
   #modal-ver-perfil .pubs-grid {
-    margin-left: -24px;
-    margin-right: -24px;
-    gap: 4px;
+    margin-left: -24px !important;
+    margin-right: -24px !important;
+    gap: 2px !important;
   }
 
-  #modal-ver-perfil .pub-card {
-    border-radius: 0;
+  #modal-ver-perfil .pub-card,
+  #modal-ver-perfil .pub-card__overlay,
+  #modal-ver-perfil .pub-card__img {
+    border-radius: 0 !important;
+  }
+
+  /* Si dentro del modal hay feed-posts (no solo grilla) */
+  #modal-ver-perfil .feed-post,
+  #modal-ver-perfil .post {
+    margin-left: -24px !important;
+    margin-right: -24px !important;
   }
 }
