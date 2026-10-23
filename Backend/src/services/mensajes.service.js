@@ -166,7 +166,7 @@ export async function crearObtenerConversacion(usuarioId, datos) {
   try {
     await client.query('BEGIN');
     const { rows: usuarioExiste } = await client.query(
-      `SELECT id, nombre, username, avatar FROM usuarios
+      `SELECT id, nombre, username, avatar, mensajes_solo_amigos FROM usuarios
        WHERE id = $1 AND activo = TRUE`,
       [otroUsuarioId]
     );
@@ -174,6 +174,22 @@ export async function crearObtenerConversacion(usuarioId, datos) {
       const err = new Error('Usuario no encontrado');
       err.status = 404;
       throw err;
+    }
+        // ⚡ NUEVO: Verificar si el usuario destino solo acepta mensajes de amigos
+    if (usuarioExiste[0].mensajes_solo_amigos) {
+      const { rows: amistad } = await client.query(
+        `SELECT 1 FROM amistades
+         WHERE ((usuario_id = $1 AND amigo_id = $2) OR (usuario_id = $2 AND amigo_id = $1))
+           AND estado = 'aceptada'
+         LIMIT 1`,
+        [usuarioId, otroUsuarioId]
+      );
+
+      if (amistad.length === 0) {
+        const err = new Error('Este usuario solo acepta mensajes de sus amigos.');
+        err.status = 403;
+        throw err;
+      }
     }
 
     const { rows: existente } = await client.query(

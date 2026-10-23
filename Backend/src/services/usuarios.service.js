@@ -13,7 +13,8 @@ import { estadoBloqueo } from '../utils/bloqueos.js';
 const CAMPOS_PERFIL_PROPIO = `
   id, nombre, username, email, avatar, bio, edad, pais, ciudad,
   deportes, email_verificado, created_at, last_login,
-  hero_color, stats_hero_base, stats_hero_privadas, notificaciones_prefs
+  hero_color, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
+  mensajes_solo_amigos
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
@@ -45,6 +46,7 @@ function formatearPerfilPropio(row, stats = {}) {
     statsHeroBase: row.stats_hero_base || {},
     statsHeroPrivadas: row.stats_hero_privadas || {},
     notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true }, // ⚡
+    mensajesSoloAmigos: row.mensajes_solo_amigos ?? false, // ⚡ NUEV
     statsHero: {
       partidos:  stats.partidos ?? 0,
       torneos:   stats.torneos  ?? 0,
@@ -216,6 +218,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     statsHeroBase: 'stats_hero_base',
     statsHeroPrivadas: 'stats_hero_privadas',
     notificacionesPrefs: 'notificaciones_prefs', // ⚡ NUEVO
+    mensajesSoloAmigos: 'mensajes_solo_amigos', // ⚡ NUEVO
   };
 
   const campos = [];

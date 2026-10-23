@@ -270,8 +270,9 @@ async function cargarAmigosHeader(desdePolling = false) {
       } else {
         paneSol.innerHTML = solicitudes.map(s => `
           <div class="amigo-item">
-            <img src="${s.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" />
-            <div class="amigo-item__info">
+            <!-- ⚡ Agregamos data-autor-id y cursor:pointer -->
+            <img src="${s.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${s.id}" style="cursor:pointer" />
+            <div class="amigo-item__info" data-autor-id="${s.id}" style="cursor:pointer">
               <div class="amigo-item__name">${escapeHtml(s.nombre)}</div>
               <div class="amigo-item__sub">@${escapeHtml(s.username)}</div>
             </div>
@@ -280,6 +281,15 @@ async function cargarAmigosHeader(desdePolling = false) {
               <button class="btn btn--ghost btn--sm" data-rechazar="${s.id}">✕</button>
             </div>
           </div>`).join('');
+
+        // ⚡ NUEVO: Conectamos el clic para abrir el perfil
+        paneSol.querySelectorAll('[data-autor-id]').forEach(el => {
+          el.addEventListener('click', () => {
+            import('./components.js').then(({ verPerfilUsuario }) => {
+              verPerfilUsuario(el.dataset.autorId);
+            });
+          });
+        });
 
         paneSol.querySelectorAll('[data-aceptar]').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -1079,6 +1089,7 @@ async function cargarPreferenciasPrivacidad() {
     document.getElementById('priv-partidos').checked = !!privadas.partidos;
     document.getElementById('priv-torneos').checked = !!privadas.torneos;
     document.getElementById('priv-equipos').checked = !!privadas.equipos;
+    document.getElementById('priv-mensajes').checked = !!u.mensajesSoloAmigos; // ⚡ ACÁ
   } catch (err) {
     console.warn('No se pudieron cargar las preferencias de privacidad', err);
   }
@@ -1091,12 +1102,15 @@ document.getElementById('btn-guardar-privacidad')?.addEventListener('click', asy
   
   try {
     const { actualizarMiPerfil } = await import('./services/usuarios.service.js');
+    
+    // ⚡ Enviamos todo junto en una sola petición
     await actualizarMiPerfil({
       statsHeroPrivadas: {
         partidos: document.getElementById('priv-partidos').checked,
         torneos: document.getElementById('priv-torneos').checked,
         equipos: document.getElementById('priv-equipos').checked,
-      }
+      },
+      mensajesSoloAmigos: document.getElementById('priv-mensajes').checked
     });
     
     toast('Privacidad actualizada', 'success');

@@ -146,6 +146,7 @@ export const schemaActualizarPerfil = z.object({
   statsHeroBase: statsHeroBaseSchema.optional(),
   statsHeroPrivadas: statsHeroPrivadasSchema.optional(),
   notificacionesPrefs: notificacionesPrefsSchema.optional(), // ⚡ NUEVO
+  mensajesSoloAmigos: z.boolean().optional(), // ⚡ NUEVO
 }).strict();
 
 /* ---------- PATCH /api/usuarios/me/deportes ---------- */
