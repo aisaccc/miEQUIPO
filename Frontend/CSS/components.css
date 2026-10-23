@@ -1239,3 +1239,20 @@ select.field__input {
 .torneo-inscripcion-panel__progreso, .torneo-inscripcion-panel__progreso-bar {
   border-radius: 4px !important;
 }
+/* =========================================================
+   FIX: quitar chevron del avatar y alinear con íconos del header
+   ========================================================= */
+
+/* Ocultar el chevron (la flechita) */
+.user-menu__chevron {
+  display: none;
+}
+
+/* Trigger alineado 42x42, igual que los .app-header__icon-btn */
+.user-menu__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  gap: 0;
+}

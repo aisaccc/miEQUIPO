@@ -1147,7 +1147,15 @@ document.getElementById('btn-confirmar-eliminar-cuenta')?.addEventListener('clic
   }
 });
 
-// Cerrar modales haciendo clic fuera
+// ⚡ Cerrar modales con CUALQUIER botón [data-cerrar-modal] (delegado)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-cerrar-modal]');
+  if (!btn) return;
+  const modalId = btn.getAttribute('data-cerrar-modal');
+  if (modalId) cerrarModal(modalId);
+});
+
+// Cerrar modales haciendo clic fuera (backdrop)
 document.querySelectorAll('.modal-backdrop').forEach(bg => {
   bg.addEventListener('click', (e) => {
     if (e.target === bg) cerrarModal(bg.id);
