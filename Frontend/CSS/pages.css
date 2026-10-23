@@ -13479,3 +13479,11 @@ select.field__input {
     padding-right: 16px !important;
   }
 }
+/* ⚡ NUEVO: toggle campo de fecha */
+.campo-fecha-btn--active {
+  background: var(--color-primary, #E8836A) !important;
+  color: #fff !important;
+}
+.campo-fecha-btn:hover:not(.campo-fecha-btn--active) {
+  background: rgba(0,0,0,0.05);
+}

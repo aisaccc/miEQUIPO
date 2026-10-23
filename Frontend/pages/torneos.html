@@ -68,7 +68,15 @@
     </div>
         <!-- ⚡ NUEVO: Filtros de Fecha -->
     <div class="toolbar__filters" id="filtros-fecha-torneos" style="flex-wrap:wrap; gap:8px; align-items:center;">
-      <span class="text-xs text-muted" style="font-weight:600; margin-right:4px;">Fecha:</span>
+      <!-- ⚡ NUEVO: selector de campo de fecha -->
+      <div id="toggle-campo-fecha" role="group" aria-label="Campo de fecha" style="display:inline-flex; background:var(--color-surface-2, #f3f4f6); border-radius:999px; padding:2px; gap:2px;">
+        <button type="button" class="campo-fecha-btn campo-fecha-btn--active" data-campo-fecha="inscripcion" style="border:none; background:transparent; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; cursor:pointer; color:var(--color-text, #111);">
+          Cierre inscripción
+        </button>
+        <button type="button" class="campo-fecha-btn" data-campo-fecha="torneo" style="border:none; background:transparent; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:600; cursor:pointer; color:var(--color-text-soft, #666);">
+          Inicio torneo
+        </button>
+      </div>
       <button class="chip chip--active" data-filtro-fecha-torneo="todos">Todas</button>
       <button class="chip" data-filtro-fecha-torneo="hoy">Hoy</button>
       <button class="chip" data-filtro-fecha-torneo="manana">Mañana</button>

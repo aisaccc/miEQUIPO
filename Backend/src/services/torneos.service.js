@@ -577,7 +577,8 @@ export async function listarTorneos(filtros, usuarioId) {
     sistemaClasificacion,
     soloMios, soloInscritos, busqueda,
     page = 1, limit = 20,
-    desde, hasta, // ⚡ NUEVO
+    desde, hasta,
+    campoFecha, // ⚡ NUEVO
   } = filtros;
 
   const condiciones = [];
@@ -625,15 +626,19 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
-  // ⚡ NUEVO: filtro por fecha (sobre fecha_inicio)
+  // ⚡ NUEVO: filtro por fecha con columna dinámica
+  const columnaFecha = campoFecha === 'torneo'
+    ? 't.fecha_inicio'
+    : 't.fecha_limite_inscripcion';
+
   if (desde) {
-    condiciones.push(`t.fecha_inicio >= $${i}::date`);
+    condiciones.push(`${columnaFecha} IS NOT NULL AND ${columnaFecha} >= $${i}::date`);
     valores.push(desde);
     i++;
   }
 
   if (hasta) {
-    condiciones.push(`t.fecha_inicio < ($${i}::date + INTERVAL '1 day')`);
+    condiciones.push(`${columnaFecha} IS NOT NULL AND ${columnaFecha} < ($${i}::date + INTERVAL '1 day')`);
     valores.push(hasta);
     i++;
   }

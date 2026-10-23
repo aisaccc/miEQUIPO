@@ -121,6 +121,7 @@ export async function init() {
   let filtroBusqueda = '';
   let filtroFechaDesde = ''; // ⚡ NUEVO
   let filtroFechaHasta = ''; // ⚡ NUEVO
+  let campoFechaActual = 'inscripcion'; // ⚡ NUEVO: 'inscripcion' | 'torneo'
   let modalidadSeleccionada = 'liga';
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
@@ -144,6 +145,9 @@ export async function init() {
       const filtros = { limit: 50 };
       if (filtroFechaDesde) filtros.desde = filtroFechaDesde;
       if (filtroFechaHasta) filtros.hasta = filtroFechaHasta;
+      if (filtroFechaDesde || filtroFechaHasta) {
+        filtros.campoFecha = campoFechaActual; // ⚡ NUEVO
+      }
 
       const { data } = await listarTorneos(filtros);
       torneos = data;
@@ -541,6 +545,25 @@ export async function init() {
   chipsFechaTorneo.forEach(chip => chip.addEventListener('click', handleChipFechaTorneoClick));
   inputFechaDesdeTorneo?.addEventListener('change', handleInputDesdeTorneoChange);
   inputFechaHastaTorneo?.addEventListener('change', handleInputHastaTorneoChange);
+    // ⚡ NUEVO: toggle campo de fecha (inscripción vs inicio de torneo)
+  const botonesCampoFecha = document.querySelectorAll('[data-campo-fecha]');
+
+  function handleCampoFechaClick(e) {
+    const nuevo = e.currentTarget.dataset.campoFecha;
+    if (nuevo === campoFechaActual) return;
+
+    campoFechaActual = nuevo;
+    botonesCampoFecha.forEach(b => {
+      b.classList.toggle('campo-fecha-btn--active', b.dataset.campoFecha === nuevo);
+    });
+
+    // Solo refetchear si hay filtro de fecha activo
+    if (filtroFechaDesde || filtroFechaHasta) {
+      recargarTorneos();
+    }
+  }
+
+  botonesCampoFecha.forEach(b => b.addEventListener('click', handleCampoFechaClick));
 
 
 
@@ -1022,5 +1045,6 @@ export async function init() {
     chipsFechaTorneo.forEach(chip => chip.removeEventListener('click', handleChipFechaTorneoClick));
     inputFechaDesdeTorneo?.removeEventListener('change', handleInputDesdeTorneoChange);
     inputFechaHastaTorneo?.removeEventListener('change', handleInputHastaTorneoChange);
+    botonesCampoFecha.forEach(b => b.removeEventListener('click', handleCampoFechaClick)); // ⚡ NUEVO
   };
 }
