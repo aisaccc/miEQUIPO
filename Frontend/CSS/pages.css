@@ -13852,21 +13852,21 @@ select.field__input {
 }
 /* =========================================================
    PUBLICACIONES FULL-WIDTH EN MÓVIL — Fotos borde a borde
-   ---------------------------------------------------------
-   Cubre TODOS los lugares:
-   - Inicio, Equipo→Pub, Comunidad→Pub, Torneo→Pub (feed)
-   - Perfil propio (grid de fotos)
-   - Modal "Ver perfil" (grid + feed)
+   =========================================================
+   La clave: eliminar el padding interno del .feed-post que
+   viene de la regla F.16 (padding: 20px 22px). Los hijos
+   del post (header, contenido, acciones) ya traen su propio
+   padding, así que quitarlo no rompe nada más.
    ========================================================= */
 @media (max-width: 768px) {
 
   /* ==================== POSTS DE FEED ==================== */
 
-  /* Post edge-to-edge (rompe el padding de .app-main) */
   .feed-post,
   .post {
-    margin-left: -16px !important;
+    margin-left: -16px !important;   /* rompe padding .app-main */
     margin-right: -16px !important;
+    padding: 0 !important;           /* ⚡ elimina padding interno de F.16 */
     border-radius: 0 !important;
     border-left: none !important;
     border-right: none !important;
@@ -13874,13 +13874,13 @@ select.field__input {
     margin-bottom: 8px !important;
   }
 
-  /* FOTO: ocupa todo el ancho del post sin padding ni bordes */
+  /* FOTO: ancho completo del post, sin aire */
   .feed-post__media,
   .post__image {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
     border-radius: 0 !important;
   }
 
@@ -13890,13 +13890,14 @@ select.field__input {
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
     border-radius: 0 !important;
     object-fit: cover !important;
   }
 
-  /* Composer (crear publicación) también edge-to-edge */
+  /* ==================== COMPOSER ==================== */
+
   .composer {
     margin-left: -16px !important;
     margin-right: -16px !important;
@@ -13907,7 +13908,7 @@ select.field__input {
     margin-bottom: 8px !important;
   }
 
-  /* ==================== GRID DE FOTOS - PERFIL PROPIO ==================== */
+  /* ==================== GRID - PERFIL PROPIO ==================== */
 
   #page-content .pubs-grid {
     margin-left: -16px !important;
@@ -13916,17 +13917,13 @@ select.field__input {
   }
 
   #page-content .pub-card,
-  #page-content .pub-card__overlay {
-    border-radius: 0 !important;
-  }
-
+  #page-content .pub-card__overlay,
   #page-content .pub-card__img {
     border-radius: 0 !important;
   }
 
-  /* ==================== GRID DE FOTOS - MODAL VER PERFIL ==================== */
+  /* ==================== GRID - MODAL VER PERFIL ==================== */
 
-  /* El modal tiene 24px de padding lateral (no 16), por eso -24px */
   #modal-ver-perfil .pubs-grid {
     margin-left: -24px !important;
     margin-right: -24px !important;
@@ -13939,7 +13936,6 @@ select.field__input {
     border-radius: 0 !important;
   }
 
-  /* Si dentro del modal hay feed-posts (no solo grilla) */
   #modal-ver-perfil .feed-post,
   #modal-ver-perfil .post {
     margin-left: -24px !important;
