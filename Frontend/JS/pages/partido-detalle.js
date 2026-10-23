@@ -30,7 +30,7 @@ import {
    COLORES POR DEPORTE (hero)
    ========================================================= */
 const COLOR_DEPORTE_PARTIDO = {
-  'Fútbol':            { from: '#FF6B4A', to: '#C2410C' },
+  'Fútbol':            { from: '#ffffff', to: '#2b1f19a5' },
   'Fútbol americano':  { from: '#DC2626', to: '#7F1D1D' },
   'Básquetbol':        { from: '#3B82F6', to: '#1E40AF' },
   'Tenis':             { from: '#22C55E', to: '#166534' },
