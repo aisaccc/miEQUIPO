@@ -13,7 +13,7 @@ import { estadoBloqueo } from '../utils/bloqueos.js';
 const CAMPOS_PERFIL_PROPIO = `
   id, nombre, username, email, avatar, bio, edad, pais, ciudad,
   deportes, email_verificado, created_at, last_login,
-  hero_color, stats_hero_base, stats_hero_privadas
+  hero_color, stats_hero_base, stats_hero_privadas, notificaciones_prefs
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
@@ -44,6 +44,7 @@ function formatearPerfilPropio(row, stats = {}) {
     heroColor: row.hero_color || 'navy',
     statsHeroBase: row.stats_hero_base || {},
     statsHeroPrivadas: row.stats_hero_privadas || {},
+    notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true }, // ⚡
     statsHero: {
       partidos:  stats.partidos ?? 0,
       torneos:   stats.torneos  ?? 0,
@@ -214,6 +215,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     heroColor: 'hero_color',
     statsHeroBase: 'stats_hero_base',
     statsHeroPrivadas: 'stats_hero_privadas',
+    notificacionesPrefs: 'notificaciones_prefs', // ⚡ NUEVO
   };
 
   const campos = [];
@@ -223,7 +225,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
   for (const [key, col] of Object.entries(mapaCampos)) {
     if (cambios[key] === undefined) continue;
 
-    if (key === 'statsHeroBase' || key === 'statsHeroPrivadas') {
+    if (key === 'statsHeroBase' || key === 'statsHeroPrivadas' || key === 'notificacionesPrefs') {
       campos.push(`${col} = $${i}::jsonb`);
       valores.push(JSON.stringify(cambios[key]));
     } else {
@@ -231,6 +233,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
       valores.push(cambios[key]);
     }
     i++;
+    
   }
 
   if (campos.length === 0) {

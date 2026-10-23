@@ -730,8 +730,152 @@
       </div>
     </div>
   </div>
+    <!-- ================= MODAL: NOTIFICACIONES ================= -->
+  <div class="modal-backdrop" id="modal-notificaciones">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Notificaciones</h3>
+        <button class="modal__close" data-cerrar-modal="modal-notificaciones">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <p class="text-xs text-muted mb-4">Elegí qué querés recibir en tu correo y en la campanita.</p>
+        <label class="switch mb-4">
+          <input type="checkbox" id="notif-partidos" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Partidos</div>
+            <div class="switch__hint">Inscripciones, aprobaciones y recordatorios.</div>
+          </div>
+        </label>
+        <label class="switch mb-4">
+          <input type="checkbox" id="notif-torneos" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Torneos</div>
+            <div class="switch__hint">Nuevos torneos, cierres de inscripción, etc.</div>
+          </div>
+        </label>
+        <label class="switch mb-4">
+          <input type="checkbox" id="notif-mensajes" checked />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Mensajes</div>
+            <div class="switch__hint">Cuando te escriben por chat o en un canal.</div>
+          </div>
+        </label>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--primary" id="btn-guardar-notif">Guardar preferencias</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: PRIVACIDAD ================= -->
+  <div class="modal-backdrop" id="modal-privacidad">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Privacidad</h3>
+        <button class="modal__close" data-cerrar-modal="modal-privacidad">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <p class="text-xs text-muted mb-4">Ocultá las estadísticas que no querés que vean los demás en tu perfil público.</p>
+        <label class="switch mb-4">
+          <input type="checkbox" id="priv-partidos" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Ocultar partidos jugados</div>
+            <div class="switch__hint">El número aparecerá como "Privado" en tu perfil.</div>
+          </div>
+        </label>
+        <label class="switch mb-4">
+          <input type="checkbox" id="priv-torneos" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Ocultar torneos organizados</div>
+            <div class="switch__hint">Los demás no verán cuántos torneos creaste.</div>
+          </div>
+        </label>
+        <label class="switch mb-4">
+          <input type="checkbox" id="priv-equipos" />
+          <span class="switch__slider"></span>
+          <div>
+            <div class="switch__label">Ocultar equipos</div>
+            <div class="switch__hint">Oculta en cuántos equipos estás.</div>
+          </div>
+        </label>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--primary" id="btn-guardar-privacidad">Guardar privacidad</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: AYUDA ================= -->
+  <div class="modal-backdrop" id="modal-ayuda">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Centro de Ayuda</h3>
+        <button class="modal__close" data-cerrar-modal="modal-ayuda">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <details style="margin-bottom:12px; cursor:pointer;">
+          <summary style="font-weight:600; padding:8px 0; color:var(--color-text);">¿Cómo creo un equipo?</summary>
+          <p class="text-sm text-muted" style="padding:8px 0;">Andá a "Mi Equipo" en el menú lateral y hacé clic en "Crear equipo". Vas a ser el capitán automáticamente.</p>
+        </details>
+        <details style="margin-bottom:12px; cursor:pointer;">
+          <summary style="font-weight:600; padding:8px 0; color:var(--color-text);">¿Cómo me inscribo a un torneo?</summary>
+          <p class="text-sm text-muted" style="padding:8px 0;">Entrá a "Torneos", buscá uno que tenga el cartel "Inscripción abierta" y hacé clic en "Ver detalles". Ahí vas a encontrar el botón para inscribirte (o postular tu equipo).</p>
+        </details>
+        <details style="margin-bottom:12px; cursor:pointer;">
+          <summary style="font-weight:600; padding:8px 0; color:var(--color-text);">¿Por qué no me deja inscribirme a un partido?</summary>
+          <p class="text-sm text-muted" style="padding:8px 0;">Puede ser por 3 razones: el partido está lleno, ya pasó la fecha, o el organizador requiere aprobación y tenés que "Postularte" en vez de inscribirte directo.</p>
+        </details>
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--color-border); text-align:center;">
+          <p class="text-sm text-muted mb-4">¿No encontrás lo que buscás?</p>
+          <a href="mailto:soporte@miequipo.cl" class="btn btn--ghost btn--sm">Contactar a soporte</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ELIMINAR CUENTA ================= -->
+  <div class="modal-backdrop" id="modal-eliminar-cuenta">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal__header">
+        <h3 class="modal__title" style="color:var(--color-danger)">Eliminar cuenta</h3>
+        <button class="modal__close" data-cerrar-modal="modal-eliminar-cuenta">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="aviso-aprobacion show" style="background:#FEE2E2; border-color:#FCA5A5; color:#991B1B; margin-bottom:16px;">
+          <span class="aviso-aprobacion__icon">⚠️</span>
+          <div><strong>Esta acción es permanente.</strong> Se borrarán tus datos y no podrás volver a iniciar sesión con esta cuenta.</div>
+        </div>
+        
+        <div class="field">
+          <label class="field__label" for="eliminar-pass">Contraseña actual</label>
+          <input type="password" id="eliminar-pass" class="field__input" placeholder="••••••••" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="eliminar-texto">Escribí <strong>ELIMINAR</strong> para confirmar</label>
+          <input type="text" id="eliminar-texto" class="field__input" placeholder="ELIMINAR" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" data-cerrar-modal="modal-eliminar-cuenta">Cancelar</button>
+        <button class="btn btn--danger" id="btn-confirmar-eliminar-cuenta">Eliminar cuenta</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="JS/main.js?v=99"></script>
+  <script type="module" src="JS/main.js?v=100"></script>
 </body>
 </html>

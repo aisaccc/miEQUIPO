@@ -127,7 +127,11 @@ const statsHeroPrivadasSchema = z.object({
   torneos:  z.boolean().optional(),
   equipos:  z.boolean().optional(),
 }).strict();
-
+const notificacionesPrefsSchema = z.object({
+  partidos: z.boolean().optional(),
+  torneos:  z.boolean().optional(),
+  mensajes: z.boolean().optional(),
+}).strict();
 /* ---------- PATCH /api/usuarios/me ---------- */
 export const schemaActualizarPerfil = z.object({
   nombre: nombreValido.optional(),
@@ -141,6 +145,7 @@ export const schemaActualizarPerfil = z.object({
   heroColor: heroColorValido.optional(),
   statsHeroBase: statsHeroBaseSchema.optional(),
   statsHeroPrivadas: statsHeroPrivadasSchema.optional(),
+  notificacionesPrefs: notificacionesPrefsSchema.optional(), // ⚡ NUEVO
 }).strict();
 
 /* ---------- PATCH /api/usuarios/me/deportes ---------- */

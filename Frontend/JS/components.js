@@ -917,7 +917,7 @@ export async function initBadgeMensajes() {
 }
 
 /* =========================================================
-   CONFIGURACIÓN (sin cambios funcionales)
+   CONFIGURACIÓN (con Notificaciones, Privacidad y Eliminar Cuenta)
    ========================================================= */
 export function initConfiguracion() {
   document.querySelectorAll('[data-toggle-pass]').forEach(btn => {
@@ -936,8 +936,14 @@ export function initConfiguracion() {
     btn.addEventListener('click', () => {
       const accion = btn.dataset.configAction;
       cerrarModal('modal-configuracion');
+      
       if (accion === 'perfil') window.location.hash = '#/perfil';
-      if (accion === 'editar-perfil') { window.location.hash = '#/perfil'; setTimeout(() => { document.getElementById('btn-editar-perfil')?.click(); }, 400); }
+      
+      if (accion === 'editar-perfil') { 
+        window.location.hash = '#/perfil'; 
+        setTimeout(() => { document.getElementById('btn-editar-perfil')?.click(); }, 400); 
+      }
+      
       if (accion === 'cambiar-pass') {
         document.getElementById('pass-actual').value = '';
         document.getElementById('pass-nueva').value = '';
@@ -946,14 +952,32 @@ export function initConfiguracion() {
         document.querySelectorAll('[data-toggle-pass]').forEach(b => { b.innerHTML = ICONOS.ojo; b.title = 'Ver contraseña'; });
         abrirModal('modal-cambiar-pass');
       }
-      if (accion === 'notificaciones') toast('Notificaciones: próximamente', 'info');
-      if (accion === 'privacidad') toast('Privacidad: próximamente', 'info');
-      if (accion === 'ayuda') toast('Ayuda: próximamente', 'info');
-      if (accion === 'cerrar-sesion') { if (confirm('¿Cerrar sesión?')) { cerrarSesion(); window.location.href = 'index.html'; } }
+      
+      if (accion === 'notificaciones') {
+        cargarPreferenciasNotif();
+        abrirModal('modal-notificaciones');
+      }
+      
+      if (accion === 'privacidad') {
+        cargarPreferenciasPrivacidad();
+        abrirModal('modal-privacidad');
+      }
+      
+      if (accion === 'ayuda') {
+        abrirModal('modal-ayuda');
+      }
+      
+      if (accion === 'cerrar-sesion') { 
+        if (confirm('¿Cerrar sesión?')) { 
+          cerrarSesion(); 
+          window.location.href = 'index.html'; 
+        } 
+      }
+      
       if (accion === 'eliminar-cuenta') {
-        if (!confirm('⚠️ ¿Eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
-        if (!confirm('⚠️ Última confirmación: ¿estás seguro?')) return;
-        toast('Eliminar cuenta: próximamente', 'info');
+        document.getElementById('eliminar-pass').value = '';
+        document.getElementById('eliminar-texto').value = '';
+        abrirModal('modal-eliminar-cuenta');
       }
     });
   });
@@ -993,3 +1017,121 @@ export function initConfiguracion() {
     }
   });
 }
+
+/* =========================================================
+   MODALES DE CONFIGURACIÓN (Notificaciones, Privacidad, Ayuda, Eliminar)
+   ========================================================= */
+
+async function cargarPreferenciasNotif() {
+  try {
+    const { obtenerMiPerfil } = await import('./services/usuarios.service.js');
+    const u = await obtenerMiPerfil();
+    const prefs = u.notificacionesPrefs || { partidos: true, torneos: true, mensajes: true };
+    
+    document.getElementById('notif-partidos').checked = prefs.partidos !== false;
+    document.getElementById('notif-torneos').checked = prefs.torneos !== false;
+    document.getElementById('notif-mensajes').checked = prefs.mensajes !== false;
+  } catch (err) {
+    console.warn('No se pudieron cargar las notificaciones', err);
+  }
+}
+
+document.getElementById('btn-guardar-notif')?.addEventListener('click', async () => {
+  const btn = document.getElementById('btn-guardar-notif');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
+  try {
+    const { actualizarMiPerfil } = await import('./services/usuarios.service.js');
+    await actualizarMiPerfil({
+      notificacionesPrefs: {
+        partidos: document.getElementById('notif-partidos').checked,
+        torneos: document.getElementById('notif-torneos').checked,
+        mensajes: document.getElementById('notif-mensajes').checked,
+      }
+    });
+    
+    toast('Preferencias de notificaciones guardadas', 'success');
+    cerrarModal('modal-notificaciones');
+  } catch (err) {
+    toast(err.message || 'Error al guardar notificaciones', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar preferencias';
+  }
+});
+
+async function cargarPreferenciasPrivacidad() {
+  try {
+    const { obtenerMiPerfil } = await import('./services/usuarios.service.js');
+    const u = await obtenerMiPerfil();
+    const privadas = u.statsHeroPrivadas || {};
+    
+    document.getElementById('priv-partidos').checked = !!privadas.partidos;
+    document.getElementById('priv-torneos').checked = !!privadas.torneos;
+    document.getElementById('priv-equipos').checked = !!privadas.equipos;
+  } catch (err) {
+    console.warn('No se pudieron cargar las preferencias de privacidad', err);
+  }
+}
+
+document.getElementById('btn-guardar-privacidad')?.addEventListener('click', async () => {
+  const btn = document.getElementById('btn-guardar-privacidad');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
+  try {
+    const { actualizarMiPerfil } = await import('./services/usuarios.service.js');
+    await actualizarMiPerfil({
+      statsHeroPrivadas: {
+        partidos: document.getElementById('priv-partidos').checked,
+        torneos: document.getElementById('priv-torneos').checked,
+        equipos: document.getElementById('priv-equipos').checked,
+      }
+    });
+    
+    toast('Privacidad actualizada', 'success');
+    cerrarModal('modal-privacidad');
+  } catch (err) {
+    toast(err.message || 'Error al guardar privacidad', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar privacidad';
+  }
+});
+
+document.getElementById('btn-confirmar-eliminar-cuenta')?.addEventListener('click', async () => {
+  const pass = document.getElementById('eliminar-pass').value;
+  const texto = document.getElementById('eliminar-texto').value.trim();
+  
+  if (!pass) return toast('Ingresá tu contraseña', 'error');
+  if (texto !== 'ELIMINAR') return toast('Escribí exactamente "ELIMINAR"', 'error');
+
+  const btn = document.getElementById('btn-confirmar-eliminar-cuenta');
+  btn.disabled = true;
+  btn.textContent = 'Eliminando...';
+
+  try {
+    const { eliminarMiCuenta } = await import('./services/usuarios.service.js');
+    await eliminarMiCuenta(pass, texto);
+    
+    toast('Cuenta eliminada. Cerrando sesión...', 'success');
+    setTimeout(() => {
+      cerrarSesion();
+      window.location.href = 'index.html';
+    }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'No se pudo eliminar la cuenta', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Eliminar cuenta';
+  }
+});
+
+// Cerrar modales haciendo clic fuera
+document.querySelectorAll('.modal-backdrop').forEach(bg => {
+  bg.addEventListener('click', (e) => {
+    if (e.target === bg) cerrarModal(bg.id);
+  });
+});
