@@ -126,6 +126,7 @@ export async function init() {
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
   let sistemaClasificacionSeleccionado = 'simple';
+  let filtroTipoActual = 'todos'; // ⚡ NUEVO
   let esEdicion = false;
 
   /* ---------- FECHA DEL DÍA EN EL HERO ---------- */
@@ -178,7 +179,8 @@ export async function init() {
   const panelCreados    = document.getElementById('panel-torneos-creados');
   const panelInscritos  = document.getElementById('panel-torneos-inscritos');
   const subtabs         = document.querySelectorAll('[data-tab-torneos]');
-  const chips           = document.querySelectorAll('[data-filtro-torneo]');
+  const selectTipoTorneo   = document.getElementById('select-filtro-tipo-torneo');
+  const selectEstadoTorneo = document.getElementById('select-filtro-estado-torneo');
   const btnCrear        = document.getElementById('btn-crear-torneo-hero');
   const inputBuscar     = document.getElementById('buscar-torneos');
 
@@ -312,11 +314,10 @@ export async function init() {
   function renderDisponibles() {
     let lista = torneos;
 
-    if (filtroActual === 'individual')  lista = lista.filter(t => t.tipoParticipacion === 'individual');
-    if (filtroActual === 'equipo')      lista = lista.filter(t => t.tipoParticipacion === 'equipo');
-    if (filtroActual === 'inscripcion') lista = lista.filter(t => t.estado === 'inscripcion');
-    if (filtroActual === 'en_curso')    lista = lista.filter(t => t.estado === 'en_curso');
-    if (filtroActual === 'gratis')      lista = lista.filter(t => t.precio === 0);
+    if (filtroTipoActual === 'individual') lista = lista.filter(t => t.tipoParticipacion === 'individual');
+    if (filtroTipoActual === 'equipo')     lista = lista.filter(t => t.tipoParticipacion === 'equipo');
+    if (filtroActual === 'inscripcion')    lista = lista.filter(t => t.estado === 'inscripcion');
+    if (filtroActual === 'gratis')         lista = lista.filter(t => t.precio === 0);
 
     if (filtroBusqueda.trim()) {
       const q = filtroBusqueda.toLowerCase().trim();
@@ -471,13 +472,15 @@ export async function init() {
   }
   subtabs.forEach(st => st.addEventListener('click', () => cambiarTab(st.dataset.tabTorneos)));
 
-  function handleChip(e) {
-    chips.forEach(c => c.classList.remove('chip--active'));
-    e.currentTarget.classList.add('chip--active');
-    filtroActual = e.currentTarget.dataset.filtroTorneo;
+  selectTipoTorneo?.addEventListener('change', (e) => {
+    filtroTipoActual = e.target.value;
     renderDisponibles();
-  }
-  chips.forEach(c => c.addEventListener('click', handleChip));
+  });
+
+  selectEstadoTorneo?.addEventListener('change', (e) => {
+    filtroActual = e.target.value;
+    renderDisponibles();
+  });
 
   inputBuscar?.addEventListener('input', (e) => {
     filtroBusqueda = e.target.value;
@@ -909,7 +912,9 @@ export async function init() {
       cerrarModal('modal-crear-torneo');
 
       filtroActual = 'todos';
-      chips.forEach(c => c.classList.toggle('chip--active', c.dataset.filtroTorneo === 'todos'));
+      filtroTipoActual = 'todos';
+      if (selectEstadoTorneo) selectEstadoTorneo.value = 'todos';
+      if (selectTipoTorneo) selectTipoTorneo.value = 'todos';
       await recargarTorneos();
       cambiarTab('creados');
     } catch (err) {
@@ -1041,7 +1046,6 @@ export async function init() {
   await renderTodo();
 
   return () => {
-    chips.forEach(c => c.removeEventListener('click', handleChip));
     chipsFechaTorneo.forEach(chip => chip.removeEventListener('click', handleChipFechaTorneoClick));
     inputFechaDesdeTorneo?.removeEventListener('change', handleInputDesdeTorneoChange);
     inputFechaHastaTorneo?.removeEventListener('change', handleInputHastaTorneoChange);

@@ -84,8 +84,8 @@ export async function init() {
   const panelCreados     = document.getElementById('panel-creados');
   const panelInscritos   = document.getElementById('panel-inscritos');
   const subtabs          = document.querySelectorAll('[data-tab-partidos]');
-  const chips            = document.querySelectorAll('[data-filtro]');
-  const chipsTipo        = document.querySelectorAll('[data-filtro-tipo]');
+  const selectEstado     = document.getElementById('select-filtro-estado');
+  const selectTipo       = document.getElementById('select-filtro-tipo');
   const btnCrear         = document.getElementById('btn-crear-partido');
   const inputBuscar      = document.getElementById('buscar-partidos');
 
@@ -599,21 +599,15 @@ export async function init() {
 
   subtabs.forEach(st => st.addEventListener('click', () => cambiarTab(st.dataset.tabPartidos)));
 
-  function handleChip(e) {
-    chips.forEach(c => c.classList.remove('chip--active'));
-    e.currentTarget.classList.add('chip--active');
-    filtroActual = e.currentTarget.dataset.filtro;
+  selectEstado?.addEventListener('change', (e) => {
+    filtroActual = e.target.value;
     renderDisponibles();
-  }
-  chips.forEach(chip => chip.addEventListener('click', handleChip));
+  });
 
-  function handleChipTipo(e) {
-    chipsTipo.forEach(c => c.classList.remove('chip--active'));
-    e.currentTarget.classList.add('chip--active');
-    filtroTipoActual = e.currentTarget.dataset.filtroTipo;
+  selectTipo?.addEventListener('change', (e) => {
+    filtroTipoActual = e.target.value;
     renderDisponibles();
-  }
-  chipsTipo.forEach(chip => chip.addEventListener('click', handleChipTipo));
+  });
 
   inputBuscar?.addEventListener('input', (e) => {
     filtroBusqueda = e.target.value;
@@ -1022,8 +1016,8 @@ export async function init() {
 
       filtroActual = 'todos';
       filtroTipoActual = 'todos';
-      chips.forEach(c => c.classList.toggle('chip--active', c.dataset.filtro === 'todos'));
-      chipsTipo.forEach(c => c.classList.toggle('chip--active', c.dataset.filtroTipo === 'todos'));
+      if (selectEstado) selectEstado.value = 'todos';
+      if (selectTipo) selectTipo.value = 'todos';
 
       renderDisponibles();
       renderCreados();
