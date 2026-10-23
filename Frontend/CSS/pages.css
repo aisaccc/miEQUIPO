@@ -13530,3 +13530,20 @@ select.field__input {
   color: var(--color-text) !important;
   border-color: var(--color-border);
 }
+/* =========================================================
+   ⚡ FIX: TARJETAS RECTANGULARES
+   ========================================================= */
+.match-card, .tournament-card, .grupo-card, .pd-card, .gd-card, 
+.composer, .feed-post, .pd-hero, .td-hero, .gd-hero {
+  border-radius: var(--radius-xl) !important; /* Usa los 12px que definimos arriba */
+}
+
+/* Inputs de búsqueda y textos */
+.grupo-toolbar__input, .composer__input, #buscar-partidos, #buscar-torneos {
+  border-radius: var(--radius-md) !important;
+}
+
+/* Fotos y avatares cuadrados en las tarjetas (opcional) */
+.match-card__sport, .tournament-card__sport {
+  border-radius: var(--radius-lg) !important; /* Deja de ser un círculo perfecto y pasa a ser un cuadrado redondeado */
+}

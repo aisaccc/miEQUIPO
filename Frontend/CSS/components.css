@@ -1226,3 +1226,16 @@ select.field__input {
     height: 36px;
   }
 }
+/* =========================================================
+   ⚡ FIX: ESTILO RECTANGULAR GLOBAL
+   ========================================================= */
+.btn, .chip, .badge, .dropdown__tab, .subtab, .feed-post__btn, .pd-hero__action {
+  border-radius: var(--radius-md) !important; /* Fuerza a que no sean píldoras */
+}
+
+/* Las barras de progreso quedan rectangulares pero sutiles */
+.match-card__progress, .match-card__progress-bar, 
+.tournament-card__progress, .tournament-card__progress-bar,
+.torneo-inscripcion-panel__progreso, .torneo-inscripcion-panel__progreso-bar {
+  border-radius: 4px !important;
+}
