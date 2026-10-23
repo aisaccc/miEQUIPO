@@ -13487,3 +13487,40 @@ select.field__input {
 .campo-fecha-btn:hover:not(.campo-fecha-btn--active) {
   background: rgba(0,0,0,0.05);
 }
+/* ⚡ NUEVO: Selects de filtros (Estado / Tipo) */
+#select-filtro-estado,
+#select-filtro-tipo,
+#select-filtro-tipo-torneo,
+#select-filtro-estado-torneo {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border: 1.5px solid var(--color-border);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+#select-filtro-estado:hover,
+#select-filtro-tipo:hover,
+#select-filtro-tipo-torneo:hover,
+#select-filtro-estado-torneo:hover {
+  border-color: var(--color-primary);
+}
+
+#select-filtro-estado:focus,
+#select-filtro-tipo:focus,
+#select-filtro-tipo-torneo:focus,
+#select-filtro-estado-torneo:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.12);
+}
+
+/* Modo oscuro */
+[data-theme="dark"] #select-filtro-estado,
+[data-theme="dark"] #select-filtro-tipo,
+[data-theme="dark"] #select-filtro-tipo-torneo,
+[data-theme="dark"] #select-filtro-estado-torneo {
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border);
+}
