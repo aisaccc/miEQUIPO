@@ -7,7 +7,27 @@ import { pool } from '../config/db.js';
 /* =========================================================
    HELPERS
    ========================================================= */
-
+/* ---------- MAPEO DE TIPOS A CATEGORÍAS ---------- */
+function categoriaNotif(tipo) {
+  const partidos = [
+    'inscripcion', 'salida', 'postulacion', 'aprobado', 'rechazado', 
+    'confirmacion_partido', 'confirmacion_aceptada', 'confirmacion_rechazada', 
+    'partido_confirmado', 'partido_revertido', 'nuevo_interesado', 
+    'jugador_salio', 'expulsado'
+  ];
+  const torneos = [
+    'cierre', 'edicion', 'cancelacion', 'equipo_eliminado', 'torneo_eliminado', 
+    'invitacion', 'invitacion_organizador', 'respuesta_invitacion_organizador'
+  ];
+  const mensajes = ['mensaje']; // Por si a futuro agregás notifs de mensajes
+  
+  if (partidos.includes(tipo)) return 'partidos';
+  if (torneos.includes(tipo)) return 'torneos';
+  if (mensajes.includes(tipo)) return 'mensajes';
+  
+  // Si es de amigos (solicitud_amistad, etc.), lo dejamos pasar siempre
+  return null; 
+}
 function formatearNotificacion(row) {
   return {
     id: row.id,
@@ -170,6 +190,19 @@ export async function crearNotificacion(usuarioId, tipo, mensaje, link = null) {
     return null;
   }
 
+  // ⚡ Verificar si el usuario quiere esta categoría
+  const cat = categoriaNotif(tipo);
+  if (cat) {
+    const { rows } = await pool.query(
+      `SELECT notificaciones_prefs->>$1 AS pref FROM usuarios WHERE id = $2`,
+      [cat, usuarioId]
+    );
+    // Si la preferencia es exactamente 'false', abortamos el envío
+    if (rows[0] && rows[0].pref === 'false') {
+      return null;
+    }
+  }
+
   const { rows } = await pool.query(
     `INSERT INTO notificaciones (usuario_id, tipo, mensaje, link)
      VALUES ($1, $2, $3, $4)
@@ -188,11 +221,30 @@ export async function crearNotificacionMultiple(usuarioIds, tipo, mensaje, link 
     return [];
   }
 
+  // ⚡ Filtrar a los usuarios que tienen la notificación desactivada
+  const cat = categoriaNotif(tipo);
+  let idsFiltrados = usuarioIds;
+
+  if (cat) {
+    const { rows } = await pool.query(
+      `SELECT id, notificaciones_prefs->>$1 AS pref FROM usuarios WHERE id = ANY($2::uuid[])`,
+      [cat, usuarioIds]
+    );
+    
+    // Guardamos los IDs de los que tienen la pref en 'false'
+    const idsBloqueados = rows.filter(r => r.pref === 'false').map(r => r.id);
+    
+    // Filtramos el array original
+    idsFiltrados = usuarioIds.filter(id => !idsBloqueados.includes(id));
+  }
+
+  if (idsFiltrados.length === 0) return [];
+
   const values = [];
   const placeholders = [];
   let i = 1;
 
-  usuarioIds.forEach(uid => {
+  idsFiltrados.forEach(uid => {
     placeholders.push(`($${i}, $${i + 1}, $${i + 2}, $${i + 3})`);
     values.push(uid, tipo, mensaje, link);
     i += 4;

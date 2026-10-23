@@ -88,6 +88,9 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       <div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" /></div>
     ` : '';
 
+    // ⚡ Verificamos si es pública para mostrar el botón de compartir
+    const esPublica = p.privacidad === 'publico' || p.privacidad === undefined;
+
     return `
       <article class="feed-post" data-pub-id="${p.id}">
         <div class="feed-post__header">
@@ -120,6 +123,12 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Comentar
           </button>
+          ${esPublica ? `
+          <button class="feed-post__btn" data-share="${p.id}">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Compartir
+          </button>
+          ` : ''}
         </div>
       </article>
     `;
@@ -160,9 +169,44 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
     });
   });
 
+  // ⚡ NUEVO: Lógica para compartir
+  contenedor.querySelectorAll('[data-share]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.share;
+      const pub = publicaciones.find(p => String(p.id) === String(id));
+      if (!pub) return;
+
+      // Construimos el enlace (redirige al inicio para que se registren)
+      const appUrl = window.location.origin + window.location.pathname + '#/inicio';
+      const text = pub.contenido ? `"${pub.contenido}" - Publicado por ${pub.autor?.nombre} en MiEquipo` : `Publicación de ${pub.autor?.nombre} en MiEquipo`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'MiEquipo',
+            text: text,
+            url: appUrl
+          });
+        } catch (err) {
+          console.warn('Error al compartir', err);
+        }
+      } else {
+        // Fallback para PC (copiar al portapapeles)
+        try {
+          await navigator.clipboard.writeText(`${text}\n\nVer en: ${appUrl}`);
+          toast('Enlace copiado al portapapeles', 'success');
+        } catch (err) {
+          toast('No se pudo copiar el enlace', 'error');
+        }
+      }
+    });
+  });
+
   contenedor.querySelectorAll('.feed-post').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-like]') || e.target.closest('[data-ver-pub]') || e.target.closest('[data-menu-feed]') || e.target.closest('[data-autor-id]') || e.target.closest('.feed-post__contexto')) return;
+      // ⚡ Agregamos [data-share] para que no abra el modal si tocás compartir
+      if (e.target.closest('[data-like]') || e.target.closest('[data-ver-pub]') || e.target.closest('[data-menu-feed]') || e.target.closest('[data-autor-id]') || e.target.closest('.feed-post__contexto') || e.target.closest('[data-share]')) return;
       abrirModalVerPublicacion(card.dataset.pubId, publicaciones);
     });
   });
