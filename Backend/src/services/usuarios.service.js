@@ -20,6 +20,7 @@ const CAMPOS_PERFIL_PROPIO = `
 const CAMPOS_PERFIL_PUBLICO = `
   id, nombre, username, avatar, bio, edad, pais, ciudad,
   deportes, created_at,
+  hero_color,
   stats_hero_base, stats_hero_privadas
 `;
 
@@ -84,6 +85,7 @@ function formatearPerfilPublico(row, stats = {}) {
     ciudad: row.ciudad,
     deportes,
     createdAt: row.created_at,
+    heroColor: row.hero_color || 'navy',
     statsHero,
     statsHeroPrivadas: privadas,
   };
