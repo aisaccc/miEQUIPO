@@ -22,6 +22,8 @@ import {
   listarMensajesDeCanal as listarMensajesDeCanalAPI,
   enviarMensajeACanal as enviarMensajeACanalAPI,
   marcarCanalLeido as marcarCanalLeidoAPI,
+  eliminarCanalParaMi as eliminarCanalParaMiAPI,   // ⚡ NUEVO
+  vaciarCanalParaMi as vaciarCanalParaMiAPI,       // ⚡ NUEVO
 } from '../services/mensajes.service.js';
 
 import {
@@ -1502,6 +1504,10 @@ export async function init() {
 
   async function recargarPaneles() {
     await recargarGrupos();
+    await cargarCanales();                                          // ⚡ FIX: refrescar íconos
+    if (panelChat?.classList.contains('subpanel--active')) {
+      renderListaCanales();                                         // ⚡ FIX: si estoy en chat, re-renderizar
+    }
     await renderPanelEquipo();
     await renderPanelComunidad();
   }
@@ -1569,12 +1575,113 @@ export async function init() {
               ${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}
             </div>
           </div>
+          <button class="conv-item__menu-btn" data-menu-canal="${c.id}" title="Opciones" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="5" r="1"/>
+              <circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
+          <div class="conv-item__dropdown hidden" data-dropdown-canal="${c.id}">
+            <button class="conv-item__dropdown-item" type="button" data-accion-canal="vaciar" data-canal-id="${c.id}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Vaciar chat
+            </button>
+            <button class="conv-item__dropdown-item conv-item__dropdown-item--danger" type="button" data-accion-canal="eliminar" data-canal-id="${c.id}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Eliminar chat
+            </button>
+          </div>
         </div>
       `;
     }).join('');
 
+    // Click en el chat → abrir
     listaCanalesEl.querySelectorAll('[data-canal]').forEach(el => {
-      el.addEventListener('click', () => abrirCanalGlobal(el.dataset.canal));
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-menu-canal]')) return;
+        if (e.target.closest('[data-accion-canal]')) return;
+        abrirCanalGlobal(el.dataset.canal);
+      });
+    });
+
+    // Toggle dropdown ⋯
+    listaCanalesEl.querySelectorAll('[data-menu-canal]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const canalId = btn.dataset.menuCanal;
+        const dropdown = listaCanalesEl.querySelector(`[data-dropdown-canal="${canalId}"]`);
+        const estaAbierto = dropdown && !dropdown.classList.contains('hidden');
+
+        listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
+
+        if (dropdown && !estaAbierto) {
+          dropdown.classList.remove('hidden');
+        }
+      });
+    });
+
+    // Cerrar dropdown al hacer click fuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-menu-canal]') && !e.target.closest('[data-dropdown-canal]')) {
+        listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
+      }
+    });
+
+    // Acciones del dropdown
+    listaCanalesEl.querySelectorAll('[data-accion-canal]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const accion = btn.dataset.accionCanal;
+        const canalId = btn.dataset.canalId;
+        listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
+
+        if (accion === 'vaciar') {
+          if (!confirm('¿Vaciar este chat? Los mensajes se van a ocultar SOLO para ti. Los demás miembros los van a seguir viendo.')) return;
+          try {
+            await vaciarCanalParaMiAPI(canalId);
+            toast('Chat vaciado', 'success');
+
+            // Si es el canal activo, refrescar el panel de mensajes
+            if (canalActualId === canalId) {
+              await refrescarMensajesGlobal(canalId);
+            }
+
+            await cargarCanales();
+            renderListaCanales();
+          } catch (err) {
+            toast(err.message || 'No se pudo vaciar el chat', 'error');
+          }
+        }
+
+        if (accion === 'eliminar') {
+          if (!confirm('¿Eliminar este chat de tu lista? Solo desaparece para ti. Si llega un mensaje nuevo, vuelve a aparecer.')) return;
+          try {
+            await eliminarCanalParaMiAPI(canalId);
+            toast('Chat eliminado', 'success');
+
+            // Si es el canal activo, limpiar el panel
+            if (canalActualId === canalId) {
+              canalActualId = null;
+              renderEmptyPanelCanal();
+              panelCanalEl?.classList.remove('chat-layout__panel--abierto');
+              document.querySelector('.chat-layout__list')?.classList.remove('chat-layout__list--oculto');
+            }
+
+            await cargarCanales();
+            renderListaCanales();
+          } catch (err) {
+            toast(err.message || 'No se pudo eliminar el chat', 'error');
+          }
+        }
+      });
     });
   }
 
@@ -1601,6 +1708,7 @@ export async function init() {
     }
 
     await cargarCanales();
+    renderListaCanales();     // ⚡ FIX: actualizar el marcado naranja al instante
     
     // ⚡ ACÁ ESTÁ EL FIX: Forzamos el render del panel del canal
     await renderPanelCanalGlobal(canalId);

@@ -38,5 +38,10 @@ router.get('/canales/:id', mensajesController.obtenerCanal);
 router.get('/canales/:id/mensajes', mensajesController.listarMensajesDeCanal);
 router.post('/canales/:id/mensajes', mensajesController.enviarMensajeACanal);
 router.patch('/canales/:id/leidos', mensajesController.marcarCanalLeido);
+/* =========================================================
+   CANALES — acciones por usuario
+   ========================================================= */
+router.delete('/canales/:id/para-mi', mensajesController.eliminarCanalParaMi);
+router.post('/canales/:id/vaciar-para-mi', mensajesController.vaciarCanalParaMi);
 
 export default router;

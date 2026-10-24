@@ -224,3 +224,28 @@ export async function marcarCanalLeido(req, res, next) {
     next(err);
   }
 }
+/* =========================================================
+   DELETE /api/mensajes/canales/:id/para-mi
+   ========================================================= */
+export async function eliminarCanalParaMi(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const resultado = await mensajesService.eliminarCanalParaMi(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   POST /api/mensajes/canales/:id/vaciar-para-mi
+   ========================================================= */
+export async function vaciarCanalParaMi(req, res, next) {
+  try {
+    const id = validar(schemaCanalIdParam, req.params.id);
+    const resultado = await mensajesService.vaciarCanalParaMi(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}

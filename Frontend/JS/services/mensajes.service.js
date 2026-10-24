@@ -128,3 +128,22 @@ export async function enviarMensajeACanal(canalId, texto, imagen = null) {
 export async function marcarCanalLeido(canalId) {
   return api.patch(`/mensajes/canales/${canalId}/leidos`, {});
 }
+/* =========================================================
+   CANALES — acciones por usuario
+   ========================================================= */
+
+/**
+ * Elimina el chat de MI lista (soft delete).
+ * Los demás miembros siguen viéndolo. Si llega un mensaje nuevo, vuelve a aparecer.
+ */
+export async function eliminarCanalParaMi(canalId) {
+  return api.delete(`/mensajes/canales/${canalId}/para-mi`);
+}
+
+/**
+ * Vacía el chat SOLO para mí.
+ * Los mensajes anteriores a este momento se ocultan. Los nuevos aparecen.
+ */
+export async function vaciarCanalParaMi(canalId) {
+  return api.post(`/mensajes/canales/${canalId}/vaciar-para-mi`, {});
+}

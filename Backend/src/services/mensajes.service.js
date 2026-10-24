@@ -467,7 +467,10 @@ export async function contarNoLeidos(usuarioId) {
 export async function listarCanales(usuarioId) {
   const { rows } = await pool.query(
     `SELECT
-       c.id, c.tipo, c.ref_id, c.nombre, c.icono, c.created_at,
+       c.id, c.tipo, c.ref_id,
+       COALESCE(g.nombre, c.nombre) AS nombre,
+       COALESCE(g.escudo, c.icono) AS icono,
+       c.created_at,
        (SELECT COUNT(*)::int FROM canal_miembros cm2 WHERE cm2.canal_id = c.id) AS total_miembros,
        m.id AS ultimo_mensaje_id, m.texto AS ultimo_mensaje_texto,
        m.imagen AS ultimo_mensaje_imagen, m.created_at AS ultimo_mensaje_fecha,
@@ -476,6 +479,7 @@ export async function listarCanales(usuarioId) {
          SELECT COUNT(*)::int FROM mensajes m2
          WHERE m2.canal_id = c.id
            AND m2.autor_id != $1
+           AND m2.created_at > COALESCE(ceu.vaciado_hasta, '1970-01-01'::timestamptz)
            AND NOT EXISTS (
              SELECT 1 FROM mensaje_lecturas ml
              WHERE ml.mensaje_id = m2.id AND ml.usuario_id = $1
@@ -484,14 +488,28 @@ export async function listarCanales(usuarioId) {
      FROM canales c
      JOIN canal_miembros cm
        ON cm.canal_id = c.id AND cm.usuario_id = $1
+     LEFT JOIN canales_estado_usuario ceu
+       ON ceu.canal_id = c.id AND ceu.usuario_id = $1
+     LEFT JOIN grupos g
+       ON c.tipo IN ('equipo', 'comunidad', 'grupo')
+       AND g.id::text = c.ref_id::text
      LEFT JOIN LATERAL (
        SELECT id, texto, imagen, created_at, autor_id
        FROM mensajes
        WHERE canal_id = c.id
+         AND created_at > COALESCE(ceu.vaciado_hasta, '1970-01-01'::timestamptz)
        ORDER BY created_at DESC
        LIMIT 1
      ) m ON TRUE
      LEFT JOIN usuarios um ON um.id = m.autor_id
+     WHERE
+       ceu.oculto_desde IS NULL
+       OR EXISTS (
+         SELECT 1 FROM mensajes m3
+         WHERE m3.canal_id = c.id
+           AND m3.created_at > ceu.oculto_desde
+           AND m3.autor_id != $1
+       )
      ORDER BY COALESCE(m.created_at, c.created_at) DESC`,
     [usuarioId]
   );
@@ -518,18 +536,27 @@ export async function obtenerCanal(canalId, usuarioId) {
 
   const { rows } = await pool.query(
     `SELECT
-       c.id, c.tipo, c.ref_id, c.nombre, c.icono, c.created_at,
+       c.id, c.tipo, c.ref_id,
+       COALESCE(g.nombre, c.nombre) AS nombre,
+       COALESCE(g.escudo, c.icono) AS icono,
+       c.created_at,
        (SELECT COUNT(*)::int FROM canal_miembros cm2 WHERE cm2.canal_id = c.id) AS total_miembros,
        (
          SELECT COUNT(*)::int FROM mensajes m2
          WHERE m2.canal_id = c.id
            AND m2.autor_id != $2
+           AND m2.created_at > COALESCE(ceu.vaciado_hasta, '1970-01-01'::timestamptz)
            AND NOT EXISTS (
              SELECT 1 FROM mensaje_lecturas ml
              WHERE ml.mensaje_id = m2.id AND ml.usuario_id = $2
            )
        ) AS no_leidos
      FROM canales c
+     LEFT JOIN canales_estado_usuario ceu
+       ON ceu.canal_id = c.id AND ceu.usuario_id = $2
+     LEFT JOIN grupos g
+       ON c.tipo IN ('equipo', 'comunidad', 'grupo')
+       AND g.id::text = c.ref_id::text
      WHERE c.id = $1`,
     [canalId, usuarioId]
   );
@@ -561,9 +588,14 @@ export async function listarMensajesDeCanal(canalId, usuarioId, opciones = {}) {
      FROM mensajes m
      JOIN usuarios u ON u.id = m.autor_id
      WHERE m.canal_id = $1
+       AND m.created_at > COALESCE(
+         (SELECT vaciado_hasta FROM canales_estado_usuario
+          WHERE canal_id = $1 AND usuario_id = $3 AND vaciado_hasta IS NOT NULL),
+         '1970-01-01'::timestamptz
+       )
      ORDER BY m.created_at DESC
      LIMIT $2`,
-    [canalId, limit]
+    [canalId, limit, usuarioId]
   );
 
   return rows.reverse().map(formatearMensaje);
@@ -633,6 +665,39 @@ export async function marcarCanalLeido(canalId, usuarioId) {
   );
 
   return { ok: true, marcados: rowCount };
+}
+/* =========================================================
+   ELIMINAR CANAL DE MI LISTA (soft, solo para mí)
+   ========================================================= */
+export async function eliminarCanalParaMi(canalId, usuarioId) {
+  await verificarMiembroCanal(pool, canalId, usuarioId);
+
+  await pool.query(
+    `INSERT INTO canales_estado_usuario (canal_id, usuario_id, oculto_desde, updated_at)
+     VALUES ($1, $2, NOW(), NOW())
+     ON CONFLICT (canal_id, usuario_id)
+     DO UPDATE SET oculto_desde = NOW(), updated_at = NOW()`,
+    [canalId, usuarioId]
+  );
+
+  return { ok: true, mensaje: 'Chat eliminado de tu lista' };
+}
+
+/* =========================================================
+   VACIAR CANAL (soft, solo para mí)
+   ========================================================= */
+export async function vaciarCanalParaMi(canalId, usuarioId) {
+  await verificarMiembroCanal(pool, canalId, usuarioId);
+
+  await pool.query(
+    `INSERT INTO canales_estado_usuario (canal_id, usuario_id, vaciado_hasta, updated_at)
+     VALUES ($1, $2, NOW(), NOW())
+     ON CONFLICT (canal_id, usuario_id)
+     DO UPDATE SET vaciado_hasta = NOW(), updated_at = NOW()`,
+    [canalId, usuarioId]
+  );
+
+  return { ok: true, mensaje: 'Chat vaciado' };
 }
 
 /* =========================================================
