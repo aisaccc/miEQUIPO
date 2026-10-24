@@ -614,6 +614,7 @@ export async function verPerfilUsuario(usuarioOId) {
   body.innerHTML = `
     <div class="perfil-header-card">
       <div class="perfil-header-card__banner" style="${heroStyle}"></div>
+      
       <div class="perfil-header-card__content">
         <div class="perfil-header-card__left">
           <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="perfil-header-card__avatar" />

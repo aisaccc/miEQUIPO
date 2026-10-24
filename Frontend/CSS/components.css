@@ -1280,7 +1280,7 @@ select.field__input {
     border-radius: 0 !important;
     border: none !important;
     margin: 0 !important;
-    background: var(--color-bg) !important; /* Mismo fondo que la app */
+    background: var(--color-bg) !important;
     box-shadow: none !important;
   }
 
@@ -1299,7 +1299,7 @@ select.field__input {
     display: none; /* Ocultamos la palabra "Perfil" */
   }
 
-  /* Botón de cerrar (X) estilo flotante para que se vea sobre el banner */
+  /* Botón de cerrar (X) estilo flotante */
   #modal-ver-perfil .modal__close {
     background: rgba(0, 0, 0, 0.6);
     color: white;
@@ -1319,5 +1319,35 @@ select.field__input {
 
   #modal-ver-perfil .modal__body {
     padding: 16px !important;
+    overflow-x: hidden !important; /* ⚡ EVITA EL SCROLL HORIZONTAL */
+  }
+
+  /* ⚡ FORZAMOS A QUE EL CONTENIDO SE APILE HACIA ABAJO EN MÓVIL */
+  #modal-ver-perfil .perfil-header-card__content {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 0 16px 16px !important;
+  }
+  
+  #modal-ver-perfil .perfil-header-card__left {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__info {
+    width: 100% !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__name {
+    font-size: 28px !important;
+    word-break: break-word !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 10px !important;
   }
 }
