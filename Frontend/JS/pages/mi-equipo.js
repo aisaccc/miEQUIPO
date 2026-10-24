@@ -1273,8 +1273,10 @@ export async function init() {
       }
     }
 
-    // ⚡ Llegamos acá sólo si NO hay detalle abierto → mostrar chrome
-    mostrarChromePagina();
+    // ⚡ Mostrar chrome solo si esta pestaña es la activa
+    if (panelEquipo?.classList.contains('subpanel--active')) {
+      mostrarChromePagina();
+    }
 
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
@@ -1396,8 +1398,10 @@ export async function init() {
       }
     }
 
-    // ⚡ Llegamos acá sólo si NO hay detalle abierto → mostrar chrome
-    mostrarChromePagina();
+    // ⚡ Mostrar chrome solo si esta pestaña es la activa
+    if (panelComunidad?.classList.contains('subpanel--active')) {
+      mostrarChromePagina();
+    }
 
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
