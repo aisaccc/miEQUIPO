@@ -82,10 +82,11 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       if (p.privacidad === 'miembros') privacidadHtml = `<span title="Participantes del torneo" style="display:inline-flex;vertical-align:middle;margin-top:-2px;width:14px;height:14px;color:var(--color-text-muted)">${ICONOS.usuarios}</span>`;
     }
 
+    // ⚡ NUEVO: data-ver-foto y cursor para ampliar
     const mediaHtml = p.video ? `
       <div class="feed-post__media"><video src="${p.video}" controls></video></div>
     ` : p.imagen ? `
-      <div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" /></div>
+      <div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" data-ver-foto="${p.imagen}" style="cursor:zoom-in" /></div>
     ` : '';
 
     // ⚡ Verificamos si es pública para mostrar el botón de compartir
@@ -133,6 +134,7 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
     });
   });
+
   contenedor.querySelectorAll('[data-like]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -146,7 +148,6 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
         }
         btn.classList.toggle('feed-post__btn--activo', res.yoLikee);
         btn.querySelector('svg').setAttribute('fill', res.yoLikee ? 'currentColor' : 'none');
-        // ⚡ El contador ahora está DENTRO del mismo botón
         const count = btn.querySelector('.feed-post__btn-count');
         if (count && pub) count.textContent = pub.totalLikes;
       } catch (err) {
@@ -170,7 +171,6 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       const pub = publicaciones.find(p => String(p.id) === String(id));
       if (!pub) return;
 
-      // Construimos el enlace (redirige al inicio para que se registren)
       const appUrl = window.location.origin + window.location.pathname + '#/inicio';
       const text = pub.contenido ? `"${pub.contenido}" - Publicado por ${pub.autor?.nombre} en MiEquipo` : `Publicación de ${pub.autor?.nombre} en MiEquipo`;
 
@@ -185,7 +185,6 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
           console.warn('Error al compartir', err);
         }
       } else {
-        // Fallback para PC (copiar al portapapeles)
         try {
           await navigator.clipboard.writeText(`${text}\n\nVer en: ${appUrl}`);
           toast('Enlace copiado al portapapeles', 'success');
@@ -196,10 +195,31 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
     });
   });
 
+  // ⚡ NUEVO: Abrir foto en grande
+  contenedor.querySelectorAll('[data-ver-foto]').forEach(img => {
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const modalImg = document.getElementById('modal-imagen-img');
+      if (modalImg) {
+        modalImg.src = img.dataset.verFoto;
+        abrirModal('modal-ver-imagen');
+      }
+    });
+  });
+
   contenedor.querySelectorAll('.feed-post').forEach(card => {
     card.addEventListener('click', (e) => {
-      // ⚡ Agregamos [data-share] para que no abra el modal si tocás compartir
-      if (e.target.closest('[data-like]') || e.target.closest('[data-ver-pub]') || e.target.closest('[data-menu-feed]') || e.target.closest('[data-autor-id]') || e.target.closest('.feed-post__contexto') || e.target.closest('[data-share]')) return;
+      // ⚡ Excluimos clicks en botones, contexto y foto
+      if (
+        e.target.closest('[data-like]') || 
+        e.target.closest('[data-ver-pub]') || 
+        e.target.closest('[data-menu-feed]') || 
+        e.target.closest('[data-autor-id]') || 
+        e.target.closest('.feed-post__contexto') || 
+        e.target.closest('[data-share]') ||
+        e.target.closest('[data-ver-foto]') // ⚡ Importante
+      ) return;
+      
       abrirModalVerPublicacion(card.dataset.pubId, publicaciones);
     });
   });
@@ -213,7 +233,7 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
 }
 
 /* =========================================================
-   MODAL CREAR PUBLICACIÓN
+   MODAL CREAR PUBLICACIÓN CON SELECTOR DE TIPO
    ========================================================= */
 let mediaBase64Crear = null;
 let tipoMediaCrear = null;
@@ -223,8 +243,8 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
   const textareaCont = document.getElementById('crear-pub-contenido');
   if (!textareaCont) return toast('Error interno: falta el modal', 'error');
 
-  const tipoPublicacion = opciones.tipo || 'post';
-  const esComunidad = opciones.esComunidad === true; // ⚡ NUEVO FLAG
+  let tipoPublicacion = opciones.tipo || 'post';
+  const esComunidad = opciones.esComunidad === true;
   
   mediaBase64Crear = null; tipoMediaCrear = null;
   privacidadCrear = 'publico';
@@ -234,6 +254,47 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
   document.getElementById('crear-pub-preview-img').src = '';
   document.getElementById('crear-pub-imagen-file').value = '';
   document.getElementById('crear-pub-label-imagen').classList.remove('hidden');
+
+  // ⚡ SELECTOR DE TIPO (Publicación / Partido / Torneo / Grupo)
+  const selector = document.getElementById('crear-pub-tipo-selector');
+  const btnPublicar = document.getElementById('btn-publicar');
+  const textareaWrapper = textareaCont.parentElement;
+  const imagenWrapper = document.getElementById('crear-pub-label-imagen').parentElement;
+  let avisoRedir = document.getElementById('aviso-redireccion');
+
+  if (selector) {
+    selector.querySelectorAll('[data-tipo-pub]').forEach(btn => {
+      btn.classList.toggle('subtab--active', btn.dataset.tipoPub === tipoPublicacion);
+      btn.onclick = () => {
+        selector.querySelectorAll('[data-tipo-pub]').forEach(b => b.classList.remove('subtab--active'));
+        btn.classList.add('subtab--active');
+        tipoPublicacion = btn.dataset.tipoPub;
+        
+        if (tipoPublicacion !== 'post') {
+          textareaWrapper.classList.add('hidden');
+          imagenWrapper.classList.add('hidden');
+          
+          if (!avisoRedir) {
+            avisoRedir = document.createElement('div');
+            avisoRedir.id = 'aviso-redireccion';
+            avisoRedir.className = 'aviso-aprobacion show mb-4';
+            document.getElementById('modal-crear-publicacion').querySelector('.modal__body').prepend(avisoRedir);
+          }
+          avisoRedir.style.display = 'flex';
+          avisoRedir.innerHTML = `<span class="aviso-aprobacion__icon">ℹ️</span><div>Al presionar el botón, serás redirigido para crear un <strong>${tipoPublicacion}</strong>.</div>`;
+          
+          btnPublicar.textContent = `Ir a ${tipoPublicacion.charAt(0).toUpperCase() + tipoPublicacion.slice(1)}`;
+        } else {
+          textareaWrapper.classList.remove('hidden');
+          imagenWrapper.classList.remove('hidden');
+          if (avisoRedir) avisoRedir.style.display = 'none';
+          btnPublicar.textContent = 'Publicar';
+        }
+      };
+    });
+    // Forzar el estado inicial
+    selector.querySelector(`[data-tipo-pub="${tipoPublicacion}"]`)?.click();
+  }
 
   // ⚡ INYECTAR SELECTOR DE PRIVACIDAD
   let privCont = document.getElementById('crear-pub-privacidad-container');
@@ -265,7 +326,6 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
     ];
   }
 
-  // Si es comunidad, no mostramos el selector (se hereda de la comunidad)
   if (esComunidad) {
     privCont.innerHTML = `
       <p class="text-xs text-muted" style="margin:0; display:flex; align-items:center; gap:6px;">
@@ -304,18 +364,13 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) return toast('El archivo es muy grande (máx 5MB)', 'error');
     
-    const esVideo = file.type.startsWith('video/');
     const reader = new FileReader();
     reader.onload = (ev) => {
       mediaBase64Crear = ev.target.result;
-      tipoMediaCrear = esVideo ? 'video' : 'imagen';
+      tipoMediaCrear = 'imagen';
       
       const imgPreview = document.getElementById('crear-pub-preview-img');
-      if (esVideo) {
-        imgPreview.src = 'assets/icons/video-placeholder.jpg';
-      } else {
-        imgPreview.src = mediaBase64Crear;
-      }
+      imgPreview.src = mediaBase64Crear;
       
       document.getElementById('crear-pub-preview-wrapper').classList.remove('hidden');
       document.getElementById('crear-pub-label-imagen').classList.add('hidden');
@@ -332,6 +387,21 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
   };
 
   document.getElementById('btn-publicar').onclick = async () => {
+    // ⚡ Validación de redirección según el tipo
+    if (tipoPublicacion === 'partido') {
+      cerrarModal('modal-crear-publicacion');
+      window.location.hash = '#/partidos';
+      return toast('Ve a la sección Partidos para crear uno nuevo', 'info');
+    } else if (tipoPublicacion === 'torneo') {
+      cerrarModal('modal-crear-publicacion');
+      window.location.hash = '#/torneos';
+      return toast('Ve a la sección Torneos para crear uno nuevo', 'info');
+    } else if (tipoPublicacion === 'grupo') {
+      cerrarModal('modal-crear-publicacion');
+      window.location.hash = '#/mi-equipo';
+      return toast('Ve a Mi Equipo para crear un nuevo grupo', 'info');
+    }
+
     const contenido = document.getElementById('crear-pub-contenido').value.trim();
 
     if (!contenido && !mediaBase64Crear) {
@@ -342,9 +412,8 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
     btn.disabled = true; btn.textContent = 'Publicando...';
 
     try {
-      const datos = { contenido: contenido || null, tipo: tipoPublicacion, privacidad: privacidadCrear };
+      const datos = { contenido: contenido || null, tipo: 'post', privacidad: privacidadCrear };
       if (tipoMediaCrear === 'imagen') datos.imagen = mediaBase64Crear;
-      if (tipoMediaCrear === 'video') datos.video = mediaBase64Crear;
 
       if (scope === 'grupo') await crearPublicacionEnGrupo(refId, datos);
       else if (scope === 'torneo') await crearPublicacionEnTorneo(refId, datos);

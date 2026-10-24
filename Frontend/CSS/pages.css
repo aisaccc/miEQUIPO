@@ -13991,3 +13991,22 @@ select.field__input {
 .grupo-card__stats--1 {
   grid-template-columns: 1fr;
 }
+/* Selector de tipo en modal crear publicación */
+#crear-pub-tipo-selector {
+  display: flex;
+  background: var(--color-surface-2);
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+#crear-pub-tipo-selector .subtab {
+  flex: 1;
+  justify-content: center;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  border-bottom: none;
+}
+#crear-pub-tipo-selector .subtab--active {
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-sm);
+}

@@ -383,6 +383,15 @@
       </div>
 
       <div class="modal__body">
+                <div class="field">
+          <label class="field__label">¿Qué quieres publicar?</label>
+          <div class="subtabs" style="border-bottom:none; margin-bottom:0; gap:4px;" id="crear-pub-tipo-selector">
+            <button type="button" class="subtab subtab--active" data-tipo-pub="post" style="padding:8px 12px;">Publicación</button>
+            <button type="button" class="subtab" data-tipo-pub="partido" style="padding:8px 12px;">Partido</button>
+            <button type="button" class="subtab" data-tipo-pub="torneo" style="padding:8px 12px;">Torneo</button>
+            <button type="button" class="subtab" data-tipo-pub="grupo" style="padding:8px 12px;">Grupo</button>
+          </div>
+        </div>
         <div class="field">
           <label class="field__label" for="crear-pub-contenido">Descripción (opcional)</label>
           <textarea
@@ -881,6 +890,6 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="JS/main.js?v=116"></script>
+  <script type="module" src="JS/main.js?v=117"></script>
 </body>
 </html>

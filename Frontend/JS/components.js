@@ -891,7 +891,25 @@ async function cargarComentariosVerPub(pubId) {
       cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-3)">Aún no hay comentarios. ¡Sé el primero!</p>`;
       return;
     }
-    cont.innerHTML = comentarios.map(c => `<div class="ver-pub__comentario"><img src="${c.autor?.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" /><div style="flex:1; min-width:0"><div class="ver-pub__comentario-autor">${escapeHtml(c.autor?.nombre || 'Usuario')}</div><div class="ver-pub__comentario-texto">${escapeHtml(c.texto)}</div></div></div>`).join('');
+    cont.innerHTML = comentarios.map(c => `
+      <div class="ver-pub__comentario">
+        <img src="${c.autor?.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" data-autor-id="${c.autor?.id}" style="cursor:pointer" />
+        <div style="flex:1; min-width:0">
+          <div class="ver-pub__comentario-autor" data-autor-id="${c.autor?.id}" style="cursor:pointer">${escapeHtml(c.autor?.nombre || 'Usuario')}</div>
+          <div class="ver-pub__comentario-texto">${escapeHtml(c.texto)}</div>
+        </div>
+      </div>
+    `).join('');
+
+    // ⚡ NUEVO: Click en comentarista para ver perfil
+    cont.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => {
+          verPerfilUsuario(el.dataset.autorId);
+        });
+      });
+    });
   } catch (err) {
     cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-3)">No se pudieron cargar los comentarios</p>`;
   }
