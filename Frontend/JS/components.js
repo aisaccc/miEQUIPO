@@ -615,7 +615,13 @@ export async function verPerfilUsuario(usuarioOId) {
 
   const colorKey = u.heroColor || 'navy';
   const preset = HERO_COLORS.find(c => c.key === colorKey) || HERO_COLORS[0];
-  const heroStyle = `background: linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%);`;
+
+  let heroStyle;
+  if (u.heroFoto) {
+    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${u.heroFoto}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+  } else {
+    heroStyle = `background: linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%);`;
+  }
   const isDarkText = preset.text === 'dark';
 
   let opcionesMenu = '';

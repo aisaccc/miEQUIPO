@@ -14104,3 +14104,65 @@ select.field__input {
   line-height: 1.4;
   max-width: 100%;
 }
+/* =========================================================
+   FOTO DE BANNER PERSONALIZADA (hero_foto)
+   ========================================================= */
+
+/* Bloque en el modal de editar perfil */
+.perfil-hero-foto {
+  margin-top: var(--space-4);
+}
+
+.perfil-hero-foto__label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+  display: block;
+  font-weight: 600;
+}
+
+.perfil-hero-foto__preview {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+
+.perfil-hero-foto__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.perfil-hero-foto__del {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.perfil-hero-foto__del:hover {
+  background: var(--color-danger);
+}
+
+/* El banner nunca debe mostrar un "hueco" si la imagen carga lento */
+.perfil-header-card__banner,
+.profile-header-card__banner {
+  background-color: var(--color-surface-2);
+}

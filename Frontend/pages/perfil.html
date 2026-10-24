@@ -231,8 +231,31 @@
       </div>
 
       <div class="field">
-        <label class="field__label">Color del perfil</label>
+        <label class="field__label">Fondo del banner</label>
+        <p class="text-xs text-muted mb-3">
+          Elegí un color o subí una foto. Si subís una foto, se muestra en lugar del color.
+        </p>
+
         <div id="edit-perf-hero-colores" class="perfil-color-picker"></div>
+
+        <div class="perfil-hero-foto">
+          <div class="perfil-hero-foto__label">O subí una foto (opcional, máx 1.5 MB)</div>
+
+          <div id="edit-perf-hero-foto-preview-wrapper" class="hidden">
+            <div class="perfil-hero-foto__preview">
+              <img id="edit-perf-hero-foto-preview" src="" alt="" />
+              <button class="perfil-hero-foto__del" id="edit-perf-hero-foto-quitar" type="button" title="Quitar foto">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer; display:inline-flex">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Subir foto
+            <input type="file" id="edit-perf-hero-foto-file" accept="image/*" style="display:none" />
+          </label>
+        </div>
       </div>
 
       <div class="field">

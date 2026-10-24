@@ -13,17 +13,16 @@ import { estadoBloqueo } from '../utils/bloqueos.js';
 const CAMPOS_PERFIL_PROPIO = `
   id, nombre, username, email, avatar, bio, edad, pais, ciudad,
   deportes, email_verificado, created_at, last_login,
-  hero_color, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
+  hero_color, hero_foto, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
   mensajes_solo_amigos
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
   id, nombre, username, avatar, bio, edad, pais, ciudad,
   deportes, created_at,
-  hero_color,
+  hero_color, hero_foto,
   stats_hero_base, stats_hero_privadas
 `;
-
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -44,6 +43,7 @@ function formatearPerfilPropio(row, stats = {}) {
     createdAt: row.created_at,
     lastLogin: row.last_login,
     heroColor: row.hero_color || 'navy',
+    heroFoto: row.hero_foto || null,
     statsHeroBase: row.stats_hero_base || {},
     statsHeroPrivadas: row.stats_hero_privadas || {},
     notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true }, // ⚡
@@ -86,6 +86,7 @@ function formatearPerfilPublico(row, stats = {}) {
     deportes,
     createdAt: row.created_at,
     heroColor: row.hero_color || 'navy',
+    heroFoto: row.hero_foto || null,
     statsHero,
     statsHeroPrivadas: privadas,
   };
@@ -217,6 +218,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     edad: 'edad',
     avatar: 'avatar',
     heroColor: 'hero_color',
+    heroFoto: 'hero_foto',
     statsHeroBase: 'stats_hero_base',
     statsHeroPrivadas: 'stats_hero_privadas',
     notificacionesPrefs: 'notificaciones_prefs', // ⚡ NUEVO

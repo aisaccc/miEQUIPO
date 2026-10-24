@@ -128,10 +128,20 @@ export async function init() {
       u = { nombre: 'Usuario', username: 'usuario', id: null, heroColor: 'navy' };
     }
 
-    // ⚡ Aplicamos el color solo al banner, no a toda la tarjeta
+    // ⚡ Banner: foto si existe, si no gradiente de color
     if (elHero) {
-      const preset = HERO_COLORS.find(c => c.key === (u.heroColor || 'navy')) || HERO_COLORS[0];
-      elHero.style.background = `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)`;
+      if (u.heroFoto) {
+        elHero.style.backgroundImage = `linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${u.heroFoto}')`;
+        elHero.style.backgroundSize = 'cover';
+        elHero.style.backgroundPosition = 'center';
+        elHero.style.backgroundRepeat = 'no-repeat';
+      } else {
+        const preset = HERO_COLORS.find(c => c.key === (u.heroColor || 'navy')) || HERO_COLORS[0];
+        elHero.style.backgroundImage = `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)`;
+        elHero.style.backgroundSize = '';
+        elHero.style.backgroundPosition = '';
+        elHero.style.backgroundRepeat = '';
+      }
     }
 
     if (elAvatar) {
@@ -703,25 +713,46 @@ export async function init() {
       };
     }
 
-    let colorSel = u.heroColor || 'navy';
-    const contColores = document.getElementById('edit-perf-hero-colores');
-    if (contColores) {
-      contColores.innerHTML = HERO_COLORS.map(c => `
-        <button type="button"
-                class="perfil-color-btn ${c.key === colorSel ? 'active' : ''}"
-                data-color="${c.key}"
-                title="${c.label}"
-                style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%)"></button>
-      `).join('');
+    // ⚡ Foto de banner
+    let heroFotoSel = u.heroFoto || null;
 
-      contColores.querySelectorAll('[data-color]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          contColores.querySelectorAll('[data-color]').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          colorSel = btn.dataset.color;
-        });
-      });
+    const previewHeroWrapper = document.getElementById('edit-perf-hero-foto-preview-wrapper');
+    const previewHeroImg = document.getElementById('edit-perf-hero-foto-preview');
+
+    function actualizarPreviewHeroFoto() {
+      if (heroFotoSel) {
+        if (previewHeroImg) previewHeroImg.src = heroFotoSel;
+        previewHeroWrapper?.classList.remove('hidden');
+      } else {
+        if (previewHeroImg) previewHeroImg.src = '';
+        previewHeroWrapper?.classList.add('hidden');
+      }
     }
+
+    actualizarPreviewHeroFoto();
+
+    const inputHeroFile = document.getElementById('edit-perf-hero-foto-file');
+    if (inputHeroFile) {
+      inputHeroFile.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) {
+          return toast('La foto es muy grande (máx 1.5 MB)', 'error');
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          heroFotoSel = ev.target.result;
+          actualizarPreviewHeroFoto();
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      };
+    }
+
+    document.getElementById('edit-perf-hero-foto-quitar')?.addEventListener('click', () => {
+      heroFotoSel = null;
+      actualizarPreviewHeroFoto();
+    });
 
     const base = u.statsHeroBase || {};
 
@@ -851,6 +882,7 @@ export async function init() {
           pais: pais || null,
           avatar: avatarSel || null,
           heroColor: colorSel,
+          heroFoto: heroFotoSel,
           statsHeroBase: {
             partidos: Math.max(0, Number(inputBasePartidos?.value) || 0),
           },

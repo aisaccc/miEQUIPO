@@ -67,6 +67,18 @@ const avatarValido = z
     },
     { message: 'El avatar debe ser una URL válida o una imagen' }
   )
+  /* Foto de banner: mismo formato que avatar, límite más generoso */
+const heroFotoValida = z
+  .string()
+  .max(2_100_000, 'La foto de banner es demasiado grande')
+  .refine(
+    val => {
+      if (!val) return true;
+      return /^https?:\/\//i.test(val) ||
+             /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val);
+    },
+    { message: 'La foto debe ser una URL válida o una imagen' }
+  )
   .nullable()
   .optional();
 
@@ -143,6 +155,7 @@ export const schemaActualizarPerfil = z.object({
   avatar: avatarValido,
   // ⚡ Nuevos
   heroColor: heroColorValido.optional(),
+  heroFoto: heroFotoValida,
   statsHeroBase: statsHeroBaseSchema.optional(),
   statsHeroPrivadas: statsHeroPrivadasSchema.optional(),
   notificacionesPrefs: notificacionesPrefsSchema.optional(), // ⚡ NUEVO
