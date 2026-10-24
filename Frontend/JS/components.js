@@ -639,6 +639,7 @@ export async function verPerfilUsuario(usuarioOId) {
             <h1 class="perfil-header-card__name">${escapeHtml(u.nombre || 'Usuario')}</h1>
             <p class="perfil-header-card__sub">
               ${ICONOS.ubicacion} ${escapeHtml(u.ciudad || 'Sin ciudad')}${u.pais ? ', ' + escapeHtml(u.pais) : ''}
+              ${u.edad ? ` · ${u.edad} años` : ''}
               ${u.bio ? ` · ${escapeHtml(u.bio)}` : ''}
             </p>
             <div class="perfil-hero__chips" style="margin-top:8px;">
@@ -705,9 +706,23 @@ export async function verPerfilUsuario(usuarioOId) {
       document.getElementById('modal-ver-perfil')?.classList.remove('open');
       window.location.hash = '#/mensajes';
       setTimeout(() => { document.querySelector(`[data-conv="${conv.id}"]`)?.click(); }, 400);
-    } catch (err) { toast(err.message, 'error'); }
+    } catch (err) {
+      // ⚡ Aviso inline para "solo amigos"
+      if (err.status === 403 && /solo.*amigos/i.test(err.message)) {
+        const btn = document.getElementById('btn-perfil-mensaje');
+        if (btn) {
+          const aviso = document.createElement('p');
+          aviso.className = 'text-xs text-muted';
+          aviso.style.cssText = 'margin-top:8px; display:flex; align-items:center; gap:4px;';
+          aviso.innerHTML = `🔒 Solo recibe mensajes de amigos`;
+          btn.parentElement.appendChild(aviso);
+          setTimeout(() => aviso.remove(), 4000);
+        }
+      } else {
+        toast(err.message, 'error');
+      }
+    }
   });
-
   document.getElementById('btn-perfil-amigo')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;

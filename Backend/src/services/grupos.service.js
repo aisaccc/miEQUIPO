@@ -10,7 +10,8 @@
 */
 
 import { pool } from '../config/db.js';
-import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js'; // ⚡ NUEVO
+import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js';
+import { crearNotificacion } from './notificaciones.service.js';  // ⚡ NUEVO
 import {
   crearCanalParaGrupo,
   agregarMiembroACanal,
@@ -751,6 +752,20 @@ export async function gestionarSolicitud(grupoId, usuarioId, solicitanteId, acci
         [grupoId, solicitanteId]
       );
 
+      // ⚡ Notificar al solicitante
+      const { rows: datosGrupo } = await client.query(
+        `SELECT nombre FROM grupos WHERE id = $1`,
+        [grupoId]
+      );
+      if (datosGrupo[0]) {
+        await crearNotificacion(
+          solicitanteId,
+          'rechazado',
+          `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue rechazada.`,
+          `#/mi-equipo`
+        );
+      }
+
       await client.query('COMMIT');
       return { ok: true, mensaje: 'Solicitud rechazada' };
     }
@@ -773,6 +788,20 @@ export async function gestionarSolicitud(grupoId, usuarioId, solicitanteId, acci
     // ⚡ Agregar al canal del grupo
     const canalId = `grupo-${grupoId}`;
     await agregarMiembroACanal(client, canalId, solicitanteId);
+
+    // ⚡ Notificar al solicitante
+    const { rows: datosGrupo } = await client.query(
+      `SELECT nombre FROM grupos WHERE id = $1`,
+      [grupoId]
+    );
+    if (datosGrupo[0]) {
+      await crearNotificacion(
+        solicitanteId,
+        'aprobado',
+        `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue aprobada.`,
+        `#/mi-equipo`
+      );
+    }
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Solicitud aprobada' };
@@ -847,6 +876,20 @@ export async function expulsarMiembro(grupoId, usuarioId, miembroId) {
     // ⚡ Quitar del canal del grupo
     const canalId = `grupo-${grupoId}`;
     await quitarMiembroDeCanal(client, canalId, miembroId);
+
+    // ⚡ Notificar al expulsado
+    const { rows: datosGrupo } = await client.query(
+      `SELECT nombre FROM grupos WHERE id = $1`,
+      [grupoId]
+    );
+    if (datosGrupo[0]) {
+      await crearNotificacion(
+        miembroId,
+        'expulsado',
+        `Fuiste expulsado de ${datosGrupo[0].nombre} por el capitán.`,
+        null
+      );
+    }
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Miembro expulsado' };

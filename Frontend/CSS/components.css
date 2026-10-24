@@ -1161,10 +1161,11 @@ select.field__input {
 
   /* Toasts */
   .toast-container {
-    bottom: 12px;
+    bottom: calc(64px + 16px);
     left: 12px;
     right: 12px;
     align-items: stretch;
+    z-index: 10000;
   }
 
   .toast {

@@ -13988,3 +13988,6 @@ select.field__input {
     margin-right: -24px !important;
   }
 }
+.grupo-card__stats--1 {
+  grid-template-columns: 1fr;
+}

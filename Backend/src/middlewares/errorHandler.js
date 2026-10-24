@@ -20,6 +20,13 @@ export function errorHandler(err, req, res, next) {
   if (err.code === '22P02') {
     return res.status(400).json({ error: 'Formato inválido' });
   }
+  if (err.code === '23514') {
+    console.error('[CHECK VIOLATION]', err.detail || err.message);
+    return res.status(400).json({
+      error: 'Valor no permitido',
+      detalle: err.detail || err.message,
+    });
+  }
 
   /* Error genérico */
   const status = err.status || 500;

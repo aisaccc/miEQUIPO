@@ -724,18 +724,9 @@ export async function init() {
     }
 
     const base = u.statsHeroBase || {};
-    const privadas = u.statsHeroPrivadas || {};
 
     const inputBasePartidos = document.getElementById('edit-perf-base-partidos');
     if (inputBasePartidos) inputBasePartidos.value = base.partidos || 0;
-
-    const chkPrivPartidos = document.getElementById('edit-perf-priv-partidos');
-    const chkPrivTorneos  = document.getElementById('edit-perf-priv-torneos');
-    const chkPrivEquipos  = document.getElementById('edit-perf-priv-equipos');
-
-    if (chkPrivPartidos) chkPrivPartidos.checked = privadas.partidos === true;
-    if (chkPrivTorneos)  chkPrivTorneos.checked  = privadas.torneos === true;
-    if (chkPrivEquipos)  chkPrivEquipos.checked  = privadas.equipos === true;
 
     let deportesActuales = JSON.parse(JSON.stringify(u.deportes || []));
 
@@ -862,11 +853,6 @@ export async function init() {
           heroColor: colorSel,
           statsHeroBase: {
             partidos: Math.max(0, Number(inputBasePartidos?.value) || 0),
-          },
-          statsHeroPrivadas: {
-            partidos: !!chkPrivPartidos?.checked,
-            torneos:  !!chkPrivTorneos?.checked,
-            equipos:  !!chkPrivEquipos?.checked,
           },
         });
 
