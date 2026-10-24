@@ -623,8 +623,8 @@ export async function verPerfilUsuario(usuarioOId) {
             <p class="perfil-header-card__sub">
               ${ICONOS.ubicacion} ${escapeHtml(u.ciudad || 'Sin ciudad')}${u.pais ? ', ' + escapeHtml(u.pais) : ''}
               ${u.edad ? ` · ${u.edad} años` : ''}
-              ${u.bio ? ` · ${escapeHtml(u.bio)}` : ''}
             </p>
+            ${u.bio ? `<p class="perfil-header-card__bio">${escapeHtml(u.bio)}</p>` : ''}
             <div class="perfil-hero__chips" style="margin-top:8px;">
               ${(u.deportes || []).slice(0, 4).map(d => `<span class="perfil-hero__chip perfil-hero__chip--deporte" style="background:var(--color-surface-2); color:var(--color-text); border:1px solid var(--color-border);">${escapeHtml(d.deporte)}</span>`).join('')}
             </div>

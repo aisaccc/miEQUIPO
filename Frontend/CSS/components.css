@@ -1261,17 +1261,16 @@ select.field__input {
    FIX MODAL PERFIL: MÓVIL FULLSCREEN Y Z-INDEX
    ========================================================= */
 
-/* 1. Asegurar que el modal de perfil esté por encima de todo */
 #modal-ver-perfil {
   z-index: 2000 !important; 
 }
 
-/* 2. En móvil, que ocupe toda la pantalla y se vea igual que la página real */
 @media (max-width: 900px) {
   #modal-ver-perfil {
     padding: 0 !important;
   }
   
+  /* Forzamos a que el modal ocupe toda la pantalla y sea flex */
   #modal-ver-perfil .modal {
     width: 100vw !important;
     height: 100dvh !important;
@@ -1281,12 +1280,13 @@ select.field__input {
     border: none !important;
     margin: 0 !important;
     background: var(--color-bg) !important;
-    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
-  /* El header del modal se vuelve flotante y transparente */
+  /* El header flota arriba */
   #modal-ver-perfil .modal__header {
-    position: fixed;
+    position: absolute !important;
     top: 12px;
     right: 12px;
     z-index: 10;
@@ -1296,10 +1296,9 @@ select.field__input {
   }
 
   #modal-ver-perfil .modal__title {
-    display: none; /* Ocultamos la palabra "Perfil" */
+    display: none;
   }
 
-  /* Botón de cerrar (X) estilo flotante */
   #modal-ver-perfil .modal__close {
     background: rgba(0, 0, 0, 0.6);
     color: white;
@@ -1317,37 +1316,25 @@ select.field__input {
       background: rgba(255, 255, 255, 0.2);
   }
 
+  /* ⚡ EL TRUCO: El body hace el scroll y permite que el fondo se estire */
   #modal-ver-perfil .modal__body {
-    padding: 16px !important;
-    overflow-x: hidden !important; /* ⚡ EVITA EL SCROLL HORIZONTAL */
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 0 !important; /* Quitamos padding para que el banner pegue al borde */
   }
 
-  /* ⚡ FORZAMOS A QUE EL CONTENIDO SE APILE HACIA ABAJO EN MÓVIL */
-  #modal-ver-perfil .perfil-header-card__content {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    padding: 0 16px 16px !important;
+  /* Ajustamos los márgenes internos para que no queden pegados al borde */
+  #modal-ver-perfil .perfil-header-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
   }
-  
-  #modal-ver-perfil .perfil-header-card__left {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    width: 100% !important;
-  }
-
-  #modal-ver-perfil .perfil-header-card__info {
-    width: 100% !important;
-  }
-
-  #modal-ver-perfil .perfil-header-card__name {
-    font-size: 28px !important;
-    word-break: break-word !important;
-  }
-
-  #modal-ver-perfil .perfil-header-card__actions {
-    width: 100% !important;
-    justify-content: flex-start !important;
-    flex-wrap: wrap !important;
-    margin-top: 10px !important;
+  #modal-ver-perfil .perfil-header-card__content,
+  #modal-ver-perfil .perfil-stats-grid,
+  #modal-ver-perfil .subtabs,
+  #modal-ver-perfil .subpanel {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 }
