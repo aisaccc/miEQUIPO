@@ -1258,7 +1258,7 @@ select.field__input {
   gap: 0;
 }
 /* =========================================================
-   FIX MODAL PERFIL: MÓVIL FULLSCREEN Y Z-INDEX
+   FIX MODAL PERFIL: MÓVIL FULLSCREEN
    ========================================================= */
 
 #modal-ver-perfil {
@@ -1270,7 +1270,6 @@ select.field__input {
     padding: 0 !important;
   }
   
-  /* Forzamos a que el modal ocupe toda la pantalla y sea flex */
   #modal-ver-perfil .modal {
     width: 100vw !important;
     height: 100dvh !important;
@@ -1282,9 +1281,10 @@ select.field__input {
     background: var(--color-bg) !important;
     display: flex !important;
     flex-direction: column !important;
+    overflow: hidden !important; /* Evita scroll en el modal principal */
   }
 
-  /* El header flota arriba */
+  /* Header flotante con la X */
   #modal-ver-perfil .modal__header {
     position: absolute !important;
     top: 12px;
@@ -1300,7 +1300,7 @@ select.field__input {
   }
 
   #modal-ver-perfil .modal__close {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     color: white;
     border-radius: 50%;
     width: 38px;
@@ -1316,25 +1316,76 @@ select.field__input {
       background: rgba(255, 255, 255, 0.2);
   }
 
-  /* ⚡ EL TRUCO: El body hace el scroll y permite que el fondo se estire */
+  /* El body hace el scroll interno */
   #modal-ver-perfil .modal__body {
     flex: 1 !important;
     overflow-y: auto !important;
-    padding: 0 !important; /* Quitamos padding para que el banner pegue al borde */
+    overflow-x: hidden !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Ajustamos los márgenes internos para que no queden pegados al borde */
+  /* Aplanamos la tarjeta para que ocupe toda la pantalla */
   #modal-ver-perfil .perfil-header-card {
     margin: 0 !important;
     border-radius: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    background: var(--color-surface) !important;
   }
-  #modal-ver-perfil .perfil-header-card__content,
-  #modal-ver-perfil .perfil-stats-grid,
-  #modal-ver-perfil .subtabs,
-  #modal-ver-perfil .subpanel {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+
+  #modal-ver-perfil .perfil-header-card__banner {
+    border-radius: 0 !important;
+    height: 140px !important;
+  }
+
+  /* Reorganizamos el contenido para que no quede apretado */
+  #modal-ver-perfil .perfil-header-card__content {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 0 16px 16px !important;
+    margin-top: -40px !important; /* El avatar pisa el banner */
+  }
+
+  #modal-ver-perfil .perfil-header-card__left {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__info {
+    width: 100% !important;
+    margin-top: 12px !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__name {
+    font-size: 28px !important;
+    color: var(--color-text) !important;
+    word-break: break-word !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 16px !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Ajustes para que las publicaciones no generen scroll horizontal */
+  #modal-ver-perfil .pubs-grid {
+    margin: 0 !important;
+    padding: 0 16px !important;
+    gap: 8px !important;
+  }
+  
+  #modal-ver-perfil .feed-post,
+  #modal-ver-perfil .post {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 16px !important;
   }
 }
