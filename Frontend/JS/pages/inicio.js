@@ -109,12 +109,6 @@ export async function init() {
     abrirModalCrearPublicacionCompartido('perfil', null, () => cargarFeed(true), { tipo: 'post' });
   });
 
-  document.querySelectorAll('[data-tipo-rapido]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tipo = btn.dataset.tipoRapido || 'post';
-      abrirModalCrearPublicacionCompartido('perfil', null, () => cargarFeed(true), { tipo: tipo });
-    });
-  });
 
   /* ---------- ASIDE: AGENDA ---------- */
   async function cargarAgenda() {

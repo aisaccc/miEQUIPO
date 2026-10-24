@@ -10608,8 +10608,43 @@ select.field__input {
   object-fit: contain;
 }
 
+/* =========================================================
+   FIX VISOR DE IMAGEN A PANTALLA COMPLETA
+   ========================================================= */
 #modal-ver-imagen {
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.92);
+  overflow: hidden !important; /* Bloquea el scroll interno */
+  padding: 0 !important;
+  touch-action: none; /* Evita gestos de zoom/scroll en mobile */
+}
+
+#modal-ver-imagen .modal--imagen {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  max-height: none;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  width: 100vw;
+  height: 100vh;
+}
+
+.modal-imagen-body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-imagen-body img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 4px;
 }
 /* =========================================================
    FASE E.7b — Input del chat con adjuntos

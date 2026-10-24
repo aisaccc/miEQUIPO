@@ -1194,3 +1194,25 @@ document.querySelectorAll('.modal-backdrop').forEach(bg => {
     if (e.target === bg) cerrarModal(bg.id);
   });
 });
+// ⚡ Bloquear scroll del body cuando el visor de imagen está abierto
+const observerImgModal = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.attributeName === 'class') {
+      const modal = mutation.target;
+      if (modal.id === 'modal-ver-imagen') {
+        if (modal.classList.contains('open')) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+        }
+      }
+    }
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const imgModal = document.getElementById('modal-ver-imagen');
+  if (imgModal) {
+    observerImgModal.observe(imgModal, { attributes: true });
+  }
+});
