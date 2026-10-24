@@ -156,8 +156,21 @@ export function toast(mensaje, tipo = 'info') {
 }
 
 /* ---------- MODALES ---------- */
-export function abrirModal(id) { document.getElementById(id)?.classList.add('open'); }
-export function cerrarModal(id) { document.getElementById(id)?.classList.remove('open'); }
+export function abrirModal(id) { 
+  document.getElementById(id)?.classList.add('open'); 
+  // ⚡ Bloquea el scroll de la página cuando se abre el perfil en móvil
+  if (id === 'modal-ver-perfil') {
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+export function cerrarModal(id) { 
+  document.getElementById(id)?.classList.remove('open'); 
+  // ⚡ Devuelve el scroll al cerrar
+  if (id === 'modal-ver-perfil') {
+    document.body.style.overflow = '';
+  }
+}
 
 /* ---------- HELPERS ---------- */
 export function formatearFecha(iso) {
