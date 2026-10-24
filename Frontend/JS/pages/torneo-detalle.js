@@ -1473,9 +1473,9 @@ export async function init(params = {}) {
     ultimaCanalTorneoRenderizado = null;
     imagenBase64Torneo = null;
 
-    let canal;
+    // Validamos que el canal exista y tengamos acceso (si falla, mostramos error)
     try {
-      canal = await obtenerCanalAPI(canalId);
+      await obtenerCanalAPI(canalId);
     } catch (err) {
       console.error('[torneo-detalle] Error al obtener canal:', err);
       panel.innerHTML = `
@@ -1492,19 +1492,9 @@ export async function init(params = {}) {
       return;
     }
 
-    const iconoHtml = renderIconoGenerico(canal.icono || ICONOS.trofeo, 28);
-
+    // ⚡ Sin header: ya estamos dentro del detalle del torneo,
+    // mostrar nombre + icono + tipo + miembros sería redundante.
     panel.innerHTML = `
-      <div class="chat-header">
-        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
-          ${iconoHtml}
-        </div>
-        <div class="chat-header__info">
-          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
-          <div class="chat-header__sub">Torneo · ${canal.totalMiembros || 0} miembros</div>
-        </div>
-      </div>
-
       <div class="chat-mensajes" id="chat-mensajes-torneo"></div>
 
       <div class="chat-input-preview hidden" id="chat-torneo-preview">
