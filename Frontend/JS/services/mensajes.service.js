@@ -147,3 +147,27 @@ export async function eliminarCanalParaMi(canalId) {
 export async function vaciarCanalParaMi(canalId) {
   return api.post(`/mensajes/canales/${canalId}/vaciar-para-mi`, {});
 }
+/* =========================================================
+   MENSAJES — acciones por usuario
+   ========================================================= */
+
+/**
+ * Oculta un mensaje SOLO para mí. Los demás lo siguen viendo.
+ */
+export async function eliminarMensajeParaMi(mensajeId) {
+  return api.delete(`/mensajes/mensajes/${mensajeId}/para-mi`);
+}
+
+/**
+ * Elimina un mensaje para TODOS. Solo funciona si soy el autor.
+ */
+export async function eliminarMensajeParaTodos(mensajeId) {
+  return api.delete(`/mensajes/mensajes/${mensajeId}/para-todos`);
+}
+
+/**
+ * Vacía una conversación 1 a 1 SOLO para mí.
+ */
+export async function vaciarConversacionParaMi(conversacionId) {
+  return api.post(`/mensajes/conversaciones/${conversacionId}/vaciar-para-mi`, {});
+}

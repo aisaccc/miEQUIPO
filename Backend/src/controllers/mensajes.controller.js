@@ -249,3 +249,41 @@ export async function vaciarCanalParaMi(req, res, next) {
     next(err);
   }
 }
+/* =========================================================
+   DELETE /api/mensajes/mensajes/:id/para-mi
+   ========================================================= */
+export async function eliminarMensajeParaMi(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await mensajesService.eliminarMensajeParaMi(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   DELETE /api/mensajes/mensajes/:id/para-todos
+   ========================================================= */
+export async function eliminarMensajeParaTodos(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await mensajesService.eliminarMensajeParaTodos(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* =========================================================
+   POST /api/mensajes/conversaciones/:id/vaciar-para-mi
+   ========================================================= */
+export async function vaciarConversacionParaMi(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await mensajesService.vaciarConversacionParaMi(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}

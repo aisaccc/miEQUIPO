@@ -24,6 +24,8 @@ function formatearConversacion(row, extras = {}) {
 }
 
 function formatearMensaje(row) {
+  const eliminadoParaTodos = row.eliminado_para_todos === true;
+
   return {
     id: row.id,
     conversacionId: row.conversacion_id || null,
@@ -35,12 +37,12 @@ function formatearMensaje(row) {
       username: row.u_username,
       avatar: row.u_avatar,
     },
-    texto: row.texto,
-    imagen: row.imagen || null,
+    texto: eliminadoParaTodos ? null : (row.texto || null),
+    imagen: eliminadoParaTodos ? null : (row.imagen || null),
+    eliminadoParaTodos,
     createdAt: row.created_at,
   };
 }
-
 function formatearCanal(row, extras = {}) {
   return {
     id: row.id,
@@ -294,14 +296,24 @@ export async function listarMensajes(conversacionId, usuarioId, opciones = {}) {
 
   const { rows } = await pool.query(
     `SELECT m.id, m.conversacion_id, m.canal_id, m.autor_id, m.texto, m.imagen, m.created_at,
+            m.eliminado_para_todos,
             u.id AS u_id, u.nombre AS u_nombre,
             u.username AS u_username, u.avatar AS u_avatar
      FROM mensajes m
      JOIN usuarios u ON u.id = m.autor_id
      WHERE m.conversacion_id = $1
+       AND m.created_at > COALESCE(
+         (SELECT vaciado_hasta FROM conversaciones_estado_usuario
+          WHERE conversacion_id = $1 AND usuario_id = $3 AND vaciado_hasta IS NOT NULL),
+         '1970-01-01'::timestamptz
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM mensajes_ocultos_usuario mou
+         WHERE mou.mensaje_id = m.id AND mou.usuario_id = $3
+       )
      ORDER BY m.created_at DESC
      LIMIT $2`,
-    [conversacionId, limit]
+    [conversacionId, limit, usuarioId]
   );
 
   return rows.reverse().map(formatearMensaje);
@@ -583,6 +595,7 @@ export async function listarMensajesDeCanal(canalId, usuarioId, opciones = {}) {
 
   const { rows } = await pool.query(
     `SELECT m.id, m.conversacion_id, m.canal_id, m.autor_id, m.texto, m.imagen, m.created_at,
+            m.eliminado_para_todos,
             u.id AS u_id, u.nombre AS u_nombre,
             u.username AS u_username, u.avatar AS u_avatar
      FROM mensajes m
@@ -592,6 +605,10 @@ export async function listarMensajesDeCanal(canalId, usuarioId, opciones = {}) {
          (SELECT vaciado_hasta FROM canales_estado_usuario
           WHERE canal_id = $1 AND usuario_id = $3 AND vaciado_hasta IS NOT NULL),
          '1970-01-01'::timestamptz
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM mensajes_ocultos_usuario mou
+         WHERE mou.mensaje_id = m.id AND mou.usuario_id = $3
        )
      ORDER BY m.created_at DESC
      LIMIT $2`,
@@ -695,6 +712,104 @@ export async function vaciarCanalParaMi(canalId, usuarioId) {
      ON CONFLICT (canal_id, usuario_id)
      DO UPDATE SET vaciado_hasta = NOW(), updated_at = NOW()`,
     [canalId, usuarioId]
+  );
+
+  return { ok: true, mensaje: 'Chat vaciado' };
+}
+/* =========================================================
+   OCULTAR MENSAJE PARA MÍ (soft delete individual)
+   ========================================================= */
+export async function eliminarMensajeParaMi(mensajeId, usuarioId) {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.conversacion_id, m.canal_id
+     FROM mensajes m
+     WHERE m.id = $1`,
+    [mensajeId]
+  );
+
+  if (!rows[0]) {
+    const err = new Error('Mensaje no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const msg = rows[0];
+
+  // Validar acceso: participante de la conversación o miembro del canal
+  if (msg.conversacion_id) {
+    await verificarParticipante(pool, msg.conversacion_id, usuarioId);
+  } else if (msg.canal_id) {
+    await verificarMiembroCanal(pool, msg.canal_id, usuarioId);
+  }
+
+  await pool.query(
+    `INSERT INTO mensajes_ocultos_usuario (mensaje_id, usuario_id)
+     VALUES ($1, $2)
+     ON CONFLICT (mensaje_id, usuario_id) DO NOTHING`,
+    [mensajeId, usuarioId]
+  );
+
+  return { ok: true, mensaje: 'Mensaje ocultado para ti' };
+}
+
+/* =========================================================
+   ELIMINAR MENSAJE PARA TODOS (solo autor)
+   ========================================================= */
+export async function eliminarMensajeParaTodos(mensajeId, usuarioId) {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.autor_id, m.conversacion_id, m.canal_id
+     FROM mensajes m
+     WHERE m.id = $1`,
+    [mensajeId]
+  );
+
+  if (!rows[0]) {
+    const err = new Error('Mensaje no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const msg = rows[0];
+
+  if (String(msg.autor_id) !== String(usuarioId)) {
+    const err = new Error('Solo podés eliminar tus propios mensajes para todos');
+    err.status = 403;
+    throw err;
+  }
+
+  // Validar acceso
+  if (msg.conversacion_id) {
+    await verificarParticipante(pool, msg.conversacion_id, usuarioId);
+  } else if (msg.canal_id) {
+    await verificarMiembroCanal(pool, msg.canal_id, usuarioId);
+  }
+
+  await pool.query(
+    `UPDATE mensajes
+     SET eliminado_para_todos = TRUE,
+         eliminado_por = $2,
+         eliminado_at = NOW(),
+         texto = NULL,
+         imagen = NULL
+     WHERE id = $1`,
+    [mensajeId, usuarioId]
+  );
+
+  return { ok: true, mensaje: 'Mensaje eliminado para todos' };
+}
+
+/* =========================================================
+   VACIAR CONVERSACIÓN (soft, solo para mí)
+   ========================================================= */
+export async function vaciarConversacionParaMi(conversacionId, usuarioId) {
+  await verificarParticipante(pool, conversacionId, usuarioId);
+
+  await pool.query(
+    `INSERT INTO conversaciones_estado_usuario (conversacion_id, usuario_id, vaciado_hasta, updated_at)
+     VALUES ($1, $2, NOW(), NOW())
+     ON CONFLICT (conversacion_id, usuario_id)
+     DO UPDATE SET vaciado_hasta = NOW(), updated_at = NOW()`,
+    [conversacionId, usuarioId]
   );
 
   return { ok: true, mensaje: 'Chat vaciado' };

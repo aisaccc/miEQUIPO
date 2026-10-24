@@ -36,7 +36,11 @@ import {
   listarMensajesDeCanal as listarMensajesDeCanalAPI,
   enviarMensajeACanal as enviarMensajeACanalAPI,
   marcarCanalLeido as marcarCanalLeidoAPI,
+  eliminarMensajeParaMi,       // ⚡ NUEVO
+  eliminarMensajeParaTodos,    // ⚡ NUEVO
 } from '../services/mensajes.service.js';
+
+import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js'; // ⚡ NUEVO
 
 import {
   listarPublicacionesDeTorneo as listarPubsTorneoAPI,
@@ -1613,12 +1617,19 @@ export async function init(params = {}) {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}">
+        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="5" r="1"/>
+              <circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
           ${!esMio ? `<img src="${avatarDeChat(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
-            ${tieneImagen ? `
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado">🚫 Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${tieneImagen && !m.eliminadoParaTodos ? `
               <div class="msg__imagen-wrapper" data-ver-imagen-torneo="${idx}">
                 <img src="${m.imagen}" alt="" loading="lazy" />
               </div>
@@ -1630,6 +1641,33 @@ export async function init(params = {}) {
         </div>
       `;
     });
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-ver-imagen-torneo]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagenTorneo);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    conectarAccionesMensaje(cont, {
+      usuarioId: user.id,
+      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
+      onCopiar: (texto) => navigator.clipboard.writeText(texto),
+      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
+      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
+      onRefrescar: () => refrescarMensajesCanalTorneo(canalId),
+    });
+
+    if (estabaAbajo || mensajes.length <= 2) {
+      cont.scrollTop = cont.scrollHeight;
+    }
+
+    try {
+      await marcarCanalLeidoAPI(canalId);
+    } catch (err) {}
 
     cont.innerHTML = html;
 

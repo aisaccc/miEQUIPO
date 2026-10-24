@@ -271,6 +271,13 @@ export async function init() {
     const menu = document.createElement('div');
     menu.className = 'conv-menu';
     menu.innerHTML = `
+      <button class="conv-menu__item" data-menu-item="vaciar">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        Vaciar chat
+      </button>
       <button class="conv-menu__item conv-menu__item--danger" data-menu-item="borrar">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"/>
@@ -288,6 +295,12 @@ export async function init() {
     menu.style.top = `${rect.bottom + 6}px`;
     menu.style.left = `${rect.right - 160}px`;
     menu.style.zIndex = '1000';
+
+    menu.querySelector('[data-menu-item="vaciar"]').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      cerrarMenuConv();
+      await vaciarConversacion(convId);
+    });
 
     menu.querySelector('[data-menu-item="borrar"]').addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -331,6 +344,23 @@ export async function init() {
     } catch (err) {
       console.error('[mensajes] Error al borrar:', err);
       toast(err.message || 'No se pudo borrar', 'error');
+    }
+  }
+    async function vaciarConversacion(convId) {
+    if (!confirm('¿Vaciar este chat? Los mensajes se van a ocultar SOLO para ti.')) return;
+
+    try {
+      await vaciarConversacionParaMi(convId);
+
+      if (convActualId === convId) {
+        await refrescarMensajes(convId);
+      }
+      toast('Chat vaciado', 'success');
+      await recargarConversaciones();
+      renderListaConversaciones();
+    } catch (err) {
+      console.error('[mensajes] Error al vaciar:', err);
+      toast(err.message || 'No se pudo vaciar', 'error');
     }
   }
 
@@ -759,12 +789,19 @@ export async function init() {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}">
+        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="5" r="1"/>
+              <circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
-            ${tieneImagen ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado">🚫 Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
             <div class="msg__meta">
               <span class="msg__hora">${horaCorta(m.createdAt)}</span>
             </div>
@@ -772,6 +809,50 @@ export async function init() {
         </div>
       `;
     });
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagen);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    conectarAccionesMensaje(cont, {
+      usuarioId: user.id,
+      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
+      onCopiar: (texto) => navigator.clipboard.writeText(texto),
+      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
+      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
+      onRefrescar: () => refrescarMensajesCanal(canalId),
+    });
+
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarCanalLeido(canalId); } catch (err) {}
+
+    cont.innerHTML = html;
+
+    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.verImagen);
+        const m = mensajes[idx];
+        if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    conectarAccionesMensaje(cont, {
+      usuarioId: user.id,
+      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
+      onCopiar: (texto) => navigator.clipboard.writeText(texto),
+      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
+      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
+      onRefrescar: () => refrescarMensajes(convId),
+    });
+
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarLeidos(convId); } catch (err) {}
 
     cont.innerHTML = html;
 

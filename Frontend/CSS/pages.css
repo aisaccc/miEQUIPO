@@ -14265,3 +14265,139 @@ select.field__input {
 [data-theme="dark"] .conv-item__dropdown-item--danger:hover {
   background: rgba(220, 38, 38, 0.15);
 }
+/* =========================================================
+   ACCIONES SOBRE MENSAJES (copiar / eliminar)
+   ========================================================= */
+
+.msg {
+  position: relative;
+}
+
+/* Botón ⋯ que aparece al hover (desktop) */
+.msg-menu-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 3;
+}
+
+.msg:hover .msg-menu-btn {
+  opacity: 1;
+}
+
+.msg-menu-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.msg--yo .msg-menu-btn {
+  right: auto;
+  left: 4px;
+}
+
+/* En mobile no mostramos el botón ⋯ (se usa long press) */
+@media (max-width: 768px) {
+  .msg-menu-btn {
+    display: none;
+  }
+}
+
+/* Cuando hay un menú abierto, resaltar el mensaje */
+.msg:has(.msg-menu) .msg__burbuja {
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Menú flotante */
+.msg-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(26, 24, 21, 0.18);
+  padding: 4px;
+  z-index: 100;
+  animation: dropdownIn 0.15s ease;
+}
+
+.msg--yo .msg-menu {
+  right: auto;
+  left: 0;
+}
+
+.msg-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+  font-family: inherit;
+}
+
+.msg-menu__item:hover {
+  background: var(--color-surface-2);
+}
+
+.msg-menu__item--danger {
+  color: var(--color-danger);
+}
+
+.msg-menu__item--danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.msg-menu__item svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+/* Placeholder de "mensaje eliminado" */
+.msg__eliminado {
+  font-style: italic;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.8;
+}
+
+.msg--yo .msg__eliminado {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Modo oscuro */
+[data-theme="dark"] .msg-menu {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .msg-menu__item:hover {
+  background: var(--color-surface-2);
+}
+
+[data-theme="dark"] .msg-menu__item--danger:hover {
+  background: rgba(220, 38, 38, 0.15);
+}

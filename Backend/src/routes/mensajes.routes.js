@@ -43,5 +43,15 @@ router.patch('/canales/:id/leidos', mensajesController.marcarCanalLeido);
    ========================================================= */
 router.delete('/canales/:id/para-mi', mensajesController.eliminarCanalParaMi);
 router.post('/canales/:id/vaciar-para-mi', mensajesController.vaciarCanalParaMi);
+/* =========================================================
+   MENSAJES — acciones por usuario
+   ========================================================= */
+router.delete('/mensajes/:id/para-mi', mensajesController.eliminarMensajeParaMi);
+router.delete('/mensajes/:id/para-todos', mensajesController.eliminarMensajeParaTodos);
+
+/* =========================================================
+   CONVERSACIONES — acciones por usuario
+   ========================================================= */
+router.post('/conversaciones/:id/vaciar-para-mi', mensajesController.vaciarConversacionParaMi);
 
 export default router;
