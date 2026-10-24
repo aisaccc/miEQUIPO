@@ -1216,3 +1216,15 @@ document.addEventListener('DOMContentLoaded', () => {
     observerImgModal.observe(imgModal, { attributes: true });
   }
 });
+// ⚡ Cerrar visor de imagen al hacer clic fuera de la foto
+document.addEventListener('click', (e) => {
+  const imgModal = document.getElementById('modal-ver-imagen');
+  if (!imgModal || !imgModal.classList.contains('open')) return;
+  
+  // Si el clic es en la foto, no cerrar
+  if (e.target.closest('.modal-imagen-body img')) return;
+  // Si el clic es en la X, ya lo maneja el listener [data-cerrar-modal] existente
+  if (e.target.closest('[data-cerrar-modal="modal-ver-imagen"]')) return;
+  
+  cerrarModal('modal-ver-imagen');
+});
