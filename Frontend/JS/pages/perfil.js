@@ -713,9 +713,29 @@ export async function init() {
       };
     }
 
+    // ⚡ Colores del banner
+    let colorSel = u.heroColor || 'navy';
+    const contColores = document.getElementById('edit-perf-hero-colores');
+    if (contColores) {
+      contColores.innerHTML = HERO_COLORS.map(c => `
+        <button type="button"
+                class="perfil-color-btn ${c.key === colorSel ? 'active' : ''}"
+                data-color="${c.key}"
+                title="${c.label}"
+                style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%)"></button>
+      `).join('');
+
+      contColores.querySelectorAll('[data-color]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          contColores.querySelectorAll('[data-color]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          colorSel = btn.dataset.color;
+        });
+      });
+    }
+
     // ⚡ Foto de banner
     let heroFotoSel = u.heroFoto || null;
-
     const previewHeroWrapper = document.getElementById('edit-perf-hero-foto-preview-wrapper');
     const previewHeroImg = document.getElementById('edit-perf-hero-foto-preview');
 
