@@ -1389,3 +1389,160 @@ select.field__input {
     padding: 16px !important;
   }
 }
+/* =========================================================
+   ⚡ FIX DEFINITIVO: MODAL DE PERFIL EN MÓVIL
+   ========================================================= */
+
+/* 1. Bloquear scroll del body cuando el modal está abierto */
+body:has(#modal-ver-perfil.open) {
+  overflow: hidden !important;
+}
+
+@media (max-width: 900px) {
+  /* 2. El contenedor del modal ocupa exactamente la pantalla */
+  #modal-ver-perfil {
+    padding: 0 !important;
+    z-index: 2000 !important;
+  }
+  
+  #modal-ver-perfil .modal {
+    width: 100% !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    background: var(--color-bg) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  /* 3. El header con la X flota arriba a la derecha */
+  #modal-ver-perfil .modal__header {
+    position: absolute !important;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  #modal-ver-perfil .modal__title { display: none !important; }
+
+  #modal-ver-perfil .modal__close {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.2) !important;
+  }
+
+  /* 4. El body del modal hace el scroll y encierra el contenido */
+  #modal-ver-perfil .modal__body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important; /* ⚡ ESTO QUITA EL SCROLL HORIZONTAL */
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 5. Aplanar la tarjeta del perfil para que ocupe todo el ancho */
+  #modal-ver-perfil .perfil-header-card {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    background: var(--color-surface) !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__banner {
+    border-radius: 0 !important;
+    height: 160px !important;
+    width: 100% !important;
+  }
+
+  /* 6. Acomodar el contenido (Avatar, Nombre, Datos) */
+  #modal-ver-perfil .perfil-header-card__content {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 0 20px 20px !important;
+    margin-top: -50px !important; /* Sube el avatar para que pise el banner */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__left {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    gap: 16px !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__avatar {
+    width: 100px !important;
+    height: 100px !important;
+    border-radius: 20px !important;
+    border: 4px solid var(--color-surface) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    z-index: 2 !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__info {
+    width: 100% !important;
+    padding-top: 0 !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__name {
+    font-size: 28px !important;
+    margin: 0 0 8px 0 !important;
+    color: var(--color-text) !important;
+    word-break: break-word !important;
+    line-height: 1.1 !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__sub,
+  #modal-ver-perfil .perfil-header-card__bio {
+    color: var(--color-text-muted) !important;
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+  }
+
+  #modal-ver-perfil .perfil-hero__chips {
+    margin-top: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  #modal-ver-perfil .perfil-header-card__actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 8px !important;
+  }
+
+  /* 7. Arreglar las publicaciones para que no se salgan de la pantalla */
+  #modal-ver-perfil .pubs-grid {
+    margin: 0 !important;
+    padding: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  #modal-ver-perfil .feed-post,
+  #modal-ver-perfil .post {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}

@@ -14049,11 +14049,6 @@ select.field__input {
     border-radius: 0 !important;
   }
 
-  #modal-ver-perfil .feed-post,
-  #modal-ver-perfil .post {
-    margin-left: -24px !important;
-    margin-right: -24px !important;
-  }
 }
 .grupo-card__stats--1 {
   grid-template-columns: 1fr;
@@ -14100,4 +14095,12 @@ select.field__input {
   height: 100%;
   object-fit: cover;
   aspect-ratio: 1;
+}
+.perfil-header-card__bio {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  max-width: 100%;
 }
