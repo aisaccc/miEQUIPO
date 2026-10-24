@@ -1959,7 +1959,7 @@ export async function init(params = {}) {
     const visitaId = document.getElementById('editar-cruce-visitante')?.value || null;
 
     if (!localId && !visitaId) {
-      if (!confirm('Este cruce va a quedar vacío. ¿Querés borrarlo?')) return;
+      if (!confirm('Este cruce va a quedar vacío. ¿Quierés borrarlo?')) return;
 
       try {
         await eliminarPartidoTorneoAPI(t.id, partido.id);
