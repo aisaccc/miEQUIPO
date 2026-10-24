@@ -415,8 +415,19 @@ export async function init() {
     if (esPublico) {
       const contenedor = document.getElementById('resultados-busqueda');
       if (!contenedor) return;
+
+      // ⚡ FIX: ocultar el chrome de la página y la tarjeta de filtros
+      // cuando se abre el detalle de un grupo desde "Buscar"
+      ocultarChromePagina();
+      const panelBuscar = document.getElementById('panel-buscar');
+      const filtrosCard = panelBuscar?.querySelector('.card');
+      if (filtrosCard) filtrosCard.classList.add('hidden');
+
       await renderGrupoPublico(contenedor, grupo.id, {
         onVolver: () => {
+          // ⚡ Restaurar chrome y filtros al volver
+          mostrarChromePagina();
+          if (filtrosCard) filtrosCard.classList.remove('hidden');
           grupoAbiertoBuscar = null;
           renderPanelBuscar();
         }
@@ -426,6 +437,7 @@ export async function init() {
 
     // ⚡ Full-page feel: ocultamos el hero de la pestaña y los subtabs
     ocultarChromePagina();
+    // ... resto del código igual que ahora ...
 
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
