@@ -1526,3 +1526,31 @@ body:has(#modal-ver-perfil.open) {
     border-right: none !important;
   }
 }
+/* =========================================================
+   FIX: Evitar que el modal de perfil quede en blanco si falla
+   ========================================================= */
+#modal-ver-perfil .modal__body {
+  min-height: 300px; /* Para que se vea algo aunque esté cargando */
+  position: relative;
+}
+
+#modal-ver-perfil .empty-state,
+#modal-ver-perfil .page-loader {
+  padding: 40px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--color-text) !important;
+  text-align: center !important;
+}
+
+#modal-ver-perfil .empty-state__icon {
+  margin-bottom: 16px;
+  color: var(--color-primary) !important;
+}
+
+#modal-ver-perfil .empty-state p {
+  color: var(--color-text-muted) !important;
+  font-size: 16px;
+}
