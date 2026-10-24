@@ -12,9 +12,13 @@ import {
   obtenerCanal,
   listarMensajesDeCanal,
   enviarMensajeACanal,
-  marcarCanalLeido
+  marcarCanalLeido,
+  vaciarConversacionParaMi,    // ⚡ NUEVO
+  eliminarMensajeParaMi,       // ⚡ NUEVO
+  eliminarMensajeParaTodos     // ⚡ NUEVO
 } from '../services/mensajes.service.js';
 import { listarGrupos } from '../services/grupos.service.js';
+import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js'; // ⚡ NUEVO
 
 export async function init() {
   const user = getSesion();
@@ -24,7 +28,7 @@ export async function init() {
   const panelMensajes = document.getElementById('panel-mensajes');
   const buscarConv = document.getElementById('buscar-conversacion');
   const btnNuevaConv = document.getElementById('btn-nueva-conv');
-  const layoutLista = document.querySelector('.chat-layout__list'); // ⚡ NUEVO
+  const layoutLista = document.querySelector('.chat-layout__list'); 
 
   if (!listaConversaciones) return null;
 
@@ -89,11 +93,10 @@ export async function init() {
     return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
   }
 
-  // ⚡ Función para volver a la lista en móvil
   function volverALista() {
     panelMensajes.classList.remove('chat-layout__panel--abierto');
     layoutLista.classList.remove('chat-layout__list--oculto');
-    convActualId = null; // Opcional: deseleccionar
+    convActualId = null;
   }
 
   function abrirModalVerImagen(src) {
@@ -263,7 +266,7 @@ export async function init() {
   }
 
   /* =========================================================
-     MENÚ DE OPCIONES (⋯)
+     MENÚ DE OPCIONES (⋯) DE LA LISTA
      ========================================================= */
   function abrirMenuConv(convId, btn) {
     cerrarMenuConv();
@@ -326,7 +329,7 @@ export async function init() {
 
       if (convActualId === convId) {
         convActualId = null;
-        volverALista(); // ⚡ VOLVEMOS A LA LISTA
+        volverALista();
         panelMensajes.innerHTML = `
           <div class="chat-empty">
             <div class="chat-empty__icon">
@@ -346,7 +349,8 @@ export async function init() {
       toast(err.message || 'No se pudo borrar', 'error');
     }
   }
-    async function vaciarConversacion(convId) {
+
+  async function vaciarConversacion(convId) {
     if (!confirm('¿Vaciar este chat? Los mensajes se van a ocultar SOLO para ti.')) return;
 
     try {
@@ -373,7 +377,6 @@ export async function init() {
     ultimaConvRenderizada = null;
     imagenBase64 = null;
 
-    // ⚡ EFECTO INSTAGRAM: Ocultar lista, mostrar panel
     layoutLista.classList.add('chat-layout__list--oculto');
     panelMensajes.classList.add('chat-layout__panel--abierto');
 
@@ -403,7 +406,6 @@ export async function init() {
     ultimaConvRenderizada = null;
     imagenBase64 = null;
 
-    // ⚡ EFECTO INSTAGRAM: Ocultar lista, mostrar panel
     layoutLista.classList.add('chat-layout__list--oculto');
     panelMensajes.classList.add('chat-layout__panel--abierto');
 
@@ -454,7 +456,6 @@ export async function init() {
 
     panelMensajes.innerHTML = `
       <div class="chat-header">
-        <!-- ⚡ BOTÓN VOLVER (Solo visible en móvil) -->
         <button class="chat-back-btn" id="btn-volver-chat">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>
@@ -462,8 +463,7 @@ export async function init() {
           </svg>
         </button>
 
-        <img src="${avatarDe(otro)}" class="chat-header__avatar" alt=""
-             data-ver-perfil="${otro.id}" style="cursor:pointer" />
+        <img src="${avatarDe(otro)}" class="chat-header__avatar" alt="" data-ver-perfil="${otro.id}" style="cursor:pointer" />
         <div class="chat-header__info" data-ver-perfil="${otro.id}" style="cursor:pointer">
           <div class="chat-header__name">${escapeHtml(otro.nombre)}</div>
           <div class="chat-header__sub">@${escapeHtml(otro.username || 'usuario')}</div>
@@ -497,13 +497,7 @@ export async function init() {
           <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
         </label>
 
-        <input
-          type="text"
-          id="chat-input-texto"
-          placeholder="Escribí un mensaje..."
-          maxlength="2000"
-          autocomplete="off"
-        />
+        <input type="text" id="chat-input-texto" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
 
         <button type="submit" class="chat-input__btn" title="Enviar">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -514,7 +508,6 @@ export async function init() {
       </form>
     `;
 
-    // ⚡ Evento del botón Volver
     document.getElementById('btn-volver-chat')?.addEventListener('click', volverALista);
 
     panelMensajes.querySelectorAll('[data-ver-perfil]').forEach(el => {
@@ -528,25 +521,15 @@ export async function init() {
     document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      if (file.size > 3 * 1024 * 1024) {
-        toast('La imagen es muy grande (máx 3MB)', 'error');
-        e.target.value = '';
-        return;
-      }
-
+      if (file.size > 3 * 1024 * 1024) { toast('La imagen es muy grande (máx 3MB)', 'error'); e.target.value = ''; return; }
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        imagenBase64 = ev.target.result;
-        mostrarPreviewImagen(imagenBase64);
-      };
+      reader.onload = (ev) => { imagenBase64 = ev.target.result; mostrarPreviewImagen(imagenBase64); };
       reader.readAsDataURL(file);
       e.target.value = '';
     });
 
     document.getElementById('chat-input-preview-del')?.addEventListener('click', () => {
-      imagenBase64 = null;
-      ocultarPreviewImagen();
+      imagenBase64 = null; ocultarPreviewImagen();
     });
 
     document.getElementById('chat-form')?.addEventListener('submit', async (e) => {
@@ -572,7 +555,6 @@ export async function init() {
 
     panelMensajes.innerHTML = `
       <div class="chat-header">
-        <!-- ⚡ BOTÓN VOLVER (Solo visible en móvil) -->
         <button class="chat-back-btn" id="btn-volver-chat">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"/>
@@ -606,13 +588,7 @@ export async function init() {
           <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
         </label>
 
-        <input
-          type="text"
-          id="chat-input-texto"
-          placeholder="Escribí un mensaje..."
-          maxlength="2000"
-          autocomplete="off"
-        />
+        <input type="text" id="chat-input-texto" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
 
         <button type="submit" class="chat-input__btn" title="Enviar">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -623,7 +599,6 @@ export async function init() {
       </form>
     `;
 
-    // ⚡ Evento del botón Volver
     document.getElementById('btn-volver-chat')?.addEventListener('click', volverALista);
 
     document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
@@ -655,7 +630,6 @@ export async function init() {
     const wrapper = document.getElementById('chat-input-preview');
     const img = document.getElementById('chat-input-preview-img');
     if (!wrapper || !img) return;
-
     img.src = src;
     wrapper.classList.remove('hidden');
   }
@@ -664,7 +638,6 @@ export async function init() {
     const wrapper = document.getElementById('chat-input-preview');
     const img = document.getElementById('chat-input-preview-img');
     if (!wrapper || !img) return;
-
     img.src = '';
     wrapper.classList.add('hidden');
   }
@@ -717,11 +690,18 @@ export async function init() {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}">
+        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="12" cy="5" r="1"/>
+              <circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
-            ${tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : ''}
-            ${tieneImagen ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado">🚫 Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
             <div class="msg__meta">
               <span class="msg__hora">${horaCorta(m.createdAt)}</span>
               ${esUltimoMio ? leidoHtml : ''}
@@ -739,6 +719,15 @@ export async function init() {
         const m = mensajes[idx];
         if (m?.imagen) abrirModalVerImagen(m.imagen);
       });
+    });
+
+    conectarAccionesMensaje(cont, {
+      usuarioId: user.id,
+      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
+      onCopiar: (texto) => navigator.clipboard.writeText(texto),
+      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
+      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
+      onRefrescar: () => refrescarMensajes(convId),
     });
 
     if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
@@ -827,41 +816,6 @@ export async function init() {
       onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
       onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
       onRefrescar: () => refrescarMensajesCanal(canalId),
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
-    try { await marcarCanalLeido(canalId); } catch (err) {}
-
-    cont.innerHTML = html;
-
-    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagen);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
-    });
-
-    conectarAccionesMensaje(cont, {
-      usuarioId: user.id,
-      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
-      onCopiar: (texto) => navigator.clipboard.writeText(texto),
-      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
-      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
-      onRefrescar: () => refrescarMensajes(convId),
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
-    try { await marcarLeidos(convId); } catch (err) {}
-
-    cont.innerHTML = html;
-
-    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagen);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
     });
 
     if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;

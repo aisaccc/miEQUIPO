@@ -14318,24 +14318,42 @@ select.field__input {
   box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
+/* ... (deja los estilos de .msg-menu-btn igual) ... */
+
 /* Menú flotante */
 .msg-menu {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  /* ⚡ Por defecto (mensaje del otro): abre hacia la derecha */
+  left: 0;
+  right: auto;
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(26, 24, 21, 0.18);
   padding: 4px;
-  z-index: 100;
+  z-index: 1000; /* ⚡ Z-INDEX ALTO para que no lo tape nada */
   animation: dropdownIn 0.15s ease;
 }
 
+/* ⚡ Si es mi mensaje (alineado a la derecha): abre hacia la izquierda para que no se corte */
 .msg--yo .msg-menu {
-  right: auto;
-  left: 0;
+  left: auto;
+  right: 0;
+}
+
+/* Submenú */
+.msg-menu__sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
+.msg-menu__sub[hidden] {
+  display: none;
 }
 
 .msg-menu__item {
@@ -14366,38 +14384,4 @@ select.field__input {
 
 .msg-menu__item--danger:hover {
   background: rgba(220, 38, 38, 0.08);
-}
-
-.msg-menu__item svg {
-  flex-shrink: 0;
-  stroke: currentColor;
-}
-
-/* Placeholder de "mensaje eliminado" */
-.msg__eliminado {
-  font-style: italic;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.8;
-}
-
-.msg--yo .msg__eliminado {
-  color: rgba(255, 255, 255, 0.75);
-}
-
-/* Modo oscuro */
-[data-theme="dark"] .msg-menu {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-[data-theme="dark"] .msg-menu__item:hover {
-  background: var(--color-surface-2);
-}
-
-[data-theme="dark"] .msg-menu__item--danger:hover {
-  background: rgba(220, 38, 38, 0.15);
 }

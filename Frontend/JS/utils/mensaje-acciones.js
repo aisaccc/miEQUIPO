@@ -1,31 +1,9 @@
 /* =========================================================
    mensaje-acciones.js — Menú de acciones sobre mensajes
-   =========================================================
-   Usado por:
-   - JS/pages/mi-equipo.js (chats de equipos/comunidades)
-   - JS/pages/mensajes.js (chats 1 a 1)
-   - JS/pages/torneo-detalle.js (chat de torneos)
-
-   Requiere que cada mensaje renderizado tenga:
-   - class="msg"
-   - data-msg-id="<uuid del mensaje>"
-   - data-msg-autor-id="<uuid del autor>"
-
-   Uso:
-   import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
-
-   conectarAccionesMensaje(contenedor, {
-     usuarioId: user.id,
-     onCopiar: (texto) => navigator.clipboard.writeText(texto),
-     onEliminarParaMi: async (msgId) => { ... },
-     onEliminarParaTodos: async (msgId) => { ... },
-     onRefrescar: () => { ... }, // opcional: refrescar la lista de mensajes
-   });
    ========================================================= */
-
 import { toast } from '../components.js';
 
-const LONG_PRESS_MS = 500;
+const LONG_PRESS_MS = 600; // 0.6 segundos es más cómodo en móvil
 const MOVE_TOLERANCE_PX = 10;
 
 let menuAbiertoEl = null;
@@ -42,6 +20,7 @@ function cerrarMenuActual() {
   }
 }
 
+// Cerrar al hacer clic fuera
 document.addEventListener('click', (e) => {
   if (menuAbiertoEl && !menuAbiertoEl.contains(e.target) && !e.target.closest('[data-msg-menu-btn]')) {
     cerrarMenuActual();
@@ -54,6 +33,10 @@ function crearMenu({ msg, usuarioId, onCopiar, onEliminarParaMi, onEliminarParaT
 
   const menu = document.createElement('div');
   menu.className = 'msg-menu';
+
+  // Evitamos que el menú herede eventos del mensaje
+  menu.addEventListener('pointerdown', (e) => e.stopPropagation());
+  menu.addEventListener('touchstart', (e) => e.stopPropagation());
 
   menu.innerHTML = `
     ${tieneTexto ? `
@@ -76,7 +59,6 @@ function crearMenu({ msg, usuarioId, onCopiar, onEliminarParaMi, onEliminarParaT
     </button>
   `;
 
-  // Submenú de "Eliminar"
   const submenu = document.createElement('div');
   submenu.className = 'msg-menu__sub';
   submenu.hidden = true;
@@ -156,25 +138,18 @@ function abrirMenuEnMensaje(msgEl, msg, ctx) {
   msgEl.appendChild(menu);
   menuAbiertoEl = menu;
 
-  // Cerrar al scrollear fuera o resize
+  // Cerrar si se hace scroll
   const cerrar = () => cerrarMenuActual();
   window.addEventListener('scroll', cerrar, { once: true, capture: true });
-  window.addEventListener('resize', cerrar, { once: true });
   menuAbiertoCerrar = () => {
     window.removeEventListener('scroll', cerrar, { capture: true });
-    window.removeEventListener('resize', cerrar);
   };
 }
 
 export function conectarAccionesMensaje(contenedor, ctx) {
   if (!contenedor) return;
 
-  const mensajesPorId = new Map();
-  contenedor.querySelectorAll('.msg[data-msg-id]').forEach(el => {
-    el.dataset.accionesConectadas = '1';
-  });
-
-  // Click en el botón ⋯ (desktop)
+  // 1. Click en el botón ⋯ (Web / Escritorio)
   contenedor.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-msg-menu-btn]');
     if (!btn) return;
@@ -184,48 +159,71 @@ export function conectarAccionesMensaje(contenedor, ctx) {
     if (!msgEl) return;
 
     const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
-    if (!msg) return;
-
-    abrirMenuEnMensaje(msgEl, msg, ctx);
+    if (msg) abrirMenuEnMensaje(msgEl, msg, ctx);
   });
 
-  // Long press (mobile)
+  // 2. Long Press Manual (Para móviles que no disparan contextmenu)
   let pressTimer = null;
   let startX = 0, startY = 0;
-  let pressMsgEl = null;
-
-  contenedor.addEventListener('touchstart', (e) => {
-    const msgEl = e.target.closest('.msg[data-msg-id]');
-    if (!msgEl) return;
-    if (e.touches.length !== 1) return;
-
-    pressMsgEl = msgEl;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-
-    pressTimer = setTimeout(() => {
-      const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
-      if (msg) abrirMenuEnMensaje(msgEl, msg, ctx);
-      if (navigator.vibrate) navigator.vibrate(30);
-      pressTimer = null;
-    }, LONG_PRESS_MS);
-  }, { passive: true });
+  let longPressActivado = false;
 
   const cancelarPress = () => {
     if (pressTimer) {
       clearTimeout(pressTimer);
       pressTimer = null;
     }
-    pressMsgEl = null;
   };
 
-  contenedor.addEventListener('touchmove', (e) => {
-    if (!pressTimer || !e.touches[0]) return;
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    const dy = Math.abs(e.touches[0].clientY - startY);
-    if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) cancelarPress();
+  contenedor.addEventListener('pointerdown', (e) => {
+    // Solo si es un toque táctil o clic izquierdo
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    
+    const msgEl = e.target.closest('.msg[data-msg-id]');
+    if (!msgEl) return;
+    if (e.target.closest('[data-msg-menu-btn]')) return; // Ignorar si tocan el botón
+
+    startX = e.clientX;
+    startY = e.clientY;
+    longPressActivado = false;
+
+    pressTimer = setTimeout(() => {
+      const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
+      if (msg) {
+        abrirMenuEnMensaje(msgEl, msg, ctx);
+        if (navigator.vibrate) navigator.vibrate(30);
+        longPressActivado = true;
+        
+        // Prevenir selección de texto
+        window.getSelection()?.removeAllRanges();
+      }
+      pressTimer = null;
+    }, LONG_PRESS_MS);
   }, { passive: true });
 
-  contenedor.addEventListener('touchend', cancelarPress, { passive: true });
-  contenedor.addEventListener('touchcancel', cancelarPress, { passive: true });
+  contenedor.addEventListener('pointermove', (e) => {
+    if (!pressTimer) return;
+    const dx = Math.abs(e.clientX - startX);
+    const dy = Math.abs(e.clientY - startY);
+    if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) {
+      cancelarPress(); // Si mueve el dedo, es scroll, no long press
+    }
+  }, { passive: true });
+
+  contenedor.addEventListener('pointerup', cancelarPress, { passive: true });
+  contenedor.addEventListener('pointercancel', cancelarPress, { passive: true });
+  contenedor.addEventListener('pointerleave', cancelarPress, { passive: true });
+
+  // 3. Evento ContextMenu (El nativo de long-press en móviles modernos)
+  contenedor.addEventListener('contextmenu', (e) => {
+    const msgEl = e.target.closest('.msg[data-msg-id]');
+    if (!msgEl) return;
+    
+    e.preventDefault(); // Evitar el menú por defecto del navegador
+    e.stopPropagation();
+
+    cancelarPress(); // Cancelar el temporizador manual si el nativo se dispara primero
+
+    const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
+    if (msg) abrirMenuEnMensaje(msgEl, msg, ctx);
+  });
 }
