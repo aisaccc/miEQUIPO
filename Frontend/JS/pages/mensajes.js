@@ -690,7 +690,8 @@ export async function init() {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+        <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          ${!m.eliminadoParaTodos ? `
           <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/>
@@ -698,6 +699,7 @@ export async function init() {
               <circle cx="12" cy="19" r="1"/>
             </svg>
           </button>
+          ` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${m.eliminadoParaTodos ? `<div class="msg__eliminado">🚫 Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
@@ -778,7 +780,8 @@ export async function init() {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+        <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          ${!m.eliminadoParaTodos ? `
           <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/>
@@ -786,6 +789,7 @@ export async function init() {
               <circle cx="12" cy="19" r="1"/>
             </svg>
           </button>
+          ` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}

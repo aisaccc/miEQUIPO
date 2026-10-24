@@ -153,19 +153,22 @@ export function conectarAccionesMensaje(contenedor, ctx) {
   contenedor.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-msg-menu-btn]');
     if (!btn) return;
-    e.stopPropagation();
 
     const msgEl = btn.closest('.msg[data-msg-id]');
     if (!msgEl) return;
+    if (msgEl.classList.contains('msg--eliminado')) return; // ⚡ IGNORAR ELIMINADOS
+
+    e.stopPropagation();
 
     const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
-    if (msg) abrirMenuEnMensaje(msgEl, msg, ctx);
+    if (!msg || msg.eliminadoParaTodos) return; // ⚡ Doble chequeo
+
+    abrirMenuEnMensaje(msgEl, msg, ctx);
   });
 
   // 2. Long Press Manual (Para móviles que no disparan contextmenu)
   let pressTimer = null;
   let startX = 0, startY = 0;
-  let longPressActivado = false;
 
   const cancelarPress = () => {
     if (pressTimer) {
@@ -175,25 +178,21 @@ export function conectarAccionesMensaje(contenedor, ctx) {
   };
 
   contenedor.addEventListener('pointerdown', (e) => {
-    // Solo si es un toque táctil o clic izquierdo
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    
+
     const msgEl = e.target.closest('.msg[data-msg-id]');
     if (!msgEl) return;
-    if (e.target.closest('[data-msg-menu-btn]')) return; // Ignorar si tocan el botón
+    if (msgEl.classList.contains('msg--eliminado')) return; // ⚡ IGNORAR ELIMINADOS
+    if (e.target.closest('[data-msg-menu-btn]')) return;
 
     startX = e.clientX;
     startY = e.clientY;
-    longPressActivado = false;
 
     pressTimer = setTimeout(() => {
       const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
-      if (msg) {
+      if (msg && !msg.eliminadoParaTodos) { // ⚡ Doble chequeo
         abrirMenuEnMensaje(msgEl, msg, ctx);
         if (navigator.vibrate) navigator.vibrate(30);
-        longPressActivado = true;
-        
-        // Prevenir selección de texto
         window.getSelection()?.removeAllRanges();
       }
       pressTimer = null;
@@ -205,7 +204,7 @@ export function conectarAccionesMensaje(contenedor, ctx) {
     const dx = Math.abs(e.clientX - startX);
     const dy = Math.abs(e.clientY - startY);
     if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) {
-      cancelarPress(); // Si mueve el dedo, es scroll, no long press
+      cancelarPress();
     }
   }, { passive: true });
 
@@ -217,13 +216,16 @@ export function conectarAccionesMensaje(contenedor, ctx) {
   contenedor.addEventListener('contextmenu', (e) => {
     const msgEl = e.target.closest('.msg[data-msg-id]');
     if (!msgEl) return;
-    
-    e.preventDefault(); // Evitar el menú por defecto del navegador
+    if (msgEl.classList.contains('msg--eliminado')) return; // ⚡ IGNORAR ELIMINADOS
+
+    e.preventDefault();
     e.stopPropagation();
 
-    cancelarPress(); // Cancelar el temporizador manual si el nativo se dispara primero
+    cancelarPress();
 
     const msg = ctx.obtenerMensajePorId?.(msgEl.dataset.msgId);
-    if (msg) abrirMenuEnMensaje(msgEl, msg, ctx);
+    if (msg && !msg.eliminadoParaTodos) { // ⚡ Doble chequeo
+      abrirMenuEnMensaje(msgEl, msg, ctx);
+    }
   });
 }

@@ -975,7 +975,8 @@ export async function init() {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+        <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          ${!m.eliminadoParaTodos ? `
           <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/>
@@ -983,6 +984,7 @@ export async function init() {
               <circle cx="12" cy="19" r="1"/>
             </svg>
           </button>
+          ` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
@@ -1026,26 +1028,6 @@ export async function init() {
     try {
       await marcarCanalLeidoAPI(canalId);
     } catch (err) {}
-
-    cont.innerHTML = html;
-
-    cont.querySelectorAll('[data-ver-imagen-detalle]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagenDetalle);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) {
-      cont.scrollTop = cont.scrollHeight;
-    }
-
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {
-      // Silencioso
-    }
   }
 
   async function enviarMensajeEnDetalle(canalId) {
@@ -1934,7 +1916,8 @@ async function renderPanelCanalGlobal(canalId) {
       const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+        <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
+          ${!m.eliminadoParaTodos ? `
           <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="1"/>
@@ -1942,6 +1925,7 @@ async function renderPanelCanalGlobal(canalId) {
               <circle cx="12" cy="19" r="1"/>
             </svg>
           </button>
+          ` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
@@ -1985,28 +1969,7 @@ async function renderPanelCanalGlobal(canalId) {
     try {
       await marcarCanalLeidoAPI(canalId);
     } catch (err) {}
-
-    cont.innerHTML = html;
-
-    cont.querySelectorAll('[data-ver-imagen-global]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagenGlobal);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) {
-      cont.scrollTop = cont.scrollHeight;
-    }
-
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {
-      // Silencioso
-    }
   }
-
   async function enviarMensajeGlobal(canalId) {
     const input = document.getElementById('chat-input-canal');
     if (!input) return;
