@@ -1401,17 +1401,22 @@ body:has(#modal-ver-perfil.open) {
 /* =========================================================
    FIX DEFINITIVO: MODAL PERFIL FULLSCREEN EN MÓVIL
    ========================================================= */
-/* =========================================================
-   FIX DEFINITIVO E IGNORANTE: MODAL PERFIL EN MÓVIL
-   ========================================================= */
 @media (max-width: 900px) {
   
-  /* 1. Rompemos el backdrop para que no centre nada */
-  #modal-ver-perfil.modal-backdrop {
+  /* 1. Rompemos el backdrop para que no centre nada
+     ⚡ FIX: solo aplicamos display:block cuando el modal está ABIERTO */
+  #modal-ver-perfil.modal-backdrop.open {
     padding: 0 !important;
     background: var(--color-bg) !important;
-    display: block !important; 
+    display: block !important;
   }
+
+  /* Aseguramos que cuando NO está abierto, quede oculto */
+  #modal-ver-perfil.modal-backdrop:not(.open) {
+    display: none !important;
+  }
+  
+  /* ... resto del bloque ... */
 
   /* 2. El modal toma toda la pantalla real, ignorando el 90vh de layout.css */
   #modal-ver-perfil .modal {
