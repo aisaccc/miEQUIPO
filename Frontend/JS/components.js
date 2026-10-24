@@ -1,14 +1,6 @@
 /* =========================================================
    components.js — Header, menú, toasts, notifs, config (v2)
-   =========================================================
-   Cambios v2:
-   - Polling con setTimeout recursivo + jitter (no setInterval)
-   - Guards isFetching* para evitar solapamiento
-   - Pausa polling si document.hidden
-   - Recarga al volver a la pestaña (visibilitychange)
-   - Intervalos más largos (30s amigos/notifs, 20s mensajes)
-   - Flags para no re-inicializar
-*/
+   ========================================================= */
 
 import { getSesion, cerrarSesion } from './auth.js';
 import { ICONOS } from './utils/iconos.js';
@@ -35,7 +27,8 @@ import {
   obtenerEstado as obtenerEstadoAPI,
   eliminarAmistad as eliminarAmistadAPI,
   bloquearUsuario as bloquearUsuarioAPI,
-  desbloquearUsuario as desbloquearUsuarioAPI
+  desbloquearUsuario as desbloquearUsuarioAPI,
+  listarBloqueados as listarBloqueadosAPI // ⚡ AGREGADO ACÁ
 } from './services/amistades.service.js';
 
 import { renderFeedPublicaciones } from './utils/publicaciones-ui.js';
@@ -130,7 +123,6 @@ export function initHeader() {
       btn.addEventListener('click', () => {
         const accion = btn.dataset.action;
         
-        // ⚡ Dejamos que 'logout' se maneje globalmente en main.js para evitar doble confirmación
         if (accion === 'perfil') {
           window.location.hash = '#/perfil';
           menu.classList.remove('open');
@@ -221,10 +213,8 @@ export function initDropdowns() {
     });
   });
 
-  // Primera carga (inmediata, main.js ya la retrasó 400ms)
   cargarAmigosHeader();
 
-  // ⚡ Polling recursivo con jitter
   const loop = async () => {
     if (!document.hidden) {
       await cargarAmigosHeader(true);
@@ -233,7 +223,6 @@ export function initDropdowns() {
   };
   amigosTimerId = setTimeout(loop, POLL_AMIGOS_MS);
 
-  // ⚡ Al volver a la pestaña, recargar
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) cargarAmigosHeader(true);
   });
@@ -270,7 +259,6 @@ async function cargarAmigosHeader(desdePolling = false) {
       } else {
         paneSol.innerHTML = solicitudes.map(s => `
           <div class="amigo-item">
-            <!-- ⚡ Agregamos data-autor-id y cursor:pointer -->
             <img src="${s.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${s.id}" style="cursor:pointer" />
             <div class="amigo-item__info" data-autor-id="${s.id}" style="cursor:pointer">
               <div class="amigo-item__name">${escapeHtml(s.nombre)}</div>
@@ -282,12 +270,9 @@ async function cargarAmigosHeader(desdePolling = false) {
             </div>
           </div>`).join('');
 
-        // ⚡ NUEVO: Conectamos el clic para abrir el perfil
         paneSol.querySelectorAll('[data-autor-id]').forEach(el => {
           el.addEventListener('click', () => {
-            import('./components.js').then(({ verPerfilUsuario }) => {
-              verPerfilUsuario(el.dataset.autorId);
-            });
+            verPerfilUsuario(el.dataset.autorId);
           });
         });
 
@@ -336,9 +321,7 @@ async function cargarAmigosHeader(desdePolling = false) {
 
         paneList.querySelectorAll('[data-autor-id]').forEach(el => {
           el.addEventListener('click', () => {
-            import('./components.js').then(({ verPerfilUsuario }) => {
-              verPerfilUsuario(el.dataset.autorId);
-            });
+            verPerfilUsuario(el.dataset.autorId);
           });
         });
 
@@ -391,6 +374,7 @@ async function cargarAmigosHeader(desdePolling = false) {
     isFetchingAmigos = false;
   }
 }
+
 /* =========================================================
    NOTIFICACIONES
    ========================================================= */
@@ -533,10 +517,8 @@ export function initNotificaciones() {
   document.getElementById('btn-ver-todas-notif')?.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open')); });
   document.getElementById('btn-campana')?.addEventListener('click', () => { renderNotificaciones(); });
 
-  // Primera carga
   renderNotificaciones();
 
-  // ⚡ Polling recursivo con jitter
   const loop = async () => {
     if (!document.hidden) await renderNotificaciones(true);
     notifsTimerId = setTimeout(loop, POLL_NOTIFS_MS + Math.random() * JITTER_MS);
@@ -707,7 +689,6 @@ export async function verPerfilUsuario(usuarioOId) {
       window.location.hash = '#/mensajes';
       setTimeout(() => { document.querySelector(`[data-conv="${conv.id}"]`)?.click(); }, 400);
     } catch (err) {
-      // ⚡ Aviso inline para "solo amigos"
       if (err.status === 403 && /solo.*amigos/i.test(err.message)) {
         const btn = document.getElementById('btn-perfil-mensaje');
         if (btn) {
@@ -825,6 +806,20 @@ export async function abrirModalVerPublicacion(pubId, cache) {
   const pub = lista.find(p => String(p.id) === String(pubId));
   if (!pub) { toast('Publicación no encontrada', 'error'); return; }
 
+  let mediaHtml = '';
+  if (pub.imagen) {
+    try {
+      const arr = JSON.parse(pub.imagen);
+      if (Array.isArray(arr) && arr.length > 0) {
+        mediaHtml = `<div class="feed-post__media feed-post__media--multi" style="margin-bottom:16px;">${arr.map(img => `<img src="${img}" alt="" data-ver-foto="${img}" style="cursor:zoom-in; border-radius:8px;" />`).join('')}</div>`;
+      } else {
+        mediaHtml = `<img src="${pub.imagen}" alt="" class="ver-pub__img" data-ver-foto="${pub.imagen}" style="cursor:zoom-in;" />`;
+      }
+    } catch {
+      mediaHtml = `<img src="${pub.imagen}" alt="" class="ver-pub__img" data-ver-foto="${pub.imagen}" style="cursor:zoom-in;" />`;
+    }
+  }
+
   body.innerHTML = `
     <div class="ver-pub">
       <div class="ver-pub__header">
@@ -834,7 +829,7 @@ export async function abrirModalVerPublicacion(pubId, cache) {
           <div class="ver-pub__fecha">${new Date(pub.createdAt).toLocaleDateString('es-CL')}</div>
         </div>
       </div>
-      ${pub.imagen ? `<img src="${pub.imagen}" alt="" class="ver-pub__img" />` : ''}
+      ${mediaHtml}
       ${pub.contenido ? `<p class="ver-pub__contenido">${escapeHtml(pub.contenido)}</p>` : ''}
       <div class="ver-pub__acciones">
         <button class="ver-pub__like ${pub.yoLikee ? 'activo' : ''}" id="ver-pub-btn-like">
@@ -848,6 +843,17 @@ export async function abrirModalVerPublicacion(pubId, cache) {
         <button type="submit" class="btn btn--primary btn--sm">Enviar</button>
       </form>
     </div>`;
+
+  body.querySelectorAll('[data-ver-foto]').forEach(img => {
+    img.onclick = (e) => {
+      e.stopPropagation();
+      const modalImg = document.getElementById('modal-imagen-img');
+      if (modalImg) {
+        modalImg.src = img.dataset.verFoto;
+        abrirModal('modal-ver-imagen');
+      }
+    };
+  });
 
   document.getElementById('ver-pub-btn-like').onclick = async (e) => {
     e.preventDefault();
@@ -901,14 +907,12 @@ async function cargarComentariosVerPub(pubId) {
       </div>
     `).join('');
 
-    // ⚡ NUEVO: Click en comentarista para ver perfil
     cont.querySelectorAll('[data-autor-id]').forEach(el => {
-      el.addEventListener('click', (e) => {
+      el.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        import('../components.js').then(({ verPerfilUsuario }) => {
-          verPerfilUsuario(el.dataset.autorId);
-        });
-      });
+        verPerfilUsuario(el.dataset.autorId);
+      };
     });
   } catch (err) {
     cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-3)">No se pudieron cargar los comentarios</p>`;
@@ -929,12 +933,10 @@ export async function actualizarBadgeMensajes() {
   try {
     const total = await contarNoLeidos();
     
-    // Buscamos los 3 posibles badges en el DOM
     const badgeHeader = document.getElementById('badge-mensajes');
     const badgeSidebar = document.getElementById('badge-mensajes-nav');
     const badgeBottom = document.getElementById('badge-mensajes-bottom');
 
-    // Los actualizamos a todos
     [badgeHeader, badgeSidebar, badgeBottom].forEach(badge => {
       if (badge) {
         badge.textContent = total;
@@ -953,7 +955,6 @@ export async function initBadgeMensajes() {
   document.getElementById('btn-header-mensajes')?.addEventListener('click', () => { window.location.hash = '#/mensajes'; });
   await actualizarBadgeMensajes();
 
-  // ⚡ Polling recursivo cada 20s + jitter, pausado si la pestaña está oculta
   const loop = async () => {
     if (!document.hidden) await actualizarBadgeMensajes();
     setTimeout(loop, POLL_MENSAJES_MS + Math.random() * JITTER_MS);
@@ -977,6 +978,55 @@ export function initConfiguracion() {
       btn.innerHTML = esPassword ? ICONOS.ojo : ICONOS.ojo;
       btn.title = esPassword ? 'Ocultar contraseña' : 'Ver contraseña';
     });
+  });
+
+  // ⚡ FIX: Uso de servicio directo y manejo de errores
+  document.getElementById('btn-ver-bloqueados')?.addEventListener('click', async () => {
+    cerrarModal('modal-privacidad');
+    abrirModal('modal-ver-bloqueados');
+    const body = document.getElementById('lista-bloqueados-body');
+    body.innerHTML = `<div class="page-loader"><div class="spinner"></div><span>Cargando...</span></div>`;
+    
+    try {
+      const { bloqueados } = await listarBloqueadosAPI();
+      
+      if (!bloqueados || bloqueados.length === 0) {
+        body.innerHTML = `<p class="text-sm text-muted text-center" style="padding:20px">No tenés usuarios bloqueados.</p>`;
+        return;
+      }
+
+      body.innerHTML = bloqueados.map(b => `
+        <div class="amigo-item" style="border-bottom:1px solid var(--color-border); padding:12px 0;">
+          <img src="${b.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" />
+          <div class="amigo-item__info">
+            <div class="amigo-item__name">${escapeHtml(b.nombre)}</div>
+            <div class="amigo-item__sub">@${escapeHtml(b.username)}</div>
+          </div>
+          <button class="btn btn--ghost btn--sm" data-desbloquear-id="${b.id}">Desbloquear</button>
+        </div>
+      `).join('');
+
+      body.querySelectorAll('[data-desbloquear-id]').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.preventDefault();
+          const id = btn.dataset.desbloquearId;
+          btn.disabled = true;
+          btn.textContent = '...';
+          try {
+            await desbloquearUsuarioAPI(id);
+            toast('Usuario desbloqueado', 'success');
+            document.getElementById('btn-ver-bloqueados').click(); // Recargar lista
+          } catch (err) {
+            toast(err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Desbloquear';
+          }
+        };
+      });
+    } catch (err) {
+      console.error("Error al traer bloqueados:", err); // ⚡ Para ver el error real en consola si falla
+      body.innerHTML = `<p class="text-sm text-danger text-center">Error al cargar la lista.</p>`;
+    }
   });
 
   document.querySelectorAll('[data-config-action]').forEach(btn => {
@@ -1131,7 +1181,6 @@ document.getElementById('btn-guardar-privacidad')?.addEventListener('click', asy
   try {
     const { actualizarMiPerfil } = await import('./services/usuarios.service.js');
     
-    // ⚡ Enviamos todo junto en una sola petición
     await actualizarMiPerfil({
       statsHeroPrivadas: {
         partidos: document.getElementById('priv-partidos').checked,
@@ -1221,9 +1270,7 @@ document.addEventListener('click', (e) => {
   const imgModal = document.getElementById('modal-ver-imagen');
   if (!imgModal || !imgModal.classList.contains('open')) return;
   
-  // Si el clic es en la foto, no cerrar
   if (e.target.closest('.modal-imagen-body img')) return;
-  // Si el clic es en la X, ya lo maneja el listener [data-cerrar-modal] existente
   if (e.target.closest('[data-cerrar-modal="modal-ver-imagen"]')) return;
   
   cerrarModal('modal-ver-imagen');

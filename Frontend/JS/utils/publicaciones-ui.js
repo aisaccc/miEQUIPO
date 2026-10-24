@@ -82,12 +82,23 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
       if (p.privacidad === 'miembros') privacidadHtml = `<span title="Participantes del torneo" style="display:inline-flex;vertical-align:middle;margin-top:-2px;width:14px;height:14px;color:var(--color-text-muted)">${ICONOS.usuarios}</span>`;
     }
 
-    // ⚡ NUEVO: data-ver-foto y cursor para ampliar
-    const mediaHtml = p.video ? `
-      <div class="feed-post__media"><video src="${p.video}" controls></video></div>
-    ` : p.imagen ? `
-      <div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" data-ver-foto="${p.imagen}" style="cursor:zoom-in" /></div>
-    ` : '';
+    // ⚡ MEDIA: Adaptado para múltiples fotos (Array JSON) o foto única
+    let mediaHtml = '';
+    if (p.video) {
+      mediaHtml = `<div class="feed-post__media"><video src="${p.video}" controls></video></div>`;
+    } else if (p.imagen) {
+      try {
+        const arr = JSON.parse(p.imagen);
+        if (Array.isArray(arr) && arr.length > 0) {
+          mediaHtml = `<div class="feed-post__media feed-post__media--multi">${arr.map(img => `<img src="${img}" alt="" loading="lazy" data-ver-foto="${img}" style="cursor:zoom-in" />`).join('')}</div>`;
+        } else {
+           mediaHtml = `<div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" data-ver-foto="${p.imagen}" style="cursor:zoom-in" /></div>`;
+        }
+      } catch (e) {
+        // Retrocompatibilidad: Si falla el JSON.parse, es un string de Base64 antiguo
+        mediaHtml = `<div class="feed-post__media"><img src="${p.imagen}" alt="" loading="lazy" data-ver-foto="${p.imagen}" style="cursor:zoom-in" /></div>`;
+      }
+    }
 
     // ⚡ Verificamos si es pública para mostrar el botón de compartir
     const esPublica = p.privacidad === 'publico' || p.privacidad === undefined;
@@ -235,7 +246,7 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
 /* =========================================================
    MODAL CREAR PUBLICACIÓN CON SELECTOR DE TIPO
    ========================================================= */
-let mediaBase64Crear = null;
+let mediaBase64Crear = []; // ⚡ AHORA ES UN ARRAY
 let tipoMediaCrear = null;
 let privacidadCrear = 'publico';
 
@@ -246,7 +257,7 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
   let tipoPublicacion = opciones.tipo || 'post';
   const esComunidad = opciones.esComunidad === true;
   
-  mediaBase64Crear = null; tipoMediaCrear = null;
+  mediaBase64Crear = []; tipoMediaCrear = null;
   privacidadCrear = 'publico';
 
   textareaCont.value = '';
@@ -359,27 +370,40 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
     });
   }
 
+  // ⚡ LÓGICA PARA MÚLTIPLES IMÁGENES
   document.getElementById('crear-pub-imagen-file').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return toast('El archivo es muy grande (máx 5MB)', 'error');
+    const files = Array.from(e.target.files).slice(0, 3); // Máximo 3
+    if (files.length === 0) return;
     
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      mediaBase64Crear = ev.target.result;
-      tipoMediaCrear = 'imagen';
+    mediaBase64Crear = [];
+    let procesadas = 0;
+
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast(`La foto ${file.name} es muy grande (máx 5MB)`, 'error');
+        return;
+      }
       
-      const imgPreview = document.getElementById('crear-pub-preview-img');
-      imgPreview.src = mediaBase64Crear;
-      
-      document.getElementById('crear-pub-preview-wrapper').classList.remove('hidden');
-      document.getElementById('crear-pub-label-imagen').classList.add('hidden');
-    };
-    reader.readAsDataURL(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        mediaBase64Crear.push(ev.target.result);
+        procesadas++;
+        
+        if (procesadas === files.length) {
+          tipoMediaCrear = 'imagen';
+          const imgPreview = document.getElementById('crear-pub-preview-img');
+          imgPreview.src = mediaBase64Crear[0]; // Mostramos la primera
+          
+          document.getElementById('crear-pub-preview-wrapper').classList.remove('hidden');
+          document.getElementById('crear-pub-label-imagen').classList.add('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   document.getElementById('crear-pub-quitar-imagen').onclick = () => {
-    mediaBase64Crear = null; tipoMediaCrear = null;
+    mediaBase64Crear = []; tipoMediaCrear = null;
     document.getElementById('crear-pub-preview-wrapper').classList.add('hidden');
     document.getElementById('crear-pub-preview-img').src = '';
     document.getElementById('crear-pub-imagen-file').value = '';
@@ -404,7 +428,7 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
 
     const contenido = document.getElementById('crear-pub-contenido').value.trim();
 
-    if (!contenido && !mediaBase64Crear) {
+    if (!contenido && mediaBase64Crear.length === 0) {
       return toast('Escribí algo o subí un archivo', 'error');
     }
 
@@ -413,7 +437,11 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
 
     try {
       const datos = { contenido: contenido || null, tipo: 'post', privacidad: privacidadCrear };
-      if (tipoMediaCrear === 'imagen') datos.imagen = mediaBase64Crear;
+      
+      // ⚡ Guardamos como JSON string para la base de datos
+      if (mediaBase64Crear.length > 0) {
+        datos.imagen = JSON.stringify(mediaBase64Crear); 
+      }
 
       if (scope === 'grupo') await crearPublicacionEnGrupo(refId, datos);
       else if (scope === 'torneo') await crearPublicacionEnTorneo(refId, datos);

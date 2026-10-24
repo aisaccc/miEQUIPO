@@ -613,9 +613,12 @@ export async function unirseAGrupo(grupoId, usuarioId) {
         throw err;
       }
 
+      // ⚡ Si ya existía una solicitud (aceptada o rechazada), la actualizamos a pendiente
       await client.query(
         `INSERT INTO grupo_solicitudes (grupo_id, usuario_id, estado)
-         VALUES ($1, $2, 'pendiente')`,
+         VALUES ($1, $2, 'pendiente')
+         ON CONFLICT (grupo_id, usuario_id) 
+         DO UPDATE SET estado = 'pendiente', created_at = NOW()`,
         [grupoId, usuarioId]
       );
 

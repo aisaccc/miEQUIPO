@@ -133,7 +133,7 @@
             <div class="dropdown__pane active" id="lista-notificaciones">
               <!-- Se llena dinámicamente -->
             </div>
-
+            
             <div class="dropdown__footer">
               <button class="btn btn--ghost btn--block btn--sm" id="btn-ver-todas-notif">
                 Ver todas
@@ -339,7 +339,7 @@
 
   <!-- ================= MODAL: VER PERFIL ================= -->
   <div class="modal-backdrop" id="modal-ver-perfil">
-    <div class="modal modal--lg">
+    <div class="modal modal--perfil">
       <div class="modal__header">
         <h3 class="modal__title">Perfil</h3>
         <button class="modal__close" data-cerrar-modal="modal-ver-perfil">
@@ -428,7 +428,8 @@
               <circle cx="12" cy="13" r="4"/>
             </svg>
             Elegir imagen
-            <input type="file" id="crear-pub-imagen-file" accept="image/*" style="display:none" />
+            <!-- ⚡ ACÁ AGREGAMOS EL MULTIPLE ⚡ -->
+            <input type="file" id="crear-pub-imagen-file" accept="image/*" multiple style="display:none" />
           </label>
         </div>
       </div>
@@ -821,9 +822,30 @@
             <div class="switch__hint">Evita que personas que no conocés te inicien un chat.</div>
           </div>
         </label>
+
+        <!-- ⚡ NUEVO BOTÓN PARA VER BLOQUEADOS -->
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--color-border);">
+        <button class="btn btn--ghost btn--block" id="btn-ver-bloqueados">
+          Ver mis usuarios bloqueados
+        </button>
       </div>
       <div class="modal__footer">
         <button class="btn btn--primary" id="btn-guardar-privacidad">Guardar privacidad</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VER BLOQUEADOS ================= -->
+  <div class="modal-backdrop" id="modal-ver-bloqueados">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal__header">
+        <h3 class="modal__title">Usuarios bloqueados</h3>
+        <button class="modal__close" data-cerrar-modal="modal-ver-bloqueados">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal__body" id="lista-bloqueados-body">
+        <div class="page-loader"><div class="spinner"></div><span>Cargando...</span></div>
       </div>
     </div>
   </div>
@@ -890,6 +912,7 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="JS/main.js?v=119"></script>
+  <script type="module" src="JS/main.js?v=121"></script>
+  
 </body>
 </html>

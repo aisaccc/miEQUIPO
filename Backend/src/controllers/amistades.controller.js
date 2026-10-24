@@ -64,3 +64,9 @@ export async function desbloquear(req, res, next) {
     res.json(resultado);
   } catch (err) { next(err); }
 }
+export async function listarBloqueados(req, res, next) {
+  try {
+    const bloqueados = await amistadesService.listarBloqueados(req.usuario.id);
+    res.json({ bloqueados });
+  } catch (err) { next(err); }
+}

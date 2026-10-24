@@ -188,3 +188,13 @@ export async function desbloquearUsuario(usuarioId, bloqueadoId) {
   }
   return { ok: true, mensaje: 'Usuario desbloqueado' };
 }
+export async function listarBloqueados(usuarioId) {
+  const { rows } = await pool.query(
+    `SELECT u.id, u.nombre, u.username, u.avatar
+     FROM usuarios_bloqueados ub
+     JOIN usuarios u ON u.id = ub.bloqueado_id
+     WHERE ub.usuario_id = $1`,
+    [usuarioId]
+  );
+  return rows;
+}

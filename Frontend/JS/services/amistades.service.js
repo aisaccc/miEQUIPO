@@ -33,3 +33,6 @@ export async function bloquearUsuario(usuarioId) {
 export async function desbloquearUsuario(usuarioId) {
   return api.delete(`/amistades/desbloquear/${usuarioId}`);
 }
+export async function listarBloqueados() {
+  return await api.get('/amistades/bloqueados');
+}
