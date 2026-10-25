@@ -36,79 +36,42 @@ import {
   listarMensajesDeCanal as listarMensajesDeCanalAPI,
   enviarMensajeACanal as enviarMensajeACanalAPI,
   marcarCanalLeido as marcarCanalLeidoAPI,
-  eliminarMensajeParaMi,       // ⚡ NUEVO
-  eliminarMensajeParaTodos,    // ⚡ NUEVO
+  eliminarMensajeParaMi,
+  eliminarMensajeParaTodos,
 } from '../services/mensajes.service.js';
 
-import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js'; // ⚡ NUEVO
-
-import {
-  listarPublicacionesDeTorneo as listarPubsTorneoAPI,
-} from '../services/publicaciones.service.js';
-
-import {
-  renderFeedPublicaciones,
-  abrirModalCrearPublicacionCompartido,
-} from '../utils/publicaciones-ui.js';
-
+import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
+import { listarPublicacionesDeTorneo as listarPubsTorneoAPI } from '../services/publicaciones.service.js';
+import { renderFeedPublicaciones, abrirModalCrearPublicacionCompartido } from '../utils/publicaciones-ui.js';
 import { buscarUsuarios as buscarUsuariosAPI } from '../services/usuarios.service.js';
-
 import { ICONOS } from '../utils/iconos.js';
-
 import { deportes } from '../data-mock.js';
 import { renderGrupoPublico } from '../utils/grupo-publico.js';
 import {
-  getReglasDeporte,
-  esPorSets,
-  permiteDesempate,
-  formatearResultado,
-  calcularGanador,
-  esPorTiempo,
-  esPorPuntos,
-  getSistemaEfectivo,
-  formatearTiempo,
-  parsearTiempo,
+  getReglasDeporte, esPorSets, permiteDesempate, formatearResultado,
+  calcularGanador, esPorTiempo, esPorPuntos, getSistemaEfectivo,
+  formatearTiempo, parsearTiempo,
 } from '../utils/reglas-deporte.js';
 
-/* =========================================================
-   CONFIG: formato de resultado
-   ========================================================= */
 function formatoDeDeporte(deporte) {
   const reglas = getReglasDeporte(deporte);
-
   let campo = 'goles';
   if (reglas.tipo === 'sets') campo = 'sets';
   else if (reglas.labelMarcador === 'Puntos') campo = 'puntos';
   else if (reglas.labelMarcador === 'Carreras') campo = 'carreras';
-
-  return {
-    campo,
-    label: reglas.labelMarcador || 'Resultado',
-  };
+  return { campo, label: reglas.labelMarcador || 'Resultado' };
 }
 
 const FASES_LABEL = {
-  '64avos': '64avos',
-  '32avos': '32avos',
-  '16avos': '16avos',
-  '8vos': 'Octavos',
-  'cuartos': 'Cuartos',
-  'semis': 'Semis',
-  'final': 'Final',
-  'tercer_puesto': '3er Puesto',
+  '64avos': '64avos', '32avos': '32avos', '16avos': '16avos', '8vos': 'Octavos',
+  'cuartos': 'Cuartos', 'semis': 'Semis', 'final': 'Final', 'tercer_puesto': '3er Puesto',
 };
-
 const FASES_ORDEN = ['64avos', '32avos', '16avos', '8vos', 'cuartos', 'semis', 'final', 'tercer_puesto'];
 
-/* =========================================================
-   DEPORTES INDIVIDUALES / SISTEMAS
-   ========================================================= */
 const DEPORTES_INDIVIDUALES_DET = new Set([
   'Tenis', 'Pádel', 'Squash', 'Tenis de mesa', 'Bádminton',
-  'Golf', 'Natación', 'Atletismo', 'Ciclismo', 'Surf',
-  'Escalada', 'Boxeo',
+  'Golf', 'Natación', 'Atletismo', 'Ciclismo', 'Surf', 'Escalada', 'Boxeo',
 ]);
-
 const DEPORTES_TIEMPO_DET = new Set(['Natación', 'Atletismo', 'Ciclismo']);
 const DEPORTES_PUNTOS_DET = new Set(['Escalada', 'Surf', 'Boxeo']);
 
@@ -118,40 +81,25 @@ const NIVELES_TORNEO_DET = [
   { valor: 'avanzado', label: 'Nivel Avanzado', descripcion: 'Alto nivel' },
 ];
 
-/* =========================================================
-   COLORES POR DEPORTE (hero + banner)
-   ========================================================= */
 const COLOR_DEPORTE_TORNEO = {
-  'Fútbol':            { from: '#FF6B4A', to: '#C2410C' },
-  'Fútbol americano':  { from: '#DC2626', to: '#7F1D1D' },
-  'Básquetbol':        { from: '#3B82F6', to: '#1E40AF' },
-  'Tenis':             { from: '#22C55E', to: '#166534' },
-  'Tenis de mesa':     { from: '#EC4899', to: '#9D174D' },
-  'Vóleibol':          { from: '#F59E0B', to: '#92400E' },
-  'Pádel':             { from: '#6366F1', to: '#3730A3' },
-  'Squash':            { from: '#06B6D4', to: '#155E75' },
-  'Bádminton':         { from: '#A855F7', to: '#6B21A8' },
-  'Golf':              { from: '#10B981', to: '#065F46' },
-  'Béisbol':           { from: '#EAB308', to: '#854D0E' },
-  'Hockey':            { from: '#0EA5E9', to: '#075985' },
-  'Handball':          { from: '#F43F5E', to: '#9F1239' },
-  'Rugby':             { from: '#8B5CF6', to: '#5B21B6' },
-  'Boxeo':             { from: '#EF4444', to: '#7F1D1D' },
-  'Ciclismo':          { from: '#84CC16', to: '#3F6212' },
-  'Natación':          { from: '#06B6D4', to: '#0E7490' },
-  'Atletismo':         { from: '#F43F5E', to: '#BE123C' },
-  'Surf':              { from: '#0EA5E9', to: '#0369A1' },
-  'Escalada':          { from: '#F59E0B', to: '#B45309' },
+  'Fútbol': { from: '#FF6B4A', to: '#C2410C' }, 'Fútbol americano': { from: '#DC2626', to: '#7F1D1D' },
+  'Básquetbol': { from: '#3B82F6', to: '#1E40AF' }, 'Tenis': { from: '#22C55E', to: '#166534' },
+  'Tenis de mesa': { from: '#EC4899', to: '#9D174D' }, 'Vóleibol': { from: '#F59E0B', to: '#92400E' },
+  'Pádel': { from: '#6366F1', to: '#3730A3' }, 'Squash': { from: '#06B6D4', to: '#155E75' },
+  'Bádminton': { from: '#A855F7', to: '#6B21A8' }, 'Golf': { from: '#10B981', to: '#065F46' },
+  'Béisbol': { from: '#EAB308', to: '#854D0E' }, 'Hockey': { from: '#0EA5E9', to: '#075985' },
+  'Handball': { from: '#F43F5E', to: '#9F1239' }, 'Rugby': { from: '#8B5CF6', to: '#5B21B6' },
+  'Boxeo': { from: '#EF4444', to: '#7F1D1D' }, 'Ciclismo': { from: '#84CC16', to: '#3F6212' },
+  'Natación': { from: '#06B6D4', to: '#0E7490' }, 'Atletismo': { from: '#F43F5E', to: '#BE123C' },
+  'Surf': { from: '#0EA5E9', to: '#0369A1' }, 'Escalada': { from: '#F59E0B', to: '#B45309' },
 };
 const COLOR_DEPORTE_TORNEO_DEFAULT = { from: '#FF6B4A', to: '#C2410C' };
+const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
 function colorDeporteTorneo(deporte) {
   return COLOR_DEPORTE_TORNEO[deporte] || COLOR_DEPORTE_TORNEO_DEFAULT;
 }
 
-/* =========================================================
-   HELPERS GLOBALES DE CHAT
-   ========================================================= */
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
@@ -169,11 +117,7 @@ function horaCortaChat(iso) {
 }
 
 function mismoDiaChat(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function labelDiaChat(iso) {
@@ -193,36 +137,24 @@ function labelDiaChat(iso) {
   return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
-function avatarDeChat(usuario) {
-  return usuario?.avatar || 'assets/icons/usuario.svg';
-}
-
-/* =========================================================
-   HELPERS DE IMÁGENES EN EL CHAT (Fase E.7)
-   ========================================================= */
+function avatarDeChat(usuario) { return usuario?.avatar || 'assets/icons/usuario.svg'; }
 
 function abrirModalVerImagen(src) {
   const img = document.getElementById('modal-imagen-img');
   const modal = document.getElementById('modal-ver-imagen');
   if (!img || !modal) return;
-
   img.src = src;
   abrirModal('modal-ver-imagen');
-
   modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
     btn.onclick = () => cerrarModal('modal-ver-imagen');
   });
-
-  modal.onclick = (e) => {
-    if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen');
-  };
+  modal.onclick = (e) => { if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen'); };
 }
 
 function mostrarPreviewImagen(panelId, src) {
   const wrapper = document.getElementById(`${panelId}-preview`);
   const img = document.getElementById(`${panelId}-preview-img`);
   if (!wrapper || !img) return;
-
   img.src = src;
   wrapper.classList.remove('hidden');
 }
@@ -231,7 +163,6 @@ function ocultarPreviewImagen(panelId) {
   const wrapper = document.getElementById(`${panelId}-preview`);
   const img = document.getElementById(`${panelId}-preview-img`);
   if (!wrapper || !img) return;
-
   img.src = '';
   wrapper.classList.add('hidden');
 }
@@ -242,7 +173,6 @@ export async function init(params = {}) {
   const contenedor = document.getElementById('detalle-torneo');
   if (!contenedor || !id || !user) return null;
 
-  /* ---------- REFS MODALES ---------- */
   const modalInscribir      = document.getElementById('modal-inscribir-equipo');
   const modalInvitar        = document.getElementById('modal-invitar-equipo');
   const modalSolicitudes    = document.getElementById('modal-gestionar-solicitudes');
@@ -261,7 +191,6 @@ export async function init(params = {}) {
   const modalSubOrganizadores = document.getElementById('modal-sub-organizadores');
   const modalResponderInvOrg  = document.getElementById('modal-responder-invitacion-organizador');
 
-  /* ---------- ESTADO ---------- */
   let torneo = null;
   let misEquipos = [];
   let partidoActual = null;
@@ -269,7 +198,6 @@ export async function init(params = {}) {
   let partidoDetalleActual = null;
   let tabActual = 'resumen';
 
-  /* ---------- ESTADO DEL CHAT DEL TORNEO ---------- */
   let canalTorneoId = null;
   let canalTorneoActualId = null;
   let intervaloCanalTorneo = null;
@@ -277,24 +205,14 @@ export async function init(params = {}) {
   let ultimaCanalTorneoRenderizado = null;
   let imagenBase64Torneo = null;
 
-  /* =========================================================
-     HELPERS
-     ========================================================= */
-  function esOrganizador(t) {
-    return t.soyOrganizador || String(t.organizador?.id) === String(user.id);
-  }
-
-  function puedeGestionar(t) {
-    return t.puedeGestionarFixture || esOrganizador(t);
-  }
-
+  function esOrganizador(t) { return t.soyOrganizador || String(t.organizador?.id) === String(user.id); }
+  function puedeGestionar(t) { return t.puedeGestionarFixture || esOrganizador(t); }
   function estaCerrado(t) {
     if (t.estado !== 'inscripcion') return true;
     if ((t.equipos || []).length >= t.cuposEquipos) return true;
     if (t.fechaLimiteInscripcion && new Date(t.fechaLimiteInscripcion) < new Date()) return true;
     return false;
   }
-
   function miEquipoInscrito(t) { return t.miEquipoInscritoDetalle || null; }
   function miSolicitudPendiente(t) { return t.miSolicitudPendienteDetalle || null; }
   function miInvitacionPendiente(t) { return t.miInvitacionPendienteDetalle || null; }
@@ -327,27 +245,18 @@ export async function init(params = {}) {
 
   function formatearFechaCorta(iso) {
     if (!iso) return '';
-    return new Date(iso).toLocaleDateString('es-CL', {
-      day: 'numeric', month: 'short',
-    });
+    return new Date(iso).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
   }
 
-  function faseInicial(fases) {
-    return fases[0];
-  }
+  function faseInicial(fases) { return fases[0]; }
 
   function fasesDelBracket(t) {
     const partidos = t.partidos || [];
     const fasesSet = new Set();
-    partidos.forEach(p => {
-      if (p.fase) fasesSet.add(p.fase);
-    });
+    partidos.forEach(p => { if (p.fase) fasesSet.add(p.fase); });
     return FASES_ORDEN.filter(f => fasesSet.has(f));
   }
 
-  /* =========================================================
-     RENDER PRINCIPAL
-     ========================================================= */
   async function render() {
     try {
       torneo = await obtenerTorneo(id);
@@ -395,7 +304,6 @@ export async function init(params = {}) {
     const miInv = miInvitacionPendiente(t);
     const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
 
-    /* ---------- BADGES ---------- */
     const badgeClase = cerrado && !lleno ? 'badge--warning'
                      : lleno              ? 'badge--danger'
                      : t.estado === 'inscripcion' ? 'badge--success'
@@ -421,36 +329,23 @@ export async function init(params = {}) {
     }[t.nivel] || '';
 
     const sistema = t.sistemaClasificacion || 'simple';
-    const sistemaBadge = sistema === 'simple'
-      ? ''
-      : sistema === 'tiempo'
-        ? '<span class="badge badge--info">Por tiempo</span>'
-        : '<span class="badge badge--info">Por puntos</span>';
+    const sistemaBadge = sistema === 'simple' ? '' : sistema === 'tiempo' ? '<span class="badge badge--info">Por tiempo</span>' : '<span class="badge badge--info">Por puntos</span>';
+    const idaVueltaBadge = t.idaYVuelta ? '<span class="badge badge--info">Ida y vuelta</span>' : '';
 
-    const idaVueltaBadge = t.idaYVuelta
-      ? '<span class="badge badge--info">Ida y vuelta</span>'
-      : '';
-
-    /* ---------- FECHAS HERO ---------- */
     const fechaIni = t.fechaInicio ? formatearFecha(t.fechaInicio) : '';
     const fechaFin = t.fechaFin ? formatearFecha(t.fechaFin) : '';
-    const fechaHeroTexto = fechaIni && fechaFin
-      ? `${fechaIni} — ${fechaFin}`
-      : fechaIni;
+    const fechaHeroTexto = fechaIni && fechaFin ? `${fechaIni} — ${fechaFin}` : fechaIni;
 
-    /* ---------- COLOR DEL DEPORTE ---------- */
     const color = colorDeporteTorneo(t.deporte);
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
     
-    if (t.cardFoto) {
-      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${t.cardFoto}'); background-size: cover; background-position: center;`;
-    } else if (t.cardColor) {
-      heroStyle = `background: linear-gradient(135deg, ${t.cardColor} 0%, ${t.cardColor}DD 100%);`;
+    // ⚡ Usamos heroColor y heroFoto
+    if (t.heroFoto) {
+      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${t.heroFoto}'); background-size: cover; background-position: center;`;
+    } else if (t.heroColor) {
+      heroStyle = `background: linear-gradient(135deg, ${t.heroColor} 0%, ${t.heroColor}DD 100%);`;
     }
 
-    /* =========================================================
-       RENDER
-       ========================================================= */
     contenedor.innerHTML = `
       <div class="gd-top">
         <button class="gd-top__volver" id="btn-volver">
@@ -536,9 +431,6 @@ export async function init(params = {}) {
     renderTabActual(t);
   }
 
-  /* =========================================================
-     RENDER DEL TAB ACTIVO
-     ========================================================= */
   function renderTabActual(t) {
     const cont = document.getElementById('torneo-tab-contenido');
     if (!cont) return;
@@ -555,7 +447,6 @@ export async function init(params = {}) {
     if (tabActual === 'publicaciones') return renderTabPublicaciones(cont, t);
   }
 
-  /* ---------- TAB: RESUMEN ---------- */
   function renderTabResumen(cont, t) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const soyOrg = esOrganizador(t);
@@ -563,22 +454,12 @@ export async function init(params = {}) {
     const cuposLibres = t.cuposEquipos - inscritos;
     const lleno = inscritos >= t.cuposEquipos;
     const cerrado = estaCerrado(t);
-    const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
 
     const tipoTexto = esIndividual ? 'Individual' : 'Por equipos';
-    const modalidadTexto = {
-      liga: 'Liga',
-      eliminacion: 'Eliminación directa',
-      custom: 'Personalizada',
-    }[t.modalidad] || t.modalidad;
-
-    const fechaLimiteTexto = t.fechaLimiteInscripcion
-      ? formatearFecha(t.fechaLimiteInscripcion)
-      : 'Sin límite';
-
+    const modalidadTexto = { liga: 'Liga', eliminacion: 'Eliminación directa', custom: 'Personalizada' }[t.modalidad] || t.modalidad;
+    const fechaLimiteTexto = t.fechaLimiteInscripcion ? formatearFecha(t.fechaLimiteInscripcion) : 'Sin límite';
     const progreso = Math.min(100, Math.round((inscritos / t.cuposEquipos) * 100));
 
-    /* ---------- Stats ---------- */
     const statsHtml = `
       <div class="pd-stats">
         <div class="pd-stat">
@@ -588,7 +469,6 @@ export async function init(params = {}) {
             <div class="pd-stat__label">${esIndividual ? 'Participantes' : 'Equipos'}</div>
           </div>
         </div>
-
         <div class="pd-stat">
           <div class="pd-stat__icon">${ICONOS.mas}</div>
           <div class="pd-stat__texto">
@@ -596,7 +476,6 @@ export async function init(params = {}) {
             <div class="pd-stat__label">Cupos libres</div>
           </div>
         </div>
-
         <div class="pd-stat">
           <div class="pd-stat__icon">${ICONOS.dinero}</div>
           <div class="pd-stat__texto">
@@ -604,107 +483,67 @@ export async function init(params = {}) {
             <div class="pd-stat__label">Inscripción</div>
           </div>
         </div>
-
       </div>
     `;
 
-    /* ---------- Card descripción + info ---------- */
     const descripcionHtml = `
       <div class="pd-card">
         <div class="pd-card__eyebrow">Competencia</div>
         <h3 class="pd-card__title">Sobre el torneo</h3>
-
-        ${t.descripcion ? `
-          <p class="pd-card__description">${t.descripcion}</p>
-        ` : `
-          <p class="pd-card__description text-muted">El organizador no dejó descripción.</p>
-        `}
-
+        ${t.descripcion ? `<p class="pd-card__description">${t.descripcion}</p>` : `<p class="pd-card__description text-muted">El organizador no dejó descripción.</p>`}
         <div class="torneo-info-grid">
           <div class="torneo-info-item">
             <div class="torneo-info-item__icon">${ICONOS.usuarios}</div>
-            <div>
-              <div class="torneo-info-item__label">Participación</div>
-              <div class="torneo-info-item__value">${tipoTexto}</div>
-            </div>
+            <div><div class="torneo-info-item__label">Participación</div><div class="torneo-info-item__value">${tipoTexto}</div></div>
           </div>
-
           <div class="torneo-info-item">
             <div class="torneo-info-item__icon">${ICONOS.diana}</div>
-            <div>
-              <div class="torneo-info-item__label">Modalidad</div>
-              <div class="torneo-info-item__value">${modalidadTexto}</div>
-            </div>
+            <div><div class="torneo-info-item__label">Modalidad</div><div class="torneo-info-item__value">${modalidadTexto}</div></div>
           </div>
-
           <div class="torneo-info-item">
             <div class="torneo-info-item__icon">${ICONOS.calendario}</div>
-            <div>
-              <div class="torneo-info-item__label">Fecha límite</div>
-              <div class="torneo-info-item__value">${fechaLimiteTexto}</div>
-            </div>
+            <div><div class="torneo-info-item__label">Fecha límite</div><div class="torneo-info-item__value">${fechaLimiteTexto}</div></div>
           </div>
-
           <div class="torneo-info-item">
             <div class="torneo-info-item__icon">${ICONOS.trofeo}</div>
-            <div>
-              <div class="torneo-info-item__label">Deporte</div>
-              <div class="torneo-info-item__value">${t.deporte}</div>
-            </div>
+            <div><div class="torneo-info-item__label">Deporte</div><div class="torneo-info-item__value">${t.deporte}</div></div>
           </div>
         </div>
       </div>
     `;
 
-    /* ---------- Panel de inscripción ---------- */
     const botonesPanel = construirBotonesInscripcion(t, {
       esIndividual, soyOrg, miEquipo: miEquipoInscrito(t),
       miSol: miSolicitudPendiente(t), miInv: miInvitacionPendiente(t),
-      cerrado, lleno, cuposLibres, pendientesCount,
+      cerrado, lleno, cuposLibres,
     });
 
     const panelHtml = `
       <div class="torneo-inscripcion-panel">
-        <div class="torneo-inscripcion-panel__eyebrow">
-          ${cerrado ? 'Inscripciones cerradas' : 'Inscripciones abiertas'}
-        </div>
-        <h3 class="torneo-inscripcion-panel__titulo">
-          ${cerrado ? 'El torneo ya comenzó' : (esIndividual ? 'Participa en el torneo' : 'Participa con tu equipo')}
-        </h3>
+        <div class="torneo-inscripcion-panel__eyebrow">${cerrado ? 'Inscripciones cerradas' : 'Inscripciones abiertas'}</div>
+        <h3 class="torneo-inscripcion-panel__titulo">${cerrado ? 'El torneo ya comenzó' : (esIndividual ? 'Participa en el torneo' : 'Participa con tu equipo')}</h3>
         <p class="torneo-inscripcion-panel__desc">
-          ${cuposLibres > 0
-            ? `Quedan ${cuposLibres} cupos disponibles para este torneo.`
-            : 'No quedan cupos disponibles.'}
+          ${cuposLibres > 0 ? `Quedan ${cuposLibres} cupos disponibles para este torneo.` : 'No quedan cupos disponibles.'}
           ${t.fechaLimiteInscripcion ? ` Las inscripciones cierran el ${fechaLimiteTexto}.` : ''}
         </p>
-
         <div style="margin-top:8px">
           <div class="torneo-inscripcion-panel__progreso-labels">
             <span>${inscritos} / ${t.cuposEquipos} ${esIndividual ? 'participantes' : 'equipos'}</span>
             <span style="color:var(--color-primary); font-weight:700">${progreso}%</span>
           </div>
-          <div class="torneo-inscripcion-panel__progreso">
-            <div class="torneo-inscripcion-panel__progreso-bar" style="width:${progreso}%"></div>
-          </div>
+          <div class="torneo-inscripcion-panel__progreso"><div class="torneo-inscripcion-panel__progreso-bar" style="width:${progreso}%"></div></div>
         </div>
-
-        <div class="torneo-inscripcion-panel__acciones">
-          ${botonesPanel}
-        </div>
+        <div class="torneo-inscripcion-panel__acciones">${botonesPanel}</div>
       </div>
     `;
 
-    /* ⚡ Card de invitación pendiente a sub-organizador */
     const miInvOrg = t.miInvitacionOrganizador;
     const cardInvitacionOrg = miInvOrg ? `
       <div class="tso-invitacion-pendiente">
         <div class="tso-invitacion-pendiente__icon">${ICONOS.corona}</div>
         <div class="tso-invitacion-pendiente__info">
           <div class="tso-invitacion-pendiente__titulo">Te invitaron a organizar</div>
-          <div class="tso-invitacion-pendiente__desc">
-            <strong>${t.organizador?.nombre || 'El organizador'}</strong> te invitó a ser
-            sub-organizador de <strong>${t.nombre}</strong>.
-          </div>
+          <div class="tso-invitacion-pendiente__desc"><strong>${t.organizador?.nombre || 'El organizador'}</strong> te invitó a ser sub-organizador de <strong>${t.nombre}</strong>.</div>
         </div>
         <div class="tso-invitacion-pendiente__acciones">
           <button class="btn btn--ghost btn--sm" id="btn-rechazar-inv-organizador">Rechazar</button>
@@ -717,7 +556,6 @@ export async function init(params = {}) {
       <div class="torneo-tab-contenido">
         ${cardInvitacionOrg}
         ${statsHtml}
-
         <div class="torneo-resumen-grid">
           ${descripcionHtml}
           ${panelHtml}
@@ -731,10 +569,8 @@ export async function init(params = {}) {
     conectarEventosTab(t);
   }
 
-  /* ---------- Botones del panel de inscripción ---------- */
   function construirBotonesInscripcion(t, ctx) {
     const { esIndividual, soyOrg, miEquipo, miSol, miInv, cerrado, lleno, cuposLibres } = ctx;
-
     let botones = '';
 
     if (soyOrg || t.soySubOrganizador) {
@@ -742,261 +578,122 @@ export async function init(params = {}) {
       const pendientesCount = (t.listaEspera || []).filter(l => l.estado === 'pendiente').length;
 
       botones += `
-        ${puedeCerrar ? `
-          <button class="btn btn--warning" id="btn-cerrar-torneo">
-            ${ICONOS.candado} Cerrar inscripciones
-          </button>
-        ` : ''}
-        <button class="btn btn--primary" id="btn-gestionar-solicitudes">
-          ${ICONOS.usuarios} Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}
-        </button>
-        ${!esIndividual && t.estado === 'inscripcion' ? `
-          <button class="btn btn--ghost" id="btn-invitar-equipo">${ICONOS.mas} Invitar equipo</button>
-        ` : ''}
+        ${puedeCerrar ? `<button class="btn btn--warning" id="btn-cerrar-torneo">${ICONOS.candado} Cerrar inscripciones</button>` : ''}
+        <button class="btn btn--primary" id="btn-gestionar-solicitudes">${ICONOS.usuarios} Solicitudes ${pendientesCount > 0 ? `<span class="badge badge--neutral" style="margin-left:6px">${pendientesCount}</span>` : ''}</button>
+        ${!esIndividual && t.estado === 'inscripcion' ? `<button class="btn btn--ghost" id="btn-invitar-equipo">${ICONOS.mas} Invitar equipo</button>` : ''}
         <button class="btn btn--ghost" id="btn-abrir-chat">${ICONOS.chat} Chat del torneo</button>
         <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
-        ${soyOrg ? `
-          <button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">${ICONOS.basura} Eliminar torneo</button>
-        ` : ''}
+        ${soyOrg ? `<button class="btn btn--ghost" id="btn-eliminar-torneo" style="color:var(--color-danger)">${ICONOS.basura} Eliminar torneo</button>` : ''}
       `;
       return botones;
     }
     if (miEquipo) {
-      const nombreMostrado = esIndividual
-        ? miEquipo.nombre
-        : `${miEquipo.escudo || ICONOS.escudo} ${miEquipo.nombre}`;
+      const nombreMostrado = esIndividual ? miEquipo.nombre : `${miEquipo.escudo || ICONOS.escudo} ${miEquipo.nombre}`;
       return `
-        <div class="badge badge--success" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          ${ICONOS.check} Ya estás inscrito: ${nombreMostrado}
-        </div>
+        <div class="badge badge--success" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">${ICONOS.check} Ya estás inscrito: ${nombreMostrado}</div>
         <button class="btn btn--ghost" id="btn-abrir-chat">${ICONOS.chat} Chat del torneo</button>
         <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
-        <button class="btn btn--ghost" id="btn-salir-torneo" style="color:var(--color-danger)">
-          ${ICONOS.salir} Salirme del torneo
-        </button>
+        <button class="btn btn--ghost" id="btn-salir-torneo" style="color:var(--color-danger)">${ICONOS.salir} Salirme del torneo</button>
       `;
     }
-
     if (miInv) {
       return `
         <div class="card" style="width:100%; background:var(--color-primary-light); border:none; padding:14px">
-          <p class="text-sm" style="margin:0 0 var(--space-3) 0">
-            ${ICONOS.correo} <strong>¡Te invitaron!</strong> El organizador quiere que
-            ${miInv.equipoEscudo || ICONOS.escudo} <strong>${miInv.equipoNombre}</strong> participe.
-          </p>
-          <div class="flex gap-2">
-            <button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button>
-            <button class="btn btn--ghost btn--sm" id="btn-rechazar-invitacion">Rechazar</button>
-          </div>
+          <p class="text-sm" style="margin:0 0 var(--space-3) 0">${ICONOS.correo} <strong>¡Te invitaron!</strong> El organizador quiere que ${miInv.equipoEscudo || ICONOS.escudo} <strong>${miInv.equipoNombre}</strong> participe.</p>
+          <div class="flex gap-2"><button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button><button class="btn btn--ghost btn--sm" id="btn-rechazar-invitacion">Rechazar</button></div>
         </div>
       `;
     }
-
     if (miSol) {
       return `
-        <div class="badge badge--warning" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          ${ICONOS.reloj} Tu solicitud está en espera
-        </div>
+        <div class="badge badge--warning" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">${ICONOS.reloj} Tu solicitud está en espera</div>
         <button class="btn btn--ghost btn--sm" id="btn-cancelar-solicitud">Cancelar solicitud</button>
         <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
-
     if (cerrado || lleno) {
       return `
-        <div class="badge badge--danger" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">
-          ${lleno ? 'Torneo lleno' : 'Inscripciones cerradas'}
-        </div>
+        <div class="badge badge--danger" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">${lleno ? 'Torneo lleno' : 'Inscripciones cerradas'}</div>
         <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
       `;
     }
-
     if (esIndividual) {
-      return `
-        <button class="btn btn--primary" id="btn-inscribir-equipo">
-          ${ICONOS.check} Inscribirme
-        </button>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
-      `;
+      return `<button class="btn btn--primary" id="btn-inscribir-equipo">${ICONOS.check} Inscribirme</button><button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>`;
     }
-
     const misEq = misEquiposComoCapitan();
     if (misEq.length === 0) {
-      return `
-        <div class="badge badge--neutral" style="padding:12px 16px; font-size:13px; text-align:center; width:100%; justify-content:center">
-          ${ICONOS.alerta} Necesitás ser capitán de un equipo
-        </div>
-        <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
-      `;
+      return `<div class="badge badge--neutral" style="padding:12px 16px; font-size:13px; text-align:center; width:100%; justify-content:center">${ICONOS.alerta} Necesitás ser capitán de un equipo</div><button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>`;
     }
-
-    return `
-      <button class="btn btn--primary" id="btn-inscribir-equipo">
-        ${ICONOS.check} Inscribir mi equipo (${cuposLibres} cupos)
-      </button>
-      <button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>
-    `;
+    return `<button class="btn btn--primary" id="btn-inscribir-equipo">${ICONOS.check} Inscribir mi equipo (${cuposLibres} cupos)</button><button class="btn btn--ghost" id="btn-compartir-torneo">${ICONOS.compartir} Compartir</button>`;
   }
 
-  /* ---------- Card equipos participantes ---------- */
   function construirEquiposCard(t, { esIndividual, soyOrg }) {
     const equipos = t.equipos || [];
-
     if (equipos.length === 0) {
-      return `
-        <div class="pd-card">
-          <div class="pd-card__eyebrow">Inscripciones</div>
-          <h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'}</h3>
-          <div class="pd-empty">
-            <div class="pd-empty__icon">${ICONOS.usuarios}</div>
-            <p class="pd-empty__text">Aún no hay ${esIndividual ? 'participantes' : 'equipos'} inscritos.</p>
-          </div>
-        </div>
-      `;
+      return `<div class="pd-card"><div class="pd-card__eyebrow">Inscripciones</div><h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'}</h3><div class="pd-empty"><div class="pd-empty__icon">${ICONOS.usuarios}</div><p class="pd-empty__text">Aún no hay ${esIndividual ? 'participantes' : 'equipos'} inscritos.</p></div></div>`;
     }
-
     const items = equipos.map(e => {
       const escudoHtml = renderEscudoCruce(e.escudo, esIndividual, 40);
       const mostrarExpulsar = soyOrg && !t.fixtureBloqueado && t.estado === 'inscripcion';
       const idParticipante = e.equipoId || e.id;
-
       return `
         <div class="torneo-equipo-item" data-ver-participante="${idParticipante}" data-es-individual="${esIndividual}" role="button" tabindex="0">
           <div class="torneo-equipo-item__escudo">${escudoHtml}</div>
           <div class="torneo-equipo-item__info">
             <div class="torneo-equipo-item__nombre">${e.nombre}</div>
-            <div class="torneo-equipo-item__sub">
-              ${esIndividual ? 'Participante' : `${e.totalJugadores || 0} jugadores`}
-            </div>
+            <div class="torneo-equipo-item__sub">${esIndividual ? 'Participante' : `${e.totalJugadores || 0} jugadores`}</div>
           </div>
-          ${mostrarExpulsar ? `
-            <button class="torneo-equipo-item__expulsar"
-                    data-expulsar-equipo="${e.id}"
-                    title="Eliminar del torneo">
-              ${ICONOS.basura}
-            </button>
-          ` : ''}
+          ${mostrarExpulsar ? `<button class="torneo-equipo-item__expulsar" data-expulsar-equipo="${e.id}" title="Eliminar del torneo">${ICONOS.basura}</button>` : ''}
         </div>
       `;
     }).join('');
-
-    return `
-      <div class="pd-card">
-        <div class="pd-card__eyebrow">Inscripciones</div>
-        <h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'} (${equipos.length})</h3>
-        <div class="torneo-equipos-grid">
-          ${items}
-        </div>
-      </div>
-    `;
+    return `<div class="pd-card"><div class="pd-card__eyebrow">Inscripciones</div><h3 class="pd-card__title">${esIndividual ? 'Participantes' : 'Equipos participantes'} (${equipos.length})</h3><div class="torneo-equipos-grid">${items}</div></div>`;
   }
 
-  /* ---------- TAB: PARTICIPANTES ---------- */
   function renderTabParticipantes(cont, t) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const soyOrg = esOrganizador(t);
-
-    cont.innerHTML = `
-      <div class="torneo-tab-contenido">
-        ${construirEquiposCard(t, { esIndividual, soyOrg })}
-      </div>
-    `;
-
+    cont.innerHTML = `<div class="torneo-tab-contenido">${construirEquiposCard(t, { esIndividual, soyOrg })}</div>`;
     cont.querySelectorAll('[data-ver-participante]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-expulsar-equipo]')) return;
-
         const id = el.dataset.verParticipante;
         const esInd = el.dataset.esIndividual === 'true';
-
         if (esInd) {
-          import('../components.js').then(({ verPerfilUsuario }) => {
-            verPerfilUsuario(id);
-          });
+          import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(id));
         } else {
           const equipo = (t.equipos || []).find(eq => String(eq.id) === String(id));
           if (equipo) verDetalleEquipo(equipo);
         }
       });
-
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          el.click();
-        }
-      });
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
     });
-
     conectarEventosTab(t);
   }
 
-  /* ---------- TAB: TABLA ---------- */
   function renderTabTabla(cont, t) {
     if (t.modalidad !== 'liga') {
-      cont.innerHTML = `
-        <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">${ICONOS.diana}</div>
-          <p class="torneo-tab-vacio__text">Esta modalidad no usa tabla de posiciones.</p>
-        </div>
-      `;
+      cont.innerHTML = `<div class="torneo-tab-vacio"><div class="torneo-tab-vacio__icon">${ICONOS.diana}</div><p class="torneo-tab-vacio__text">Esta modalidad no usa tabla de posiciones.</p></div>`;
       return;
     }
-
     const filas = t.tablaPosiciones || [];
     const esIndividual = t.tipoParticipacion === 'individual';
-
     if (filas.length === 0) {
-      cont.innerHTML = `
-        <div class="torneo-tab-vacio">
-          <div class="torneo-tab-vacio__icon">${ICONOS.diana}</div>
-          <h3 class="torneo-tab-vacio__titulo">Sin datos todavía</h3>
-          <p class="torneo-tab-vacio__text">
-            Cuando se carguen los resultados de los partidos, acá vas a ver la tabla de posiciones completa con los puntos, goles y diferencia de cada participante.
-          </p>
-        </div>
-      `;
+      cont.innerHTML = `<div class="torneo-tab-vacio"><div class="torneo-tab-vacio__icon">${ICONOS.diana}</div><h3 class="torneo-tab-vacio__titulo">Sin datos todavía</h3><p class="torneo-tab-vacio__text">Cuando se carguen los resultados de los partidos, acá vas a ver la tabla de posiciones completa.</p></div>`;
       return;
     }
-
     cont.innerHTML = `
       <div class="torneo-tab-contenido">
         <div class="pd-card">
           <div class="tabla-posiciones-wrapper" style="overflow-x:auto;">
             <table class="tabla-posiciones">
-              <thead>
-                <tr>
-                  <th style="width:40px">#</th>
-                  <th style="text-align:left">${esIndividual ? 'Participante' : 'Equipo'}</th>
-                  <th>PJ</th>
-                  <th>PG</th>
-                  <th>PE</th>
-                  <th>PP</th>
-                  <th>GF</th>
-                  <th>GC</th>
-                  <th>DG</th>
-                  <th style="font-weight:700">PTS</th>
-                </tr>
-              </thead>
+              <thead><tr><th style="width:40px">#</th><th style="text-align:left">${esIndividual ? 'Participante' : 'Equipo'}</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th style="font-weight:700">PTS</th></tr></thead>
               <tbody>
                 ${filas.map((f, i) => `
                   <tr class="${i % 2 === 0 ? '' : 'tabla-posiciones__fila--alt'}">
                     <td>${i + 1}</td>
-                    <td style="text-align:left">
-                      <div style="display:flex; align-items:center; gap:var(--space-2)">
-                        ${esIndividual
-                          ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--sm" style="width:24px;height:24px" />`
-                          : `<span style="font-size:20px">${f.equipoEscudo || ICONOS.escudo}</span>`}
-                        <span>${f.equipoNombre || 'Sin nombre'}</span>
-                      </div>
-                    </td>
-                    <td>${f.partidosJugados}</td>
-                    <td>${f.partidosGanados}</td>
-                    <td>${f.partidosEmpatados}</td>
-                    <td>${f.partidosPerdidos}</td>
-                    <td>${f.puntosFavor}</td>
-                    <td>${f.puntosContra}</td>
-                    <td>${f.diferencia > 0 ? '+' : ''}${f.diferencia}</td>
-                    <td style="font-weight:700">${f.puntosTotales}</td>
+                    <td style="text-align:left"><div style="display:flex; align-items:center; gap:var(--space-2)">${esIndividual ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" class="avatar avatar--sm" style="width:24px;height:24px" />` : `<span style="font-size:20px">${f.equipoEscudo || ICONOS.escudo}</span>`}<span>${f.equipoNombre || 'Sin nombre'}</span></div></td>
+                    <td>${f.partidosJugados}</td><td>${f.partidosGanados}</td><td>${f.partidosEmpatados}</td><td>${f.partidosPerdidos}</td><td>${f.puntosFavor}</td><td>${f.puntosContra}</td><td>${f.diferencia > 0 ? '+' : ''}${f.diferencia}</td><td style="font-weight:700">${f.puntosTotales}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1007,20 +704,12 @@ export async function init(params = {}) {
     `;
   }
 
-  /* ---------- TAB: RESULTADOS ---------- */
   function renderTabResultados(cont, t) {
     if (t.modalidad === 'liga') return renderTabResultadosLiga(cont, t);
     if (t.modalidad === 'eliminacion') return renderTabResultadosFixture(cont, t);
-
-    cont.innerHTML = `
-      <div class="torneo-tab-vacio">
-        <div class="torneo-tab-vacio__icon">${ICONOS.calendario}</div>
-        <p class="torneo-tab-vacio__text">Esta modalidad no tiene resultados cargados.</p>
-      </div>
-    `;
+    cont.innerHTML = `<div class="torneo-tab-vacio"><div class="torneo-tab-vacio__icon">${ICONOS.calendario}</div><p class="torneo-tab-vacio__text">Esta modalidad no tiene resultados cargados.</p></div>`;
   }
 
-  /* ---------- TAB: RESULTADOS (LIGA) ---------- */
   function renderTabResultadosLiga(cont, t) {
     const partidos = t.partidos || [];
     const jornadas = t.jornadas || [];
@@ -1033,16 +722,8 @@ export async function init(params = {}) {
         <div class="torneo-tab-vacio">
           <div class="torneo-tab-vacio__icon">${ICONOS.calendario}</div>
           <h3 class="torneo-tab-vacio__titulo">Sin jornadas todavía</h3>
-          <p class="torneo-tab-vacio__text">
-            ${puedeGest
-              ? 'Generá el fixture automático y el sistema va a crear todas las jornadas y los cruces entre los participantes inscriptos.'
-              : 'Cuando el organizador arme el fixture, vas a ver acá todas las jornadas con sus partidos.'}
-          </p>
-          ${puedeGest ? `
-            <button class="btn btn--primary" id="btn-generar-fixture-liga">
-              Generar fixture automático
-            </button>
-          ` : ''}
+          <p class="torneo-tab-vacio__text">${puedeGest ? 'Generá el fixture automático y el sistema va a crear todas las jornadas y los cruces entre los participantes inscriptos.' : 'Cuando el organizador arme el fixture, vas a ver acá todas las jornadas con sus partidos.'}</p>
+          ${puedeGest ? `<button class="btn btn--primary" id="btn-generar-fixture-liga">Generar fixture automático</button>` : ''}
         </div>
       `;
       document.getElementById('btn-generar-fixture-liga')?.addEventListener('click', () => generarFixtureLiga(t));
@@ -1058,54 +739,27 @@ export async function init(params = {}) {
     });
 
     const jornadasOrdenadas = [...jornadas].sort((a, b) => a.numero - b.numero);
-
     let html = '';
 
     if (puedeGest) {
-      html += `
-        <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
-          <button class="btn btn--primary btn--sm" id="btn-abrir-crear-partido">
-            ${ICONOS.mas} Crear partido
-          </button>
-        </div>
-      `;
+      html += `<div class="flex gap-2 mb-4" style="flex-wrap:wrap"><button class="btn btn--primary btn--sm" id="btn-abrir-crear-partido">${ICONOS.mas} Crear partido</button></div>`;
     }
 
     if (jornadasOrdenadas.length === 0 && partidos.length > 0) {
-      html += `
-        <div class="pd-card mb-4">
-          <div class="pd-card__eyebrow">Partidos</div>
-          <h3 class="pd-card__title">Sin jornada</h3>
-          ${partidos.map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema)).join('')}
-        </div>
-      `;
+      html += `<div class="pd-card mb-4"><div class="pd-card__eyebrow">Partidos</div><h3 class="pd-card__title">Sin jornada</h3>${partidos.map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema)).join('')}</div>`;
     } else {
       for (const j of jornadasOrdenadas) {
         const partidosJ = partidosPorJornada.get(String(j.id)) || [];
-
         html += `
           <div class="pd-card mb-4 jornada-card" data-jornada-id="${j.id}">
             <div class="jornada-card__header">
               <div>
-                <div class="jornada-card__titulo">
-                  ${j.nombre || `Jornada ${j.numero}`}
-                </div>
+                <div class="jornada-card__titulo">${j.nombre || `Jornada ${j.numero}`}</div>
                 ${j.fecha ? `<div class="jornada-card__fecha text-xs text-muted">${formatearFechaCorta(j.fecha)}</div>` : ''}
               </div>
-              ${puedeGest ? `
-                <div class="jornada-card__acciones">
-                  <button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">${ICONOS.lapiz}</button>
-                  <button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">${ICONOS.basura}</button>
-                </div>
-              ` : ''}
+              ${puedeGest ? `<div class="jornada-card__acciones"><button class="btn btn--ghost btn--sm" data-jornada-editar="${j.id}" title="Editar jornada">${ICONOS.lapiz}</button><button class="btn btn--ghost btn--sm" data-jornada-borrar="${j.id}" title="Borrar jornada" style="color:var(--color-danger)">${ICONOS.basura}</button></div>` : ''}
             </div>
-
-            ${partidosJ.length === 0
-              ? `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin partidos cargados.</p>`
-              : partidosJ
-                  .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-                  .map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema))
-                  .join('')}
+            ${partidosJ.length === 0 ? `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin partidos cargados.</p>` : partidosJ.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)).map(p => renderPartido(p, t.deporte, esIndividual, puedeGest, sistema)).join('')}
           </div>
         `;
       }
@@ -1117,16 +771,11 @@ export async function init(params = {}) {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-jornada-editar]')) return;
         if (e.target.closest('[data-jornada-borrar]')) return;
-
         const partidoId = el.dataset.partidoId;
         const partido = (t.partidos || []).find(p => String(p.id) === String(partidoId));
         if (!partido) return;
-
-        if (puedeGest) {
-          abrirCargarResultado(t, partido);
-        } else if (partido.estado === 'finalizado') {
-          abrirVerDetallePartido(t, partido);
-        }
+        if (puedeGest) abrirCargarResultado(t, partido);
+        else if (partido.estado === 'finalizado') abrirVerDetallePartido(t, partido);
       });
     });
 
@@ -1151,37 +800,22 @@ export async function init(params = {}) {
     document.getElementById('btn-abrir-crear-partido')?.addEventListener('click', () => abrirCrearPartido(t));
   }
 
-  /* ---------- Render de un partido (liga) ---------- */
   function renderPartido(p, deporte, esIndividual, puedeGest, sistema) {
     const finalizado = p.estado === 'finalizado';
-    const marcador = finalizado
-      ? formatearResultado(deporte, p.resultado, sistema)
-      : 'vs';
-
+    const marcador = finalizado ? formatearResultado(deporte, p.resultado, sistema) : 'vs';
     const localHtml = renderEscudoCruce(p.localEscudo, esIndividual, 24);
     const visitanteHtml = renderEscudoCruce(p.visitanteEscudo, esIndividual, 24);
 
     return `
       <div class="resultado-item" data-partido-id="${p.id}" style="cursor:${(puedeGest || finalizado) ? 'pointer' : 'default'}">
-        <div class="resultado-item__equipo resultado-item__equipo--local">
-          ${localHtml}
-          <span class="resultado-item__nombre">${p.localNombre || 'Por definir'}</span>
-        </div>
-        <div class="resultado-item__marcador ${finalizado ? '' : 'resultado-item__marcador--pendiente'}">
-          ${marcador}
-          ${finalizado && p.ganador === 'local' ? '<span style="font-size:12px">▲</span>' : ''}
-        </div>
-        <div class="resultado-item__equipo resultado-item__equipo--visitante">
-          <span class="resultado-item__nombre">${p.visitanteNombre || 'Por definir'}</span>
-          ${visitanteHtml}
-          ${finalizado && p.ganador === 'visitante' ? '<span style="font-size:12px">▲</span>' : ''}
-        </div>
+        <div class="resultado-item__equipo resultado-item__equipo--local">${localHtml}<span class="resultado-item__nombre">${p.localNombre || 'Por definir'}</span></div>
+        <div class="resultado-item__marcador ${finalizado ? '' : 'resultado-item__marcador--pendiente'}">${marcador}${finalizado && p.ganador === 'local' ? '<span style="font-size:12px">▲</span>' : ''}</div>
+        <div class="resultado-item__equipo resultado-item__equipo--visitante"><span class="resultado-item__nombre">${p.visitanteNombre || 'Por definir'}</span>${visitanteHtml}${finalizado && p.ganador === 'visitante' ? '<span style="font-size:12px">▲</span>' : ''}</div>
         ${p.fecha ? `<div class="resultado-item__fecha text-xs text-muted">${formatearFechaCorta(p.fecha)}</div>` : ''}
       </div>
     `;
   }
-
-  /* ---------- TAB: RESULTADOS (ELIMINACIÓN) ---------- */
+    /* ---------- TAB: RESULTADOS (ELIMINACIÓN) ---------- */
   function renderTabResultadosFixture(cont, t) {
     const puedeGest = puedeGestionar(t);
     const partidos = t.partidos || [];
@@ -1483,7 +1117,6 @@ export async function init(params = {}) {
     ultimaCanalTorneoRenderizado = null;
     imagenBase64Torneo = null;
 
-    // Validamos que el canal exista y tengamos acceso (si falla, mostramos error)
     try {
       await obtenerCanalAPI(canalId);
     } catch (err) {
@@ -1502,8 +1135,6 @@ export async function init(params = {}) {
       return;
     }
 
-    // ⚡ Sin header: ya estamos dentro del detalle del torneo,
-    // mostrar nombre + icono + tipo + miembros sería redundante.
     panel.innerHTML = `
       <div class="chat-mensajes" id="chat-mensajes-torneo"></div>
 
@@ -1636,7 +1267,7 @@ export async function init(params = {}) {
           ${!esMio ? `<img src="${avatarDeChat(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
             ${tieneImagen && !m.eliminadoParaTodos ? `
               <div class="msg__imagen-wrapper" data-ver-imagen-torneo="${idx}">
                 <img src="${m.imagen}" alt="" loading="lazy" />
@@ -2555,15 +2186,11 @@ export async function init(params = {}) {
     
     abrirModal('modal-ver-equipo');
 
-    // ⚡ Llamamos a nuestro módulo compartido
     await renderGrupoPublico(body, equipoData.equipoId || equipoData.id, {
       onVolver: () => cerrarModal('modal-ver-equipo')
     });
   }
 
-  /* =========================================================
-     CHAT DEL TORNEO — botón "Chat del torneo" del resumen
-     ========================================================= */
   function irAlTabChatTorneo() {
     tabActual = 'chat';
     renderTabActual(torneo);
@@ -4047,6 +3674,30 @@ export async function init(params = {}) {
 
   let modalEditarInicializado = false;
 
+  // ⚡ Variables visuales del modal de edición
+  let editCardColor = '#E8836A';
+  let editHeroColor = '#0F1B2D';
+  let editCardFotoBase64 = null;
+  let editHeroFotoBase64 = null;
+  let editIconoBase64 = null;
+
+  function renderPaletaDet(containerId, colorSeleccionado, onChange) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+    cont.innerHTML = PALETA_BASICOS.map(c => `
+      <button type="button" class="perfil-color-btn ${c === colorSeleccionado ? 'active' : ''}" data-color="${c}" style="background:${c}; width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; margin:0 4px;"></button>
+    `).join('');
+
+    cont.querySelectorAll('.perfil-color-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        cont.querySelectorAll('.perfil-color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        onChange(btn.dataset.color);
+      });
+    });
+  }
+
   function inicializarModalEditar() {
     if (modalEditarInicializado) return;
     if (!modalEditarTorneo) return;
@@ -4123,6 +3774,34 @@ export async function init(params = {}) {
         estadoModal.tipoParticipacion = 'individual';
         actualizarHintTipoParticipacionDet();
       }
+    });
+
+    // TABS MODAL DETALLE
+    const tabsDet = document.querySelectorAll('[data-tab-torneo-det]');
+    const tabTecnicosDet = document.getElementById('torneo-det-tab-tecnicos');
+    const tabVisualDet = document.getElementById('torneo-det-tab-visual');
+
+    tabsDet.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabsDet.forEach(t => {
+          t.classList.remove('active');
+          t.style.borderBottomColor = 'transparent';
+          t.style.color = 'var(--color-text-muted)';
+          t.style.fontWeight = '600';
+        });
+        tab.classList.add('active');
+        tab.style.borderBottomColor = 'var(--color-primary)';
+        tab.style.color = 'var(--color-primary)';
+        tab.style.fontWeight = '700';
+
+        if (tab.dataset.tabTorneoDet === 'tecnicos') {
+          tabTecnicosDet.classList.remove('hidden');
+          tabVisualDet.classList.add('hidden');
+        } else {
+          tabTecnicosDet.classList.add('hidden');
+          tabVisualDet.classList.remove('hidden');
+        }
+      });
     });
 
     document.getElementById('btn-guardar-torneo-det')?.addEventListener('click', guardarEdicionTorneo);
@@ -4224,6 +3903,75 @@ export async function init(params = {}) {
     hint.textContent = textos[estadoModal.sistemaClasificacion] || '';
   }
 
+  function inicializarVisualesDet(torneoData) {
+    editCardColor = torneoData.cardColor || '#E8836A';
+    editHeroColor = torneoData.heroColor || '#0F1B2D';
+    editCardFotoBase64 = torneoData.cardFoto || null;
+    editHeroFotoBase64 = torneoData.heroFoto || null;
+    editIconoBase64 = torneoData.iconoPersonalizado || null;
+
+    const wrapperBasico = document.getElementById('torneo-det-visual-basico');
+    const wrapperPremium = document.getElementById('torneo-det-visual-premium');
+
+    if (user?.esPremium) {
+      wrapperBasico.classList.add('hidden');
+      wrapperPremium.classList.remove('hidden');
+
+      document.getElementById('torneo-card-color-det').value = editCardColor;
+      document.getElementById('torneo-hero-color-det').value = editHeroColor;
+
+      const previewCard = document.getElementById('torneo-card-foto-preview-det');
+      const wrapCard = document.getElementById('torneo-card-foto-preview-wrapper-det');
+      const btnQuitarCard = document.getElementById('torneo-card-foto-quitar-det');
+      if (editCardFotoBase64) { previewCard.src = editCardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); }
+      else { wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); }
+
+      const previewHero = document.getElementById('torneo-hero-foto-preview-det');
+      const wrapHero = document.getElementById('torneo-hero-foto-preview-wrapper-det');
+      const btnQuitarHero = document.getElementById('torneo-hero-foto-quitar-det');
+      if (editHeroFotoBase64) { previewHero.src = editHeroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); }
+      else { wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); }
+
+      const previewIcono = document.getElementById('torneo-icono-preview-wrapper-det');
+      const btnQuitarIcono = document.getElementById('torneo-icono-quitar-det');
+      if (editIconoBase64) { previewIcono.innerHTML = `<img src="${editIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); }
+      else { previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); }
+
+      document.getElementById('torneo-card-foto-file-det').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { editCardFotoBase64 = ev.target.result; previewCard.src = editCardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-card-foto-quitar-det').onclick = () => { editCardFotoBase64 = null; wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); document.getElementById('torneo-card-foto-file-det').value = ''; };
+
+      document.getElementById('torneo-hero-foto-file-det').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { editHeroFotoBase64 = ev.target.result; previewHero.src = editHeroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-hero-foto-quitar-det').onclick = () => { editHeroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('torneo-hero-foto-file-det').value = ''; };
+
+      document.getElementById('torneo-icono-file-det').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { editIconoBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${editIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-icono-quitar-det').onclick = () => { editIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file-det').value = ''; };
+
+    } else {
+      wrapperPremium.classList.add('hidden');
+      wrapperBasico.classList.remove('hidden');
+      renderPaletaDet('torneo-det-card-color-picker-basico', editCardColor, (c) => editCardColor = c);
+      renderPaletaDet('torneo-det-hero-color-picker-basico', editHeroColor, (c) => editHeroColor = c);
+    }
+  }
+
   function abrirModalEditarTorneo(t) {
     if (!modalEditarTorneo) return;
     inicializarModalEditar();
@@ -4291,91 +4039,8 @@ export async function init(params = {}) {
     document.getElementById('torneo-equipos-clasifican-det').value = t.equiposClasifican ?? '';
     document.getElementById('torneo-incluye-estadisticas-det').checked = !!t.incluyeEstadisticas;
 
-    // ⚡ LÓGICA DE PERSONALIZACIÓN PREMIUM (EDICIÓN)
-    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper-det');
-    const lockMsg = document.getElementById('premium-lock-msg-det');
-    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
-    
-    // Variables en el scope de init para usarlas en guardarEdicionTorneo
-    window.__editCardFotoBase64 = t.cardFoto || null;
-    window.__editIconoFileBase64 = t.iconoPersonalizado || null;
-
-    wrapperPremium.classList.remove('hidden');
-
-    if (user?.esPremium) {
-      if (lockMsg) lockMsg.classList.add('hidden');
-      inputsPremium.forEach(el => el.disabled = false);
-
-      document.getElementById('torneo-card-color-det').value = t.cardColor || '#E8836A';
-      
-      const previewFoto = document.getElementById('torneo-card-foto-preview-det');
-      const wrapperFoto = document.getElementById('torneo-card-foto-preview-wrapper-det');
-      const btnQuitarFoto = document.getElementById('torneo-card-foto-quitar-det');
-      
-      if (window.__editCardFotoBase64) { 
-        previewFoto.src = window.__editCardFotoBase64; 
-        wrapperFoto.classList.remove('hidden'); 
-        btnQuitarFoto.classList.remove('hidden');
-      } else { 
-        wrapperFoto.classList.add('hidden'); 
-        btnQuitarFoto.classList.add('hidden');
-      }
-
-      const previewIcono = document.getElementById('torneo-icono-preview-wrapper-det');
-      const btnQuitarIcono = document.getElementById('torneo-icono-quitar-det');
-      
-      if (window.__editIconoFileBase64) { 
-        previewIcono.innerHTML = `<img src="${window.__editIconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
-        btnQuitarIcono.classList.remove('hidden');
-      } else { 
-        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
-        btnQuitarIcono.classList.add('hidden');
-      }
-
-      document.getElementById('torneo-card-foto-file-det').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { 
-          window.__editCardFotoBase64 = ev.target.result; 
-          previewFoto.src = window.__editCardFotoBase64; 
-          wrapperFoto.classList.remove('hidden'); 
-          btnQuitarFoto.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-card-foto-quitar-det').onclick = () => { 
-        window.__editCardFotoBase64 = null; 
-        wrapperFoto.classList.add('hidden'); 
-        btnQuitarFoto.classList.add('hidden'); 
-        document.getElementById('torneo-card-foto-file-det').value = ''; 
-      };
-
-      document.getElementById('torneo-icono-file-det').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { 
-          window.__editIconoFileBase64 = ev.target.result; 
-          previewIcono.innerHTML = `<img src="${window.__editIconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
-          btnQuitarIcono.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-icono-quitar-det').onclick = () => { 
-        window.__editIconoFileBase64 = null; 
-        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
-        btnQuitarIcono.classList.add('hidden'); 
-        document.getElementById('torneo-icono-file-det').value = ''; 
-      };
-
-    } else {
-      if (lockMsg) lockMsg.classList.remove('hidden');
-      inputsPremium.forEach(el => el.disabled = true);
-    }
-    // ⚡ FIN LÓGICA PREMIUM
+    document.querySelectorAll('[data-tab-torneo-det]')[0].click();
+    inicializarVisualesDet(t);
 
     abrirModal('modal-editar-torneo-detalle');
   }
@@ -4439,11 +4104,15 @@ export async function init(params = {}) {
       incluyeEstadisticas,
     };
 
-    // ⚡ AGREGAR CAMPOS PREMIUM SI ES PREMIUM
     if (user?.esPremium) {
       datos.cardColor = document.getElementById('torneo-card-color-det').value;
-      datos.cardFoto = window.__editCardFotoBase64;
-      datos.iconoPersonalizado = window.__editIconoFileBase64;
+      datos.heroColor = document.getElementById('torneo-hero-color-det').value;
+      datos.cardFoto = editCardFotoBase64;
+      datos.heroFoto = editHeroFotoBase64;
+      datos.iconoPersonalizado = editIconoBase64;
+    } else {
+      datos.cardColor = editCardColor;
+      datos.heroColor = editHeroColor;
     }
 
     const btn = document.getElementById('btn-guardar-torneo-det');
@@ -4487,3 +4156,4 @@ export async function init(params = {}) {
     if (intervaloCanalTorneo) clearInterval(intervaloCanalTorneo);
   };
 }
+  // (CONTINÚA EN LA PARTE 2/2)

@@ -1,6 +1,6 @@
 import { formatearFecha, toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes } from '../data-mock.js';
-import { getSesion } from '../auth.js';
+import { getSesion, obtenerUsuarioActual } from '../auth.js';
 import { listarGrupos } from '../services/grupos.service.js';
 import {
   listarTorneos,
@@ -69,7 +69,7 @@ const COLOR_DEPORTE = {
 };
 
 const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
-
+const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
 function esIconoImagen(valor) {
   if (typeof valor !== 'string') return false;
@@ -79,6 +79,7 @@ function esIconoImagen(valor) {
 function colorDeporte(deporte) {
   return COLOR_DEPORTE[deporte] || COLOR_DEFAULT;
 }
+
 function slugDeporte(deporte) {
   if (!deporte) return '';
   return deporte
@@ -96,13 +97,8 @@ const DEPORTES_INDIVIDUALES = new Set([
   'Escalada', 'Boxeo',
 ]);
 
-/* =========================================================
-   DEPORTES CON SISTEMA SUGERIDO (D.5)
-   ========================================================= */
 const DEPORTES_TIEMPO = new Set(['Natación', 'Atletismo', 'Ciclismo']);
 const DEPORTES_PUNTOS = new Set(['Escalada', 'Surf', 'Boxeo']);
-
-
 
 /* =========================================================
    MODAL EDITAR — EXPORTADA
@@ -119,31 +115,45 @@ export function abrirModalEditarExterno(torneo) {
    INIT
    ========================================================= */
 export async function init() {
-  const user = getSesion();
+  let user = getSesion(); // ⚡ Cambiamos const por let
+  
+  // ⚡ NUEVO: Actualizamos la sesión si no tiene el campo esPremium
+  if (user && user.esPremium === undefined) {
+    try {
+      user = await obtenerUsuarioActual();
+    } catch (err) {
+      console.error('[torneos] Error al refrescar sesión:', err);
+    }
+  }
 
   /* ---------- ESTADO ---------- */
   let torneos = [];
   let filtroActual = 'todos';
   let filtroBusqueda = '';
-  let filtroFechaDesde = ''; // ⚡ NUEVO
-  let filtroFechaHasta = ''; // ⚡ NUEVO
-  let campoFechaActual = 'inscripcion'; // ⚡ NUEVO: 'inscripcion' | 'torneo'
+  let filtroFechaDesde = '';
+  let filtroFechaHasta = '';
+  let campoFechaActual = 'inscripcion';
   let modalidadSeleccionada = 'liga';
   let nivelTorneoSeleccionado = 'amistoso';
   let tipoParticipacionSeleccionado = 'equipo';
   let sistemaClasificacionSeleccionado = 'simple';
-  let filtroTipoActual = 'todos'; // ⚡ NUEVO
+  let filtroTipoActual = 'todos';
   let esEdicion = false;
+
+  // Variables visuales
+  let visualCardColor = '#E8836A';
+  let visualHeroColor = '#0F1B2D';
+  let visualCardFotoBase64 = null;
+  let visualHeroFotoBase64 = null;
+  let visualIconoBase64 = null;
 
   /* ---------- FECHA DEL DÍA EN EL HERO ---------- */
   const eyebrow = document.getElementById('torneos-eyebrow');
   if (eyebrow) {
     const hoy = new Date();
     const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-    const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-                   'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-    eyebrow.textContent =
-      `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
+    const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    eyebrow.textContent = `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
   /* ---------- CARGAR DESDE EL BACKEND ---------- */
@@ -153,7 +163,7 @@ export async function init() {
       if (filtroFechaDesde) filtros.desde = filtroFechaDesde;
       if (filtroFechaHasta) filtros.hasta = filtroFechaHasta;
       if (filtroFechaDesde || filtroFechaHasta) {
-        filtros.campoFecha = campoFechaActual; // ⚡ NUEVO
+        filtros.campoFecha = campoFechaActual;
       }
 
       const { data } = await listarTorneos(filtros);
@@ -192,7 +202,6 @@ export async function init() {
 
   if (!contDisponibles) return null;
 
-  // ⚡ NUEVO: Agregar badge Premium al botón del hero si es básico
   if (btnCrear && user && !user.esPremium) {
     btnCrear.innerHTML += ` <span class="badge badge--warning" style="margin-left:8px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>`;
   }
@@ -207,7 +216,6 @@ export async function init() {
       return [];
     }
   }
-
 
   /* =========================================================
      RENDER CARD (VERTICAL)
@@ -249,7 +257,7 @@ export async function init() {
     const color = colorDeporte(t.deporte);
     const iconoDeporte = emojiDeporte[t.deporte];
     
-    // ⚡ Lógica de ícono personalizado
+    // ⚡ Ícono personalizado o por defecto
     let iconoHtml = '';
     let esCustomIcono = false;
     if (t.iconoPersonalizado) {
@@ -261,7 +269,7 @@ export async function init() {
         : (t.emoji || ICONOS.trofeo);
     }
 
-    // ⚡ Lógica de fondo personalizado (color o foto)
+    // ⚡ Fondo de la Card (cardColor / cardFoto)
     let bgStyle = `background:${color.bg}; color:${color.fg}`;
     let imageBgStyle = '';
     if (t.cardFoto) {
@@ -363,16 +371,13 @@ export async function init() {
 
   function renderCreados() {
     const misCreados = torneos.filter(t =>
-      t.soyOrganizador
-      || t.soySubOrganizador
-      || String(t.organizador?.id) === String(user?.id)
+      t.soyOrganizador || t.soySubOrganizador || String(t.organizador?.id) === String(user?.id)
     );
 
     const countEl = document.getElementById('count-torneos-creados');
     if (countEl) countEl.textContent = misCreados.length;
 
     if (misCreados.length === 0) {
-      // ⚡ NUEVO: Badge para el botón vacío si es básico
       const badgeHtml = !user?.esPremium 
         ? `<span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` 
         : '';
@@ -392,9 +397,7 @@ export async function init() {
     contCreados.innerHTML = misCreados.map(t => {
       const esSubOrg = t.soySubOrganizador && !t.soyOrganizador;
       return renderCard(t, {
-        mostrarBadgeRol: esSubOrg
-          ? `${ICONOS.escudo} Sub-organizador`
-          : `${ICONOS.corona} Creado por vos`,
+        mostrarBadgeRol: esSubOrg ? `${ICONOS.escudo} Sub-organizador` : `${ICONOS.corona} Creado por vos`,
       });
     }).join('');
     conectarAcciones(contCreados);
@@ -483,7 +486,6 @@ export async function init() {
       filtroBusqueda = '';
       if (inputBuscar) inputBuscar.value = '';
 
-      // ⚡ NUEVO: resetear filtros de fecha al cambiar de tab
       filtroFechaDesde = '';
       filtroFechaHasta = '';
       if (inputFechaDesdeTorneo) inputFechaDesdeTorneo.value = '';
@@ -509,8 +511,7 @@ export async function init() {
     filtroBusqueda = e.target.value;
     renderDisponibles();
   });
-    // ⚡ NUEVO: Lógica de filtros de fecha para Torneos
-  // ⚡ NUEVO: Lógica de filtros de fecha para Torneos
+
   const chipsFechaTorneo = document.querySelectorAll('[data-filtro-fecha-torneo]');
   const inputFechaDesdeTorneo = document.getElementById('filtro-fecha-desde-torneo');
   const inputFechaHastaTorneo = document.getElementById('filtro-fecha-hasta-torneo');
@@ -520,7 +521,6 @@ export async function init() {
     let desde = '';
     let hasta = '';
 
-    // ⚡ FIX timezone: usar fecha LOCAL
     const formatear = (d) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -553,7 +553,7 @@ export async function init() {
     chipsFechaTorneo.forEach(c => c.classList.remove('chip--active'));
     e.currentTarget.classList.add('chip--active');
     calcularFechaRapidaTorneo(e.currentTarget.dataset.filtroFechaTorneo);
-    recargarTorneos(); // ⚡ refetch al backend
+    recargarTorneos();
   }
 
   function handleInputDesdeTorneoChange(e) {
@@ -571,7 +571,7 @@ export async function init() {
   chipsFechaTorneo.forEach(chip => chip.addEventListener('click', handleChipFechaTorneoClick));
   inputFechaDesdeTorneo?.addEventListener('change', handleInputDesdeTorneoChange);
   inputFechaHastaTorneo?.addEventListener('change', handleInputHastaTorneoChange);
-    // ⚡ NUEVO: toggle campo de fecha (inscripción vs inicio de torneo)
+
   const botonesCampoFecha = document.querySelectorAll('[data-campo-fecha]');
 
   function handleCampoFechaClick(e) {
@@ -583,15 +583,12 @@ export async function init() {
       b.classList.toggle('campo-fecha-btn--active', b.dataset.campoFecha === nuevo);
     });
 
-    // Solo refetchear si hay filtro de fecha activo
     if (filtroFechaDesde || filtroFechaHasta) {
       recargarTorneos();
     }
   }
 
   botonesCampoFecha.forEach(b => b.addEventListener('click', handleCampoFechaClick));
-
-
 
   /* =========================================================
      MODAL CREAR / EDITAR — REFS
@@ -636,6 +633,136 @@ export async function init() {
 
   const opcionesTipoParticipacion = document.querySelectorAll('[data-tipo-participacion]');
   const hintTipoParticipacion     = document.getElementById('hint-tipo-participacion');
+
+  /* ---------- LÓGICA DE PESTAÑAS MODAL ---------- */
+  const tabsModal = document.querySelectorAll('[data-tab-torneo]');
+  const tabTecnicos = document.getElementById('torneo-tab-tecnicos');
+  const tabVisual = document.getElementById('torneo-tab-visual');
+
+  tabsModal.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabsModal.forEach(t => {
+        t.classList.remove('active');
+        t.style.borderBottomColor = 'transparent';
+        t.style.color = 'var(--color-text-muted)';
+        t.style.fontWeight = '600';
+      });
+      tab.classList.add('active');
+      tab.style.borderBottomColor = 'var(--color-primary)';
+      tab.style.color = 'var(--color-primary)';
+      tab.style.fontWeight = '700';
+
+      if (tab.dataset.tabTorneo === 'tecnicos') {
+        tabTecnicos.classList.remove('hidden');
+        tabVisual.classList.add('hidden');
+      } else {
+        tabTecnicos.classList.add('hidden');
+        tabVisual.classList.remove('hidden');
+      }
+    });
+  });
+
+  // ⚡ Paleta idéntica a la de Perfil
+  const HERO_COLORS = [
+    { key: 'navy',    label: 'Navy',     from: '#0F1B2D', to: '#1E2D45', text: 'light' },
+    { key: 'black',   label: 'Negro',    from: '#0A0A0A', to: '#1F1F1F', text: 'light' },
+    { key: 'carbon',  label: 'Carbón',   from: '#1F2937', to: '#374151', text: 'light' },
+    { key: 'blue',    label: 'Azul',     from: '#1E3A8A', to: '#2563EB', text: 'light' },
+    { key: 'forest',  label: 'Bosque',   from: '#064E3B', to: '#047857', text: 'light' },
+    { key: 'purple',  label: 'Púrpura',  from: '#4C1D95', to: '#7C3AED', text: 'light' },
+    { key: 'wine',    label: 'Vino',     from: '#7F1D1D', to: '#B91C1C', text: 'light' },
+    { key: 'coffee',  label: 'Café',     from: '#451A03', to: '#78350F', text: 'light' },
+    { key: 'mustard', label: 'Mostaza',  from: '#92400E', to: '#CA8A04', text: 'light' },
+    { key: 'red',     label: 'Rojo',     from: '#DC2626', to: '#EF4444', text: 'light' },
+    { key: 'orange',  label: 'Naranjo',  from: '#EA580C', to: '#FB923C', text: 'light' },
+    { key: 'white',   label: 'Blanco',   from: '#FFFFFF', to: '#F5F5F5', text: 'dark'  },
+  ];
+
+  function renderPaleta(containerId, colorSeleccionado, onChange) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+    cont.innerHTML = HERO_COLORS.map(c => `
+      <button type="button" class="perfil-color-btn ${c.from === colorSeleccionado ? 'active' : ''}" data-color="${c.from}" title="${c.label}" style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%); width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; margin:0 4px;"></button>
+    `).join('');
+
+    cont.querySelectorAll('.perfil-color-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        cont.querySelectorAll('.perfil-color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        onChange(btn.dataset.color);
+      });
+    });
+  }
+
+  function inicializarVisuales(torneo = null) {
+    visualCardColor = torneo?.cardColor || '#E8836A';
+    visualHeroColor = torneo?.heroColor || '#0F1B2D';
+    visualCardFotoBase64 = torneo?.cardFoto || null;
+    visualHeroFotoBase64 = torneo?.heroFoto || null;
+    visualIconoBase64 = torneo?.iconoPersonalizado || null;
+
+    const wrapperBasico = document.getElementById('torneo-visual-basico');
+    const wrapperPremium = document.getElementById('torneo-visual-premium');
+
+    if (user?.esPremium) {
+      wrapperBasico.classList.add('hidden');
+      wrapperPremium.classList.remove('hidden');
+
+      document.getElementById('torneo-card-color').value = visualCardColor;
+      document.getElementById('torneo-hero-color').value = visualHeroColor;
+
+      const previewCard = document.getElementById('torneo-card-foto-preview');
+      const wrapCard = document.getElementById('torneo-card-foto-preview-wrapper');
+      const btnQuitarCard = document.getElementById('torneo-card-foto-quitar');
+      if (visualCardFotoBase64) { previewCard.src = visualCardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); }
+      else { wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); }
+
+      const previewHero = document.getElementById('torneo-hero-foto-preview');
+      const wrapHero = document.getElementById('torneo-hero-foto-preview-wrapper');
+      const btnQuitarHero = document.getElementById('torneo-hero-foto-quitar');
+      if (visualHeroFotoBase64) { previewHero.src = visualHeroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); }
+      else { wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); }
+
+      const previewIcono = document.getElementById('torneo-icono-preview-wrapper');
+      const btnQuitarIcono = document.getElementById('torneo-icono-quitar');
+      if (visualIconoBase64) { previewIcono.innerHTML = `<img src="${visualIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); }
+      else { previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); }
+
+      document.getElementById('torneo-card-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { visualCardFotoBase64 = ev.target.result; previewCard.src = visualCardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-card-foto-quitar').onclick = () => { visualCardFotoBase64 = null; wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); document.getElementById('torneo-card-foto-file').value = ''; };
+
+      document.getElementById('torneo-hero-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { visualHeroFotoBase64 = ev.target.result; previewHero.src = visualHeroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-hero-foto-quitar').onclick = () => { visualHeroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('torneo-hero-foto-file').value = ''; };
+
+      document.getElementById('torneo-icono-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { visualIconoBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${visualIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('torneo-icono-quitar').onclick = () => { visualIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file').value = ''; };
+
+    } else {
+      wrapperPremium.classList.add('hidden');
+      wrapperBasico.classList.remove('hidden');
+      renderPaleta('torneo-card-color-picker-basico', visualCardColor, (c) => visualCardColor = c);
+      renderPaleta('torneo-hero-color-picker-basico', visualHeroColor, (c) => visualHeroColor = c);
+    }
+  }
 
   /* ---------- Cambio de modalidad ---------- */
   opcionesModalidad.forEach(op => {
@@ -855,77 +982,10 @@ export async function init() {
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Crear torneo';
     
-    // ⚡ Lógica de Personalización Premium
-    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
-    const lockMsg = document.getElementById('premium-lock-msg');
-    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
-    
-    wrapperPremium.classList.remove('hidden');
-    
-    if (user?.esPremium) {
-      if (lockMsg) lockMsg.classList.add('hidden');
-      inputsPremium.forEach(el => el.disabled = false);
-      
-      document.getElementById('torneo-card-color').value = '#E8836A';
-      document.getElementById('torneo-card-foto-preview-wrapper').classList.add('hidden');
-      document.getElementById('torneo-card-foto-file').value = '';
-      document.getElementById('torneo-card-foto-quitar').classList.add('hidden');
-      
-      document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
-      document.getElementById('torneo-icono-file').value = '';
-      document.getElementById('torneo-icono-quitar').classList.add('hidden');
-      
-      // Manejadores de imágenes
-      let cardFotoBase64 = null;
-      let iconoFileBase64 = null;
+    tabsModal[0].click(); // Reset tab a tecnicos
+    inicializarVisuales(null);
 
-      document.getElementById('torneo-card-foto-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          cardFotoBase64 = ev.target.result;
-          document.getElementById('torneo-card-foto-preview').src = cardFotoBase64;
-          document.getElementById('torneo-card-foto-preview-wrapper').classList.remove('hidden');
-          document.getElementById('torneo-card-foto-quitar').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-card-foto-quitar').onclick = () => {
-        cardFotoBase64 = null;
-        document.getElementById('torneo-card-foto-preview-wrapper').classList.add('hidden');
-        document.getElementById('torneo-card-foto-quitar').classList.add('hidden');
-        document.getElementById('torneo-card-foto-file').value = '';
-      };
-
-      document.getElementById('torneo-icono-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          iconoFileBase64 = ev.target.result;
-          document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`;
-          document.getElementById('torneo-icono-quitar').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-icono-quitar').onclick = () => {
-        iconoFileBase64 = null;
-        document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
-        document.getElementById('torneo-icono-quitar').classList.add('hidden');
-        document.getElementById('torneo-icono-file').value = '';
-      };
-
-      document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo(cardFotoBase64, iconoFileBase64);
-      
-    } else {
-      if (lockMsg) lockMsg.classList.remove('hidden');
-      inputsPremium.forEach(el => el.disabled = true);
-      document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo(null, null);
-    }
-
+    document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo();
     abrirModal('modal-crear-torneo');
   }
 
@@ -980,204 +1040,11 @@ export async function init() {
     if (inputEquiposClasif)  inputEquiposClasif.value = torneo.equiposClasifican ?? '';
     if (checkIncluyeEstad)   checkIncluyeEstad.checked = !!torneo.incluyeEstadisticas;
 
-    // ⚡ Lógica de Personalización Premium (Edición)
-    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
-    const lockMsg = document.getElementById('premium-lock-msg');
-    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
-    
-    let cardFotoBase64 = torneo.cardFoto || null;
-    let iconoFileBase64 = torneo.iconoPersonalizado || null;
+    tabsModal[0].click(); // Reset tab a tecnicos
+    inicializarVisuales(torneo);
 
-    wrapperPremium.classList.remove('hidden');
-
-    if (user?.esPremium) {
-      if (lockMsg) lockMsg.classList.add('hidden');
-      inputsPremium.forEach(el => el.disabled = false);
-
-      document.getElementById('torneo-card-color').value = torneo.cardColor || '#E8836A';
-      
-      const previewFoto = document.getElementById('torneo-card-foto-preview');
-      const wrapperFoto = document.getElementById('torneo-card-foto-preview-wrapper');
-      const btnQuitarFoto = document.getElementById('torneo-card-foto-quitar');
-      
-      if (cardFotoBase64) { 
-        previewFoto.src = cardFotoBase64; 
-        wrapperFoto.classList.remove('hidden'); 
-        btnQuitarFoto.classList.remove('hidden');
-      } else { 
-        wrapperFoto.classList.add('hidden'); 
-        btnQuitarFoto.classList.add('hidden');
-      }
-
-      const previewIcono = document.getElementById('torneo-icono-preview-wrapper');
-      const btnQuitarIcono = document.getElementById('torneo-icono-quitar');
-      
-      if (iconoFileBase64) { 
-        previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
-        btnQuitarIcono.classList.remove('hidden');
-      } else { 
-        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
-        btnQuitarIcono.classList.add('hidden');
-      }
-
-      document.getElementById('torneo-card-foto-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { 
-          cardFotoBase64 = ev.target.result; 
-          previewFoto.src = cardFotoBase64; 
-          wrapperFoto.classList.remove('hidden'); 
-          btnQuitarFoto.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-card-foto-quitar').onclick = () => { 
-        cardFotoBase64 = null; 
-        wrapperFoto.classList.add('hidden'); 
-        btnQuitarFoto.classList.add('hidden'); 
-        document.getElementById('torneo-card-foto-file').value = ''; 
-      };
-
-      document.getElementById('torneo-icono-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { 
-          iconoFileBase64 = ev.target.result; 
-          previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
-          btnQuitarIcono.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file); e.target.value = '';
-      };
-
-      document.getElementById('torneo-icono-quitar').onclick = () => { 
-        iconoFileBase64 = null; 
-        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
-        btnQuitarIcono.classList.add('hidden'); 
-        document.getElementById('torneo-icono-file').value = ''; 
-      };
-
-      document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo, cardFotoBase64, iconoFileBase64);
-      
-    } else {
-      if (lockMsg) lockMsg.classList.remove('hidden');
-      inputsPremium.forEach(el => el.disabled = true);
-      document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo, null, null);
-    }
-
+    document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo);
     abrirModal('modal-crear-torneo');
-  }
-
-  async function guardarEdicion(torneo, cardFotoBase64 = null, iconoFileBase64 = null) {
-    const datos = leerFormulario();
-    if (!datos) return;
-
-    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
-
-    const btn = document.getElementById('btn-guardar-torneo');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    try {
-      const payload = { ...datos, emoji };
-      
-      if (user?.esPremium) {
-        payload.cardColor = document.getElementById('torneo-card-color').value;
-        payload.cardFoto = cardFotoBase64;
-        payload.iconoPersonalizado = iconoFileBase64;
-      }
-
-      await editarTorneoAPI(torneo.id, payload);
-      toast('Torneo actualizado', 'success');
-
-      cerrarModal('modal-crear-torneo');
-      await recargarTorneos();
-
-      const torneoAEditar = sessionStorage.getItem('torneoAEditar');
-      if (torneoAEditar) {
-        sessionStorage.removeItem('torneoAEditar');
-        window.location.hash = `#/torneo/${torneoAEditar}`;
-      }
-    } catch (err) {
-      console.error('[torneos] Error al editar:', err);
-      toast(err.message || 'No se pudo actualizar el torneo', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Guardar cambios';
-    }
-  }
-
-  async function guardarNuevo(cardFotoBase64 = null, iconoFileBase64 = null) {
-    const datos = leerFormulario();
-    if (!datos) return;
-
-    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
-
-    const btn = document.getElementById('btn-guardar-torneo');
-    btn.disabled = true;
-    btn.textContent = 'Creando...';
-
-    try {
-      const payload = { ...datos, emoji };
-      
-      // ⚡ Agregar campos premium si el usuario lo es
-      if (user?.esPremium) {
-        payload.cardColor = document.getElementById('torneo-card-color').value;
-        payload.cardFoto = cardFotoBase64;
-        payload.iconoPersonalizado = iconoFileBase64;
-      }
-
-      await crearTorneoAPI(payload);
-      toast('¡Torneo creado!', 'success');
-
-      cerrarModal('modal-crear-torneo');
-
-      filtroActual = 'todos';
-      filtroTipoActual = 'todos';
-      if (selectEstadoTorneo) selectEstadoTorneo.value = 'todos';
-      if (selectTipoTorneo) selectTipoTorneo.value = 'todos';
-      await recargarTorneos();
-      cambiarTab('creados');
-    } catch (err) {
-      console.error('[torneos] Error al crear:', err);
-      toast(err.message || 'No se pudo crear el torneo', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Crear torneo';
-    }
-  }
-
-  async function guardarEdicion(torneo) {
-    const datos = leerFormulario();
-    if (!datos) return;
-
-    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
-
-    const btn = document.getElementById('btn-guardar-torneo');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
-
-    try {
-      await editarTorneoAPI(torneo.id, { ...datos, emoji });
-      toast('Torneo actualizado', 'success');
-
-      cerrarModal('modal-crear-torneo');
-      await recargarTorneos();
-
-      const torneoAEditar = sessionStorage.getItem('torneoAEditar');
-      if (torneoAEditar) {
-        sessionStorage.removeItem('torneoAEditar');
-        window.location.hash = `#/torneo/${torneoAEditar}`;
-      }
-    } catch (err) {
-      console.error('[torneos] Error al editar:', err);
-      toast(err.message || 'No se pudo actualizar el torneo', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Guardar cambios';
-    }
   }
 
   function leerFormulario() {
@@ -1241,7 +1108,90 @@ export async function init() {
     };
   }
 
-  /* ---------- CONECTAR BOTONES CREAR ---------- */
+  async function guardarNuevo() {
+    const datos = leerFormulario();
+    if (!datos) return;
+
+    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
+
+    if (user?.esPremium) {
+      datos.cardColor = document.getElementById('torneo-card-color').value;
+      datos.heroColor = document.getElementById('torneo-hero-color').value;
+      datos.cardFoto = visualCardFotoBase64;
+      datos.heroFoto = visualHeroFotoBase64;
+      datos.iconoPersonalizado = visualIconoBase64;
+    } else {
+      datos.cardColor = visualCardColor;
+      datos.heroColor = visualHeroColor;
+    }
+
+    const btn = document.getElementById('btn-guardar-torneo');
+    btn.disabled = true;
+    btn.textContent = 'Creando...';
+
+    try {
+      await crearTorneoAPI({ ...datos, emoji });
+      toast('¡Torneo creado!', 'success');
+
+      cerrarModal('modal-crear-torneo');
+
+      filtroActual = 'todos';
+      filtroTipoActual = 'todos';
+      if (selectEstadoTorneo) selectEstadoTorneo.value = 'todos';
+      if (selectTipoTorneo) selectTipoTorneo.value = 'todos';
+      await recargarTorneos();
+      cambiarTab('creados');
+    } catch (err) {
+      console.error('[torneos] Error al crear:', err);
+      toast(err.message || 'No se pudo crear el torneo', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Crear torneo';
+    }
+  }
+
+  async function guardarEdicion(torneo) {
+    const datos = leerFormulario();
+    if (!datos) return;
+
+    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
+
+    if (user?.esPremium) {
+      datos.cardColor = document.getElementById('torneo-card-color').value;
+      datos.heroColor = document.getElementById('torneo-hero-color').value;
+      datos.cardFoto = visualCardFotoBase64;
+      datos.heroFoto = visualHeroFotoBase64;
+      datos.iconoPersonalizado = visualIconoBase64;
+    } else {
+      datos.cardColor = visualCardColor;
+      datos.heroColor = visualHeroColor;
+    }
+
+    const btn = document.getElementById('btn-guardar-torneo');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      await editarTorneoAPI(torneo.id, { ...datos, emoji });
+      toast('Torneo actualizado', 'success');
+
+      cerrarModal('modal-crear-torneo');
+      await recargarTorneos();
+
+      const torneoAEditar = sessionStorage.getItem('torneoAEditar');
+      if (torneoAEditar) {
+        sessionStorage.removeItem('torneoAEditar');
+        window.location.hash = `#/torneo/${torneoAEditar}`;
+      }
+    } catch (err) {
+      console.error('[torneos] Error al editar:', err);
+      toast(err.message || 'No se pudo actualizar el torneo', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  }
+
   btnCrear?.addEventListener('click', abrirModalCrear);
 
   document.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
@@ -1259,19 +1209,12 @@ export async function init() {
     if (torneo) abrirModalEditar(torneo);
   });
 
-  /* =========================================================
-     RENDER INICIAL
-     ========================================================= */
-  async function renderTodo() {
-    await recargarTorneos();
-  }
-
-  await renderTodo();
+  await recargarTorneos();
 
   return () => {
     chipsFechaTorneo.forEach(chip => chip.removeEventListener('click', handleChipFechaTorneoClick));
     inputFechaDesdeTorneo?.removeEventListener('change', handleInputDesdeTorneoChange);
     inputFechaHastaTorneo?.removeEventListener('change', handleInputHastaTorneoChange);
-    botonesCampoFecha.forEach(b => b.removeEventListener('click', handleCampoFechaClick)); // ⚡ NUEVO
+    botonesCampoFecha.forEach(b => b.removeEventListener('click', handleCampoFechaClick));
   };
 }

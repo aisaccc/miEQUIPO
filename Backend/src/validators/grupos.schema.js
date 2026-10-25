@@ -72,6 +72,13 @@ export const schemaCrearGrupo = z.object({
   ciudad: ciudadValida,
   descripcion: descripcionValida,
   tipoAcceso: tipoAccesoValido,
+  
+  // ⚡ CAMPOS VISUALES (Añadidos para creación)
+  cardColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
+  cardFoto: urlOBase64,
+  iconoPersonalizado: urlOBase64,
+  heroColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
+  heroFoto: urlOBase64,
 }).strict();
 
 /* ---------- PATCH /api/grupos/:id ---------- */
@@ -84,10 +91,12 @@ export const schemaEditarGrupo = z.object({
   tipoAcceso: tipoAccesoValido.optional(),
   statsPrivadas: z.boolean().optional(),
   
-  // ⚡ NUEVOS CAMPOS PREMIUM (Personalización de card)
+  // ⚡ CAMPOS VISUALES PREMIUM (Personalización de card y hero)
   cardColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
   cardFoto: urlOBase64,
   iconoPersonalizado: urlOBase64,
+  heroColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
+  heroFoto: urlOBase64,
 }).strict();
 
 export const schemaEditarStats = z.object({

@@ -63,11 +63,13 @@ function formatearGrupo(row, extras = {}) {
     esCapitan,
     esAdmin,
     esMiembro,
-    esPremium: calcularEsPremium(row), // ⚡ Plan del dueño
+    esPremium: calcularEsPremium(row),
     // ⚡ Nuevos campos de personalización
     cardColor: row.card_color || null,
     cardFoto: row.card_foto || null,
     iconoPersonalizado: row.icono_personalizado || null,
+    heroColor: row.hero_color || null, // ⚡ NUEVO
+    heroFoto: row.hero_foto || null,   // ⚡ NUEVO
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -280,7 +282,10 @@ export async function obtenerGrupo(grupoId, usuarioId) {
    CREAR GRUPO
    ========================================================= */
 export async function crearGrupo(datos, usuarioId) {
-  const { tipo, nombre, escudo, deporte, ciudad, descripcion, tipoAcceso } = datos;
+  const { 
+    tipo, nombre, escudo, deporte, ciudad, descripcion, tipoAcceso,
+    cardColor, cardFoto, iconoPersonalizado, heroColor, heroFoto // ⚡ NUEVOS
+  } = datos;
   const client = await pool.connect();
 
   try {
@@ -291,6 +296,7 @@ export async function crearGrupo(datos, usuarioId) {
       'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
       [usuarioId]
     );
+    
     const esPrem = calcularEsPremium(uRows[0] || {});
 
     if (!esPrem) {
@@ -311,6 +317,13 @@ export async function crearGrupo(datos, usuarioId) {
         err.status = 403;
         throw err;
       }
+
+      // ⚡ NUEVO: Bloquear subida de fotos en creación
+      if (cardFoto || heroFoto || iconoPersonalizado) {
+        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
+        err.status = 403;
+        throw err;
+      }
     }
     // ⚡ FIN VALIDACIÓN
 
@@ -326,9 +339,15 @@ export async function crearGrupo(datos, usuarioId) {
     }
 
     const { rows } = await client.query(
-      `INSERT INTO grupos (tipo, nombre, escudo, deporte, ciudad, descripcion, tipo_acceso, capitan_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [tipo, nombre, escudo || null, deporte, ciudad || null, descripcion || null, tipoAcceso || 'publico', usuarioId]
+      `INSERT INTO grupos (
+        tipo, nombre, escudo, deporte, ciudad, descripcion, tipo_acceso, capitan_id,
+        card_color, card_foto, icono_personalizado, hero_color, hero_foto
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [
+        tipo, nombre, escudo || null, deporte, ciudad || null, descripcion || null, tipoAcceso || 'publico', usuarioId,
+        cardColor || null, cardFoto || null, iconoPersonalizado || null, heroColor || null, heroFoto || null
+      ]
     );
 
     const grupo = rows[0];
@@ -363,7 +382,11 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
     // ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
-    if (cambios.cardColor !== undefined || cambios.cardFoto !== undefined || cambios.iconoPersonalizado !== undefined) {
+    if (
+      (cambios.cardFoto !== undefined && cambios.cardFoto !== null) ||
+      (cambios.heroFoto !== undefined && cambios.heroFoto !== null) ||
+      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null)
+    ) {
       const { rows: uRows } = await client.query(
         'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
         [grupo.capitan_id]
@@ -371,7 +394,7 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
       const esPrem = calcularEsPremium(uRows[0] || {});
       
       if (!esPrem) {
-        const err = new Error('La personalización de la card es exclusiva del plan Premium.');
+        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
         err.status = 403;
         throw err;
       }
@@ -388,6 +411,8 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
       cardColor: 'card_color',
       cardFoto: 'card_foto',
       iconoPersonalizado: 'icono_personalizado',
+      heroColor: 'hero_color', // ⚡ NUEVO
+      heroFoto: 'hero_foto',   // ⚡ NUEVO
     };
 
     const campos = [];

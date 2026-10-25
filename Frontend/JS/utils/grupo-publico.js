@@ -1,11 +1,6 @@
 /* =========================================================
    grupo-publico.js — Vista pública de un equipo/comunidad
-   =========================================================
-   Se usa desde:
-   - mi-equipo.js (pestaña Buscar)
-   - partido-detalle.js (ver equipo interesado/postulado)
-   - torneo-detalle.js (ver equipo solicitante/participante)
-*/
+   ========================================================= */
 
 import { toast } from '../components.js';
 import { obtenerGrupo, unirseAGrupo, salirDeGrupo, cancelarMiSolicitud } from '../services/grupos.service.js';
@@ -66,7 +61,6 @@ function colorDeporte(deporte) {
 export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {}) {
   if (!contenedor) return;
 
-  // Mostrar loader mientras carga
   contenedor.innerHTML = `
     <div class="page-loader" style="padding: 60px 20px;">
       <div class="spinner"></div>
@@ -101,16 +95,15 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
 
   const color = colorDeporte(grupo.deporte);
   
-  // ⚡ Respetar el color y la foto personalizada del banner
+  // ⚡ Usar heroColor y heroFoto para el hero público
   let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
-  if (grupo.cardColor) {
-    heroStyle = `background: linear-gradient(135deg, ${grupo.cardColor} 0%, ${grupo.cardColor}DD 100%);`;
+  if (grupo.heroColor) {
+    heroStyle = `background: linear-gradient(135deg, ${grupo.heroColor} 0%, ${grupo.heroColor}DD 100%);`;
   }
-  if (grupo.cardFoto) {
-    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
+  if (grupo.heroFoto) {
+    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.heroFoto}'); background-size: cover; background-position: center;`;
   }
 
-  // ⚡ Usar el ícono personalizado si existe
   const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
 
   const partidos = calcularPartidos(grupo.stats);
@@ -133,7 +126,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     miSolicitudPendiente = grupoCompleto.miSolicitudPendiente === true;
   } catch (err) {}
 
-  // Botones de acción
   let botonesHtml = '';
   const esPrivado = grupo.tipoAcceso === 'privado';
 
@@ -168,7 +160,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     `;
   }
 
-  // Subtabs: Publicaciones, Miembros, Información
   const botonesSubtabs = [
     { id: 'publicaciones', icono: SVG.image, label: 'Publicaciones' },
     { id: 'miembros', icono: SVG.users, label: 'Plantilla' },
@@ -286,12 +277,10 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     ${renderSubtabs()}
   `;
 
-  // Evento Volver
   if (onVolver) {
     document.getElementById('gpub-btn-volver')?.addEventListener('click', onVolver);
   }
 
-  // Evento Unirse
   document.getElementById('gpub-btn-unirse')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
@@ -313,7 +302,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     }
   });
 
-  // Eventos de acciones (Salir / Cancelar)
   contenedor.querySelectorAll('[data-accion-grupo]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -343,7 +331,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     });
   });
 
-  // Eventos Subtabs
   const contSubtabs = document.getElementById('gpub-subtab-contenido');
 
   const renderTab = () => {
@@ -442,7 +429,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     
     let miembros = grupo.miembros || [];
     
-    // ⚡ Si la lista está vacía (ej. equipo privado sin acceso), al menos mostramos al capitán
     if (miembros.length === 0 && grupo.capitan) {
       miembros = [{
         id: grupo.capitan.id,
@@ -482,7 +468,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
       `;
     }).join('');
 
-    // ⚡ Click en el miembro abre su perfil
     lista.querySelectorAll('[data-autor-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -500,12 +485,8 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     });
   });
 
-  // Inicializar el primer tab
   renderTab();
 
-  // ==========================================
-  // HELPERS LOCALES
-  // ==========================================
   function esIconoImagen(valor) {
     if (typeof valor !== 'string') return false;
     return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor) || valor.startsWith('data:image/');

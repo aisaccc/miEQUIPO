@@ -14627,3 +14627,43 @@ select.field__input {
 [data-theme="dark"] .tournament-card__sport img:not([src*="assets/icons/"]) {
   filter: none !important;
 }
+/* =========================================================
+   PESTAÑAS DE MODALES
+   ========================================================= */
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.modal-tab.active {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* Paleta de colores básicos */
+.perfil-color-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.perfil-color-btn:hover { transform: scale(1.1); }
+.perfil-color-btn.active {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}

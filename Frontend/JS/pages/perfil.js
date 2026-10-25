@@ -594,6 +594,12 @@ export async function init() {
     let heroFotoSel = u.heroFoto || null;
     const previewHeroWrapper = document.getElementById('edit-perf-hero-foto-preview-wrapper');
     const previewHeroImg = document.getElementById('edit-perf-hero-foto-preview');
+    
+    // ⚡ NUEVO: Ocultar todo el bloque de subir foto si no es premium
+    const heroFotoWrapperCompleto = document.querySelector('.perfil-hero-foto');
+    if (heroFotoWrapperCompleto) {
+      heroFotoWrapperCompleto.style.display = u.esPremium ? 'block' : 'none';
+    }
 
     function actualizarPreviewHeroFoto() {
       if (heroFotoSel) { if (previewHeroImg) previewHeroImg.src = heroFotoSel; previewHeroWrapper?.classList.remove('hidden'); }

@@ -139,10 +139,13 @@ export const schemaCrearTorneo = z.object({
   permiteEmpate: z.boolean().default(true),
   incluyeEstadisticas: z.boolean().default(false),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
-  equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  
+  // ⚡ CAMPOS VISUALES
   cardColor: z.string().nullable().optional(),
   cardFoto: z.string().nullable().optional(),
   iconoPersonalizado: z.string().nullable().optional(),
+  heroColor: z.string().nullable().optional(),
+  heroFoto: z.string().nullable().optional(),
 }).strict();
 
 /* ---------- PATCH /api/torneos/:id ---------- */
@@ -175,10 +178,13 @@ export const schemaEditarTorneo = z.object({
   permiteEmpate: z.boolean().optional(),
   incluyeEstadisticas: z.boolean().optional(),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
-  equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  
+  // ⚡ CAMPOS VISUALES
   cardColor: z.string().nullable().optional(),
   cardFoto: z.string().nullable().optional(),
   iconoPersonalizado: z.string().nullable().optional(),
+  heroColor: z.string().nullable().optional(),
+  heroFoto: z.string().nullable().optional(),
 }).strict();
 
 /* ---------- POST /api/torneos/:id/inscribir ---------- */
@@ -256,8 +262,9 @@ export const schemaListarTorneos = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  campoFecha: z.enum(['inscripcion', 'torneo']).optional(), // ⚡ NUEVO
+  campoFecha: z.enum(['inscripcion', 'torneo']).optional(),
 }).strict();
+
 /* =========================================================
    JORNADAS (liga)
    ========================================================= */

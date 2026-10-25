@@ -59,16 +59,13 @@ function formatearTorneo(row, extras = {}) {
     totalPartidos: extras.totalPartidos ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    incluyeEstadisticas: row.incluye_estadisticas,
-    equiposClasifican: row.equipos_clasifican,
-    canalChatId: row.canal_chat_id,
     
     // ⚡ NUEVOS CAMPOS
     cardColor: row.card_color || null,
     cardFoto: row.card_foto || null,
     iconoPersonalizado: row.icono_personalizado || null,
-    
-    idaYVuelta: row.ida_y_vuelta ?? false,
+    heroColor: row.hero_color || null, // ⚡ NUEVO
+    heroFoto: row.hero_foto || null,   // ⚡ NUEVO
   };
 }
 
@@ -327,7 +324,6 @@ async function obtenerPartidos(client, torneoId, tipoParticipacion) {
   );
   return rows;
 }
-
 async function obtenerTablaPosiciones(client, torneoId, tipoParticipacion) {
   if (tipoParticipacion === 'individual') {
     const { rows } = await client.query(
@@ -588,7 +584,7 @@ export async function listarTorneos(filtros, usuarioId) {
     soloMios, soloInscritos, busqueda,
     page = 1, limit = 20,
     desde, hasta,
-    campoFecha, // ⚡ NUEVO
+    campoFecha,
   } = filtros;
 
   const condiciones = [];
@@ -636,7 +632,6 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
-  // ⚡ NUEVO: filtro por fecha con columna dinámica
   const columnaFecha = campoFecha === 'torneo'
     ? 't.fecha_inicio'
     : 't.fecha_limite_inscripcion';
@@ -694,7 +689,6 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
-  // ⚡ BLOQUEO: excluir torneos de organizadores bloqueados (en cualquier dirección)
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   if (bloqueados.length > 0) {
     const placeholders = [];
@@ -862,7 +856,6 @@ export async function obtenerTorneo(torneoId, usuarioId) {
 
   const torneo = rows[0];
 
-  // ⚡ BLOQUEO: si hay bloqueo con el organizador, no se puede ver el detalle
   if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
     const err = new Error('Torneo no disponible');
     err.status = 403;
@@ -885,7 +878,6 @@ export async function obtenerTorneo(torneoId, usuarioId) {
     [torneoId]
   );
 
-  /* ⚡ D.3: invitaciones pendientes a sub-organizadores (solo para el org principal) */
   let invitacionesOrganizador = [];
   if (esOrganizador) {
     const { rows: invRows } = await pool.query(
@@ -900,7 +892,6 @@ export async function obtenerTorneo(torneoId, usuarioId) {
     invitacionesOrganizador = invRows;
   }
 
-  /* ⚡ D.3: ¿tengo yo una invitación pendiente? */
   const { rows: miInvRows } = await pool.query(
     `SELECT id, permisos, created_at AS creado
      FROM torneo_organizadores_invitaciones
@@ -1023,7 +1014,6 @@ export async function obtenerTorneo(torneoId, usuarioId) {
    CREAR TORNEO
    ========================================================= */
 export async function crearTorneo(datos, usuarioId) {
-  // ⚡ VALIDACIÓN PREMIUM EN BACKEND
   const { rows: uRows } = await pool.query(
     'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
     [usuarioId]
@@ -1044,7 +1034,6 @@ export async function crearTorneo(datos, usuarioId) {
     err.status = 403;
     throw err;
   }
-  // ⚡ FIN VALIDACIÓN PREMIUM
 
   const {
     nombre, deporte, emoji, descripcion, lugar,
@@ -1055,7 +1044,8 @@ export async function crearTorneo(datos, usuarioId) {
     sistemaClasificacion,
     puntosVictoria, puntosEmpate, puntosDerrota,
     permiteEmpate, incluyeEstadisticas, equiposClasifican,
-    cardColor, cardFoto, iconoPersonalizado // ⚡ NUEVOS
+    cardColor, cardFoto, iconoPersonalizado,
+    heroColor, heroFoto // ⚡ NUEVOS
   } = datos;
 
   const { rows } = await pool.query(
@@ -1069,7 +1059,8 @@ export async function crearTorneo(datos, usuarioId) {
       puntos_victoria, puntos_empate, puntos_derrota,
       permite_empate, incluye_estadisticas, equipos_clasifican,
       canal_chat_id, organizador_id,
-      card_color, card_foto, icono_personalizado, -- ⚡ NUEVOS
+      card_color, card_foto, icono_personalizado,
+      hero_color, hero_foto, -- ⚡ NUEVOS
       estado
     )
     VALUES (
@@ -1082,7 +1073,8 @@ export async function crearTorneo(datos, usuarioId) {
       $18, $19, $20,
       $21, $22, $23,
       $24, $25,
-      $26, $27, $28, -- ⚡ NUEVOS
+      $26, $27, $28,
+      $29, $30, -- ⚡ NUEVOS
       'inscripcion'
     )`,
     [
@@ -1094,14 +1086,14 @@ export async function crearTorneo(datos, usuarioId) {
       sistemaClasificacion || 'simple',
       puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
       permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
-      canalChatId, usuarioId,
-      cardColor || null, cardFoto || null, iconoPersonalizado || null // ⚡ NUEVOS
+      null, usuarioId, // ⚡ FIX: canalChatId no existía, ponemos null
+      cardColor || null, cardFoto || null, iconoPersonalizado || null,
+      heroColor || null, heroFoto || null // ⚡ NUEVOS
     ]
   );
 
   const torneo = rows[0];
 
-  // ⚡ Crear el canal del torneo + agregar al organizador como miembro
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1128,6 +1120,27 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
 
     const torneoAntes = await obtenerTorneoOFallar(client, torneoId);
     await verificarPermisoResultados(client, torneoAntes, usuarioId);
+
+    // ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
+    if (
+      (cambios.cardFoto !== undefined && cambios.cardFoto !== null) ||
+      (cambios.heroFoto !== undefined && cambios.heroFoto !== null) ||
+      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null)
+    ) {
+      const { rows: uRows } = await client.query(
+        'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+        [torneoAntes.organizador_id]
+      );
+      const capPlan = uRows[0]?.plan;
+      const capPremHasta = uRows[0]?.premium_hasta;
+      const esPrem = capPlan === 'premium' && (!capPremHasta || new Date(capPremHasta) > new Date());
+      
+      if (!esPrem) {
+        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
+        err.status = 403;
+        throw err;
+      }
+    }
 
     if (cambios.cuposEquipos !== undefined) {
       const { rows: equipos } = await client.query(
@@ -1195,10 +1208,11 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       permiteEmpate: 'permite_empate',
       incluyeEstadisticas: 'incluye_estadisticas',
       equiposClasifican: 'equipos_clasifican',
-      equiposClasifican: 'equipos_clasifican',
       cardColor: 'card_color',
       cardFoto: 'card_foto',
       iconoPersonalizado: 'icono_personalizado',
+      heroColor: 'hero_color', // ⚡ NUEVO
+      heroFoto: 'hero_foto',   // ⚡ NUEVO
     };
 
     const camposCriticos = [
@@ -1403,7 +1417,6 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
-    // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No podés inscribirte en este torneo');
       err.status = 403;
@@ -1480,7 +1493,6 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
           );
         }
 
-        // ⚡ Agregar al canal del torneo (individual → solo él)
         const canalIdInd = await obtenerCanalDeTorneo(torneoId);
         if (canalIdInd) {
           await agregarMiembrosACanal(client, canalIdInd, [usuarioId]);
@@ -1604,7 +1616,6 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
         );
       }
 
-      // ⚡ Agregar al canal del torneo (equipo → todos sus miembros)
       const canalIdEq = await obtenerCanalDeTorneo(torneoId);
       if (canalIdEq) {
         const { rows: miembrosEq } = await client.query(
@@ -1681,7 +1692,6 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
-    // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No podés interactuar con este torneo');
       err.status = 403;
@@ -1726,7 +1736,6 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
       [torneoId, idEfectivo]
     );
 
-    // ⚡ Quitar del canal del torneo
     const canalIdCancel = await obtenerCanalDeTorneo(torneoId);
     if (canalIdCancel && r1 > 0) {
       if (esIndividual) {
@@ -1797,8 +1806,6 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     await verificarPermisoResultados(client, torneo, usuarioId);
 
-    // ⚡ BLOQUEO: si hay bloqueo con el solicitante, no gestionar
-    // (usuarioId puede ser el organizador y no se bloquea a sí mismo, pero por si acaso)
     if (await estanBloqueados(usuarioId, equipoId)) {
       const err = new Error('No podés gestionar solicitudes de este usuario');
       err.status = 403;
@@ -1882,7 +1889,6 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
       );
     }
 
-    // ⚡ Agregar al canal del torneo
     const canalIdApr = await obtenerCanalDeTorneo(torneoId);
     if (canalIdApr) {
       if (esIndividual) {
@@ -2014,7 +2020,6 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
       [torneoId, equipoId]
     );
 
-    // ⚡ Quitar del canal del torneo
     const canalIdExp = await obtenerCanalDeTorneo(torneoId);
     if (canalIdExp) {
       if (esIndividual) {
@@ -2085,7 +2090,6 @@ export async function invitarEquipo(torneoId, usuarioId, equipoId) {
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     await verificarPermisoResultados(client, torneo, usuarioId);
 
-    // ⚡ BLOQUEO: el organizador no puede invitar a un equipo cuyo capitán lo tenga bloqueado
     const { rows: capRows } = await client.query(
       `SELECT capitan_id FROM grupos WHERE id = $1`,
       [equipoId]
@@ -2164,7 +2168,6 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
-    // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No podés responder a esta invitación');
       err.status = 403;
@@ -2248,7 +2251,6 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
       );
     }
 
-    // ⚡ Agregar al canal del torneo
     const canalIdInv = await obtenerCanalDeTorneo(torneoId);
     if (canalIdInv) {
       const { rows: miembrosEq } = await client.query(
@@ -2310,7 +2312,6 @@ export async function invitarOrganizador(torneoId, usuarioId, invitadoId, permis
       throw err;
     }
 
-    // ⚡ BLOQUEO: no invitar a un usuario bloqueado
     if (await estanBloqueados(usuarioId, invitadoId)) {
       const err = new Error('No podés invitar a este usuario');
       err.status = 403;
@@ -2362,7 +2363,7 @@ export async function invitarOrganizador(torneoId, usuarioId, invitadoId, permis
          resuelta_en = NULL`,
       [torneoId, invitadoId, usuarioId, permisos || 'completo']
     );
-        // ⚡ Agregar al sub-organizador al canal del torneo
+
     const canalIdSubOrg = await obtenerCanalDeTorneo(torneoId);
     if (canalIdSubOrg) {
       await agregarMiembrosACanal(client, canalIdSubOrg, [usuarioId]);
@@ -2407,7 +2408,6 @@ export async function responderInvitacionOrganizador(torneoId, usuarioId, acepta
       throw err;
     }
 
-    // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No podés responder a esta invitación');
       err.status = 403;

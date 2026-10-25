@@ -258,7 +258,8 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
   // Traemos plan si es necesario validar
   const necesitaPlan =
     (cambiosFinales.marcoPerfil !== undefined && cambiosFinales.marcoPerfil !== 'default') ||
-    (cambiosFinales.heroColor !== undefined && !HERO_COLORS.includes(cambiosFinales.heroColor));
+    (cambiosFinales.heroColor !== undefined && !HERO_COLORS.includes(cambiosFinales.heroColor)) ||
+    (cambiosFinales.heroFoto !== undefined && cambiosFinales.heroFoto !== null); // ⚡ NUEVO
 
   let esPrem = false;
   if (necesitaPlan) {
@@ -294,10 +295,20 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
   }
 
   // Validación: HERO COLOR CUSTOM
+  // Validación: HERO COLOR CUSTOM
   if (cambiosFinales.heroColor !== undefined) {
     const esPredefinido = HERO_COLORS.includes(cambiosFinales.heroColor);
     if (!esPredefinido && !esPrem) {
       const err = new Error('Los colores personalizados son exclusivos del plan Premium.');
+      err.status = 403;
+      throw err;
+    }
+  }
+
+  // ⚡ NUEVO: Validación: HERO FOTO
+  if (cambiosFinales.heroFoto !== undefined && cambiosFinales.heroFoto !== null) {
+    if (!esPrem) {
+      const err = new Error('La foto de portada es exclusiva del plan Premium.');
       err.status = 403;
       throw err;
     }

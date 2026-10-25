@@ -35,6 +35,7 @@ import { renderGrupoPublico } from '../utils/grupo-publico.js';
 
 const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
+const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
 const SVG = {
   users: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
@@ -98,10 +99,9 @@ function colorDeporte(deporte) {
 }
 
 export async function init() {
-  let user = getSesion(); // ⚡ Cambiamos const por let
+  let user = getSesion();
   if (!user) return null;
 
-  // ⚡ NUEVO: Si la sesión es vieja y no tiene el campo, la actualizamos desde el backend
   if (user.esPremium === undefined) {
     try {
       user = await obtenerUsuarioActual();
@@ -120,8 +120,7 @@ export async function init() {
   if (eyebrow) {
     const hoy = new Date();
     const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-    const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-                   'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     eyebrow.textContent = `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
@@ -175,7 +174,6 @@ export async function init() {
 
   function esIconoImagen(valor) {
     if (typeof valor !== 'string') return false;
-    // Detecta rutas de archivo (.png, .jpg, etc.) O textos Base64 (data:image/...)
     return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor) || valor.startsWith('data:image/');
   }
 
@@ -188,11 +186,7 @@ export async function init() {
                         valor.toLowerCase().includes('redondo') ||
                         valor.toLowerCase().includes('mundo');
       
-      // ⚡ Si es una foto subida (Base64), le damos una clase exclusiva (icono-custom)
       const clase = esBase64 ? 'icono-custom' : (esBandera ? 'icono-bandera' : 'icono-deporte');
-      
-      // ⚡ Si es Base64 y es para una tarjeta/hero (size > 30), forzamos que llene el cuadro.
-      // Si es un ícono del sistema, respetamos su tamaño original con "contain".
       const estilo = (esBase64 && size > 30)
         ? 'width:100%;height:100%;object-fit:cover;border-radius:inherit;' 
         : `width:${size}px;height:${size}px;object-fit:contain;`;
@@ -201,6 +195,7 @@ export async function init() {
     }
     return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || SVG.shield}</span>`;
   }
+
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str == null ? '' : String(str);
@@ -318,7 +313,39 @@ export async function init() {
     return valor !== null && valor !== undefined;
   }
 
-  // ⚡ RENDERIZADO DE LA CARD (Actualizado con personalización)
+  const HERO_COLORS = [
+    { key: 'navy',    label: 'Navy',     from: '#0F1B2D', to: '#1E2D45', text: 'light' },
+    { key: 'black',   label: 'Negro',    from: '#0A0A0A', to: '#1F1F1F', text: 'light' },
+    { key: 'carbon',  label: 'Carbón',   from: '#1F2937', to: '#374151', text: 'light' },
+    { key: 'blue',    label: 'Azul',     from: '#1E3A8A', to: '#2563EB', text: 'light' },
+    { key: 'forest',  label: 'Bosque',   from: '#064E3B', to: '#047857', text: 'light' },
+    { key: 'purple',  label: 'Púrpura',  from: '#4C1D95', to: '#7C3AED', text: 'light' },
+    { key: 'wine',    label: 'Vino',     from: '#7F1D1D', to: '#B91C1C', text: 'light' },
+    { key: 'coffee',  label: 'Café',     from: '#451A03', to: '#78350F', text: 'light' },
+    { key: 'mustard', label: 'Mostaza',  from: '#92400E', to: '#CA8A04', text: 'light' },
+    { key: 'red',     label: 'Rojo',     from: '#DC2626', to: '#EF4444', text: 'light' },
+    { key: 'orange',  label: 'Naranjo',  from: '#EA580C', to: '#FB923C', text: 'light' },
+    { key: 'white',   label: 'Blanco',   from: '#FFFFFF', to: '#F5F5F5', text: 'dark'  },
+  ];
+
+  function renderPaleta(containerId, colorSeleccionado, onChange) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+    cont.innerHTML = HERO_COLORS.map(c => `
+      <button type="button" class="perfil-color-btn ${c.from === colorSeleccionado ? 'active' : ''}" data-color="${c.from}" title="${c.label}" style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%); width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; margin:0 4px;"></button>
+    `).join('');
+
+    cont.querySelectorAll('.perfil-color-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        cont.querySelectorAll('.perfil-color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        onChange(btn.dataset.color);
+      });
+    });
+  }
+
+  // ⚡ RENDERIZADO DE LA CARD (Card usa card_*)
   function renderCardGrupo(grupo, esComunidad) {
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
@@ -347,7 +374,6 @@ export async function init() {
       </button>
     ` : '';
 
-    // ⚡ Lógica de personalización
     const color = colorDeporte(grupo.deporte);
     const escudoHtml = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 36);
     
@@ -441,13 +467,13 @@ export async function init() {
 
     const color = colorDeporte(grupo.deporte);
     
-    // ⚡ Lógica de personalización en el hero
+    // ⚡ Usar heroColor y heroFoto
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
-    if (grupo.cardColor) {
-      heroStyle = `background: linear-gradient(135deg, ${grupo.cardColor} 0%, ${grupo.cardColor}DD 100%);`;
+    if (grupo.heroColor) {
+      heroStyle = `background: linear-gradient(135deg, ${grupo.heroColor} 0%, ${grupo.heroColor}DD 100%);`;
     }
-    if (grupo.cardFoto) {
-      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
+    if (grupo.heroFoto) {
+      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.heroFoto}'); background-size: cover; background-position: center;`;
     }
 
     const partidos = calcularPartidos(grupo.stats);
@@ -1059,7 +1085,6 @@ export async function init() {
     if (panelEquipo?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
-    // ⚡ FIX: Solo contar equipos donde el usuario es capitán (creados por él)
     const misEquiposCreados = misEquipos.filter(g => g.esCapitan);
     const limiteAlcanzado = misEquiposCreados.length >= 2 && !user?.esPremium;
     const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
@@ -1142,7 +1167,6 @@ export async function init() {
     if (panelComunidad?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
-    // ⚡ FIX: Solo contar comunidades donde el usuario es capitán (creadas por él)
     const misComunidadesCreadas = misComunidades.filter(g => g.esCapitan);
     const limiteAlcanzado = misComunidadesCreadas.length >= 1 && !user?.esPremium;
     const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
@@ -1392,7 +1416,6 @@ export async function init() {
   let tipoGrupoSeleccionado = 'equipo';
 
   function abrirModalCrearGrupo(tipo = 'equipo') {
-    // ⚡ FIX: Contar solo los grupos creados por el usuario
     const misEquiposCreados = misEquipos.filter(g => g.esCapitan);
     const misComunidadesCreadas = misComunidades.filter(g => g.esCapitan);
 
@@ -1444,33 +1467,61 @@ export async function init() {
 
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
-    // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
-    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
-    const lockMsg = document.getElementById('premium-lock-msg');
-    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    // TABS
+    const tabs = modal.querySelectorAll('[data-tab-grupo]');
+    const tabTecnicos = document.getElementById('grupo-tab-tecnicos');
+    const tabVisual = document.getElementById('grupo-tab-visual');
+
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.borderBottomColor = 'transparent';
+          t.style.color = 'var(--color-text-muted)';
+          t.style.fontWeight = '600';
+        });
+        tab.classList.add('active');
+        tab.style.borderBottomColor = 'var(--color-primary)';
+        tab.style.color = 'var(--color-primary)';
+        tab.style.fontWeight = '700';
+
+        if (tab.dataset.tabGrupo === 'tecnicos') {
+          tabTecnicos.classList.remove('hidden');
+          tabVisual.classList.add('hidden');
+        } else {
+          tabTecnicos.classList.add('hidden');
+          tabVisual.classList.remove('hidden');
+        }
+      };
+    });
+
+    // VISUAL
+    const wrapperBasico = document.getElementById('grupo-visual-basico');
+    const wrapperPremium = document.getElementById('grupo-visual-premium');
     
-    // Siempre mostramos el bloque
-    wrapperPremium.classList.remove('hidden');
-    wrapperPremium.hidden = false;
-    wrapperPremium.style.display = 'block';
+    let cardColor = '#E8836A';
+    let heroColor = '#0F1B2D';
+    let cardFotoBase64 = null;
+    let heroFotoBase64 = null;
+    let iconoFileBase64 = null;
 
     if (user?.esPremium) {
-      if (lockMsg) lockMsg.classList.add('hidden');
-      inputsPremium.forEach(el => el.disabled = false);
-          
-      // Resetear campos
-      document.getElementById('com-card-color').value = '#E8836A';
+      wrapperBasico.classList.add('hidden');
+      wrapperPremium.classList.remove('hidden');
+
+      document.getElementById('com-card-color').value = cardColor;
+      document.getElementById('com-hero-color').value = heroColor;
+      
       document.getElementById('com-card-foto-preview-wrapper').classList.add('hidden');
       document.getElementById('com-card-foto-file').value = '';
+      document.getElementById('com-hero-foto-preview-wrapper').classList.add('hidden');
+      document.getElementById('com-hero-foto-file').value = '';
       
       const previewIcono = document.getElementById('com-icono-preview-wrapper');
       previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
-      
-      // File input para la foto del banner
-      let cardFotoBase64 = null;
+
       document.getElementById('com-card-foto-file').onchange = (e) => {
         const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
         const reader = new FileReader();
         reader.onload = (ev) => {
           cardFotoBase64 = ev.target.result;
@@ -1479,18 +1530,30 @@ export async function init() {
         };
         reader.readAsDataURL(file); e.target.value = '';
       };
-
       document.getElementById('com-card-foto-quitar').onclick = () => {
         cardFotoBase64 = null;
         document.getElementById('com-card-foto-preview-wrapper').classList.add('hidden');
         document.getElementById('com-card-foto-file').value = '';
       };
 
-      // File input para el ícono personalizado
-      let iconoFileBase64 = null;
+      document.getElementById('com-hero-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          heroFotoBase64 = ev.target.result;
+          document.getElementById('com-hero-foto-preview').src = heroFotoBase64;
+          document.getElementById('com-hero-foto-preview-wrapper').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('com-hero-foto-quitar').onclick = () => {
+        heroFotoBase64 = null;
+        document.getElementById('com-hero-foto-preview-wrapper').classList.add('hidden');
+        document.getElementById('com-hero-foto-file').value = '';
+      };
+
       document.getElementById('com-icono-file').onchange = (e) => {
         const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
         const reader = new FileReader();
         reader.onload = (ev) => {
           iconoFileBase64 = ev.target.result;
@@ -1498,68 +1561,55 @@ export async function init() {
         };
         reader.readAsDataURL(file); e.target.value = '';
       };
-
       document.getElementById('com-icono-quitar').onclick = () => {
         iconoFileBase64 = null;
         previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
         document.getElementById('com-icono-file').value = '';
       };
-
-      // Guardar en el onclick del botón
-      document.getElementById('btn-guardar-comunidad').onclick = async () => {
-        const nombre = document.getElementById('com-nombre').value.trim();
-        const deporte = document.getElementById('com-deporte').value;
-        const ciudad = document.getElementById('com-ciudad').value.trim();
-        const descripcion = document.getElementById('com-descripcion').value.trim();
-
-        if (!nombre) return toast('Ingresa un nombre', 'error');
-        if (!deporte) return toast('Selecciona un deporte', 'error');
-
-        const btn = document.getElementById('btn-guardar-comunidad');
-        btn.disabled = true; btn.textContent = 'Creando...';
-
-        try {
-          await crearGrupoAPI({
-            tipo: tipoGrupoSeleccionado, nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel,
-            cardColor: document.getElementById('com-card-color').value,
-            cardFoto: cardFotoBase64,
-            iconoPersonalizado: iconoFileBase64
-          });
-
-          cerrarModal('modal-crear-comunidad');
-          toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} creado!`, 'success');
-          cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
-          await recargarPaneles();
-        } catch (err) { toast(err.message || 'Error', 'error'); }
-        finally { btn.disabled = false; btn.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo'; }
-      };
-
     } else {
-      if (lockMsg) lockMsg.classList.remove('hidden');
-      inputsPremium.forEach(el => el.disabled = true);
+      wrapperPremium.classList.add('hidden');
+      wrapperBasico.classList.remove('hidden');
       
-      document.getElementById('btn-guardar-comunidad').onclick = async () => {
-        const nombre = document.getElementById('com-nombre').value.trim();
-        const deporte = document.getElementById('com-deporte').value;
-        const ciudad = document.getElementById('com-ciudad').value.trim();
-        const descripcion = document.getElementById('com-descripcion').value.trim();
-
-        if (!nombre) return toast('Ingresa un nombre', 'error');
-        if (!deporte) return toast('Selecciona un deporte', 'error');
-
-        const btn = document.getElementById('btn-guardar-comunidad');
-        btn.disabled = true; btn.textContent = 'Creando...';
-
-        try {
-          await crearGrupoAPI({ tipo: tipoGrupoSeleccionado, nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel });
-          cerrarModal('modal-crear-comunidad');
-          toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} creado!`, 'success');
-          cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
-          await recargarPaneles();
-        } catch (err) { toast(err.message || 'Error', 'error'); }
-        finally { btn.disabled = false; btn.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo'; }
-      };
+      renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
+      renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
     }
+
+    tabs[0].click(); // Reset tab
+
+    document.getElementById('btn-guardar-comunidad').onclick = async () => {
+      const nombre = document.getElementById('com-nombre').value.trim();
+      const deporte = document.getElementById('com-deporte').value;
+      const ciudad = document.getElementById('com-ciudad').value.trim();
+      const descripcion = document.getElementById('com-descripcion').value.trim();
+
+      if (!nombre) return toast('Ingresa un nombre', 'error');
+      if (!deporte) return toast('Selecciona un deporte', 'error');
+
+      const btn = document.getElementById('btn-guardar-comunidad');
+      btn.disabled = true; btn.textContent = 'Creando...';
+
+      try {
+        const payload = { tipo: tipoGrupoSeleccionado, nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel };
+        
+        if (user?.esPremium) {
+          payload.cardColor = document.getElementById('com-card-color').value;
+          payload.heroColor = document.getElementById('com-hero-color').value;
+          payload.cardFoto = cardFotoBase64;
+          payload.heroFoto = heroFotoBase64;
+          payload.iconoPersonalizado = iconoFileBase64;
+        } else {
+          payload.cardColor = cardColor;
+          payload.heroColor = heroColor;
+        }
+
+        await crearGrupoAPI(payload);
+        cerrarModal('modal-crear-comunidad');
+        toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} creado!`, 'success');
+        cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
+        await recargarPaneles();
+      } catch (err) { toast(err.message || 'Error', 'error'); }
+      finally { btn.disabled = false; btn.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo'; }
+    };
 
     modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-crear-comunidad'); });
     modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-crear-comunidad'); };
@@ -1607,59 +1657,101 @@ export async function init() {
       else { wrapperPriv.classList.add('hidden'); chkPriv.checked = false; }
     }
 
-    // ⚡ LÓGICA DE PERSONALIZACIÓN (EDIT)
-    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
-    const lockMsg = document.getElementById('premium-lock-msg');
-    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    // TABS
+    const tabs = modal.querySelectorAll('[data-tab-grupo]');
+    const tabTecnicos = document.getElementById('grupo-tab-tecnicos');
+    const tabVisual = document.getElementById('grupo-tab-visual');
+
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.borderBottomColor = 'transparent';
+          t.style.color = 'var(--color-text-muted)';
+          t.style.fontWeight = '600';
+        });
+        tab.classList.add('active');
+        tab.style.borderBottomColor = 'var(--color-primary)';
+        tab.style.color = 'var(--color-primary)';
+        tab.style.fontWeight = '700';
+
+        if (tab.dataset.tabGrupo === 'tecnicos') {
+          tabTecnicos.classList.remove('hidden');
+          tabVisual.classList.add('hidden');
+        } else {
+          tabTecnicos.classList.add('hidden');
+          tabVisual.classList.remove('hidden');
+        }
+      };
+    });
+
+    // VISUAL
+    const wrapperBasico = document.getElementById('grupo-visual-basico');
+    const wrapperPremium = document.getElementById('grupo-visual-premium');
     
+    let cardColor = grupo.cardColor || '#E8836A';
+    let heroColor = grupo.heroColor || '#0F1B2D';
     let cardFotoBase64 = grupo.cardFoto || null;
+    let heroFotoBase64 = grupo.heroFoto || null;
     let iconoFileBase64 = grupo.iconoPersonalizado || null;
 
-    // Siempre mostramos el bloque
-    wrapperPremium.classList.remove('hidden');
-    wrapperPremium.hidden = false;
-    wrapperPremium.style.display = 'block';
-
     if (user?.esPremium) {
-      if (lockMsg) lockMsg.classList.add('hidden');
-      inputsPremium.forEach(el => el.disabled = false);
+      wrapperBasico.classList.add('hidden');
+      wrapperPremium.classList.remove('hidden');
 
-      document.getElementById('com-card-color').value = grupo.cardColor || '#E8836A';
-      
-      const previewFoto = document.getElementById('com-card-foto-preview');
-      const wrapperFoto = document.getElementById('com-card-foto-preview-wrapper');
-      if (cardFotoBase64) { previewFoto.src = cardFotoBase64; wrapperFoto.classList.remove('hidden'); } else { wrapperFoto.classList.add('hidden'); }
+      document.getElementById('com-card-color').value = cardColor;
+      document.getElementById('com-hero-color').value = heroColor;
+
+      const previewCard = document.getElementById('com-card-foto-preview');
+      const wrapCard = document.getElementById('com-card-foto-preview-wrapper');
+      const btnQuitarCard = document.getElementById('com-card-foto-quitar');
+      if (cardFotoBase64) { previewCard.src = cardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); }
+      else { wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); }
+
+      const previewHero = document.getElementById('com-hero-foto-preview');
+      const wrapHero = document.getElementById('com-hero-foto-preview-wrapper');
+      const btnQuitarHero = document.getElementById('com-hero-foto-quitar');
+      if (heroFotoBase64) { previewHero.src = heroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); }
+      else { wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); }
 
       const previewIcono = document.getElementById('com-icono-preview-wrapper');
-      if (iconoFileBase64) { previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; }
-      else { previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; }
+      const btnQuitarIcono = document.getElementById('com-icono-quitar');
+      if (iconoFileBase64) { previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; btnQuitarIcono.classList.remove('hidden'); }
+      else { previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); }
 
       document.getElementById('com-card-foto-file').onchange = (e) => {
         const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
         const reader = new FileReader();
-        reader.onload = (ev) => { cardFotoBase64 = ev.target.result; previewFoto.src = cardFotoBase64; wrapperFoto.classList.remove('hidden'); };
+        reader.onload = (ev) => { cardFotoBase64 = ev.target.result; previewCard.src = cardFotoBase64; wrapCard.classList.remove('hidden'); btnQuitarCard.classList.remove('hidden'); };
         reader.readAsDataURL(file); e.target.value = '';
       };
+      document.getElementById('com-card-foto-quitar').onclick = () => { cardFotoBase64 = null; wrapCard.classList.add('hidden'); btnQuitarCard.classList.add('hidden'); document.getElementById('com-card-foto-file').value = ''; };
 
-      document.getElementById('com-card-foto-quitar').onclick = () => { cardFotoBase64 = null; wrapperFoto.classList.add('hidden'); document.getElementById('com-card-foto-file').value = ''; };
+      document.getElementById('com-hero-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => { heroFotoBase64 = ev.target.result; previewHero.src = heroFotoBase64; wrapHero.classList.remove('hidden'); btnQuitarHero.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+      document.getElementById('com-hero-foto-quitar').onclick = () => { heroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('com-hero-foto-file').value = ''; };
 
       document.getElementById('com-icono-file').onchange = (e) => {
         const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
         const reader = new FileReader();
-        reader.onload = (ev) => { iconoFileBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; };
+        reader.onload = (ev) => { iconoFileBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; btnQuitarIcono.classList.remove('hidden'); };
         reader.readAsDataURL(file); e.target.value = '';
       };
-
-      document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; document.getElementById('com-icono-file').value = ''; };
+      document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('com-icono-file').value = ''; };
 
     } else {
-      if (lockMsg) lockMsg.classList.remove('hidden');
-      inputsPremium.forEach(el => el.disabled = true);
-      cardFotoBase64 = grupo.cardFoto || null;
-      iconoFileBase64 = grupo.iconoPersonalizado || null;
+      wrapperPremium.classList.add('hidden');
+      wrapperBasico.classList.remove('hidden');
+      
+      renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
+      renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
     }
+
+    tabs[0].click(); // Reset tab
 
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
     btnGuardar.textContent = 'Guardar cambios';
@@ -1680,8 +1772,13 @@ export async function init() {
         
         if (user?.esPremium) {
           payload.cardColor = document.getElementById('com-card-color').value;
+          payload.heroColor = document.getElementById('com-hero-color').value;
           payload.cardFoto = cardFotoBase64;
+          payload.heroFoto = heroFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
+        } else {
+          payload.cardColor = cardColor;
+          payload.heroColor = heroColor;
         }
 
         await editarGrupoAPI(grupo.id, payload);
@@ -1749,7 +1846,6 @@ export async function init() {
   document.querySelectorAll('[data-tab-gestion]').forEach(tab => { tab.addEventListener('click', () => { if (grupoEnGestion) renderGestionMiembros(grupoEnGestion, tab.dataset.tabGestion); }); });
 
   function abrirModalStats(grupo) {
-    // ⚡ NUEVO: Validación Premium en Frontend
     if (!grupo.esPremium) {
       toast('La edición de estadísticas es exclusiva de equipos con plan Premium.', 'error');
       return;
