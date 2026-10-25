@@ -57,7 +57,58 @@ const HERO_COLORS = [
   { key: 'orange',  from: '#EA580C', to: '#FB923C', text: 'light' },
   { key: 'white',   from: '#FFFFFF', to: '#F5F5F5', text: 'dark'  },
 ];
+/* =========================================================
+   BLOQUEO DE SCROLL DEL BODY CON MODALES ABIERTOS
+   ========================================================= */
+let _scrollYGuardado = 0;
+let _bodyBloqueado = false;
 
+function bloquearScrollBody() {
+  if (_bodyBloqueado) return;
+  _scrollYGuardado = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${_scrollYGuardado}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+  document.body.style.overflow = 'hidden';
+  _bodyBloqueado = true;
+}
+
+function desbloquearScrollBody() {
+  if (!_bodyBloqueado) return;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  document.body.style.overflow = '';
+  window.scrollTo(0, _scrollYGuardado);
+  _bodyBloqueado = false;
+}
+
+function sincronizarScrollBody() {
+  const hayModales = document.querySelectorAll('.modal-backdrop.open').length > 0;
+  if (hayModales && !_bodyBloqueado) bloquearScrollBody();
+  else if (!hayModales && _bodyBloqueado) desbloquearScrollBody();
+}
+
+function initModalScrollLock() {
+  const modales = document.querySelectorAll('.modal-backdrop');
+  if (modales.length === 0) return;
+
+  const observer = new MutationObserver(() => sincronizarScrollBody());
+  modales.forEach(m => observer.observe(m, { attributes: true, attributeFilter: ['class'] }));
+
+  // Sincronizar al inicio por si algún modal arranca abierto
+  sincronizarScrollBody();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initModalScrollLock);
+} else {
+  initModalScrollLock();
+}
 export function initTheme() {
   const savedTheme = localStorage.getItem('miEquipoTheme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
@@ -160,17 +211,17 @@ export function toast(mensaje, tipo = 'info') {
 
 /* ---------- MODALES ---------- */
 export function abrirModal(id) { 
-  document.getElementById(id)?.classList.add('open'); 
-  if (id === 'modal-ver-perfil') {
-    document.body.style.overflow = 'hidden';
-  }
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  sincronizarScrollBody();
 }
 
 export function cerrarModal(id) { 
-  document.getElementById(id)?.classList.remove('open'); 
-  if (id === 'modal-ver-perfil') {
-    document.body.style.overflow = '';
-  }
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  sincronizarScrollBody();
 }
 
 /* ---------- HELPERS ---------- */
@@ -1274,28 +1325,6 @@ document.querySelectorAll('.modal-backdrop').forEach(bg => {
   bg.addEventListener('click', (e) => {
     if (e.target === bg) cerrarModal(bg.id);
   });
-});
-// ⚡ Bloquear scroll del body cuando el visor de imagen está abierto
-const observerImgModal = new MutationObserver((mutations) => {
-  mutations.forEach((mutation) => {
-    if (mutation.attributeName === 'class') {
-      const modal = mutation.target;
-      if (modal.id === 'modal-ver-imagen') {
-        if (modal.classList.contains('open')) {
-          document.body.style.overflow = 'hidden';
-        } else {
-          document.body.style.overflow = '';
-        }
-      }
-    }
-  });
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-  const imgModal = document.getElementById('modal-ver-imagen');
-  if (imgModal) {
-    observerImgModal.observe(imgModal, { attributes: true });
-  }
 });
 // ⚡ Cerrar visor de imagen al hacer clic fuera de la foto
 document.addEventListener('click', (e) => {

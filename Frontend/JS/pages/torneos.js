@@ -1042,8 +1042,8 @@ export async function init() {
   });
 
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.classList.remove('open');
+    backdrop.addEventListener('click', (e) => { 
+      if (e.target === backdrop) cerrarModal(backdrop.id); 
     });
   });
 
