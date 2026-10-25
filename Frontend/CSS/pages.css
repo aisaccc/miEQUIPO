@@ -12671,8 +12671,13 @@ select.field__input {
 }
 
 /* ⚡ Invertir las imágenes negras del escudo para que se vean blancas */
-[data-theme="dark"] .grupo-card__crest img {
+/* ⚡ FIX: Iconos de deportes (blancos) y banderas (color) en modo oscuro */
+[data-theme="dark"] .grupo-card__crest img.icono-deporte {
   filter: invert(1) brightness(1.5) !important;
+}
+
+[data-theme="dark"] .grupo-card__crest img.icono-bandera {
+  filter: none !important;
 }
 
 /* 2. Partidos: quitar el difuminado blanco y pasar a oscuro */
@@ -14385,4 +14390,34 @@ select.field__input {
 
 .msg-menu__item--danger:hover {
   background: rgba(220, 38, 38, 0.08);
+}
+/* ⚡ FIX: Selector de íconos en Modo Oscuro */
+[data-theme="dark"] .posicion-chip img.icono-deporte {
+  filter: invert(1) brightness(1.5) !important;
+}
+
+[data-theme="dark"] .posicion-chip img.icono-bandera {
+  filter: none !important;
+}
+/* =========================================================
+   FIX MODO OSCURO: ÍCONOS SVG BLANCOS EN BOTONES
+   ========================================================= */
+[data-theme="dark"] .btn svg,
+[data-theme="dark"] .grupo-card__edit svg,
+[data-theme="dark"] .tournament-card__edit svg,
+[data-theme="dark"] .match-card__edit svg,
+[data-theme="dark"] .gd-hero__action svg,
+[data-theme="dark"] .td-hero__action svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Excepción: Si el botón es ghost o secundario, que use el color de texto normal */
+[data-theme="dark"] .btn--ghost svg {
+  stroke: currentColor !important;
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme="dark"] .btn--ghost:hover svg {
+  color: var(--color-primary) !important;
 }

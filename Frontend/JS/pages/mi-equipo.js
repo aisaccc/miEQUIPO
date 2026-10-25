@@ -183,7 +183,16 @@ export async function init() {
 
   function renderIconoHtml(valor, size = 20) {
     if (esIconoImagen(valor)) {
-      return `<img src="${valor}" alt="icono" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+      // ⚡ FIX: Detectamos si es bandera o deporte por las nuevas palabras clave
+      const esBandera = valor.toLowerCase().includes('flag') || 
+                        valor.toLowerCase().includes('bandera') || 
+                        valor.toLowerCase().includes('pais') ||
+                        valor.toLowerCase().includes('redondo') ||  // ⚡ Tus nuevas banderas
+                        valor.toLowerCase().includes('mundo');      // ⚡ Tus nuevas banderas
+      
+      const clase = esBandera ? 'icono-bandera' : 'icono-deporte';
+      
+      return `<img src="${valor}" alt="icono" class="${clase}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
     }
     return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || SVG.shield}</span>`;
   }
