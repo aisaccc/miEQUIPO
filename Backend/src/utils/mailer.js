@@ -1,8 +1,7 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
-/* Creamos el transporter UNA VEZ y lo reusamos.
-   Esto es más eficiente que crear uno por cada email. */
+/* Creamos el transporter UNA VEZ y lo reusamos. */
 const transporter = nodemailer.createTransport({
   host: env.MAIL.host,
   port: env.MAIL.port,
@@ -14,7 +13,6 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Verifica que la conexión con el servidor SMTP funcione.
- * Útil para testear al arrancar el servidor.
  */
 export async function verificarMailer() {
   try {
@@ -43,7 +41,6 @@ async function enviar({ to, subject, html }) {
    PLANTILLAS DE EMAIL
    ========================================================= */
 
-/* Estilos comunes (inline porque los clientes de email no cargan CSS externo) */
 const estilosBase = `
   font-family: 'Segoe UI', Roboto, Arial, sans-serif;
   color: #2b3a38;
@@ -179,6 +176,72 @@ export async function enviarEmailBienvenida(email, nombre) {
   return enviar({
     to: email,
     subject: '¡Bienvenido a MiEquipo!',
+    html,
+  });
+}
+
+/* =========================================================
+   PLANES — v13
+   ========================================================= */
+
+export async function enviarEmailExpiracionPremium(email, nombre) {
+  const html = plantillaBase(`
+    <h2 style="color: #2b3a38; margin-top: 0;">Tu plan Premium expiró</h2>
+    <p>Hola <strong>${nombre}</strong>, tu suscripción Premium venció y tu cuenta volvió al plan Básico.</p>
+
+    <p>Tus datos, equipos, comunidades y publicaciones existentes siguen disponibles. 
+    Pero no podrás usar las funciones premium hasta renovar:</p>
+
+    <ul style="color: #4b5563; font-size: 14px; line-height: 1.8; padding-left: 20px;">
+      <li>Crear torneos</li>
+      <li>Estadísticas de perfil y de equipo</li>
+      <li>Personalizar cards y cambiar el marco de perfil</li>
+      <li>Publicaciones con foto ilimitadas</li>
+    </ul>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${env.FRONTEND_URL}"
+         style="background: #ff6a00; color: white; padding: 14px 32px;
+                border-radius: 10px; text-decoration: none;
+                font-weight: 700; display: inline-block;">
+        Renovar Premium
+      </a>
+    </div>
+
+    <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">
+      Plan Básico: 2 equipos, 1 comunidad, 3 fotos por mes en perfil, 4 fotos concurrentes por grupo.
+    </p>
+  `);
+
+  return enviar({
+    to: email,
+    subject: 'Tu plan Premium expiró — MiEquipo',
+    html,
+  });
+}
+
+export async function enviarEmailCancelacionPremium(email, nombre) {
+  const html = plantillaBase(`
+    <h2 style="color: #2b3a38; margin-top: 0;">Suscripción Premium cancelada</h2>
+    <p>Hola <strong>${nombre}</strong>, confirmamos la cancelación de tu suscripción Premium.</p>
+
+    <p>Tu cuenta permanecerá en el plan Premium hasta el final del período actual. Después pasará al plan Básico.</p>
+
+    <p>Todo tu contenido existente seguirá visible, pero no podrás usar funciones premium hasta renovar.</p>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${env.FRONTEND_URL}"
+         style="background: #ff6a00; color: white; padding: 14px 32px;
+                border-radius: 10px; text-decoration: none;
+                font-weight: 700; display: inline-block;">
+        Reactivar Premium
+      </a>
+    </div>
+  `);
+
+  return enviar({
+    to: email,
+    subject: 'Suscripción Premium cancelada — MiEquipo',
     html,
   });
 }

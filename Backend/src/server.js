@@ -1,6 +1,7 @@
 import app from './app.js';
 import { env } from './config/env.js';
 import { testConnection } from './config/db.js';
+import { iniciarJobExpirarPremium } from './jobs/expirarPremium.job.js';
 
 const PORT = env.PORT;
 
@@ -21,6 +22,9 @@ async function start() {
     console.log('🚀 ========================================');
     console.log('');
   });
+
+  // ⚡ Job diario: degrada premium vencido + envía correo
+  iniciarJobExpirarPremium();
 }
 
 start();

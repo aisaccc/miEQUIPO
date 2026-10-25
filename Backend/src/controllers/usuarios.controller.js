@@ -5,8 +5,17 @@ import { schemaUuidParam } from '../validators/usuarios.schema.js';
 export async function obtenerMiPerfil(req, res, next) {
   try {
     const perfil = await usuariosService.obtenerMiPerfil(req.usuario.id);
-    // ⚡ FIX: Envolvemos en { usuario: ... }
-    res.json({ usuario: perfil }); 
+    res.json({ usuario: perfil });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* ⚡ NUEVO: GET /api/usuarios/me/plan */
+export async function obtenerMiPlan(req, res, next) {
+  try {
+    const plan = await usuariosService.obtenerMiPlan(req.usuario.id);
+    res.json({ plan });
   } catch (err) {
     next(err);
   }
@@ -25,7 +34,6 @@ export async function obtener(req, res, next) {
 export async function actualizarMiPerfil(req, res, next) {
   try {
     const perfil = await usuariosService.actualizarMiPerfil(req.usuario.id, req.body);
-    // ⚡ FIX: Envolvemos en { usuario: ... }
     res.json({ usuario: perfil });
   } catch (err) {
     next(err);
@@ -35,7 +43,6 @@ export async function actualizarMiPerfil(req, res, next) {
 export async function actualizarMisDeportes(req, res, next) {
   try {
     const perfil = await usuariosService.actualizarMisDeportes(req.usuario.id, req.body.deportes);
-    // ⚡ FIX: Envolvemos en { usuario: ... }
     res.json({ usuario: perfil });
   } catch (err) {
     next(err);

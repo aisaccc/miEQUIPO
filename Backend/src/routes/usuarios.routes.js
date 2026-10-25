@@ -25,6 +25,7 @@ router.use(requiereAuth);
    ========================================================= */
 
 router.get('/me', usuariosController.obtenerMiPerfil);
+router.get('/me/plan', usuariosController.obtenerMiPlan); // ⚡ NUEVO
 router.patch('/me', usuariosController.actualizarMiPerfil);
 router.patch('/me/deportes', usuariosController.actualizarMisDeportes);
 router.patch('/me/password', authLimiter, usuariosController.cambiarMiPassword);
@@ -34,14 +35,12 @@ router.get('/me/historial-partidos', partidosController.obtenerHistorialPartidos
 
 /* =========================================================
    BÚSQUEDA DE USUARIOS
-   =========================================================
    ⚠️ IMPORTANTE: va ANTES de /:id, si no lo toma como UUID.
 */
 router.get('/buscar', usuariosController.buscar);
 
 /* =========================================================
    RUTAS DE OTROS USUARIOS
-   =========================================================
    GET /api/usuarios/:id → perfil público.
    ⚠️ Va AL FINAL.
 */

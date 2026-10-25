@@ -14,18 +14,27 @@ const CAMPOS_PERFIL_PROPIO = `
   id, nombre, username, email, avatar, bio, edad, pais, ciudad,
   deportes, email_verificado, created_at, last_login,
   hero_color, hero_foto, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
-  mensajes_solo_amigos
+  mensajes_solo_amigos,
+  plan, premium_desde, premium_hasta, premium_origen
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
   id, nombre, username, avatar, bio, edad, pais, ciudad,
   deportes, created_at,
   hero_color, hero_foto,
-  stats_hero_base, stats_hero_privadas
+  stats_hero_base, stats_hero_privadas,
+  plan, premium_hasta
 `;
+
 /* =========================================================
    HELPERS
    ========================================================= */
+
+function calcularEsPremium(row) {
+  if (row.plan !== 'premium') return false;
+  if (!row.premium_hasta) return true;
+  return new Date(row.premium_hasta) > new Date();
+}
 
 function formatearPerfilPropio(row, stats = {}) {
   return {
@@ -46,8 +55,14 @@ function formatearPerfilPropio(row, stats = {}) {
     heroFoto: row.hero_foto || null,
     statsHeroBase: row.stats_hero_base || {},
     statsHeroPrivadas: row.stats_hero_privadas || {},
-    notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true }, // ⚡
-    mensajesSoloAmigos: row.mensajes_solo_amigos ?? false, // ⚡ NUEV
+    notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true },
+    mensajesSoloAmigos: row.mensajes_solo_amigos ?? false,
+    // ⚡ Plan
+    plan: row.plan || 'basico',
+    esPremium: calcularEsPremium(row),
+    premiumDesde: row.premium_desde,
+    premiumHasta: row.premium_hasta,
+    premiumOrigen: row.premium_origen,
     statsHero: {
       partidos:  stats.partidos ?? 0,
       torneos:   stats.torneos  ?? 0,
@@ -89,6 +104,9 @@ function formatearPerfilPublico(row, stats = {}) {
     heroFoto: row.hero_foto || null,
     statsHero,
     statsHeroPrivadas: privadas,
+    // ⚡ Plan (público: solo plan + esPremium, NO las fechas)
+    plan: row.plan || 'basico',
+    esPremium: calcularEsPremium(row),
   };
 }
 
@@ -159,10 +177,36 @@ export async function obtenerMiPerfil(usuarioId) {
 }
 
 /* =========================================================
+   GET /api/usuarios/me/plan
+   ========================================================= */
+export async function obtenerMiPlan(usuarioId) {
+  const { rows } = await pool.query(
+    `SELECT plan, premium_desde, premium_hasta, premium_origen
+     FROM usuarios
+     WHERE id = $1 AND activo = TRUE`,
+    [usuarioId]
+  );
+
+  if (!rows[0]) {
+    const err = new Error('Usuario no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const row = rows[0];
+  return {
+    plan: row.plan || 'basico',
+    esPremium: calcularEsPremium(row),
+    premiumDesde: row.premium_desde,
+    premiumHasta: row.premium_hasta,
+    premiumOrigen: row.premium_origen,
+  };
+}
+
+/* =========================================================
    GET /api/usuarios/:id  (perfil público)
    ========================================================= */
 export async function obtenerPerfilPublico(usuarioId, usuarioActualId) {
-  // ⚡ BLOQUEO
   if (usuarioActualId) {
     const estado = await estadoBloqueo(usuarioActualId, usuarioId);
     if (estado === 'me_bloqueo' || estado === 'ambos') {
@@ -221,8 +265,9 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     heroFoto: 'hero_foto',
     statsHeroBase: 'stats_hero_base',
     statsHeroPrivadas: 'stats_hero_privadas',
-    notificacionesPrefs: 'notificaciones_prefs', // ⚡ NUEVO
-    mensajesSoloAmigos: 'mensajes_solo_amigos', // ⚡ NUEVO
+    notificacionesPrefs: 'notificaciones_prefs',
+    mensajesSoloAmigos: 'mensajes_solo_amigos',
+    // ⚠️ NO incluimos plan/premium_* acá: esos se modifican solo por SQL manual.
   };
 
   const campos = [];
@@ -240,7 +285,6 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
       valores.push(cambios[key]);
     }
     i++;
-    
   }
 
   if (campos.length === 0) {
