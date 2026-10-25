@@ -369,6 +369,26 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
       };
     });
   }
+    // ⚡ Aviso de límite de fotos (solo perfil y grupo, no torneo)
+  let avisoLimite = document.getElementById('crear-pub-aviso-limite');
+  if (!avisoLimite) {
+    avisoLimite = document.createElement('div');
+    avisoLimite.id = 'crear-pub-aviso-limite';
+    avisoLimite.style.cssText = 'margin-bottom:12px; padding:10px 12px; background: var(--color-primary-light); border-radius:8px; font-size:12px; color: var(--color-primary-dark); font-weight:600; display:none;';
+    document.getElementById('crear-pub-label-imagen').parentElement.prepend(avisoLimite);
+  }
+  avisoLimite.style.display = 'none';
+
+  const sesion = getSesion();
+  if (!sesion?.esPremium && tipoPublicacion === 'post') {
+    if (scope === 'perfil') {
+      avisoLimite.innerHTML = `ℹ️ Plan Básico: máximo 3 fotos por ciclo de 30 días.`;
+      avisoLimite.style.display = 'block';
+    } else if (scope === 'grupo' && !esComunidad) {
+      avisoLimite.innerHTML = `ℹ️ Si el dueño del equipo es Básico, el grupo tiene un tope de 4 fotos en total.`;
+      avisoLimite.style.display = 'block';
+    }
+  }
 
   // ⚡ LÓGICA PARA MÚLTIPLES IMÁGENES
   document.getElementById('crear-pub-imagen-file').onchange = (e) => {

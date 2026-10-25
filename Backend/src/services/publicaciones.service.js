@@ -5,6 +5,92 @@ import { estanBloqueados, idsBloqueadosTotales } from '../utils/bloqueos.js';
    HELPERS
    ========================================================= */
 
+/* =========================================================
+   HELPERS DE LÍMITES DE PLAN
+   ========================================================= */
+
+function contarFotosEnPub(imagenStr) {
+  if (!imagenStr) return 0;
+  try {
+    const arr = JSON.parse(imagenStr);
+    if (Array.isArray(arr) && arr.length > 0) return arr.length;
+  } catch (e) {
+    // Si falla el parse, asumimos Base64 simple (retrocompatibilidad)
+  }
+  return 1;
+}
+
+async function validarLimitePerfil(client, usuarioId, cantidadNuevas) {
+  if (cantidadNuevas === 0) return;
+
+  const { rows: uRows } = await client.query(
+    'SELECT plan, premium_hasta, perfil_ciclo_inicio, perfil_fotos_usadas FROM usuarios WHERE id = $1',
+    [usuarioId]
+  );
+  const u = uRows[0];
+  if (!u) return;
+
+  const esPrem = u.plan === 'premium' && (!u.premium_hasta || new Date(u.premium_hasta) > new Date());
+  if (esPrem) return; // Ilimitado
+
+  const DIAS_CICLO = 30;
+  const MILIS_DIA = 24 * 60 * 60 * 1000;
+  const ahora = new Date();
+  let cicloInicio = u.perfil_ciclo_inicio ? new Date(u.perfil_ciclo_inicio) : null;
+  let usadas = u.perfil_fotos_usadas || 0;
+
+  // Si no hay ciclo o ya pasaron 30 días, reiniciar
+  if (!cicloInicio || (ahora - cicloInicio) > (DIAS_CICLO * MILIS_DIA)) {
+    cicloInicio = ahora;
+    usadas = 0;
+    await client.query(
+      'UPDATE usuarios SET perfil_ciclo_inicio = $1, perfil_fotos_usadas = 0 WHERE id = $2',
+      [cicloInicio, usuarioId]
+    );
+  }
+
+  if (usadas + cantidadNuevas > 3) {
+    const err = new Error(`Límite de 3 fotos por ciclo alcanzado. Ya usaste ${usadas}. Pasate a Premium para fotos ilimitadas.`);
+    err.status = 403;
+    throw err;
+  }
+
+  await client.query(
+    'UPDATE usuarios SET perfil_fotos_usadas = perfil_fotos_usadas + $1 WHERE id = $2',
+    [cantidadNuevas, usuarioId]
+  );
+}
+
+async function validarLimiteGrupo(client, grupoId, cantidadNuevas) {
+  if (cantidadNuevas === 0) return;
+
+  const { rows: gRows } = await client.query(
+    `SELECT g.capitan_id, u.plan, u.premium_hasta
+     FROM grupos g JOIN usuarios u ON u.id = g.capitan_id
+     WHERE g.id = $1`,
+    [grupoId]
+  );
+  const g = gRows[0];
+  if (!g) return;
+
+  const esPrem = g.plan === 'premium' && (!g.premium_hasta || new Date(g.premium_hasta) > new Date());
+  if (esPrem) return; // Ilimitado
+
+  const { rows: pubs } = await client.query(
+    `SELECT imagen FROM publicaciones WHERE grupo_id = $1 AND scope = 'grupo' AND imagen IS NOT NULL`,
+    [grupoId]
+  );
+  let fotosActuales = 0;
+  pubs.forEach(p => fotosActuales += contarFotosEnPub(p.imagen));
+
+  if (fotosActuales + cantidadNuevas > 4) {
+    const err = new Error(`Este grupo alcanzó el límite de 4 fotos concurrentes (el dueño es Básico). El dueño debe pasarse a Premium.`);
+    err.status = 403;
+    throw err;
+  }
+}
+   
+
 function formatearPublicacion(row, extras = {}) {
   return {
     id: row.id,
@@ -288,33 +374,51 @@ export async function feedGlobal(usuarioActualId) {
    CREAR
    ========================================================= */
 export async function crear(usuarioId, datos) {
-  const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, contenido, imagen, video, privacidad)
-     VALUES ($1, $2, 'perfil', $3, $4, $5, $6)
-     RETURNING id`,
-    [usuarioId, datos.tipo || 'post', datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
-  );
-  return { id: rows[0].id };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const fotosNuevas = contarFotosEnPub(datos.imagen);
+    await validarLimitePerfil(client, usuarioId, fotosNuevas);
+
+    const { rows } = await client.query(
+      `INSERT INTO publicaciones (autor_id, tipo, scope, contenido, imagen, video, privacidad)
+       VALUES ($1, $2, 'perfil', $3, $4, $5, $6)
+       RETURNING id`,
+      [usuarioId, datos.tipo || 'post', datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
+    );
+    await client.query('COMMIT');
+    return { id: rows[0].id };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function crearEnGrupo(grupoId, usuarioId, datos) {
-  const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, grupo_id, contenido, imagen, video, privacidad)
-     VALUES ($1, $2, 'grupo', $3, $4, $5, $6, $7)
-     RETURNING id`,
-    [usuarioId, datos.tipo || 'post', grupoId, datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
-  );
-  return { id: rows[0].id };
-}
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-export async function crearEnTorneo(torneoId, usuarioId, datos) {
-  const { rows } = await pool.query(
-    `INSERT INTO publicaciones (autor_id, tipo, scope, torneo_id, contenido, imagen, video, privacidad)
-     VALUES ($1, $2, 'torneo', $3, $4, $5, $6, $7)
-     RETURNING id`,
-    [usuarioId, datos.tipo || 'post', torneoId, datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
-  );
-  return { id: rows[0].id };
+    const fotosNuevas = contarFotosEnPub(datos.imagen);
+    await validarLimiteGrupo(client, grupoId, fotosNuevas);
+
+    const { rows } = await client.query(
+      `INSERT INTO publicaciones (autor_id, tipo, scope, grupo_id, contenido, imagen, video, privacidad)
+       VALUES ($1, $2, 'grupo', $3, $4, $5, $6, $7)
+       RETURNING id`,
+      [usuarioId, datos.tipo || 'post', grupoId, datos.contenido || null, datos.imagen || null, datos.video || null, datos.privacidad || 'publico']
+    );
+    await client.query('COMMIT');
+    return { id: rows[0].id };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /* =========================================================
@@ -401,8 +505,31 @@ export async function eliminar(id, usuarioId) {
     throw err;
   }
 
-  await pool.query(`DELETE FROM publicaciones WHERE id = $1`, [id]);
-  return { ok: true };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Si es del perfil y tenía fotos, liberamos cupo del ciclo rodante
+    if (pub.scope === 'perfil' && pub.imagen) {
+      const fotosLiberadas = contarFotosEnPub(pub.imagen);
+      if (fotosLiberadas > 0) {
+        await client.query(
+          'UPDATE usuarios SET perfil_fotos_usadas = GREATEST(0, perfil_fotos_usadas - $1) WHERE id = $2',
+          [fotosLiberadas, pub.autor_id]
+        );
+      }
+    }
+
+    // Si es de grupo, no hace falta liberar cupo porque es concurrente
+    await client.query(`DELETE FROM publicaciones WHERE id = $1`, [id]);
+    await client.query('COMMIT');
+    return { ok: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /* =========================================================
