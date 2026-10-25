@@ -14458,3 +14458,15 @@ select.field__input {
 #com-icono-preview-wrapper:hover {
   border-color: var(--color-primary);
 }
+/* Estilos para inputs bloqueados por falta de Premium */
+#personalizacion-premium-wrapper input:disabled,
+#personalizacion-premium-wrapper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Deshabilitar el clic en los <label> que envuelven a los inputs file */
+#personalizacion-premium-wrapper:has(input[type="file"]:disabled) label.btn {
+  opacity: 0.4;
+  pointer-events: none;
+}

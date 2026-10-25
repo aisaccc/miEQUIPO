@@ -1403,15 +1403,19 @@ export async function init() {
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
     // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
-    // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
     const user = getSesion();
     const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
+    const lockMsg = document.getElementById('premium-lock-msg');
+    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
     
-    // Si el usuario es Premium, mostrar el bloque
+    // Siempre mostramos el bloque
+    wrapperPremium.classList.remove('hidden');
+    wrapperPremium.hidden = false;
+    wrapperPremium.style.display = 'block';
+
     if (user?.esPremium) {
-      wrapperPremium.classList.remove('hidden');
-      wrapperPremium.hidden = false;                // ⚡ FIX
-      wrapperPremium.style.display = 'block';       // ⚡ FIX
+      if (lockMsg) lockMsg.classList.add('hidden');
+      inputsPremium.forEach(el => el.disabled = false);
           
       // Resetear campos
       document.getElementById('com-card-color').value = '#E8836A';
@@ -1490,9 +1494,8 @@ export async function init() {
       };
 
     } else {
-      wrapperPremium.classList.add('hidden');
-      wrapperPremium.hidden = true;
-      wrapperPremium.style.display = 'none';
+      if (lockMsg) lockMsg.classList.remove('hidden');
+      inputsPremium.forEach(el => el.disabled = true);
       
       document.getElementById('btn-guardar-comunidad').onclick = async () => {
         const nombre = document.getElementById('com-nombre').value.trim();
@@ -1566,11 +1569,20 @@ export async function init() {
     // ⚡ LÓGICA DE PERSONALIZACIÓN (EDIT)
     const user = getSesion();
     const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
+    const lockMsg = document.getElementById('premium-lock-msg');
+    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    
     let cardFotoBase64 = grupo.cardFoto || null;
     let iconoFileBase64 = grupo.iconoPersonalizado || null;
 
-    if (user.esPremium) {
-      wrapperPremium.classList.remove('hidden');
+    // Siempre mostramos el bloque
+    wrapperPremium.classList.remove('hidden');
+    wrapperPremium.hidden = false;
+    wrapperPremium.style.display = 'block';
+
+    if (user?.esPremium) {
+      if (lockMsg) lockMsg.classList.add('hidden');
+      inputsPremium.forEach(el => el.disabled = false);
 
       document.getElementById('com-card-color').value = grupo.cardColor || '#E8836A';
       
@@ -1603,7 +1615,8 @@ export async function init() {
       document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; document.getElementById('com-icono-file').value = ''; };
 
     } else {
-      wrapperPremium.classList.add('hidden');
+      if (lockMsg) lockMsg.classList.remove('hidden');
+      inputsPremium.forEach(el => el.disabled = true);
       cardFotoBase64 = grupo.cardFoto || null;
       iconoFileBase64 = grupo.iconoPersonalizado || null;
     }
