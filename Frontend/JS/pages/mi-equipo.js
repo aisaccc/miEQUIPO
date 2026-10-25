@@ -24,22 +24,13 @@ import {
   marcarCanalLeido as marcarCanalLeidoAPI,
   eliminarCanalParaMi as eliminarCanalParaMiAPI,
   vaciarCanalParaMi as vaciarCanalParaMiAPI,
-  eliminarMensajeParaMi as eliminarMensajeParaMiAPI,       // ⚡ NUEVO
-  eliminarMensajeParaTodos as eliminarMensajeParaTodosAPI, // ⚡ NUEVO
+  eliminarMensajeParaMi as eliminarMensajeParaMiAPI,
+  eliminarMensajeParaTodos as eliminarMensajeParaTodosAPI,
 } from '../services/mensajes.service.js';
 
-import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js'; // ⚡ NUEVO
-
-
-import {
-  listarPublicacionesDeGrupo as listarPubsGrupoAPI,
-} from '../services/publicaciones.service.js';
-
-import {
-  renderFeedPublicaciones,
-  abrirModalCrearPublicacionCompartido,
-} from '../utils/publicaciones-ui.js';
-
+import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
+import { listarPublicacionesDeGrupo as listarPubsGrupoAPI } from '../services/publicaciones.service.js';
+import { renderFeedPublicaciones, abrirModalCrearPublicacionCompartido } from '../utils/publicaciones-ui.js';
 import { renderGrupoPublico } from '../utils/grupo-publico.js';
 
 const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
@@ -122,8 +113,7 @@ export async function init() {
     const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
     const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
                    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-    eyebrow.textContent =
-      `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
+    eyebrow.textContent = `${dias[hoy.getDay()]}, ${hoy.getDate()} DE ${meses[hoy.getMonth()]}`;
   }
 
   let misEquipos = [];
@@ -164,8 +154,6 @@ export async function init() {
   const panelCanalEl   = document.getElementById('panel-canal');
   const inputBuscarCanal = document.getElementById('buscar-canal-equipo');
 
-    /* ⚡ Oculta/muestra el hero de la pestaña y los subtabs superiores
-     cuando entramos/salimos del detalle inline de equipo/comunidad. */
   function ocultarChromePagina() {
     document.getElementById('mi-equipo-eyebrow')?.closest('.page-hero')?.classList.add('hidden');
     document.querySelector('[data-tab-equipo]')?.closest('.subtabs')?.classList.add('hidden');
@@ -176,22 +164,18 @@ export async function init() {
     document.querySelector('[data-tab-equipo]')?.closest('.subtabs')?.classList.remove('hidden');
   }
 
-
   function esIconoImagen(valor) {
     return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
   }
 
   function renderIconoHtml(valor, size = 20) {
     if (esIconoImagen(valor)) {
-      // ⚡ FIX: Detectamos si es bandera o deporte por las nuevas palabras clave
       const esBandera = valor.toLowerCase().includes('flag') || 
                         valor.toLowerCase().includes('bandera') || 
                         valor.toLowerCase().includes('pais') ||
-                        valor.toLowerCase().includes('redondo') ||  // ⚡ Tus nuevas banderas
-                        valor.toLowerCase().includes('mundo');      // ⚡ Tus nuevas banderas
-      
+                        valor.toLowerCase().includes('redondo') ||
+                        valor.toLowerCase().includes('mundo');
       const clase = esBandera ? 'icono-bandera' : 'icono-deporte';
-      
       return `<img src="${valor}" alt="icono" class="${clase}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
     }
     return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || SVG.shield}</span>`;
@@ -208,19 +192,12 @@ export async function init() {
     const d = new Date(iso);
     const hoy = new Date();
     const mismoDia = d.toDateString() === hoy.toDateString();
-
-    if (mismoDia) {
-      return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-    }
+    if (mismoDia) return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
     return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
   }
 
   function mismoDia(a, b) {
-    return (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate()
-    );
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
 
   function labelDia(iso) {
@@ -228,16 +205,13 @@ export async function init() {
     const hoy = new Date();
     const ayer = new Date();
     ayer.setDate(hoy.getDate() - 1);
-
     if (mismoDia(d, hoy))  return 'Hoy';
     if (mismoDia(d, ayer)) return 'Ayer';
-
     const difDias = Math.floor((hoy - d) / (1000 * 60 * 60 * 24));
     if (difDias < 7) {
       const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
       return dias[d.getDay()];
     }
-
     return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
   }
 
@@ -249,24 +223,16 @@ export async function init() {
     const img = document.getElementById('modal-imagen-img');
     const modal = document.getElementById('modal-ver-imagen');
     if (!img || !modal) return;
-
     img.src = src;
     abrirModal('modal-ver-imagen');
-
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-ver-imagen');
-    });
-
-    modal.onclick = (e) => {
-      if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen');
-    };
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-ver-imagen'); });
+    modal.onclick = (e) => { if (e.target.id === 'modal-ver-imagen') cerrarModal('modal-ver-imagen'); };
   }
 
   function mostrarPreviewImagen(panelId, src) {
     const wrapper = document.getElementById(`${panelId}-preview`);
     const img = document.getElementById(`${panelId}-preview-img`);
     if (!wrapper || !img) return;
-
     img.src = src;
     wrapper.classList.remove('hidden');
   }
@@ -275,7 +241,6 @@ export async function init() {
     const wrapper = document.getElementById(`${panelId}-preview`);
     const img = document.getElementById(`${panelId}-preview-img`);
     if (!wrapper || !img) return;
-
     img.src = '';
     wrapper.classList.add('hidden');
   }
@@ -286,7 +251,6 @@ export async function init() {
         listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 }),
         listarGrupos({ tipo: 'comunidad', soloMios: 'true', limit: 50 }),
       ]);
-
       misEquipos = resEquipos.data || [];
       misComunidades = resComunidades.data || [];
     } catch (err) {
@@ -312,14 +276,8 @@ export async function init() {
     try {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return '—';
-      return d.toLocaleDateString('es-CL', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch {
-      return '—';
-    }
+      return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return '—'; }
   }
 
   function calcularPartidos(stats) {
@@ -340,6 +298,7 @@ export async function init() {
     return valor !== null && valor !== undefined;
   }
 
+  // ⚡ RENDERIZADO DE LA CARD (Actualizado con personalización)
   function renderCardGrupo(grupo, esComunidad) {
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
@@ -368,9 +327,17 @@ export async function init() {
       </button>
     ` : '';
 
+    // ⚡ Lógica de personalización
     const color = colorDeporte(grupo.deporte);
-    const escudoHtml = renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 36);
-    const bannerStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    const escudoHtml = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 36);
+    
+    let bannerStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    if (grupo.cardColor) {
+      bannerStyle = `background: linear-gradient(135deg, ${grupo.cardColor} 0%, ${grupo.cardColor}DD 100%);`;
+    }
+    if (grupo.cardFoto) {
+      bannerStyle = `background-image: url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
+    }
 
     const descripcionHtml = grupo.descripcion
       ? `<p class="grupo-card__desc">${grupo.descripcion}</p>`
@@ -431,17 +398,12 @@ export async function init() {
     if (esPublico) {
       const contenedor = document.getElementById('resultados-busqueda');
       if (!contenedor) return;
-
-      // ⚡ FIX: ocultar el chrome de la página y la tarjeta de filtros
-      // cuando se abre el detalle de un grupo desde "Buscar"
       ocultarChromePagina();
       const panelBuscar = document.getElementById('panel-buscar');
       const filtrosCard = panelBuscar?.querySelector('.card');
       if (filtrosCard) filtrosCard.classList.add('hidden');
-
       await renderGrupoPublico(contenedor, grupo.id, {
         onVolver: () => {
-          // ⚡ Restaurar chrome y filtros al volver
           mostrarChromePagina();
           if (filtrosCard) filtrosCard.classList.remove('hidden');
           grupoAbiertoBuscar = null;
@@ -451,16 +413,22 @@ export async function init() {
       return;
     }
 
-    // ⚡ Full-page feel: ocultamos el hero de la pestaña y los subtabs
     ocultarChromePagina();
-    // ... resto del código igual que ahora ...
 
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
     const esMiembro = grupo.esMiembro || capitan || admin;
 
     const color = colorDeporte(grupo.deporte);
-    const heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    
+    // ⚡ Lógica de personalización en el hero
+    let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    if (grupo.cardColor) {
+      heroStyle = `background: linear-gradient(135deg, ${grupo.cardColor} 0%, ${grupo.cardColor}DD 100%);`;
+    }
+    if (grupo.cardFoto) {
+      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
+    }
 
     const partidos = calcularPartidos(grupo.stats);
     const victorias = grupo.stats?.victorias;
@@ -476,7 +444,7 @@ export async function init() {
     const labelTipo = esComunidad ? 'Comunidad' : 'Equipo';
     const labelMiembros = esComunidad ? 'miembros' : 'jugadores';
 
-    const escudoHero = renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 48);
+    const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
 
     let botonesHtml = '';
 
@@ -678,14 +646,12 @@ export async function init() {
     contenedor.querySelectorAll('[data-subtab-grupo]').forEach(btn => {
       btn.addEventListener('click', async () => {
         subTabDetalleEquipo = btn.dataset.subtabGrupo;
-
         if (subTabDetalleEquipo !== 'chat') {
           if (intervaloDetalle) {
             clearInterval(intervaloDetalle);
             intervaloDetalle = null;
           }
         }
-
         await renderDetalleGrupo(grupo, esComunidad, volverFn, false);
       });
     });
@@ -778,7 +744,6 @@ export async function init() {
         </div>
       </div>
     `;
-
     await cargarMiembrosDeGrupo(grupo.id);
   }
 
@@ -802,21 +767,12 @@ export async function init() {
 
     if (intervaloDetalle) clearInterval(intervaloDetalle);
 
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {
-      console.warn('[mi-equipo] No se pudo marcar como leído:', err.message);
-    }
+    try { await marcarCanalLeidoAPI(canalId); } catch (err) {}
 
-    // Render del chat (sin header, ya lo quitamos)
     await renderPanelCanalDetalle(canalId, grupo);
 
-    // ⚡ El chat NO tiene header a propósito. Por eso verificamos que se
-    // haya renderizado el contenedor de mensajes (#chat-mensajes-detalle),
-    // no el header. Si no está, es porque el backend falló.
     const panel = document.getElementById('panel-canal-detalle');
     if (panel && !panel.querySelector('#chat-mensajes-detalle')) {
-      // ⚡ Sin header, sin flecha: solo el mensaje de error centrado.
       panel.innerHTML = `
         <div class="chat-empty">
           <div class="chat-empty__icon">
@@ -825,19 +781,12 @@ export async function init() {
           <p class="chat-empty__text">No se pudo conectar con el chat en este momento.</p>
         </div>
       `;
-
-      // No tiene sentido seguir poleando si el chat no cargó
-      if (intervaloDetalle) {
-        clearInterval(intervaloDetalle);
-        intervaloDetalle = null;
-      }
+      if (intervaloDetalle) { clearInterval(intervaloDetalle); intervaloDetalle = null; }
       return;
     }
 
     intervaloDetalle = setInterval(async () => {
-      if (canalDetalleId === canalId) {
-        await refrescarMensajesDetalle(canalId);
-      }
+      if (canalDetalleId === canalId) await refrescarMensajesDetalle(canalId);
     }, 3000);
   }
 
@@ -845,83 +794,51 @@ export async function init() {
     const panel = document.getElementById('panel-canal-detalle');
     if (!panel) return;
 
-    // Validamos que el canal exista y tengamos acceso (si falla, mostramos error)
-    try {
-      await obtenerCanalAPI(canalId);
-    } catch (err) {
-      console.error('[mi-equipo] Error al obtener canal:', err);
+    try { await obtenerCanalAPI(canalId); }
+    catch (err) {
       panel.innerHTML = `
         <div class="chat-empty">
           <div class="chat-empty__icon">
-            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
+            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <p class="chat-empty__text">No se pudo cargar el chat</p>
         </div>`;
       return;
     }
 
-    // ⚡ Sin header: ya estamos dentro del detalle del grupo/comunidad,
-    // mostrar nombre + icono + tipo + miembros sería redundante.
     panel.innerHTML = `
       <div class="chat-mensajes" id="chat-mensajes-detalle"></div>
-
       <div class="chat-input-preview hidden" id="chat-detalle-preview">
         <div class="chat-input-preview__img-wrapper">
           <img id="chat-detalle-preview-img" src="" alt="" />
           <button type="button" class="chat-input-preview__del" id="chat-detalle-preview-del" title="Quitar">✕</button>
         </div>
       </div>
-
       <form class="chat-input" id="chat-form-detalle">
         <label class="chat-input__attach" title="Adjuntar imagen">
           ${SVG.clip}
           <input type="file" id="chat-detalle-file" accept="image/*" style="display:none" />
         </label>
-
-        <input
-          type="text"
-          id="chat-input-detalle"
-          placeholder="Escribí un mensaje..."
-          maxlength="2000"
-          autocomplete="off"
-        />
-        <button type="submit" class="chat-input__btn" title="Enviar">
-          ${SVG.send}
-        </button>
+        <input type="text" id="chat-input-detalle" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
 
     document.getElementById('chat-detalle-file')?.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      if (file.size > 3 * 1024 * 1024) {
-        toast('La imagen es muy grande (máx 3MB)', 'error');
-        e.target.value = '';
-        return;
-      }
-
+      if (file.size > 3 * 1024 * 1024) { toast('La imagen es muy grande (máx 3MB)', 'error'); e.target.value = ''; return; }
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        imagenBase64Detalle = ev.target.result;
-        mostrarPreviewImagen('chat-detalle', imagenBase64Detalle);
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
+      reader.onload = (ev) => { imagenBase64Detalle = ev.target.result; mostrarPreviewImagen('chat-detalle', imagenBase64Detalle); };
+      reader.readAsDataURL(file); e.target.value = '';
     });
 
     document.getElementById('chat-detalle-preview-del')?.addEventListener('click', () => {
-      imagenBase64Detalle = null;
-      ocultarPreviewImagen('chat-detalle');
+      imagenBase64Detalle = null; ocultarPreviewImagen('chat-detalle');
     });
 
     document.getElementById('chat-form-detalle')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await enviarMensajeEnDetalle(canalId);
+      e.preventDefault(); await enviarMensajeEnDetalle(canalId);
     });
 
     await refrescarMensajesDetalle(canalId);
@@ -932,93 +849,45 @@ export async function init() {
     if (!cont) return;
 
     let mensajes;
-    try {
-      mensajes = await listarMensajesDeCanalAPI(canalId);
-    } catch (err) {
-      console.error('[mi-equipo] Error al cargar mensajes del canal:', err);
-      return;
-    }
+    try { mensajes = await listarMensajesDeCanalAPI(canalId); }
+    catch (err) { return; }
 
-    const hash = mensajes
-      .map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`)
-      .join('|');
-
+    const hash = mensajes.map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`).join('|');
     const cambioDeCanal = ultimaCanalDetalleRenderizado !== canalId;
     if (!cambioDeCanal && hash === ultimoHashDetalle) return;
-
     ultimoHashDetalle = hash;
     ultimaCanalDetalleRenderizado = canalId;
 
     if (mensajes.length === 0) {
-      cont.innerHTML = `
-        <div class="chat-mensajes__empty">
-          <div class="chat-mensajes__empty-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <p>Aún no hay mensajes.</p>
-          <p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p>
-        </div>`;
+      cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`;
       return;
     }
 
     const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
-
-    let html = '';
-    let diaAnterior = null;
+    let html = ''; let diaAnterior = null;
 
     mensajes.forEach((m, idx) => {
-      const fecha = new Date(m.createdAt);
-      const dia = fecha.toDateString();
-
-      if (dia !== diaAnterior) {
-        html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`;
-        diaAnterior = dia;
-      }
-
+      const fecha = new Date(m.createdAt); const dia = fecha.toDateString();
+      if (dia !== diaAnterior) { html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`; diaAnterior = dia; }
       const esMio = String(m.autorId) === String(user.id);
-
-      const tieneTexto = !!m.texto;
-      const tieneImagen = !!m.imagen;
-      const soloImagen = tieneImagen && !tieneTexto;
+      const tieneTexto = !!m.texto; const tieneImagen = !!m.imagen; const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
         <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
-          ${!m.eliminadoParaTodos ? `
-          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1"/>
-              <circle cx="12" cy="5" r="1"/>
-              <circle cx="12" cy="19" r="1"/>
-            </svg>
-          </button>
-          ` : ''}
+          ${!m.eliminadoParaTodos ? `<button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
-            ${tieneImagen && !m.eliminadoParaTodos ? `
-              <div class="msg__imagen-wrapper" data-ver-imagen-detalle="${idx}">
-                <img src="${m.imagen}" alt="" loading="lazy" />
-              </div>
-            ` : ''}
-            <div class="msg__meta">
-              <span class="msg__hora">${horaCorta(m.createdAt)}</span>
-            </div>
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen-detalle="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
+            <div class="msg__meta"><span class="msg__hora">${horaCorta(m.createdAt)}</span></div>
           </div>
-        </div>
-      `;
+        </div>`;
     });
 
     cont.innerHTML = html;
-
     cont.querySelectorAll('[data-ver-imagen-detalle]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagenDetalle);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
+      el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenDetalle); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); });
     });
 
     conectarAccionesMensaje(cont, {
@@ -1030,85 +899,45 @@ export async function init() {
       onRefrescar: () => refrescarMensajesDetalle(canalId),
     });
 
-    if (estabaAbajo || mensajes.length <= 2) {
-      cont.scrollTop = cont.scrollHeight;
-    }
-
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {}
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarCanalLeidoAPI(canalId); } catch (err) {}
   }
 
   async function enviarMensajeEnDetalle(canalId) {
     const input = document.getElementById('chat-input-detalle');
     if (!input) return;
-
-    const texto = input.value.trim();
-    const imagen = imagenBase64Detalle;
-
+    const texto = input.value.trim(); const imagen = imagenBase64Detalle;
     if (!texto && !imagen) return;
 
-    input.value = '';
-    imagenBase64Detalle = null;
-    ocultarPreviewImagen('chat-detalle');
-    input.focus();
-
+    input.value = ''; imagenBase64Detalle = null; ocultarPreviewImagen('chat-detalle'); input.focus();
     try {
       await enviarMensajeACanalAPI(canalId, texto || null, imagen || null);
       await refrescarMensajesDetalle(canalId);
-    } catch (err) {
-      console.error('[mi-equipo] Error al enviar mensaje:', err);
-      toast(err.message || 'No se pudo enviar el mensaje', 'error');
-    }
+    } catch (err) { toast(err.message || 'No se pudo enviar el mensaje', 'error'); }
   }
 
   async function renderSubtabPublicaciones(cont, grupo, esComunidad, esMiembro, capitan, admin) {
-    cont.innerHTML = `
-      <div class="pubs-subtab-wrapper" id="pubs-grupo-contenido">
-        <div class="page-loader">
-          <div class="spinner"></div>
-          <span>Cargando publicaciones...</span>
-        </div>
-      </div>
-    `;
-
+    cont.innerHTML = `<div class="pubs-subtab-wrapper" id="pubs-grupo-contenido"><div class="page-loader"><div class="spinner"></div><span>Cargando publicaciones...</span></div></div>`;
     const wrapper = document.getElementById('pubs-grupo-contenido');
     if (!wrapper) return;
 
-    try {
-      publicacionesEquipoCache = await listarPubsGrupoAPI(grupo.id);
-    } catch (err) {
-      console.error('[mi-equipo] Error al cargar publicaciones:', err);
-      wrapper.innerHTML = `<div class="pubs-subtab-empty"><div class="pubs-subtab-empty__icon">${SVG.alert}</div><h3 class="pubs-subtab-empty__titulo">No se pudieron cargar</h3><p class="pubs-subtab-empty__text">${err.message || ''}</p></div>`;
-      return;
-    }
+    try { publicacionesEquipoCache = await listarPubsGrupoAPI(grupo.id); }
+    catch (err) { wrapper.innerHTML = `<div class="pubs-subtab-empty"><div class="pubs-subtab-empty__icon">${SVG.alert}</div><h3 class="pubs-subtab-empty__titulo">No se pudieron cargar</h3><p class="pubs-subtab-empty__text">${err.message || ''}</p></div>`; return; }
 
     const puedePublicar = esMiembro;
-    
     wrapper.innerHTML = `
       <div class="perfil-pubs-header mb-4" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <h3 class="card__title" style="margin:0">Publicaciones de ${grupo.nombre}</h3>
-        ${puedePublicar ? `
-          <button class="btn btn--primary btn--sm" id="btn-nueva-pub-grupo">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nueva publicación
-          </button>
-        ` : ''}
+        ${puedePublicar ? `<button class="btn btn--primary btn--sm" id="btn-nueva-pub-grupo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nueva publicación</button>` : ''}
       </div>
       <div id="feed-grupo-contenido"></div>
     `;
 
     const feedCont = document.getElementById('feed-grupo-contenido');
-    
-    renderFeedPublicaciones(feedCont, publicacionesEquipoCache, {
-      onRefrescar: () => renderSubtabPublicaciones(cont, grupo, esComunidad, esMiembro, capitan, admin)
-    });
+    renderFeedPublicaciones(feedCont, publicacionesEquipoCache, { onRefrescar: () => renderSubtabPublicaciones(cont, grupo, esComunidad, esMiembro, capitan, admin) });
 
     document.getElementById('btn-nueva-pub-grupo')?.addEventListener('click', () => {
-      abrirModalCrearPublicacionCompartido('grupo', grupo.id, 
-        () => renderSubtabPublicaciones(cont, grupo, esComunidad, esMiembro, capitan, admin),
-        { tipo: 'post', esComunidad }
-      );
+      abrirModalCrearPublicacionCompartido('grupo', grupo.id, () => renderSubtabPublicaciones(cont, grupo, esComunidad, esMiembro, capitan, admin), { tipo: 'post', esComunidad });
     });
   }
 
@@ -1121,57 +950,26 @@ export async function init() {
       const miembros = grupoCompleto.miembros || [];
 
       if (miembros.length === 0) {
-        cont.innerHTML = `
-          <div class="gd-empty">
-            <div class="gd-empty__icon">${SVG.user}</div>
-            <p class="gd-empty__text">Aún no hay miembros.</p>
-          </div>`;
+        cont.innerHTML = `<div class="gd-empty"><div class="gd-empty__icon">${SVG.user}</div><p class="gd-empty__text">Aún no hay miembros.</p></div>`;
         return;
       }
 
-      const soyCapitan = grupoCompleto.esCapitan;
-      const soyAdmin = grupoCompleto.esAdmin;
+      const soyCapitan = grupoCompleto.esCapitan; const soyAdmin = grupoCompleto.esAdmin;
 
       cont.innerHTML = miembros.map(j => {
-        const esElCapitan = j.rol === 'capitan';
-        const esSubCapitan = j.rol === 'admin';
-        const soyYoMismo = String(j.id) === String(user.id);
-        const avatar = j.avatar || AVATAR_FALLBACK;
+        const esElCapitan = j.rol === 'capitan'; const esSubCapitan = j.rol === 'admin';
+        const soyYoMismo = String(j.id) === String(user.id); const avatar = j.avatar || AVATAR_FALLBACK;
 
         let puedeAbrirMenu = false;
-        if (soyCapitan && !soyYoMismo) {
-          puedeAbrirMenu = true;
-        } else if (soyAdmin && !soyYoMismo && !esElCapitan && !esSubCapitan) {
-          puedeAbrirMenu = true;
-        }
+        if (soyCapitan && !soyYoMismo) puedeAbrirMenu = true;
+        else if (soyAdmin && !soyYoMismo && !esElCapitan && !esSubCapitan) puedeAbrirMenu = true;
 
         let opcionesMenu = '';
         if (puedeAbrirMenu) {
-          const puedeNombrarSub = soyCapitan && !esSubCapitan;
-          const puedeQuitarSub = soyCapitan && esSubCapitan;
-          const puedeExpulsar = soyCapitan || (!esElCapitan && !esSubCapitan);
-
-          if (puedeNombrarSub) {
-            opcionesMenu += `
-              <button class="gd-jugador__dropdown-item" data-nombrar-sub="${j.id}">
-                ${SVG.crown} Hacer sub-capitán
-              </button>
-            `;
-          }
-          if (puedeQuitarSub) {
-            opcionesMenu += `
-              <button class="gd-jugador__dropdown-item" data-quitar-sub="${j.id}">
-                ${SVG.userMinus} Quitar sub-capitán
-              </button>
-            `;
-          }
-          if (puedeExpulsar) {
-            opcionesMenu += `
-              <button class="gd-jugador__dropdown-item gd-jugador__dropdown-item--danger" data-expulsar-miembro="${j.id}">
-                ${SVG.trash} Expulsar del equipo
-              </button>
-            `;
-          }
+          const puedeNombrarSub = soyCapitan && !esSubCapitan; const puedeQuitarSub = soyCapitan && esSubCapitan; const puedeExpulsar = soyCapitan || (!esElCapitan && !esSubCapitan);
+          if (puedeNombrarSub) opcionesMenu += `<button class="gd-jugador__dropdown-item" data-nombrar-sub="${j.id}">${SVG.crown} Hacer sub-capitán</button>`;
+          if (puedeQuitarSub) opcionesMenu += `<button class="gd-jugador__dropdown-item" data-quitar-sub="${j.id}">${SVG.userMinus} Quitar sub-capitán</button>`;
+          if (puedeExpulsar) opcionesMenu += `<button class="gd-jugador__dropdown-item gd-jugador__dropdown-item--danger" data-expulsar-miembro="${j.id}">${SVG.trash} Expulsar del equipo</button>`;
         }
 
         return `
@@ -1185,20 +983,7 @@ export async function init() {
               </div>
               <div class="gd-jugador__sub">${j.posicion || 'Sin posición'}</div>
             </div>
-            ${puedeAbrirMenu ? `
-              <div class="gd-jugador__menu-wrapper">
-                <button class="gd-jugador__menu-btn" data-jugador-menu="${j.id}" title="Opciones">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="1"/>
-                    <circle cx="12" cy="5" r="1"/>
-                    <circle cx="12" cy="19" r="1"/>
-                  </svg>
-                </button>
-                <div class="gd-jugador__dropdown" data-dropdown-for="${j.id}" style="display:none">
-                  ${opcionesMenu}
-                </div>
-              </div>
-            ` : ''}
+            ${puedeAbrirMenu ? `<div class="gd-jugador__menu-wrapper"><button class="gd-jugador__menu-btn" data-jugador-menu="${j.id}" title="Opciones"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button><div class="gd-jugador__dropdown" data-dropdown-for="${j.id}" style="display:none">${opcionesMenu}</div></div>` : ''}
           </div>
         `;
       }).join('');
@@ -1206,155 +991,72 @@ export async function init() {
       cont.querySelectorAll('[data-jugador-menu]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const jugadorId = btn.dataset.jugadorMenu;
-          const dropdown = cont.querySelector(`[data-dropdown-for="${jugadorId}"]`);
+          const jugadorId = btn.dataset.jugadorMenu; const dropdown = cont.querySelector(`[data-dropdown-for="${jugadorId}"]`);
           const estaAbierto = dropdown && dropdown.style.display !== 'none';
-
           cont.querySelectorAll('.gd-jugador__dropdown').forEach(d => d.style.display = 'none');
-
-          if (dropdown && !estaAbierto) {
-            dropdown.style.display = 'block';
-          }
+          if (dropdown && !estaAbierto) dropdown.style.display = 'block';
         });
       });
 
-      const cerrarMenusGlobal = (e) => {
-        if (!e.target.closest('.gd-jugador__menu-wrapper')) {
-          cont.querySelectorAll('.gd-jugador__dropdown').forEach(d => d.style.display = 'none');
-        }
-      };
+      const cerrarMenusGlobal = (e) => { if (!e.target.closest('.gd-jugador__menu-wrapper')) cont.querySelectorAll('.gd-jugador__dropdown').forEach(d => d.style.display = 'none'); };
       document.addEventListener('click', cerrarMenusGlobal);
 
       cont.querySelectorAll('[data-nombrar-sub]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const uid = btn.dataset.nombrarSub;
-          try {
-            await cambiarRolMiembroAPI(grupoId, uid, 'admin');
-            toast('Ahora es sub-capitán', 'success');
-            await cargarMiembrosDeGrupo(grupoId);
-          } catch (err) {
-            toast(err.message || 'Error al nombrar sub-capitán', 'error');
-          }
-        });
+        btn.addEventListener('click', async (e) => { e.stopPropagation(); try { await cambiarRolMiembroAPI(grupoId, btn.dataset.nombrarSub, 'admin'); toast('Ahora es sub-capitán', 'success'); await cargarMiembrosDeGrupo(grupoId); } catch (err) { toast(err.message || 'Error', 'error'); } });
       });
-
       cont.querySelectorAll('[data-quitar-sub]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const uid = btn.dataset.quitarSub;
-          try {
-            await cambiarRolMiembroAPI(grupoId, uid, 'miembro');
-            toast('Sub-capitán removido', 'info');
-            await cargarMiembrosDeGrupo(grupoId);
-          } catch (err) {
-            toast(err.message || 'Error al quitar sub-capitán', 'error');
-          }
-        });
+        btn.addEventListener('click', async (e) => { e.stopPropagation(); try { await cambiarRolMiembroAPI(grupoId, btn.dataset.quitarSub, 'miembro'); toast('Sub-capitán removido', 'info'); await cargarMiembrosDeGrupo(grupoId); } catch (err) { toast(err.message || 'Error', 'error'); } });
       });
-
       cont.querySelectorAll('[data-expulsar-miembro]').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const uid = btn.dataset.expulsarMiembro;
-          if (!confirm('¿Expulsar a este miembro del equipo?')) return;
-          try {
-            await expulsarMiembroAPI(grupoId, uid);
-            toast('Miembro expulsado', 'info');
-            await cargarMiembrosDeGrupo(grupoId);
-          } catch (err) {
-            toast(err.message || 'Error al expulsar', 'error');
-          }
-        });
+        btn.addEventListener('click', async (e) => { e.stopPropagation(); if (!confirm('¿Expulsar a este miembro del equipo?')) return; try { await expulsarMiembroAPI(grupoId, btn.dataset.expulsarMiembro); toast('Miembro expulsado', 'info'); await cargarMiembrosDeGrupo(grupoId); } catch (err) { toast(err.message || 'Error', 'error'); } });
       });
 
       cont.querySelectorAll('[data-autor-id]').forEach(el => {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          import('../components.js').then(({ verPerfilUsuario }) => {
-            verPerfilUsuario(el.dataset.autorId);
-          });
-        });
+        el.addEventListener('click', (e) => { e.stopPropagation(); import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId)); });
       });
     } catch (err) {
-      console.error('[mi-equipo] Error al cargar miembros:', err);
       cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudieron cargar los miembros</p>`;
     }
   }
 
-  // ⚡ FIX: renderPanelEquipo con chequeo de null
   async function renderPanelEquipo() {
     const contenedor = document.getElementById('equipo-contenido');
     if (!contenedor) return;
 
     if (grupoAbiertoEquipo) {
       const grupo = misEquipos.find(g => String(g.id) === String(grupoAbiertoEquipo));
-      if (!grupo) {
-        grupoAbiertoEquipo = null;
-      } else {
+      if (!grupo) grupoAbiertoEquipo = null;
+      else {
         await renderDetalleGrupo(grupo, false, () => {
-          grupoAbiertoEquipo = null;
-          subTabDetalleEquipo = 'info';
-          if (intervaloDetalle) {
-            clearInterval(intervaloDetalle);
-            intervaloDetalle = null;
-          }
+          grupoAbiertoEquipo = null; subTabDetalleEquipo = 'info';
+          if (intervaloDetalle) { clearInterval(intervaloDetalle); intervaloDetalle = null; }
           renderPanelEquipo();
         });
         return;
       }
     }
 
-    // ⚡ Mostrar chrome solo si esta pestaña es la activa
-    if (panelEquipo?.classList.contains('subpanel--active')) {
-      mostrarChromePagina();
-    }
-
+    if (panelEquipo?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
     contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input type="text" id="filtro-equipos" class="grupo-toolbar__input"
-                 placeholder="Buscar por nombre, deporte o ciudad..."
-                 value="${filtroBusquedaEquipo}" />
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="filtro-equipos" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaEquipo}" />
         </div>
-        <button class="btn btn--primary" id="btn-crear-equipo">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Crear equipo
-        </button>
+        <button class="btn btn--primary" id="btn-crear-equipo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear equipo</button>
       </div>
-
       <div id="equipos-lista" class="grupo-grid"></div>
     `;
 
     const lista = document.getElementById('equipos-lista');
 
     if (misEquipos.length === 0) {
-      lista.innerHTML = `
-        <div class="card" style="grid-column:1 / -1">
-          <div class="empty-state">
-            <div class="empty-state__icon">${SVG.users}</div>
-            <p>No perteneces a ningún equipo todavía.</p>
-            <button class="btn btn--primary mt-4" id="btn-vacio-crear-equipo">+ Crear mi primer equipo</button>
-          </div>
-        </div>`;
+      lista.innerHTML = `<div class="card" style="grid-column:1 / -1"><div class="empty-state"><div class="empty-state__icon">${SVG.users}</div><p>No perteneces a ningún equipo todavía.</p><button class="btn btn--primary mt-4" id="btn-vacio-crear-equipo">+ Crear mi primer equipo</button></div></div>`;
       document.getElementById('btn-vacio-crear-equipo')?.addEventListener('click', () => abrirModalCrearGrupo('equipo'));
     } else if (filtrados.length === 0) {
-      lista.innerHTML = `
-        <div class="card" style="grid-column:1 / -1">
-          <div class="empty-state">
-            <div class="empty-state__icon">${SVG.search}</div>
-            <p>No hay equipos que coincidan con "${filtroBusquedaEquipo}".</p>
-          </div>
-        </div>`;
+      lista.innerHTML = `<div class="card" style="grid-column:1 / -1"><div class="empty-state"><div class="empty-state__icon">${SVG.search}</div><p>No hay equipos que coincidan con "${filtroBusquedaEquipo}".</p></div></div>`;
     } else {
       lista.innerHTML = filtrados.map(g => renderCardGrupo(g, false)).join('');
     }
@@ -1363,41 +1065,26 @@ export async function init() {
 
     const inputFiltro = document.getElementById('filtro-equipos');
     inputFiltro?.addEventListener('input', (e) => {
-      filtroBusquedaEquipo = e.target.value;
-      renderPanelEquipo();
+      filtroBusquedaEquipo = e.target.value; renderPanelEquipo();
       const nuevoInput = document.getElementById('filtro-equipos');
-      if (nuevoInput) {
-        nuevoInput.focus();
-        nuevoInput.setSelectionRange(nuevoInput.value.length, nuevoInput.value.length);
-      }
+      if (nuevoInput) { nuevoInput.focus(); nuevoInput.setSelectionRange(nuevoInput.value.length, nuevoInput.value.length); }
     });
 
     lista.querySelectorAll('.grupo-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion-grupo]')) return;
-        grupoAbiertoEquipo = card.dataset.grupoId;
-        subTabDetalleEquipo = 'chat';     // ⚡ equipo abre en Chat
-        renderPanelEquipo();
+        grupoAbiertoEquipo = card.dataset.grupoId; subTabDetalleEquipo = 'chat'; renderPanelEquipo();
       });
       card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if (e.target.closest('[data-accion-grupo]')) return;
-          grupoAbiertoEquipo = card.dataset.grupoId;
-          subTabDetalleEquipo = 'chat';   // ⚡ equipo abre en Chat
-          renderPanelEquipo();
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (e.target.closest('[data-accion-grupo]')) return; grupoAbiertoEquipo = card.dataset.grupoId; subTabDetalleEquipo = 'chat'; renderPanelEquipo(); }
       });
     });
 
     lista.querySelectorAll('[data-accion-grupo]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const id = btn.dataset.id;
-        const accion = btn.dataset.accionGrupo;
-        const grupo = misEquipos.find(g => String(g.id) === String(id));
+        const id = btn.dataset.id; const accion = btn.dataset.accionGrupo; const grupo = misEquipos.find(g => String(g.id) === String(id));
         if (!grupo) return;
-
         if (accion === 'editar')     abrirModalEditarGrupo(grupo, false);
         if (accion === 'gestionar')  abrirModalGestionar(grupo);
         if (accion === 'stats')      abrirModalStats(grupo);
@@ -1407,79 +1094,44 @@ export async function init() {
     });
   }
 
-  // ⚡ FIX: renderPanelComunidad con chequeo de null
   async function renderPanelComunidad() {
     const contenedor = document.getElementById('comunidad-contenido');
     if (!contenedor) return;
 
     if (grupoAbiertoComunidad) {
       const grupo = misComunidades.find(g => String(g.id) === String(grupoAbiertoComunidad));
-      if (!grupo) {
-        grupoAbiertoComunidad = null;
-      } else {
+      if (!grupo) grupoAbiertoComunidad = null;
+      else {
         await renderDetalleGrupo(grupo, true, () => {
-          grupoAbiertoComunidad = null;
-          subTabDetalleEquipo = 'info';
-          if (intervaloDetalle) {
-            clearInterval(intervaloDetalle);
-            intervaloDetalle = null;
-          }
+          grupoAbiertoComunidad = null; subTabDetalleEquipo = 'info';
+          if (intervaloDetalle) { clearInterval(intervaloDetalle); intervaloDetalle = null; }
           renderPanelComunidad();
         });
         return;
       }
     }
 
-    // ⚡ Mostrar chrome solo si esta pestaña es la activa
-    if (panelComunidad?.classList.contains('subpanel--active')) {
-      mostrarChromePagina();
-    }
-
+    if (panelComunidad?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
     contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input type="text" id="filtro-comunidades" class="grupo-toolbar__input"
-                 placeholder="Buscar por nombre, deporte o ciudad..."
-                 value="${filtroBusquedaComunidad}" />
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="filtro-comunidades" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaComunidad}" />
         </div>
-        <button class="btn btn--primary" id="btn-crear-comunidad">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Crear comunidad
-        </button>
+        <button class="btn btn--primary" id="btn-crear-comunidad"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear comunidad</button>
       </div>
-
       <div id="comunidades-lista" class="grupo-grid"></div>
     `;
 
     const lista = document.getElementById('comunidades-lista');
 
     if (misComunidades.length === 0) {
-      lista.innerHTML = `
-        <div class="card" style="grid-column:1 / -1">
-          <div class="empty-state">
-            <div class="empty-state__icon">${SVG.globe}</div>
-            <p>No perteneces a ninguna comunidad todavía.</p>
-            <button class="btn btn--primary mt-4" id="btn-vacio-crear-comunidad">+ Crear mi primera comunidad</button>
-          </div>
-        </div>`;
+      lista.innerHTML = `<div class="card" style="grid-column:1 / -1"><div class="empty-state"><div class="empty-state__icon">${SVG.globe}</div><p>No perteneces a ninguna comunidad todavía.</p><button class="btn btn--primary mt-4" id="btn-vacio-crear-comunidad">+ Crear mi primera comunidad</button></div></div>`;
       document.getElementById('btn-vacio-crear-comunidad')?.addEventListener('click', () => abrirModalCrearGrupo('comunidad'));
     } else if (filtrados.length === 0) {
-      lista.innerHTML = `
-        <div class="card" style="grid-column:1 / -1">
-          <div class="empty-state">
-            <div class="empty-state__icon">${SVG.search}</div>
-            <p>No hay comunidades que coincidan con "${filtroBusquedaComunidad}".</p>
-          </div>
-        </div>`;
+      lista.innerHTML = `<div class="card" style="grid-column:1 / -1"><div class="empty-state"><div class="empty-state__icon">${SVG.search}</div><p>No hay comunidades que coincidan con "${filtroBusquedaComunidad}".</p></div></div>`;
     } else {
       lista.innerHTML = filtrados.map(g => renderCardGrupo(g, true)).join('');
     }
@@ -1488,41 +1140,26 @@ export async function init() {
 
     const inputFiltro = document.getElementById('filtro-comunidades');
     inputFiltro?.addEventListener('input', (e) => {
-      filtroBusquedaComunidad = e.target.value;
-      renderPanelComunidad();
+      filtroBusquedaComunidad = e.target.value; renderPanelComunidad();
       const nuevoInput = document.getElementById('filtro-comunidades');
-      if (nuevoInput) {
-        nuevoInput.focus();
-        nuevoInput.setSelectionRange(nuevoInput.value.length, nuevoInput.value.length);
-      }
+      if (nuevoInput) { nuevoInput.focus(); nuevoInput.setSelectionRange(nuevoInput.value.length, nuevoInput.value.length); }
     });
 
     lista.querySelectorAll('.grupo-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-accion-grupo]')) return;
-        grupoAbiertoComunidad = card.dataset.grupoId;
-        subTabDetalleEquipo = 'publicaciones';   // ⚡ comunidad abre en Publicaciones
-        renderPanelComunidad();
+        grupoAbiertoComunidad = card.dataset.grupoId; subTabDetalleEquipo = 'publicaciones'; renderPanelComunidad();
       });
       card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if (e.target.closest('[data-accion-grupo]')) return;
-          grupoAbiertoComunidad = card.dataset.grupoId;
-          subTabDetalleEquipo = 'publicaciones'; // ⚡ comunidad abre en Publicaciones
-          renderPanelComunidad();
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (e.target.closest('[data-accion-grupo]')) return; grupoAbiertoComunidad = card.dataset.grupoId; subTabDetalleEquipo = 'publicaciones'; renderPanelComunidad(); }
       });
     });
 
     lista.querySelectorAll('[data-accion-grupo]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const id = btn.dataset.id;
-        const accion = btn.dataset.accionGrupo;
-        const grupo = misComunidades.find(g => String(g.id) === String(id));
+        const id = btn.dataset.id; const accion = btn.dataset.accionGrupo; const grupo = misComunidades.find(g => String(g.id) === String(id));
         if (!grupo) return;
-
         if (accion === 'editar')     abrirModalEditarGrupo(grupo, true);
         if (accion === 'gestionar')  abrirModalGestionar(grupo);
         if (accion === 'stats')      abrirModalStats(grupo);
@@ -1534,545 +1171,186 @@ export async function init() {
 
   async function recargarPaneles() {
     await recargarGrupos();
-    await cargarCanales();                                          // ⚡ FIX: refrescar íconos
-    if (panelChat?.classList.contains('subpanel--active')) {
-      renderListaCanales();                                         // ⚡ FIX: si estoy en chat, re-renderizar
-    }
+    await cargarCanales();
+    if (panelChat?.classList.contains('subpanel--active')) renderListaCanales();
     await renderPanelEquipo();
     await renderPanelComunidad();
   }
 
   async function cargarCanales() {
-    try {
-      const todos = await listarCanalesAPI();
-      canales = (todos || []).filter(c => c.tipo !== 'torneo');
-    } catch (err) {
-      console.error('[mi-equipo] Error al cargar canales:', err);
-      canales = [];
-    }
+    try { const todos = await listarCanalesAPI(); canales = (todos || []).filter(c => c.tipo !== 'torneo'); }
+    catch (err) { canales = []; }
   }
 
   function renderListaCanales() {
     if (!listaCanalesEl) return;
-
-    const filtrados = filtroBusquedaCanal
-      ? canales.filter(c => (c.nombre || '').toLowerCase().includes(filtroBusquedaCanal.toLowerCase()))
-      : canales;
+    const filtrados = filtroBusquedaCanal ? canales.filter(c => (c.nombre || '').toLowerCase().includes(filtroBusquedaCanal.toLowerCase())) : canales;
 
     if (canales.length === 0) {
-      listaCanalesEl.innerHTML = `
-        <div class="chat-empty" style="padding:var(--space-5) var(--space-3)">
-          <div class="chat-empty__icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <h3 class="chat-empty__titulo" style="font-size:var(--fs-base)">Sin chats de equipo</h3>
-          <p class="chat-empty__text">Cuando te unas a un equipo, su chat va a aparecer acá.</p>
-        </div>`;
+      listaCanalesEl.innerHTML = `<div class="chat-empty" style="padding:var(--space-5) var(--space-3)"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3 class="chat-empty__titulo" style="font-size:var(--fs-base)">Sin chats de equipo</h3><p class="chat-empty__text">Cuando te unas a un equipo, su chat va a aparecer acá.</p></div>`;
       return;
     }
 
     if (filtrados.length === 0) {
-      listaCanalesEl.innerHTML = `
-        <p class="text-sm text-muted text-center" style="padding:var(--space-4)">
-          Sin resultados
-        </p>`;
+      listaCanalesEl.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin resultados</p>`;
       return;
     }
 
     listaCanalesEl.innerHTML = filtrados.map(c => {
-      const ultimo = c.ultimoMensaje;
-      const preview = ultimo
-        ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? 'Imagen' : ''))
-        : 'Sin mensajes aún';
-
-      const iconoHtml = renderIconoHtml(c.icono || RUTA_ESCUDO, 28);
-      const esActivo = c.id === canalActualId;
+      const ultimo = c.ultimoMensaje; const preview = ultimo ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? 'Imagen' : '')) : 'Sin mensajes aún';
+      const iconoHtml = renderIconoHtml(c.icono || RUTA_ESCUDO, 28); const esActivo = c.id === canalActualId;
 
       return `
         <div class="conv-item ${esActivo ? 'conv-item--active' : ''}" data-canal="${c.id}">
-          <div class="conv-item__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
-            ${iconoHtml}
-          </div>
+          <div class="conv-item__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">${iconoHtml}</div>
           <div class="conv-item__info">
-            <div class="conv-item__top">
-              <div class="conv-item__name">${escapeHtml(c.nombre)}</div>
-              ${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}
-            </div>
-            <div class="conv-item__bottom">
-              <div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>
-              ${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}
-            </div>
+            <div class="conv-item__top"><div class="conv-item__name">${escapeHtml(c.nombre)}</div>${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}</div>
+            <div class="conv-item__bottom"><div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}</div>
           </div>
-          <button class="conv-item__menu-btn" data-menu-canal="${c.id}" title="Opciones" type="button">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1"/>
-              <circle cx="12" cy="5" r="1"/>
-              <circle cx="12" cy="19" r="1"/>
-            </svg>
-          </button>
+          <button class="conv-item__menu-btn" data-menu-canal="${c.id}" title="Opciones" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
           <div class="conv-item__dropdown hidden" data-dropdown-canal="${c.id}">
-            <button class="conv-item__dropdown-item" type="button" data-accion-canal="vaciar" data-canal-id="${c.id}">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-              Vaciar chat
-            </button>
-            <button class="conv-item__dropdown-item conv-item__dropdown-item--danger" type="button" data-accion-canal="eliminar" data-canal-id="${c.id}">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-              Eliminar chat
-            </button>
+            <button class="conv-item__dropdown-item" type="button" data-accion-canal="vaciar" data-canal-id="${c.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar chat</button>
+            <button class="conv-item__dropdown-item conv-item__dropdown-item--danger" type="button" data-accion-canal="eliminar" data-canal-id="${c.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Eliminar chat</button>
           </div>
         </div>
       `;
     }).join('');
 
-    // Click en el chat → abrir
-    listaCanalesEl.querySelectorAll('[data-canal]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        if (e.target.closest('[data-menu-canal]')) return;
-        if (e.target.closest('[data-accion-canal]')) return;
-        abrirCanalGlobal(el.dataset.canal);
-      });
-    });
+    listaCanalesEl.querySelectorAll('[data-canal]').forEach(el => { el.addEventListener('click', (e) => { if (e.target.closest('[data-menu-canal]') || e.target.closest('[data-accion-canal]')) return; abrirCanalGlobal(el.dataset.canal); }); });
+    listaCanalesEl.querySelectorAll('[data-menu-canal]').forEach(btn => { btn.addEventListener('click', (e) => { e.stopPropagation(); const canalId = btn.dataset.menuCanal; const dropdown = listaCanalesEl.querySelector(`[data-dropdown-canal="${canalId}"]`); const estaAbierto = dropdown && !dropdown.classList.contains('hidden'); listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden')); if (dropdown && !estaAbierto) dropdown.classList.remove('hidden'); }); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('[data-menu-canal]') && !e.target.closest('[data-dropdown-canal]')) listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden')); });
 
-    // Toggle dropdown ⋯
-    listaCanalesEl.querySelectorAll('[data-menu-canal]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const canalId = btn.dataset.menuCanal;
-        const dropdown = listaCanalesEl.querySelector(`[data-dropdown-canal="${canalId}"]`);
-        const estaAbierto = dropdown && !dropdown.classList.contains('hidden');
-
-        listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
-
-        if (dropdown && !estaAbierto) {
-          dropdown.classList.remove('hidden');
-        }
-      });
-    });
-
-    // Cerrar dropdown al hacer click fuera
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('[data-menu-canal]') && !e.target.closest('[data-dropdown-canal]')) {
-        listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
-      }
-    });
-
-    // Acciones del dropdown
     listaCanalesEl.querySelectorAll('[data-accion-canal]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const accion = btn.dataset.accionCanal;
-        const canalId = btn.dataset.canalId;
+        const accion = btn.dataset.accionCanal; const canalId = btn.dataset.canalId;
         listaCanalesEl.querySelectorAll('[data-dropdown-canal]').forEach(d => d.classList.add('hidden'));
 
         if (accion === 'vaciar') {
-          if (!confirm('¿Vaciar este chat? Los mensajes se van a ocultar SOLO para ti. Los demás miembros los van a seguir viendo.')) return;
-          try {
-            await vaciarCanalParaMiAPI(canalId);
-            toast('Chat vaciado', 'success');
-
-            // Si es el canal activo, refrescar el panel de mensajes
-            if (canalActualId === canalId) {
-              await refrescarMensajesGlobal(canalId);
-            }
-
-            await cargarCanales();
-            renderListaCanales();
-          } catch (err) {
-            toast(err.message || 'No se pudo vaciar el chat', 'error');
-          }
+          if (!confirm('¿Vaciar este chat? Los mensajes se van a ocultar SOLO para ti.')) return;
+          try { await vaciarCanalParaMiAPI(canalId); toast('Chat vaciado', 'success'); if (canalActualId === canalId) await refrescarMensajesGlobal(canalId); await cargarCanales(); renderListaCanales(); } catch (err) { toast(err.message || 'Error', 'error'); }
         }
 
         if (accion === 'eliminar') {
-          if (!confirm('¿Eliminar este chat de tu lista? Solo desaparece para ti. Si llega un mensaje nuevo, vuelve a aparecer.')) return;
+          if (!confirm('¿Eliminar este chat de tu lista? Si llega un mensaje nuevo, vuelve a aparecer.')) return;
           try {
-            await eliminarCanalParaMiAPI(canalId);
-            toast('Chat eliminado', 'success');
-
-            // Si es el canal activo, limpiar el panel
-            if (canalActualId === canalId) {
-              canalActualId = null;
-              renderEmptyPanelCanal();
-              panelCanalEl?.classList.remove('chat-layout__panel--abierto');
-              document.querySelector('.chat-layout__list')?.classList.remove('chat-layout__list--oculto');
-            }
-
-            await cargarCanales();
-            renderListaCanales();
-          } catch (err) {
-            toast(err.message || 'No se pudo eliminar el chat', 'error');
-          }
+            await eliminarCanalParaMiAPI(canalId); toast('Chat eliminado', 'success');
+            if (canalActualId === canalId) { canalActualId = null; renderEmptyPanelCanal(); panelCanalEl?.classList.remove('chat-layout__panel--abierto'); document.querySelector('.chat-layout__list')?.classList.remove('chat-layout__list--oculto'); }
+            await cargarCanales(); renderListaCanales();
+          } catch (err) { toast(err.message || 'Error', 'error'); }
         }
       });
     });
   }
 
   async function abrirCanalGlobal(canalId) {
-    canalActualId = canalId;
-    ultimoHashCanal = null;
-    ultimaCanalRenderizado = null;
-    imagenBase64Canal = null;
-
+    canalActualId = canalId; ultimoHashCanal = null; ultimaCanalRenderizado = null; imagenBase64Canal = null;
     if (intervaloCanal) clearInterval(intervaloCanal);
-
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {
-      console.warn('[mi-equipo] No se pudo marcar como leído:', err.message);
-    }
-
-    // En lugar de buscar un panel fijo, reemplazamos el contenido del contenedor del chat
+    try { await marcarCanalLeidoAPI(canalId); } catch (err) {}
     const panelChat = document.getElementById('panel-chat');
-    if (panelChat) {
-      // En móvil, ocultamos la lista de canales y mostramos el chat
-      const listaCanales = document.querySelector('.chat-layout__list');
-      if (listaCanales) listaCanales.classList.add('chat-layout__list--oculto');
-    }
-
-    await cargarCanales();
-    renderListaCanales();     // ⚡ FIX: actualizar el marcado naranja al instante
-    
-    // ⚡ ACÁ ESTÁ EL FIX: Forzamos el render del panel del canal
-    await renderPanelCanalGlobal(canalId);
-
-    // Y le decimos al CSS que lo muestre
-    const panelCanalEl = document.getElementById('panel-canal');
-    if (panelCanalEl) panelCanalEl.classList.add('chat-layout__panel--abierto');
-
-    intervaloCanal = setInterval(async () => {
-      if (canalActualId === canalId) {
-        await refrescarMensajesGlobal(canalId);
-      }
-    }, 3000);
+    if (panelChat) { const listaCanales = document.querySelector('.chat-layout__list'); if (listaCanales) listaCanales.classList.add('chat-layout__list--oculto'); }
+    await cargarCanales(); renderListaCanales(); await renderPanelCanalGlobal(canalId);
+    const panelCanalEl = document.getElementById('panel-canal'); if (panelCanalEl) panelCanalEl.classList.add('chat-layout__panel--abierto');
+    intervaloCanal = setInterval(async () => { if (canalActualId === canalId) await refrescarMensajesGlobal(canalId); }, 3000);
   }
 
-async function renderPanelCanalGlobal(canalId) {
+  async function renderPanelCanalGlobal(canalId) {
     if (!panelCanalEl) return;
-
     let canal;
-    try {
-      canal = await obtenerCanalAPI(canalId);
-    } catch (err) {
-      console.error('[mi-equipo] Error al obtener canal:', err);
-      panelCanalEl.innerHTML = `
-        <div class="chat-empty">
-          <div class="chat-empty__icon">
-            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-          </div>
-          <p class="chat-empty__text">No se pudo cargar el canal</p>
-        </div>`;
-      return;
-    }
+    try { canal = await obtenerCanalAPI(canalId); }
+    catch (err) { panelCanalEl.innerHTML = `<div class="chat-empty"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><p class="chat-empty__text">No se pudo cargar el canal</p></div>`; return; }
 
     const iconoHtml = renderIconoHtml(canal.icono || RUTA_ESCUDO, 28);
-    const tipoLabel = canal.tipo === 'equipo' ? 'Equipo'
-                    : canal.tipo === 'comunidad' ? 'Comunidad'
-                    : 'Torneo';
+    const tipoLabel = canal.tipo === 'equipo' ? 'Equipo' : canal.tipo === 'comunidad' ? 'Comunidad' : 'Torneo';
 
     panelCanalEl.innerHTML = `
       <div class="chat-header">
-        <!-- ⚡ Botón Volver (Solo visible en móvil) -->
-        <button class="chat-back-btn" id="btn-volver-canal-global">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-        </button>
-
-        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">
-          ${iconoHtml}
-        </div>
-        <div class="chat-header__info">
-          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
-          <div class="chat-header__sub">${tipoLabel} · ${canal.totalMiembros || 0} miembros</div>
-        </div>
+        <button class="chat-back-btn" id="btn-volver-canal-global"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">${iconoHtml}</div>
+        <div class="chat-header__info"><div class="chat-header__name">${escapeHtml(canal.nombre)}</div><div class="chat-header__sub">${tipoLabel} · ${canal.totalMiembros || 0} miembros</div></div>
       </div>
-
       <div class="chat-mensajes" id="chat-mensajes-canal"></div>
-
-      <div class="chat-input-preview hidden" id="chat-canal-preview">
-        <div class="chat-input-preview__img-wrapper">
-          <img id="chat-canal-preview-img" src="" alt="" />
-          <button type="button" class="chat-input-preview__del" id="chat-canal-preview-del" title="Quitar">✕</button>
-        </div>
-      </div>
-
+      <div class="chat-input-preview hidden" id="chat-canal-preview"><div class="chat-input-preview__img-wrapper"><img id="chat-canal-preview-img" src="" alt="" /><button type="button" class="chat-input-preview__del" id="chat-canal-preview-del" title="Quitar">✕</button></div></div>
       <form class="chat-input" id="chat-form-canal">
-        <label class="chat-input__attach" title="Adjuntar imagen">
-          ${SVG.clip}
-          <input type="file" id="chat-canal-file" accept="image/*" style="display:none" />
-        </label>
-
-        <input
-          type="text"
-          id="chat-input-canal"
-          placeholder="Escribí un mensaje..."
-          maxlength="2000"
-          autocomplete="off"
-        />
-        <button type="submit" class="chat-input__btn" title="Enviar">
-          ${SVG.send}
-        </button>
+        <label class="chat-input__attach" title="Adjuntar imagen">${SVG.clip}<input type="file" id="chat-canal-file" accept="image/*" style="display:none" /></label>
+        <input type="text" id="chat-input-canal" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
 
-    // ⚡ Lógica del botón Volver
-    document.getElementById('btn-volver-canal-global')?.addEventListener('click', () => {
-      panelCanalEl.classList.remove('chat-layout__panel--abierto');
-      const listaCanales = document.querySelector('.chat-layout__list');
-      if (listaCanales) listaCanales.classList.remove('chat-layout__list--oculto');
-      canalActualId = null; // Deseleccionamos el canal actual
-    });
+    document.getElementById('btn-volver-canal-global')?.addEventListener('click', () => { panelCanalEl.classList.remove('chat-layout__panel--abierto'); const listaCanales = document.querySelector('.chat-layout__list'); if (listaCanales) listaCanales.classList.remove('chat-layout__list--oculto'); canalActualId = null; });
 
     document.getElementById('chat-canal-file')?.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (file.size > 3 * 1024 * 1024) {
-        toast('La imagen es muy grande (máx 3MB)', 'error');
-        e.target.value = '';
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        imagenBase64Canal = ev.target.result;
-        mostrarPreviewImagen('chat-canal', imagenBase64Canal);
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
+      const file = e.target.files[0]; if (!file) return;
+      if (file.size > 3 * 1024 * 1024) { toast('La imagen es muy grande (máx 3MB)', 'error'); e.target.value = ''; return; }
+      const reader = new FileReader(); reader.onload = (ev) => { imagenBase64Canal = ev.target.result; mostrarPreviewImagen('chat-canal', imagenBase64Canal); }; reader.readAsDataURL(file); e.target.value = '';
     });
 
-    document.getElementById('chat-canal-preview-del')?.addEventListener('click', () => {
-      imagenBase64Canal = null;
-      ocultarPreviewImagen('chat-canal');
-    });
-
-    document.getElementById('chat-form-canal')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await enviarMensajeGlobal(canalId);
-    });
-
+    document.getElementById('chat-canal-preview-del')?.addEventListener('click', () => { imagenBase64Canal = null; ocultarPreviewImagen('chat-canal'); });
+    document.getElementById('chat-form-canal')?.addEventListener('submit', async (e) => { e.preventDefault(); await enviarMensajeGlobal(canalId); });
     await refrescarMensajesGlobal(canalId);
   }
 
   async function refrescarMensajesGlobal(canalId) {
     const cont = document.getElementById('chat-mensajes-canal');
     if (!cont) return;
-
     let mensajes;
-    try {
-      mensajes = await listarMensajesDeCanalAPI(canalId);
-    } catch (err) {
-      console.error('[mi-equipo] Error al cargar mensajes del canal:', err);
-      return;
-    }
+    try { mensajes = await listarMensajesDeCanalAPI(canalId); } catch (err) { return; }
 
-    const hash = mensajes
-      .map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`)
-      .join('|');
-
+    const hash = mensajes.map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`).join('|');
     const cambioDeCanal = ultimaCanalRenderizado !== canalId;
     if (!cambioDeCanal && hash === ultimoHashCanal) return;
+    ultimoHashCanal = hash; ultimaCanalRenderizado = canalId;
 
-    ultimoHashCanal = hash;
-    ultimaCanalRenderizado = canalId;
-
-    if (mensajes.length === 0) {
-      cont.innerHTML = `
-        <div class="chat-mensajes__empty">
-          <div class="chat-mensajes__empty-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <p>Aún no hay mensajes.</p>
-          <p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p>
-        </div>`;
-      return;
-    }
+    if (mensajes.length === 0) { cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`; return; }
 
     const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
-
-    let html = '';
-    let diaAnterior = null;
+    let html = ''; let diaAnterior = null;
 
     mensajes.forEach((m, idx) => {
-      const fecha = new Date(m.createdAt);
-      const dia = fecha.toDateString();
-
-      if (dia !== diaAnterior) {
-        html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`;
-        diaAnterior = dia;
-      }
-
+      const fecha = new Date(m.createdAt); const dia = fecha.toDateString();
+      if (dia !== diaAnterior) { html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`; diaAnterior = dia; }
       const esMio = String(m.autorId) === String(user.id);
-
-      const tieneTexto = !!m.texto;
-      const tieneImagen = !!m.imagen;
-      const soloImagen = tieneImagen && !tieneTexto;
+      const tieneTexto = !!m.texto; const tieneImagen = !!m.imagen; const soloImagen = tieneImagen && !tieneTexto;
 
       html += `
         <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
-          ${!m.eliminadoParaTodos ? `
-          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1"/>
-              <circle cx="12" cy="5" r="1"/>
-              <circle cx="12" cy="19" r="1"/>
-            </svg>
-          </button>
-          ` : ''}
+          ${!m.eliminadoParaTodos ? `<button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
-            ${tieneImagen && !m.eliminadoParaTodos ? `
-              <div class="msg__imagen-wrapper" data-ver-imagen-global="${idx}">
-                <img src="${m.imagen}" alt="" loading="lazy" />
-              </div>
-            ` : ''}
-            <div class="msg__meta">
-              <span class="msg__hora">${horaCorta(m.createdAt)}</span>
-            </div>
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen-global="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
+            <div class="msg__meta"><span class="msg__hora">${horaCorta(m.createdAt)}</span></div>
           </div>
-        </div>
-      `;
+        </div>`;
     });
 
     cont.innerHTML = html;
+    cont.querySelectorAll('[data-ver-imagen-global]').forEach(el => { el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenGlobal); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); }); });
 
-    cont.querySelectorAll('[data-ver-imagen-global]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagenGlobal);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
-    });
+    conectarAccionesMensaje(cont, { usuarioId: user.id, obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)), onCopiar: (texto) => navigator.clipboard.writeText(texto), onEliminarParaMi: (id) => eliminarMensajeParaMiAPI(id), onEliminarParaTodos: (id) => eliminarMensajeParaTodosAPI(id), onRefrescar: () => refrescarMensajesGlobal(canalId) });
 
-    conectarAccionesMensaje(cont, {
-      usuarioId: user.id,
-      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
-      onCopiar: (texto) => navigator.clipboard.writeText(texto),
-      onEliminarParaMi: (id) => eliminarMensajeParaMiAPI(id),
-      onEliminarParaTodos: (id) => eliminarMensajeParaTodosAPI(id),
-      onRefrescar: () => refrescarMensajesGlobal(canalId),
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) {
-      cont.scrollTop = cont.scrollHeight;
-    }
-
-    try {
-      await marcarCanalLeidoAPI(canalId);
-    } catch (err) {}
+    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
+    try { await marcarCanalLeidoAPI(canalId); } catch (err) {}
   }
+
   async function enviarMensajeGlobal(canalId) {
     const input = document.getElementById('chat-input-canal');
     if (!input) return;
-
-    const texto = input.value.trim();
-    const imagen = imagenBase64Canal;
-
+    const texto = input.value.trim(); const imagen = imagenBase64Canal;
     if (!texto && !imagen) return;
-
-    input.value = '';
-    imagenBase64Canal = null;
-    ocultarPreviewImagen('chat-canal');
-    input.focus();
-
-    try {
-      await enviarMensajeACanalAPI(canalId, texto || null, imagen || null);
-      await refrescarMensajesGlobal(canalId);
-      await cargarCanales();
-      renderListaCanales();
-    } catch (err) {
-      console.error('[mi-equipo] Error al enviar mensaje:', err);
-      toast(err.message || 'No se pudo enviar el mensaje', 'error');
-    }
+    input.value = ''; imagenBase64Canal = null; ocultarPreviewImagen('chat-canal'); input.focus();
+    try { await enviarMensajeACanalAPI(canalId, texto || null, imagen || null); await refrescarMensajesGlobal(canalId); await cargarCanales(); renderListaCanales(); } catch (err) { toast(err.message || 'No se pudo enviar el mensaje', 'error'); }
   }
 
   function renderEmptyPanelCanal() {
     if (!panelCanalEl) return;
-    panelCanalEl.innerHTML = `
-      <div class="chat-empty">
-        <div class="chat-empty__icon">
-          <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
-        <h3 class="chat-empty__titulo">Chats de equipo</h3>
-        <p class="chat-empty__text">Elegí un equipo de la lista para ver su chat.</p>
-      </div>`;
+    panelCanalEl.innerHTML = `<div class="chat-empty"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3 class="chat-empty__titulo">Chats de equipo</h3><p class="chat-empty__text">Elegí un equipo de la lista para ver su chat.</p></div>`;
   }
 
   const ICONOS_GRUPO = [
-    'assets/icons/balon-de-futbol (2).png',
-    'assets/icons/balocensto.svg',
-    'assets/icons/pelota-de-tenis.png',
-    'assets/icons/voleibol.svg',
-    'assets/icons/raqueta-de-padel.png',
-    'assets/icons/golf.png',
-    'assets/icons/beisbol.png',
-    'assets/icons/disco.png',
-    'assets/icons/guantes-de-boxeo.png',
-    'assets/icons/volante.png',
-    'assets/icons/rugby.png',
-    'assets/icons/bicicleta.svg',
-    'assets/icons/natacion.svg',
-    'assets/icons/corriendo.png',
-    'assets/icons/raqueta-de-tenis-de-mesa.png',
-    'assets/icons/tenis-de-squash.png',
-    'assets/icons/balonmano.png',
-    'assets/icons/deporte.svg',
-    'assets/icons/tabla-de-surf.png',
-    'assets/icons/escalada.png',
-    'assets/icons/escudo-de-seguridad.png',
-    'assets/icons/redondo (20).png',
-    'assets/icons/redondo (1).png',
-    'assets/icons/redondo (2).png',
-    'assets/icons/redondo (3).png',
-    'assets/icons/redondo (4).png',
-    'assets/icons/redondo (5).png',
-    'assets/icons/redondo (6).png',
-    'assets/icons/redondo (7).png',
-    'assets/icons/redondo (8).png',
-    'assets/icons/redondo (9).png',
-    'assets/icons/redondo (10).png',
-    'assets/icons/redondo (11).png',
-    'assets/icons/redondo (12).png',
-    'assets/icons/redondo (13).png',
-    'assets/icons/redondo (14).png',
-    'assets/icons/redondo (15).png',
-    'assets/icons/redondo (16).png',
-    'assets/icons/redondo (17).png',
-    'assets/icons/redondo (18).png',
-    'assets/icons/redondo (19).png',
-    'assets/icons/mundo.png',
-    'assets/icons/mundo (1).png',
-    'assets/icons/mundo (2).png',
-    'assets/icons/mundo (3).png',
-    'assets/icons/mundo (4).png',
-    'assets/icons/mundo (5).png',
-    'assets/icons/mundo (6).png',
-    'assets/icons/mundo (7).png',
-    'assets/icons/mundo (8).png',
-    'assets/icons/mundo (9).png',
-    'assets/icons/mundo (10).png',
-    'assets/icons/mundo (11).png',
-    'assets/icons/mundo (12).png'
+    'assets/icons/balon-de-futbol (2).png', 'assets/icons/balocensto.svg', 'assets/icons/pelota-de-tenis.png', 'assets/icons/voleibol.svg', 'assets/icons/raqueta-de-padel.png', 'assets/icons/golf.png', 'assets/icons/beisbol.png', 'assets/icons/disco.png', 'assets/icons/guantes-de-boxeo.png', 'assets/icons/volante.png', 'assets/icons/rugby.png', 'assets/icons/bicicleta.svg', 'assets/icons/natacion.svg', 'assets/icons/corriendo.png', 'assets/icons/raqueta-de-tenis-de-mesa.png', 'assets/icons/tenis-de-squash.png', 'assets/icons/balonmano.png', 'assets/icons/deporte.svg', 'assets/icons/tabla-de-surf.png', 'assets/icons/escalada.png', 'assets/icons/escudo-de-seguridad.png', 'assets/icons/redondo (20).png', 'assets/icons/redondo (1).png', 'assets/icons/redondo (2).png', 'assets/icons/redondo (3).png', 'assets/icons/redondo (4).png', 'assets/icons/redondo (5).png', 'assets/icons/redondo (6).png', 'assets/icons/redondo (7).png', 'assets/icons/redondo (8).png', 'assets/icons/redondo (9).png', 'assets/icons/redondo (10).png', 'assets/icons/redondo (11).png', 'assets/icons/redondo (12).png', 'assets/icons/redondo (13).png', 'assets/icons/redondo (14).png', 'assets/icons/redondo (15).png', 'assets/icons/redondo (16).png', 'assets/icons/redondo (17).png', 'assets/icons/redondo (18).png', 'assets/icons/redondo (19).png', 'assets/icons/mundo.png', 'assets/icons/mundo (1).png', 'assets/icons/mundo (2).png', 'assets/icons/mundo (3).png', 'assets/icons/mundo (4).png', 'assets/icons/mundo (5).png', 'assets/icons/mundo (6).png', 'assets/icons/mundo (7).png', 'assets/icons/mundo (8).png', 'assets/icons/mundo (9).png', 'assets/icons/mundo (10).png', 'assets/icons/mundo (11).png', 'assets/icons/mundo (12).png'
   ];
 
   let tipoGrupoSeleccionado = 'equipo';
@@ -2083,16 +1361,12 @@ async function renderPanelCanalGlobal(canalId) {
 
     tipoGrupoSeleccionado = tipo;
 
-    document.getElementById('crear-modal-titulo').textContent =
-      tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
-
+    document.getElementById('crear-modal-titulo').textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
     const wrapper = document.getElementById('crear-tipo-wrapper');
     const label = document.getElementById('crear-tipo-label');
     if (wrapper && label) {
       wrapper.classList.remove('hidden');
-      label.innerHTML = tipo === 'comunidad'
-        ? `<span style="font-size:20px">${SVG.globe}</span> Comunidad — grupo abierto para compartir y charlar`
-        : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo — para competir con otros`;
+      label.innerHTML = tipo === 'comunidad' ? `<span style="font-size:20px">${SVG.globe}</span> Comunidad — grupo abierto para compartir y charlar` : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo — para competir con otros`;
     }
 
     document.getElementById('com-nombre').value = '';
@@ -2100,87 +1374,141 @@ async function renderPanelCanalGlobal(canalId) {
     document.getElementById('com-descripcion').value = '';
 
     const selDep = document.getElementById('com-deporte');
-    selDep.innerHTML = '<option value="">Selecciona un deporte...</option>' +
-      deportes.map(d => `<option value="${d}">${d}</option>`).join('');
+    selDep.innerHTML = '<option value="">Selecciona un deporte...</option>' + deportes.map(d => `<option value="${d}">${d}</option>`).join('');
 
     const contIconos = document.getElementById('com-iconos');
-    contIconos.innerHTML = ICONOS_GRUPO.map((ic, i) => `
-      <button type="button"
-              class="posicion-chip ${i === 0 ? 'active' : ''}"
-              data-com-icono="${ic}"
-              style="display:inline-flex; align-items:center; justify-content:center">
-        ${renderIconoHtml(ic, 20)}
-      </button>
-    `).join('');
+    contIconos.innerHTML = ICONOS_GRUPO.map((ic, i) => `<button type="button" class="posicion-chip ${i === 0 ? 'active' : ''}" data-com-icono="${ic}" style="display:inline-flex; align-items:center; justify-content:center">${renderIconoHtml(ic, 20)}</button>`).join('');
 
     let iconoSel = ICONOS_GRUPO[0];
     contIconos.querySelectorAll('[data-com-icono]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        contIconos.querySelectorAll('[data-com-icono]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        iconoSel = btn.dataset.comIcono;
-      });
+      btn.addEventListener('click', () => { contIconos.querySelectorAll('[data-com-icono]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); iconoSel = btn.dataset.comIcono; });
     });
 
     let tipoAccesoSel = 'publico';
     const tipoOps = modal.querySelectorAll('[data-tipo-com]');
     tipoOps.forEach(op => {
       op.classList.toggle('active', op.dataset.tipoCom === 'publico');
-      op.onclick = () => {
-        tipoOps.forEach(o => o.classList.remove('active'));
-        op.classList.add('active');
-        tipoAccesoSel = op.dataset.tipoCom;
-      };
+      op.onclick = () => { tipoOps.forEach(o => o.classList.remove('active')); op.classList.add('active'); tipoAccesoSel = op.dataset.tipoCom; };
     });
 
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
-    const btnGuardar = document.getElementById('btn-guardar-comunidad');
-    btnGuardar.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
-    btnGuardar.onclick = async () => {
-      const nombre = document.getElementById('com-nombre').value.trim();
-      const deporte = document.getElementById('com-deporte').value;
-      const ciudad = document.getElementById('com-ciudad').value.trim();
-      const descripcion = document.getElementById('com-descripcion').value.trim();
+    // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
+    const user = getSesion();
+    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
 
-      if (!nombre) return toast('Ingresa un nombre', 'error');
-      if (!deporte) return toast('Selecciona un deporte', 'error');
+    // Si el usuario es Premium, mostrar el bloque
+    if (user?.esPremium) {
+      wrapperPremium.classList.remove('hidden');
+      wrapperPremium.hidden = false;
+      wrapperPremium.style.display = 'block';
+          
+      // Resetear campos
+      document.getElementById('com-card-color').value = '#E8836A';
+      document.getElementById('com-card-foto-preview-wrapper').classList.add('hidden');
+      document.getElementById('com-card-foto-file').value = '';
+      
+      const previewIcono = document.getElementById('com-icono-preview-wrapper');
+      previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      
+      // File input para la foto del banner
+      let cardFotoBase64 = null;
+      document.getElementById('com-card-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          cardFotoBase64 = ev.target.result;
+          document.getElementById('com-card-foto-preview').src = cardFotoBase64;
+          document.getElementById('com-card-foto-preview-wrapper').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
 
-      btnGuardar.disabled = true;
-      btnGuardar.textContent = 'Creando...';
+      document.getElementById('com-card-foto-quitar').onclick = () => {
+        cardFotoBase64 = null;
+        document.getElementById('com-card-foto-preview-wrapper').classList.add('hidden');
+        document.getElementById('com-card-foto-file').value = '';
+      };
 
-      try {
-        await crearGrupoAPI({
-          tipo: tipoGrupoSeleccionado,
-          nombre,
-          escudo: iconoSel,
-          deporte,
-          ciudad: ciudad || null,
-          descripcion: descripcion || null,
-          tipoAcceso: tipoAccesoSel,
-        });
+      // File input para el ícono personalizado
+      let iconoFileBase64 = null;
+      document.getElementById('com-icono-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          iconoFileBase64 = ev.target.result;
+          previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`;
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
 
-        cerrarModal('modal-crear-comunidad');
-        toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} "${nombre}" creado!`, 'success');
+      document.getElementById('com-icono-quitar').onclick = () => {
+        iconoFileBase64 = null;
+        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+        document.getElementById('com-icono-file').value = '';
+      };
 
-        cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
-        await recargarPaneles();
-      } catch (err) {
-        console.error('[mi-equipo] Error al crear grupo:', err);
-        toast(err.message || 'No se pudo crear el grupo', 'error');
-      } finally {
-        btnGuardar.disabled = false;
-        btnGuardar.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo';
-      }
-    };
+      // Guardar en el onclick del botón
+      document.getElementById('btn-guardar-comunidad').onclick = async () => {
+        const nombre = document.getElementById('com-nombre').value.trim();
+        const deporte = document.getElementById('com-deporte').value;
+        const ciudad = document.getElementById('com-ciudad').value.trim();
+        const descripcion = document.getElementById('com-descripcion').value.trim();
 
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-crear-comunidad');
-    });
-    modal.onclick = (e) => {
-      if (e.target === modal) cerrarModal('modal-crear-comunidad');
-    };
+        if (!nombre) return toast('Ingresa un nombre', 'error');
+        if (!deporte) return toast('Selecciona un deporte', 'error');
 
+        const btn = document.getElementById('btn-guardar-comunidad');
+        btn.disabled = true; btn.textContent = 'Creando...';
+
+        try {
+          await crearGrupoAPI({
+            tipo: tipoGrupoSeleccionado, nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel,
+            cardColor: document.getElementById('com-card-color').value,
+            cardFoto: cardFotoBase64,
+            iconoPersonalizado: iconoFileBase64
+          });
+
+          cerrarModal('modal-crear-comunidad');
+          toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} creado!`, 'success');
+          cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
+          await recargarPaneles();
+        } catch (err) { toast(err.message || 'Error', 'error'); }
+        finally { btn.disabled = false; btn.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo'; }
+      };
+
+    } else {
+      wrapperPremium.classList.add('hidden');
+      wrapperPremium.hidden = true;
+      wrapperPremium.style.display = 'none';
+      
+      document.getElementById('btn-guardar-comunidad').onclick = async () => {
+        const nombre = document.getElementById('com-nombre').value.trim();
+        const deporte = document.getElementById('com-deporte').value;
+        const ciudad = document.getElementById('com-ciudad').value.trim();
+        const descripcion = document.getElementById('com-descripcion').value.trim();
+
+        if (!nombre) return toast('Ingresa un nombre', 'error');
+        if (!deporte) return toast('Selecciona un deporte', 'error');
+
+        const btn = document.getElementById('btn-guardar-comunidad');
+        btn.disabled = true; btn.textContent = 'Creando...';
+
+        try {
+          await crearGrupoAPI({ tipo: tipoGrupoSeleccionado, nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel });
+          cerrarModal('modal-crear-comunidad');
+          toast(`¡${tipo === 'comunidad' ? 'Comunidad' : 'Equipo'} creado!`, 'success');
+          cambiarTab(tipo === 'comunidad' ? 'comunidad' : 'equipo');
+          await recargarPaneles();
+        } catch (err) { toast(err.message || 'Error', 'error'); }
+        finally { btn.disabled = false; btn.textContent = tipo === 'comunidad' ? 'Crear comunidad' : 'Crear equipo'; }
+      };
+    }
+
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-crear-comunidad'); });
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-crear-comunidad'); };
     abrirModal('modal-crear-comunidad');
   }
 
@@ -2188,16 +1516,12 @@ async function renderPanelCanalGlobal(canalId) {
     const modal = document.getElementById('modal-crear-comunidad');
     if (!modal) return;
 
-    document.getElementById('crear-modal-titulo').textContent =
-      grupo.tipo === 'comunidad' ? 'Editar comunidad' : 'Editar equipo';
-
+    document.getElementById('crear-modal-titulo').textContent = grupo.tipo === 'comunidad' ? 'Editar comunidad' : 'Editar equipo';
     const wrapper = document.getElementById('crear-tipo-wrapper');
     const label = document.getElementById('crear-tipo-label');
     if (wrapper && label) {
       wrapper.classList.remove('hidden');
-      label.innerHTML = grupo.tipo === 'comunidad'
-        ? `<span style="font-size:20px">${SVG.globe}</span> Comunidad`
-        : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo`;
+      label.innerHTML = grupo.tipo === 'comunidad' ? `<span style="font-size:20px">${SVG.globe}</span> Comunidad` : `<span style="font-size:20px">${renderIconoHtml(RUTA_ESCUDO, 20)}</span> Equipo`;
     }
 
     document.getElementById('com-nombre').value = grupo.nombre;
@@ -2205,50 +1529,73 @@ async function renderPanelCanalGlobal(canalId) {
     document.getElementById('com-descripcion').value = grupo.descripcion || '';
 
     const selDep = document.getElementById('com-deporte');
-    selDep.innerHTML = deportes.map(d =>
-      `<option value="${d}" ${d === grupo.deporte ? 'selected' : ''}>${d}</option>`
-    ).join('');
+    selDep.innerHTML = deportes.map(d => `<option value="${d}" ${d === grupo.deporte ? 'selected' : ''}>${d}</option>`).join('');
 
     const contIconos = document.getElementById('com-iconos');
-    contIconos.innerHTML = ICONOS_GRUPO.map(ic => `
-      <button type="button"
-              class="posicion-chip ${ic === grupo.escudo ? 'active' : ''}"
-              data-com-icono="${ic}"
-              style="display:inline-flex; align-items:center; justify-content:center">
-        ${renderIconoHtml(ic, 20)}
-      </button>
-    `).join('');
+    contIconos.innerHTML = ICONOS_GRUPO.map(ic => `<button type="button" class="posicion-chip ${ic === grupo.escudo ? 'active' : ''}" data-com-icono="${ic}" style="display:inline-flex; align-items:center; justify-content:center">${renderIconoHtml(ic, 20)}</button>`).join('');
 
     let iconoSel = grupo.escudo;
     contIconos.querySelectorAll('[data-com-icono]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        contIconos.querySelectorAll('[data-com-icono]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        iconoSel = btn.dataset.comIcono;
-      });
+      btn.addEventListener('click', () => { contIconos.querySelectorAll('[data-com-icono]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); iconoSel = btn.dataset.comIcono; });
     });
 
     let tipoAccesoSel = grupo.tipoAcceso || 'publico';
     const tipoOps = modal.querySelectorAll('[data-tipo-com]');
     tipoOps.forEach(op => {
       op.classList.toggle('active', op.dataset.tipoCom === tipoAccesoSel);
-      op.onclick = () => {
-        tipoOps.forEach(o => o.classList.remove('active'));
-        op.classList.add('active');
-        tipoAccesoSel = op.dataset.tipoCom;
-      };
+      op.onclick = () => { tipoOps.forEach(o => o.classList.remove('active')); op.classList.add('active'); tipoAccesoSel = op.dataset.tipoCom; };
     });
 
     const wrapperPriv = document.getElementById('editar-stats-privadas-wrapper');
     const chkPriv = document.getElementById('edit-grupo-stats-privadas');
     if (wrapperPriv && chkPriv) {
-      if (grupo.tipo === 'equipo') {
-        wrapperPriv.classList.remove('hidden');
-        chkPriv.checked = !!grupo.statsPrivadas;
-      } else {
-        wrapperPriv.classList.add('hidden');
-        chkPriv.checked = false;
-      }
+      if (grupo.tipo === 'equipo') { wrapperPriv.classList.remove('hidden'); chkPriv.checked = !!grupo.statsPrivadas; }
+      else { wrapperPriv.classList.add('hidden'); chkPriv.checked = false; }
+    }
+
+    // ⚡ LÓGICA DE PERSONALIZACIÓN (EDIT)
+    const user = getSesion();
+    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
+    let cardFotoBase64 = grupo.cardFoto || null;
+    let iconoFileBase64 = grupo.iconoPersonalizado || null;
+
+    if (user.esPremium) {
+      wrapperPremium.classList.remove('hidden');
+
+      document.getElementById('com-card-color').value = grupo.cardColor || '#E8836A';
+      
+      const previewFoto = document.getElementById('com-card-foto-preview');
+      const wrapperFoto = document.getElementById('com-card-foto-preview-wrapper');
+      if (cardFotoBase64) { previewFoto.src = cardFotoBase64; wrapperFoto.classList.remove('hidden'); } else { wrapperFoto.classList.add('hidden'); }
+
+      const previewIcono = document.getElementById('com-icono-preview-wrapper');
+      if (iconoFileBase64) { previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; }
+      else { previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; }
+
+      document.getElementById('com-card-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { cardFotoBase64 = ev.target.result; previewFoto.src = cardFotoBase64; wrapperFoto.classList.remove('hidden'); };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('com-card-foto-quitar').onclick = () => { cardFotoBase64 = null; wrapperFoto.classList.add('hidden'); document.getElementById('com-card-foto-file').value = ''; };
+
+      document.getElementById('com-icono-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { iconoFileBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; document.getElementById('com-icono-file').value = ''; };
+
+    } else {
+      wrapperPremium.classList.add('hidden');
+      cardFotoBase64 = grupo.cardFoto || null;
+      iconoFileBase64 = grupo.iconoPersonalizado || null;
     }
 
     const btnGuardar = document.getElementById('btn-guardar-comunidad');
@@ -2263,58 +1610,38 @@ async function renderPanelCanalGlobal(canalId) {
       if (!nombre) return toast('Ingresa un nombre', 'error');
       if (!deporte) return toast('Selecciona un deporte', 'error');
 
-      btnGuardar.disabled = true;
-      btnGuardar.textContent = 'Guardando...';
+      btnGuardar.disabled = true; btnGuardar.textContent = 'Guardando...';
 
       try {
-        await editarGrupoAPI(grupo.id, {
-          nombre,
-          escudo: iconoSel,
-          deporte,
-          ciudad: ciudad || null,
-          descripcion: descripcion || null,
-          tipoAcceso: tipoAccesoSel,
-          statsPrivadas: statsPrivadasNueva,
-        });
+        const payload = { nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel, statsPrivadas: statsPrivadasNueva };
+        
+        if (user.esPremium) {
+          payload.cardColor = document.getElementById('com-card-color').value;
+          payload.cardFoto = cardFotoBase64;
+          payload.iconoPersonalizado = iconoFileBase64;
+        }
 
+        await editarGrupoAPI(grupo.id, payload);
         cerrarModal('modal-crear-comunidad');
         toast('Grupo actualizado', 'success');
         await recargarPaneles();
-      } catch (err) {
-        console.error('[mi-equipo] Error al editar:', err);
-        toast(err.message || 'No se pudo actualizar el grupo', 'error');
-      } finally {
-        btnGuardar.disabled = false;
-        btnGuardar.textContent = 'Guardar cambios';
-      }
+      } catch (err) { toast(err.message || 'Error', 'error'); }
+      finally { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar cambios'; }
     };
 
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-crear-comunidad');
-    });
-    modal.onclick = (e) => {
-      if (e.target === modal) cerrarModal('modal-crear-comunidad');
-    };
-
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-crear-comunidad'); });
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-crear-comunidad'); };
     abrirModal('modal-crear-comunidad');
   }
 
   let grupoEnGestion = null;
 
   async function abrirModalGestionar(grupo) {
-    grupoEnGestion = grupo;
-    await renderGestionMiembros(grupo, 'miembros');
-
+    grupoEnGestion = grupo; await renderGestionMiembros(grupo, 'miembros');
     const modal = document.getElementById('modal-gestionar-grupo');
     if (!modal) return;
-
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-gestionar-grupo');
-    });
-    modal.onclick = (e) => {
-      if (e.target === modal) cerrarModal('modal-gestionar-grupo');
-    };
-
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-gestionar-grupo'); });
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-gestionar-grupo'); };
     abrirModal('modal-gestionar-grupo');
   }
 
@@ -2322,10 +1649,7 @@ async function renderPanelCanalGlobal(canalId) {
     const cont = document.getElementById('lista-gestion-grupo');
     if (!cont) return;
 
-    document.querySelectorAll('[data-tab-gestion]').forEach(el => {
-      el.classList.toggle('active', el.dataset.tabGestion === tab);
-    });
-
+    document.querySelectorAll('[data-tab-gestion]').forEach(el => el.classList.toggle('active', el.dataset.tabGestion === tab));
     cont.innerHTML = '<p class="text-sm text-muted text-center">Cargando...</p>';
 
     try {
@@ -2338,305 +1662,105 @@ async function renderPanelCanalGlobal(canalId) {
 
       const lista = tab === 'miembros' ? miembros : solicitudes;
 
-      if (lista.length === 0) {
-        cont.innerHTML = `
-          <div class="empty-state--sm">
-            <div class="empty-state__icon">${SVG.inbox}</div>
-            <p>Sin ${tab === 'miembros' ? 'miembros' : 'solicitudes'}</p>
-          </div>`;
-        return;
-      }
+      if (lista.length === 0) { cont.innerHTML = `<div class="empty-state--sm"><div class="empty-state__icon">${SVG.inbox}</div><p>Sin ${tab === 'miembros' ? 'miembros' : 'solicitudes'}</p></div>`; return; }
 
       if (tab === 'miembros') {
         const soyCapitan = grupoCompleto.esCapitan;
-
         cont.innerHTML = miembros.map(m => {
-          const esElCapitan = m.rol === 'capitan';
-          const esSubCapitan = m.rol === 'admin';
-          const puedoHacerAlgo = soyCapitan && !esElCapitan;
-
-          return `
-            <div class="solicitud-item">
-              <img src="${m.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" />
-              <div class="solicitud-item__info">
-                <div class="solicitud-item__nombre">
-                  ${m.nombre}
-                  ${esElCapitan ? `<span class="badge badge--primary" style="margin-left:6px">${SVG.crown}</span>` : ''}
-                  ${esSubCapitan && !esElCapitan ? `<span class="badge badge--warning" style="margin-left:6px">${SVG.crown} Sub-capitán</span>` : ''}
-                </div>
-                <div class="solicitud-item__meta">${m.posicion || 'Sin posición'}</div>
-              </div>
-              <div class="solicitud-item__actions">
-                ${puedoHacerAlgo && !esSubCapitan ? `
-                  <button class="btn btn--ghost btn--sm" data-nombrar-admin="${m.id}" title="Hacer sub-capitán">${SVG.crown}</button>
-                ` : ''}
-                ${puedoHacerAlgo && esSubCapitan ? `
-                  <button class="btn btn--ghost btn--sm" data-quitar-admin="${m.id}" title="Quitar sub-capitán">${SVG.userMinus}</button>
-                ` : ''}
-                ${puedoHacerAlgo ? `
-                  <button class="btn btn--ghost btn--sm" data-expulsar-miembro="${m.id}" style="color:var(--color-danger)" title="Expulsar">${SVG.trash}</button>
-                ` : ''}
-              </div>
-            </div>
-          `;
+          const esElCapitan = m.rol === 'capitan'; const esSubCapitan = m.rol === 'admin'; const puedoHacerAlgo = soyCapitan && !esElCapitan;
+          return `<div class="solicitud-item"><img src="${m.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" /><div class="solicitud-item__info"><div class="solicitud-item__nombre">${m.nombre} ${esElCapitan ? `<span class="badge badge--primary" style="margin-left:6px">${SVG.crown}</span>` : ''} ${esSubCapitan && !esElCapitan ? `<span class="badge badge--warning" style="margin-left:6px">${SVG.crown} Sub-capitán</span>` : ''}</div><div class="solicitud-item__meta">${m.posicion || 'Sin posición'}</div></div><div class="solicitud-item__actions">${puedoHacerAlgo && !esSubCapitan ? `<button class="btn btn--ghost btn--sm" data-nombrar-admin="${m.id}" title="Hacer sub-capitán">${SVG.crown}</button>` : ''}${puedoHacerAlgo && esSubCapitan ? `<button class="btn btn--ghost btn--sm" data-quitar-admin="${m.id}" title="Quitar sub-capitán">${SVG.userMinus}</button>` : ''}${puedoHacerAlgo ? `<button class="btn btn--ghost btn--sm" data-expulsar-miembro="${m.id}" style="color:var(--color-danger)" title="Expulsar">${SVG.trash}</button>` : ''}</div></div>`;
         }).join('');
 
-        cont.querySelectorAll('[data-expulsar-miembro]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const uid = btn.dataset.expulsarMiembro;
-            if (!confirm('¿Expulsar a este miembro?')) return;
-            try {
-              await expulsarMiembroAPI(grupo.id, uid);
-              toast('Miembro expulsado', 'info');
-              await renderGestionMiembros(grupo, tab);
-              await recargarPaneles();
-            } catch (err) {
-              toast(err.message || 'Error al expulsar', 'error');
-            }
-          });
-        });
-
-        cont.querySelectorAll('[data-nombrar-admin]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const uid = btn.dataset.nombrarAdmin;
-            try {
-              await cambiarRolMiembroAPI(grupo.id, uid, 'admin');
-              toast('Ahora es sub-capitán', 'success');
-              await renderGestionMiembros(grupo, tab);
-              await recargarPaneles();
-            } catch (err) {
-              toast(err.message || 'Error al nombrar sub-capitán', 'error');
-            }
-          });
-        });
-
-        cont.querySelectorAll('[data-quitar-admin]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const uid = btn.dataset.quitarAdmin;
-            try {
-              await cambiarRolMiembroAPI(grupo.id, uid, 'miembro');
-              toast('Sub-capitán removido', 'info');
-              await renderGestionMiembros(grupo, tab);
-              await recargarPaneles();
-            } catch (err) {
-              toast(err.message || 'Error al quitar sub-capitán', 'error');
-            }
-          });
-        });
+        cont.querySelectorAll('[data-expulsar-miembro]').forEach(btn => { btn.addEventListener('click', async () => { if (!confirm('¿Expulsar a este miembro?')) return; try { await expulsarMiembroAPI(grupo.id, btn.dataset.expulsarMiembro); toast('Miembro expulsado', 'info'); await renderGestionMiembros(grupo, tab); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); } }); });
+        cont.querySelectorAll('[data-nombrar-admin]').forEach(btn => { btn.addEventListener('click', async () => { try { await cambiarRolMiembroAPI(grupo.id, btn.dataset.nombrarAdmin, 'admin'); toast('Ahora es sub-capitán', 'success'); await renderGestionMiembros(grupo, tab); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); } }); });
+        cont.querySelectorAll('[data-quitar-admin]').forEach(btn => { btn.addEventListener('click', async () => { try { await cambiarRolMiembroAPI(grupo.id, btn.dataset.quitarAdmin, 'miembro'); toast('Sub-capitán removido', 'info'); await renderGestionMiembros(grupo, tab); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); } }); });
 
       } else {
-        cont.innerHTML = solicitudes.map(s => `
-          <div class="solicitud-item">
-            <img src="${s.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" />
-            <div class="solicitud-item__info">
-              <div class="solicitud-item__nombre">${s.nombre}</div>
-              <div class="solicitud-item__meta">
-                Solicitó unirse · ${new Date(s.fecha).toLocaleDateString('es-CL')}
-              </div>
-            </div>
-            <div class="solicitud-item__actions">
-              <button class="btn btn--primary btn--sm" data-aceptar-sol="${s.id_usuario ?? s.usuario_id}">Aceptar</button>
-              <button class="btn btn--ghost btn--sm" data-rechazar-sol="${s.id_usuario ?? s.usuario_id}">✕</button>
-            </div>
-          </div>
-        `).join('');
-
-        cont.querySelectorAll('[data-aceptar-sol]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const uid = btn.dataset.aceptarSol;
-            try {
-              await gestionarSolicitudAPI(grupo.id, uid, 'aprobar');
-              toast('Solicitud aceptada', 'success');
-              await renderGestionMiembros(grupo, tab);
-              await recargarPaneles();
-            } catch (err) {
-              toast(err.message || 'Error al aceptar', 'error');
-            }
-          });
-        });
-
-        cont.querySelectorAll('[data-rechazar-sol]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const uid = btn.dataset.rechazarSol;
-            try {
-              await gestionarSolicitudAPI(grupo.id, uid, 'rechazar');
-              toast('Solicitud rechazada', 'info');
-              await renderGestionMiembros(grupo, tab);
-              await recargarPaneles();
-            } catch (err) {
-              toast(err.message || 'Error al rechazar', 'error');
-            }
-          });
-        });
+        cont.innerHTML = solicitudes.map(s => `<div class="solicitud-item"><img src="${s.avatar || AVATAR_FALLBACK}" class="avatar avatar--md" alt="" /><div class="solicitud-item__info"><div class="solicitud-item__nombre">${s.nombre}</div><div class="solicitud-item__meta">Solicitó unirse · ${new Date(s.fecha).toLocaleDateString('es-CL')}</div></div><div class="solicitud-item__actions"><button class="btn btn--primary btn--sm" data-aceptar-sol="${s.id_usuario ?? s.usuario_id}">Aceptar</button><button class="btn btn--ghost btn--sm" data-rechazar-sol="${s.id_usuario ?? s.usuario_id}">✕</button></div></div>`).join('');
+        cont.querySelectorAll('[data-aceptar-sol]').forEach(btn => { btn.addEventListener('click', async () => { try { await gestionarSolicitudAPI(grupo.id, btn.dataset.aceptarSol, 'aprobar'); toast('Solicitud aceptada', 'success'); await renderGestionMiembros(grupo, tab); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); } }); });
+        cont.querySelectorAll('[data-rechazar-sol]').forEach(btn => { btn.addEventListener('click', async () => { try { await gestionarSolicitudAPI(grupo.id, btn.dataset.rechazarSol, 'rechazar'); toast('Solicitud rechazada', 'info'); await renderGestionMiembros(grupo, tab); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); } }); });
       }
-    } catch (err) {
-      console.error('[mi-equipo] Error al cargar gestión:', err);
-      cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudo cargar la lista</p>`;
-    }
+    } catch (err) { cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudo cargar la lista</p>`; }
   }
 
-  document.querySelectorAll('[data-tab-gestion]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (grupoEnGestion) renderGestionMiembros(grupoEnGestion, tab.dataset.tabGestion);
-    });
-  });
+  document.querySelectorAll('[data-tab-gestion]').forEach(tab => { tab.addEventListener('click', () => { if (grupoEnGestion) renderGestionMiembros(grupoEnGestion, tab.dataset.tabGestion); }); });
 
   function abrirModalStats(grupo) {
     const modal = document.getElementById('modal-grupo-stats');
     if (!modal) return;
-
-    document.getElementById('grupo-stats-titulo').innerHTML =
-      `Stats de ${renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 20)} ${grupo.nombre}`;
-
+    document.getElementById('grupo-stats-titulo').innerHTML = `Stats de ${renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 20)} ${grupo.nombre}`;
     document.getElementById('gs-victorias').value = grupo.stats?.victorias ?? 0;
     document.getElementById('gs-empates').value   = grupo.stats?.empates   ?? 0;
     document.getElementById('gs-derrotas').value  = grupo.stats?.derrotas  ?? 0;
-
-    const victoriasPriv = !!grupo.statsVictoriasPrivadas;
-    const empatesPriv   = !!grupo.statsEmpatesPrivadas;
-    const derrotasPriv  = !!grupo.statsDerrotasPrivadas;
-
-    document.getElementById('gs-victorias-privada').checked = victoriasPriv;
-    document.getElementById('gs-empates-privada').checked   = empatesPriv;
-    document.getElementById('gs-derrotas-privada').checked  = derrotasPriv;
+    document.getElementById('gs-victorias-privada').checked = !!grupo.statsVictoriasPrivadas;
+    document.getElementById('gs-empates-privada').checked   = !!grupo.statsEmpatesPrivadas;
+    document.getElementById('gs-derrotas-privada').checked  = !!grupo.statsDerrotasPrivadas;
 
     document.getElementById('btn-guardar-grupo-stats').onclick = async () => {
-      const datos = {
-        victorias: Math.max(0, Number(document.getElementById('gs-victorias').value) || 0),
-        empates:   Math.max(0, Number(document.getElementById('gs-empates').value) || 0),
-        derrotas:  Math.max(0, Number(document.getElementById('gs-derrotas').value) || 0),
-        victoriasPrivadas: document.getElementById('gs-victorias-privada').checked,
-        empatesPrivadas:   document.getElementById('gs-empates-privada').checked,
-        derrotasPrivadas:  document.getElementById('gs-derrotas-privada').checked,
-      };
-
-      try {
-        await editarStatsAPI(grupo.id, datos);
-        cerrarModal('modal-grupo-stats');
-        toast('Stats actualizadas', 'success');
-        await recargarPaneles();
-      } catch (err) {
-        toast(err.message || 'Error al guardar stats', 'error');
-      }
+      const datos = { victorias: Math.max(0, Number(document.getElementById('gs-victorias').value) || 0), empates: Math.max(0, Number(document.getElementById('gs-empates').value) || 0), derrotas: Math.max(0, Number(document.getElementById('gs-derrotas').value) || 0), victoriasPrivadas: document.getElementById('gs-victorias-privada').checked, empatesPrivadas: document.getElementById('gs-empates-privada').checked, derrotasPrivadas: document.getElementById('gs-derrotas-privada').checked };
+      try { await editarStatsAPI(grupo.id, datos); cerrarModal('modal-grupo-stats'); toast('Stats actualizadas', 'success'); await recargarPaneles(); } catch (err) { toast(err.message || 'Error', 'error'); }
     };
 
-    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
-      btn.onclick = () => cerrarModal('modal-grupo-stats');
-    });
-    modal.onclick = (e) => {
-      if (e.target === modal) cerrarModal('modal-grupo-stats');
-    };
-
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-grupo-stats'); });
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-grupo-stats'); };
     abrirModal('modal-grupo-stats');
   }
 
   async function confirmarEliminarGrupo(grupo, esComunidad) {
     if (!confirm(`¿Eliminar "${grupo.nombre}"? Esta acción no se puede deshacer.`)) return;
-
     try {
-      await eliminarGrupoAPI(grupo.id);
-      toast('Grupo eliminado', 'info');
-
+      await eliminarGrupoAPI(grupo.id); toast('Grupo eliminado', 'info');
       if (String(grupoAbiertoEquipo) === String(grupo.id)) grupoAbiertoEquipo = null;
       if (String(grupoAbiertoComunidad) === String(grupo.id)) grupoAbiertoComunidad = null;
-
       await recargarPaneles();
-    } catch (err) {
-      toast(err.message || 'Error al eliminar', 'error');
-    }
+    } catch (err) { toast(err.message || 'Error', 'error'); }
   }
 
   async function confirmarSalirGrupo(grupo, esComunidad) {
     if (!confirm(`¿Salir de "${grupo.nombre}"?`)) return;
-
     try {
-      await salirDeGrupoAPI(grupo.id);
-      toast('Saliste del grupo', 'info');
-
+      await salirDeGrupoAPI(grupo.id); toast('Saliste del grupo', 'info');
       if (String(grupoAbiertoEquipo) === String(grupo.id)) grupoAbiertoEquipo = null;
       if (String(grupoAbiertoComunidad) === String(grupo.id)) grupoAbiertoComunidad = null;
-
       await recargarPaneles();
-
       if (grupoAbiertoBuscar) {
         try {
           const { data: lista } = await listarGrupos({ limit: 50 });
           listaBusquedaActual = lista;
-
-          const grupoActualizado = listaBusquedaActual.find(
-            g => String(g.id) === String(grupoAbiertoBuscar)
-          );
-
-          if (grupoActualizado) {
-            await renderDetalleGrupo(grupoActualizado, grupoActualizado.tipo === 'comunidad', () => {
-              grupoAbiertoBuscar = null;
-              renderPanelBuscar();
-            }, true);
-          } else {
-            grupoAbiertoBuscar = null;
-            renderPanelBuscar();
-          }
-        } catch (err) {
-          console.warn('[mi-equipo] No se pudo refrescar:', err.message);
-          renderPanelBuscar();
-        }
+          const grupoActualizado = listaBusquedaActual.find(g => String(g.id) === String(grupoAbiertoBuscar));
+          if (grupoActualizado) { await renderDetalleGrupo(grupoActualizado, grupoActualizado.tipo === 'comunidad', () => { grupoAbiertoBuscar = null; renderPanelBuscar(); }, true); }
+          else { grupoAbiertoBuscar = null; renderPanelBuscar(); }
+        } catch (err) { renderPanelBuscar(); }
       }
-    } catch (err) {
-      toast(err.message || 'Error al salir', 'error');
-    }
+    } catch (err) { toast(err.message || 'Error', 'error'); }
   }
 
   async function cancelarSolicitudUI(grupo, esComunidad) {
     if (!confirm(`¿Cancelar tu solicitud para unirte a "${grupo.nombre}"?`)) return;
-
     try {
-      await cancelarMiSolicitudAPI(grupo.id);
-      toast('Solicitud cancelada', 'info');
-
+      await cancelarMiSolicitudAPI(grupo.id); toast('Solicitud cancelada', 'info');
       await recargarPaneles();
-
       if (grupoAbiertoBuscar) {
         try {
           const { data: lista } = await listarGrupos({ limit: 50 });
           listaBusquedaActual = lista;
-
-          const grupoActualizado = listaBusquedaActual.find(
-            g => String(g.id) === String(grupoAbiertoBuscar)
-          );
-
-          if (grupoActualizado) {
-            await renderDetalleGrupo(grupoActualizado, grupoActualizado.tipo === 'comunidad', () => {
-              grupoAbiertoBuscar = null;
-              renderPanelBuscar();
-            }, true);
-          } else {
-            grupoAbiertoBuscar = null;
-            renderPanelBuscar();
-          }
-        } catch (err) {
-          console.warn('[mi-equipo] No se pudo refrescar:', err.message);
-          renderPanelBuscar();
-        }
+          const grupoActualizado = listaBusquedaActual.find(g => String(g.id) === String(grupoAbiertoBuscar));
+          if (grupoActualizado) { await renderDetalleGrupo(grupoActualizado, grupoActualizado.tipo === 'comunidad', () => { grupoAbiertoBuscar = null; renderPanelBuscar(); }, true); }
+          else { grupoAbiertoBuscar = null; renderPanelBuscar(); }
+        } catch (err) { renderPanelBuscar(); }
       }
-    } catch (err) {
-      toast(err.message || 'Error al cancelar la solicitud', 'error');
-    }
+    } catch (err) { toast(err.message || 'Error', 'error'); }
   }
 
-  // ⚡ FIX: renderPanelBuscar con chequeo de null
   async function renderPanelBuscar() {
     const contenedor = document.getElementById('resultados-busqueda');
     if (!contenedor) return;
 
     if (grupoAbiertoBuscar) {
       const grupo = listaBusquedaActual.find(g => String(g.id) === String(grupoAbiertoBuscar));
-      if (!grupo) {
-        grupoAbiertoBuscar = null;
-      } else {
-        await renderDetalleGrupo(grupo, grupo.tipo === 'comunidad', () => {
-          grupoAbiertoBuscar = null;
-          renderPanelBuscar();
-        }, true);
+      if (!grupo) grupoAbiertoBuscar = null;
+      else {
+        await renderDetalleGrupo(grupo, grupo.tipo === 'comunidad', () => { grupoAbiertoBuscar = null; renderPanelBuscar(); }, true);
         return;
       }
     }
@@ -2647,24 +1771,15 @@ async function renderPanelCanalGlobal(canalId) {
     const chipsAcceso = document.querySelectorAll('[data-filtro-acceso]');
     if (!input || !resultados) return;
 
-    let filtroTipo = 'todos';
-    let filtroAcceso = 'todos';
-    let textoBusqueda = '';
-
-    const tipoActivo = document.querySelector('[data-filtro-tipo].chip--active');
-    if (tipoActivo) filtroTipo = tipoActivo.dataset.filtroTipo;
-    
-    const accesoActivo = document.querySelector('[data-filtro-acceso].chip--active');
-    if (accesoActivo) filtroAcceso = accesoActivo.dataset.filtroAcceso;
-
+    let filtroTipo = 'todos'; let filtroAcceso = 'todos'; let textoBusqueda = '';
+    const tipoActivo = document.querySelector('[data-filtro-tipo].chip--active'); if (tipoActivo) filtroTipo = tipoActivo.dataset.filtroTipo;
+    const accesoActivo = document.querySelector('[data-filtro-acceso].chip--active'); if (accesoActivo) filtroAcceso = accesoActivo.dataset.filtroAcceso;
     input.value = textoBusqueda;
 
     async function pintar() {
       resultados.innerHTML = '<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Buscando...</p>';
-
       try {
         const filtros = { limit: 50 };
-
         if (filtroTipo === 'equipo')     filtros.tipo = 'equipo';
         if (filtroTipo === 'comunidad')  filtros.tipo = 'comunidad';
         if (filtroAcceso === 'publico')  filtros.tipoAcceso = 'publico';
@@ -2674,32 +1789,21 @@ async function renderPanelCanalGlobal(canalId) {
         const { data: lista } = await listarGrupos(filtros);
         listaBusquedaActual = lista;
 
-        if (lista.length === 0) {
-          resultados.innerHTML = `
-            <div class="card">
-              <div class="empty-state">
-                <div class="empty-state__icon">${SVG.search}</div>
-                <p>No se encontraron resultados con esos filtros.</p>
-              </div>
-            </div>`;
-          return;
-        }
+        if (lista.length === 0) { resultados.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-state__icon">${SVG.search}</div><p>No se encontraron resultados con esos filtros.</p></div></div>`; return; }
 
         resultados.innerHTML = `
           <div class="grupo-grid">
             ${lista.map(g => {
-              const esPrivado = g.tipoAcceso === 'privado';
-              const esComunidad = g.tipo === 'comunidad';
-              const yaSoyMiembro = g.esMiembro || g.esCapitan;
-
+              const esPrivado = g.tipoAcceso === 'privado'; const esComunidad = g.tipo === 'comunidad'; const yaSoyMiembro = g.esMiembro || g.esCapitan;
               const color = colorDeporte(g.deporte);
-              const escudoHtml = renderIconoHtml(g.escudo || RUTA_ESCUDO, 36);
-              const bannerStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+              const escudoHtml = renderIconoHtml(g.iconoPersonalizado || g.escudo || RUTA_ESCUDO, 36);
+              
+              let bannerStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+              if (g.cardColor) bannerStyle = `background: linear-gradient(135deg, ${g.cardColor} 0%, ${g.cardColor}DD 100%);`;
+              if (g.cardFoto) bannerStyle = `background-image: url('${g.cardFoto}'); background-size: cover; background-position: center;`;
 
-              const partidos = calcularPartidos(g.stats);
-              const porcentaje = calcularPorcentaje(g.stats);
-              const victoriasVisibles = statEsVisible(g.stats?.victorias);
-              const mostrarPorcentaje = victoriasVisibles && partidos > 0;
+              const partidos = calcularPartidos(g.stats); const porcentaje = calcularPorcentaje(g.stats);
+              const victoriasVisibles = statEsVisible(g.stats?.victorias); const mostrarPorcentaje = victoriasVisibles && partidos > 0;
 
               return `
                 <article class="grupo-card" data-grupo-id="${g.id}" role="button" tabindex="0">
@@ -2712,24 +1816,11 @@ async function renderPanelCanalGlobal(canalId) {
                       ${yaSoyMiembro ? `<span class="badge badge--success">✓ Miembro</span>` : ''}
                     </div>
                     <h3 class="grupo-card__title">${g.nombre}</h3>
-                    <p class="grupo-card__sub">
-                      ${g.deporte}${g.ciudad ? ' · ' + g.ciudad : ''}
-                    </p>
+                    <p class="grupo-card__sub">${g.deporte}${g.ciudad ? ' · ' + g.ciudad : ''}</p>
                     <div class="grupo-card__stats ${mostrarPorcentaje ? '' : 'grupo-card__stats--2'}">
-                      <div class="grupo-stat">
-                        <div class="grupo-stat__value">${g.totalMiembros || 0}</div>
-                        <div class="grupo-stat__label">Miembros</div>
-                      </div>
-                      <div class="grupo-stat">
-                        <div class="grupo-stat__value">${partidos}</div>
-                        <div class="grupo-stat__label">Partidos</div>
-                      </div>
-                      ${mostrarPorcentaje ? `
-                        <div class="grupo-stat">
-                          <div class="grupo-stat__value">${porcentaje}%</div>
-                          <div class="grupo-stat__label">% Victorias</div>
-                        </div>
-                      ` : ''}
+                      <div class="grupo-stat"><div class="grupo-stat__value">${g.totalMiembros || 0}</div><div class="grupo-stat__label">Miembros</div></div>
+                      <div class="grupo-stat"><div class="grupo-stat__value">${partidos}</div><div class="grupo-stat__label">Partidos</div></div>
+                      ${mostrarPorcentaje ? `<div class="grupo-stat"><div class="grupo-stat__value">${porcentaje}%</div><div class="grupo-stat__label">% Victorias</div></div>` : ''}
                     </div>
                   </div>
                 </article>
@@ -2738,51 +1829,15 @@ async function renderPanelCanalGlobal(canalId) {
           </div>`;
 
         resultados.querySelectorAll('.grupo-card').forEach(card => {
-          card.addEventListener('click', (e) => {
-            if (e.target.closest('[data-unirse]')) return;
-            grupoAbiertoBuscar = card.dataset.grupoId;
-            subTabDetalleEquipo = 'info';
-            renderPanelBuscar();
-          });
-          card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              if (e.target.closest('[data-unirse]')) return;
-              grupoAbiertoBuscar = card.dataset.grupoId;
-              subTabDetalleEquipo = 'info';
-              renderPanelBuscar();
-            }
-          });
+          card.addEventListener('click', (e) => { if (e.target.closest('[data-unirse]')) return; grupoAbiertoBuscar = card.dataset.grupoId; subTabDetalleEquipo = 'info'; renderPanelBuscar(); });
+          card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (e.target.closest('[data-unirse]')) return; grupoAbiertoBuscar = card.dataset.grupoId; subTabDetalleEquipo = 'info'; renderPanelBuscar(); } });
         });
-      } catch (err) {
-        console.error('[mi-equipo] Error al buscar:', err);
-        resultados.innerHTML = `<p class="text-sm text-muted text-center">Error al buscar</p>`;
-      }
+      } catch (err) { resultados.innerHTML = `<p class="text-sm text-muted text-center">Error al buscar</p>`; }
     }
 
-    input.oninput = () => {
-      textoBusqueda = input.value;
-      pintar();
-    };
-
-    chipsTipo.forEach(chip => {
-      chip.onclick = () => {
-        chipsTipo.forEach(c => c.classList.remove('chip--active'));
-        chip.classList.add('chip--active');
-        filtroTipo = chip.dataset.filtroTipo;
-        pintar();
-      };
-    });
-
-    chipsAcceso.forEach(chip => {
-      chip.onclick = () => {
-        chipsAcceso.forEach(c => c.classList.remove('chip--active'));
-        chip.classList.add('chip--active');
-        filtroAcceso = chip.dataset.filtroAcceso;
-        pintar();
-      };
-    });
-
+    input.oninput = () => { textoBusqueda = input.value; pintar(); };
+    chipsTipo.forEach(chip => { chip.onclick = () => { chipsTipo.forEach(c => c.classList.remove('chip--active')); chip.classList.add('chip--active'); filtroTipo = chip.dataset.filtroTipo; pintar(); }; });
+    chipsAcceso.forEach(chip => { chip.onclick = () => { chipsAcceso.forEach(c => c.classList.remove('chip--active')); chip.classList.add('chip--active'); filtroAcceso = chip.dataset.filtroAcceso; pintar(); }; });
     pintar();
   }
 
@@ -2791,10 +1846,7 @@ async function renderPanelCanalGlobal(canalId) {
     if (tab !== 'comunidad')  grupoAbiertoComunidad = null;
     if (tab !== 'buscar')     grupoAbiertoBuscar = null;
 
-    subtabs.forEach(st => {
-      st.classList.toggle('subtab--active', st.dataset.tabEquipo === tab);
-    });
-
+    subtabs.forEach(st => st.classList.toggle('subtab--active', st.dataset.tabEquipo === tab));
     panelEquipo.classList.toggle('subpanel--active', tab === 'equipo');
     panelComunidad.classList.toggle('subpanel--active', tab === 'comunidad');
     panelChat.classList.toggle('subpanel--active', tab === 'chat');
@@ -2805,30 +1857,14 @@ async function renderPanelCanalGlobal(canalId) {
     if (tab === 'buscar')     renderPanelBuscar();
 
     if (tab === 'chat') {
-      await cargarCanales();
-      renderListaCanales();
-
-      if (!canalActualId) {
-        renderEmptyPanelCanal();
-      } else {
-        await renderPanelCanalGlobal(canalActualId);
-      }
-    } else {
-      if (intervaloCanal) {
-        clearInterval(intervaloCanal);
-        intervaloCanal = null;
-      }
-    }
+      await cargarCanales(); renderListaCanales();
+      if (!canalActualId) renderEmptyPanelCanal();
+      else await renderPanelCanalGlobal(canalActualId);
+    } else { if (intervaloCanal) { clearInterval(intervaloCanal); intervaloCanal = null; } }
   }
 
-  subtabs.forEach(st => {
-    st.addEventListener('click', () => cambiarTab(st.dataset.tabEquipo));
-  });
-
-  inputBuscarCanal?.addEventListener('input', (e) => {
-    filtroBusquedaCanal = e.target.value;
-    renderListaCanales();
-  });
+  subtabs.forEach(st => { st.addEventListener('click', () => cambiarTab(st.dataset.tabEquipo)); });
+  inputBuscarCanal?.addEventListener('input', (e) => { filtroBusquedaCanal = e.target.value; renderListaCanales(); });
 
   await recargarGrupos();
   await renderPanelEquipo();
