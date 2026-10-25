@@ -2,7 +2,8 @@
 <div class="profile-header-card">
   <div class="profile-header-card__banner" id="perfil-hero" data-hero-color="navy"></div>
   <div class="profile-header-card__body">
-    <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="profile-header-card__avatar" />
+    <!-- ⚡ Corregido a perfil-header-card__avatar -->
+    <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="perfil-header-card__avatar" />
     
     <div class="profile-header-card__info">
       <h1 id="perfil-nombre" class="profile-header-card__name"></h1>
@@ -28,9 +29,6 @@
 
 <!-- ================= STATS DEL HERO ================= -->
 <div class="profile-stats-grid" id="perfil-stats-hero"></div>
-
-<!-- ================= STATS DEL HERO ================= -->
-<div class="perfil-stats" id="perfil-stats-hero"></div>
 
 <!-- ================= SUBTABS ================= -->
 <div class="subtabs mb-4" id="perfil-subtabs">
@@ -178,7 +176,6 @@
         <label class="field__label">Foto de perfil</label>
 
         <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4)">
-          <!-- ⚡ FIX: src con placeholder por defecto -->
           <img id="edit-perf-avatar-preview" src="assets/icons/usuario.svg" alt="" class="avatar avatar--lg" />
           <div style="flex:1">
             <label class="btn btn--primary btn--sm" style="cursor:pointer; display:inline-flex">
@@ -195,6 +192,19 @@
 
         <label class="field__label">O elige una:</label>
         <div id="perfil-galeria-avatares" class="posiciones-lista" style="min-height:auto"></div>
+      </div>
+
+      <!-- ⚡ NUEVO: MARCO DE PERFIL -->
+      <div class="field">
+        <label class="field__label" style="display:flex; justify-content:space-between;">
+          Marco de perfil
+          <span class="badge badge--warning" id="badge-marco-premium" style="display:none">Premium</span>
+        </label>
+        <div id="edit-perf-marcos" class="posiciones-lista" style="margin-bottom:8px;"></div>
+        <div id="edit-perf-marco-custom-wrapper" class="hidden" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+          <label class="field__label" style="margin:0;">Color del marco:</label>
+          <input type="color" id="edit-perf-marco-color" value="#E8836A" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
+        </div>
       </div>
 
       <div class="field">
@@ -238,7 +248,13 @@
 
         <div id="edit-perf-hero-colores" class="perfil-color-picker"></div>
 
-        <div class="perfil-hero-foto">
+        <!-- ⚡ NUEVO: COLOR CUSTOM PARA PREMIUM -->
+        <div id="edit-perf-hero-color-custom-wrapper" class="hidden" style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+          <label class="field__label" style="margin:0;">Color personalizado (Premium):</label>
+          <input type="color" id="edit-perf-hero-color-custom" value="#0F1B2D" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
+        </div>
+
+        <div class="perfil-hero-foto" style="margin-top:16px;">
           <div class="perfil-hero-foto__label">O subí una foto (opcional, máx 1.5 MB)</div>
 
           <div id="edit-perf-hero-foto-preview-wrapper" class="hidden">
