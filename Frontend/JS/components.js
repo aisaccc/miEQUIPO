@@ -215,6 +215,34 @@ export function abrirModal(id) {
   if (!el) return;
   el.classList.add('open');
   sincronizarScrollBody();
+
+  // ⚡ NUEVO: Conectar el scroll del modal con la barra inferior
+  const modalContent = el.querySelector('.modal');
+  const bottomNav = document.querySelector('.app-bottom-nav');
+  
+  if (modalContent && bottomNav) {
+    let lastScrollTop = modalContent.scrollTop;
+    
+    const scrollHandler = () => {
+      const scrollTop = modalContent.scrollTop;
+      
+      // Si scrolleás hacia abajo, ocultamos la barra
+      if (scrollTop > lastScrollTop && scrollTop > 40) {
+        bottomNav.classList.add('app-bottom-nav--hidden');
+      } 
+      // Si scrolleás hacia arriba, la mostramos
+      else {
+        bottomNav.classList.remove('app-bottom-nav--hidden');
+      }
+      lastScrollTop = scrollTop;
+    };
+    
+    modalContent.addEventListener('scroll', scrollHandler, { passive: true });
+    
+    // Guardamos la referencia al handler para quitarlo después
+    el._modalScrollHandler = scrollHandler;
+    el._modalContentEl = modalContent;
+  }
 }
 
 export function cerrarModal(id) { 
@@ -222,6 +250,19 @@ export function cerrarModal(id) {
   if (!el) return;
   el.classList.remove('open');
   sincronizarScrollBody();
+
+  // ⚡ NUEVO: Limpiar el listener del scroll del modal
+  if (el._modalScrollHandler && el._modalContentEl) {
+    el._modalContentEl.removeEventListener('scroll', el._modalScrollHandler);
+    delete el._modalScrollHandler;
+    delete el._modalContentEl;
+  }
+  
+  // Restaurar la barra inferior al estado visible al cerrar el modal
+  const bottomNav = document.querySelector('.app-bottom-nav');
+  if (bottomNav) {
+    bottomNav.classList.remove('app-bottom-nav--hidden');
+  }
 }
 
 /* ---------- HELPERS ---------- */
@@ -765,7 +806,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       const { crearConversacion } = await import('./services/mensajes.service.js');
       const conv = await crearConversacion(u.id);
-      document.getElementById('modal-ver-perfil')?.classList.remove('open');
+      cerrarModal('modal-ver-perfil');
       window.location.hash = '#/mensajes';
       setTimeout(() => { document.querySelector(`[data-conv="${conv.id}"]`)?.click(); }, 400);
     } catch (err) {
