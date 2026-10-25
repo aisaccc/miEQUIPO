@@ -89,8 +89,21 @@ function desbloquearScrollBody() {
 
 function sincronizarScrollBody() {
   const hayModales = document.querySelectorAll('.modal-backdrop.open').length > 0;
-  if (hayModales && !_bodyBloqueado) bloquearScrollBody();
-  else if (!hayModales && _bodyBloqueado) desbloquearScrollBody();
+  const bottomNav = document.querySelector('.app-bottom-nav');
+  
+  if (hayModales) {
+    if (!_bodyBloqueado) bloquearScrollBody();
+    // ⚡ Ocultar la barra inferior cuando hay un modal abierto
+    if (bottomNav) {
+      bottomNav.classList.add('app-bottom-nav--hidden');
+    }
+  } else {
+    if (_bodyBloqueado) desbloquearScrollBody();
+    // ⚡ Mostrar la barra inferior cuando no hay modales
+    if (bottomNav) {
+      bottomNav.classList.remove('app-bottom-nav--hidden');
+    }
+  }
 }
 
 function initModalScrollLock() {
@@ -215,34 +228,6 @@ export function abrirModal(id) {
   if (!el) return;
   el.classList.add('open');
   sincronizarScrollBody();
-
-  // ⚡ NUEVO: Conectar el scroll del modal con la barra inferior
-  const modalContent = el.querySelector('.modal');
-  const bottomNav = document.querySelector('.app-bottom-nav');
-  
-  if (modalContent && bottomNav) {
-    let lastScrollTop = modalContent.scrollTop;
-    
-    const scrollHandler = () => {
-      const scrollTop = modalContent.scrollTop;
-      
-      // Si scrolleás hacia abajo, ocultamos la barra
-      if (scrollTop > lastScrollTop && scrollTop > 40) {
-        bottomNav.classList.add('app-bottom-nav--hidden');
-      } 
-      // Si scrolleás hacia arriba, la mostramos
-      else {
-        bottomNav.classList.remove('app-bottom-nav--hidden');
-      }
-      lastScrollTop = scrollTop;
-    };
-    
-    modalContent.addEventListener('scroll', scrollHandler, { passive: true });
-    
-    // Guardamos la referencia al handler para quitarlo después
-    el._modalScrollHandler = scrollHandler;
-    el._modalContentEl = modalContent;
-  }
 }
 
 export function cerrarModal(id) { 
@@ -250,21 +235,7 @@ export function cerrarModal(id) {
   if (!el) return;
   el.classList.remove('open');
   sincronizarScrollBody();
-
-  // ⚡ NUEVO: Limpiar el listener del scroll del modal
-  if (el._modalScrollHandler && el._modalContentEl) {
-    el._modalContentEl.removeEventListener('scroll', el._modalScrollHandler);
-    delete el._modalScrollHandler;
-    delete el._modalContentEl;
-  }
-  
-  // Restaurar la barra inferior al estado visible al cerrar el modal
-  const bottomNav = document.querySelector('.app-bottom-nav');
-  if (bottomNav) {
-    bottomNav.classList.remove('app-bottom-nav--hidden');
-  }
 }
-
 /* ---------- HELPERS ---------- */
 export function formatearFecha(iso) {
   const d = new Date(iso);
