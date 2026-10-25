@@ -403,8 +403,23 @@ export async function editarStats(grupoId, datos, usuarioId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await obtenerGrupoOFallar(client, grupoId);
+    const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
+
+    // ⚡ NUEVO: VALIDACIÓN PREMIUM
+    const { rows: uRows } = await client.query(
+      'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+      [grupo.capitan_id]
+    );
+    const capPlan = uRows[0]?.plan;
+    const capPremHasta = uRows[0]?.premium_hasta;
+    const esPrem = capPlan === 'premium' && (!capPremHasta || new Date(capPremHasta) > new Date());
+
+    if (!esPrem) {
+      const err = new Error('La edición de estadísticas es exclusiva de equipos con plan Premium.');
+      err.status = 403;
+      throw err;
+    }
 
     const stats = { victorias: datos.victorias, empates: datos.empates, derrotas: datos.derrotas };
     const camposFlags = [];

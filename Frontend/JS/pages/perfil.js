@@ -263,7 +263,10 @@ export async function init() {
         <div class="card mb-4">
           <div class="flex items-center justify-between mb-4">
             <h3 class="card__title" style="margin:0; display:flex; align-items:center; gap:6px">${icono} Estadísticas de ${d.deporte}</h3>
-            <button class="btn btn--ghost btn--sm" data-editar-stats-deporte="${d.deporte}" style="display:flex; align-items:center; gap:6px">${ICONOS.lapiz} Editar</button>
+            <button class="btn btn--ghost btn--sm" data-editar-stats-deporte="${d.deporte}" style="display:flex; align-items:center; gap:6px">
+              ${ICONOS.lapiz} Editar 
+              ${!u.esPremium ? '<span class="badge badge--warning" style="margin-left:4px; font-size:10px; padding:2px 6px;">Premium</span>' : ''}
+            </button>
           </div>
           ${cargadas.length === 0 ? `<div class="empty-state--sm"><div class="empty-state__icon">${ICONOS.grafico}</div><p class="text-sm text-muted">Sin registros cargados todavía</p></div>` : `
             <div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(120px, 1fr))">
@@ -713,6 +716,13 @@ export async function init() {
   function abrirModalEditarStatsDeporte(nombreDeporte) {
     const u = getSesion();
     if (!u) return;
+    
+    // ⚡ NUEVO: Bloqueo Frontend
+    if (!u.esPremium) {
+      toast('La edición de estadísticas por deporte es exclusiva de Premium.', 'error');
+      return;
+    }
+
     const deporteData = (u.deportes || []).find(d => d.deporte === nombreDeporte);
     if (!deporteData) return;
 

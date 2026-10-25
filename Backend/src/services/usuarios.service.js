@@ -365,6 +365,33 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
    PATCH /api/usuarios/me/deportes
    ========================================================= */
 export async function actualizarMisDeportes(usuarioId, deportes) {
+  const { rows: uRows } = await pool.query(
+    'SELECT plan, premium_hasta, deportes FROM usuarios WHERE id = $1',
+    [usuarioId]
+  );
+  
+  if (!uRows[0]) {
+    const err = new Error('Usuario no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const esPrem = calcularEsPremium(uRows[0]);
+  const deportesActuales = uRows[0].deportes || [];
+
+  // ⚡ VALIDACIÓN PREMIUM
+  if (!esPrem) {
+    for (const depNuevo of deportes) {
+      const depViejo = deportesActuales.find(d => d.deporte === depNuevo.deporte);
+      // Si las stats que envía son distintas a las que ya tenía, rebotamos
+      if (JSON.stringify(depNuevo.stats || {}) !== JSON.stringify(depViejo?.stats || {})) {
+        const err = new Error('Las estadísticas por deporte son exclusivas del plan Premium.');
+        err.status = 403;
+        throw err;
+      }
+    }
+  }
+
   const { rows } = await pool.query(
     `UPDATE usuarios
      SET deportes = $1::jsonb, updated_at = NOW()
@@ -372,12 +399,6 @@ export async function actualizarMisDeportes(usuarioId, deportes) {
      RETURNING ${CAMPOS_PERFIL_PROPIO}`,
     [JSON.stringify(deportes), usuarioId]
   );
-
-  if (!rows[0]) {
-    const err = new Error('Usuario no encontrado');
-    err.status = 404;
-    throw err;
-  }
 
   return formatearPerfilPropio(rows[0]);
 }

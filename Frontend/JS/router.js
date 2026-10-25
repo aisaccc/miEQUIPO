@@ -105,7 +105,7 @@ export async function navegar(hash) {
 
     let modulo = modulosCargados[ruta.script];
     if (!modulo) {
-      modulo = await import(`./pages/${ruta.script}.js?v=150`);
+      modulo = await import(`./pages/${ruta.script}.js?v=151`);
       modulosCargados[ruta.script] = modulo;
     }
 

@@ -1709,6 +1709,12 @@ export async function init() {
   document.querySelectorAll('[data-tab-gestion]').forEach(tab => { tab.addEventListener('click', () => { if (grupoEnGestion) renderGestionMiembros(grupoEnGestion, tab.dataset.tabGestion); }); });
 
   function abrirModalStats(grupo) {
+    // ⚡ NUEVO: Validación Premium en Frontend
+    if (!grupo.esPremium) {
+      toast('La edición de estadísticas es exclusiva de equipos con plan Premium.', 'error');
+      return;
+    }
+
     const modal = document.getElementById('modal-grupo-stats');
     if (!modal) return;
     document.getElementById('grupo-stats-titulo').innerHTML = `Stats de ${renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 20)} ${grupo.nombre}`;
