@@ -1030,21 +1030,6 @@ export async function init() {
 
   async function renderPanelEquipo() {
     const contenedor = document.getElementById('equipo-contenido');
-    const limiteAlcanzado = misEquipos.length >= 2 && !user?.esPremium;
-    const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
-    contenedor.innerHTML = `
-      <div class="grupo-toolbar">
-        <div class="grupo-toolbar__search">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="filtro-equipos" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaEquipo}" />
-        </div>
-        <button class="btn btn--primary" id="btn-crear-equipo">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-          Crear equipo ${badgeBoton}
-        </button>
-      </div>
-      <div id="equipos-lista" class="grupo-grid"></div>
-    `;
     if (!contenedor) return;
 
     if (grupoAbiertoEquipo) {
@@ -1063,13 +1048,21 @@ export async function init() {
     if (panelEquipo?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misEquipos, filtroBusquedaEquipo);
 
+    // ⚡ FIX: Solo contar equipos donde el usuario es capitán (creados por él)
+    const misEquiposCreados = misEquipos.filter(g => g.esCapitan);
+    const limiteAlcanzado = misEquiposCreados.length >= 2 && !user?.esPremium;
+    const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
+
     contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" id="filtro-equipos" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaEquipo}" />
         </div>
-        <button class="btn btn--primary" id="btn-crear-equipo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear equipo</button>
+        <button class="btn btn--primary" id="btn-crear-equipo">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
+          Crear equipo ${badgeBoton}
+        </button>
       </div>
       <div id="equipos-lista" class="grupo-grid"></div>
     `;
@@ -1120,22 +1113,6 @@ export async function init() {
 
   async function renderPanelComunidad() {
     const contenedor = document.getElementById('comunidad-contenido');
-    const limiteAlcanzado = misComunidades.length >= 1 && !user?.esPremium;
-    const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
-
-    contenedor.innerHTML = `
-      <div class="grupo-toolbar">
-        <div class="grupo-toolbar__search">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="filtro-comunidades" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaComunidad}" />
-        </div>
-        <button class="btn btn--primary" id="btn-crear-comunidad">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
-          Crear comunidad ${badgeBoton}
-        </button>
-      </div>
-      <div id="comunidades-lista" class="grupo-grid"></div>
-    `;
     if (!contenedor) return;
 
     if (grupoAbiertoComunidad) {
@@ -1154,13 +1131,21 @@ export async function init() {
     if (panelComunidad?.classList.contains('subpanel--active')) mostrarChromePagina();
     const filtrados = filtrarGrupos(misComunidades, filtroBusquedaComunidad);
 
+    // ⚡ FIX: Solo contar comunidades donde el usuario es capitán (creadas por él)
+    const misComunidadesCreadas = misComunidades.filter(g => g.esCapitan);
+    const limiteAlcanzado = misComunidadesCreadas.length >= 1 && !user?.esPremium;
+    const badgeBoton = limiteAlcanzado ? ` <span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` : '';
+
     contenedor.innerHTML = `
       <div class="grupo-toolbar">
         <div class="grupo-toolbar__search">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" id="filtro-comunidades" class="grupo-toolbar__input" placeholder="Buscar por nombre, deporte o ciudad..." value="${filtroBusquedaComunidad}" />
         </div>
-        <button class="btn btn--primary" id="btn-crear-comunidad"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear comunidad</button>
+        <button class="btn btn--primary" id="btn-crear-comunidad">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 
+          Crear comunidad ${badgeBoton}
+        </button>
       </div>
       <div id="comunidades-lista" class="grupo-grid"></div>
     `;
@@ -1396,14 +1381,17 @@ export async function init() {
   let tipoGrupoSeleccionado = 'equipo';
 
   function abrirModalCrearGrupo(tipo = 'equipo') {
-    
+    // ⚡ FIX: Contar solo los grupos creados por el usuario
+    const misEquiposCreados = misEquipos.filter(g => g.esCapitan);
+    const misComunidadesCreadas = misComunidades.filter(g => g.esCapitan);
+
     if (!user?.esPremium) {
-      if (tipo === 'equipo' && misEquipos.length >= 2) {
-        toast('Alcanzaste el límite de 2 equipos del plan Básico. Pasate a Premium para crear más.', 'error');
+      if (tipo === 'equipo' && misEquiposCreados.length >= 2) {
+        toast('Alcanzaste el límite de 2 equipos creados del plan Básico. Pasate a Premium para crear más.', 'error');
         return;
       }
-      if (tipo === 'comunidad' && misComunidades.length >= 1) {
-        toast('Alcanzaste el límite de 1 comunidad del plan Básico. Pasate a Premium para crear más.', 'error');
+      if (tipo === 'comunidad' && misComunidadesCreadas.length >= 1) {
+        toast('Alcanzaste el límite de 1 comunidad creada del plan Básico. Pasate a Premium para crear más.', 'error');
         return;
       }
     }
@@ -1446,7 +1434,6 @@ export async function init() {
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
     // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
-    const user = getSesion();
     const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
     const lockMsg = document.getElementById('premium-lock-msg');
     const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
@@ -1610,7 +1597,6 @@ export async function init() {
     }
 
     // ⚡ LÓGICA DE PERSONALIZACIÓN (EDIT)
-    const user = getSesion();
     const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
     const lockMsg = document.getElementById('premium-lock-msg');
     const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
@@ -1681,7 +1667,7 @@ export async function init() {
       try {
         const payload = { nombre, escudo: iconoSel, deporte, ciudad: ciudad || null, descripcion: descripcion || null, tipoAcceso: tipoAccesoSel, statsPrivadas: statsPrivadasNueva };
         
-        if (user.esPremium) {
+        if (user?.esPremium) {
           payload.cardColor = document.getElementById('com-card-color').value;
           payload.cardFoto = cardFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
