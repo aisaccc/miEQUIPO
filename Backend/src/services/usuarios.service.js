@@ -5,6 +5,7 @@
 import { pool } from '../config/db.js';
 import { hashearPassword, verificarPassword } from '../utils/password.js';
 import { estadoBloqueo } from '../utils/bloqueos.js';
+import { HERO_COLORS, MARCOS_PREMIUM, esColorHex } from '../utils/colores.js';
 
 /* =========================================================
    CAMPOS PÚBLICOS
@@ -15,7 +16,8 @@ const CAMPOS_PERFIL_PROPIO = `
   deportes, email_verificado, created_at, last_login,
   hero_color, hero_foto, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
   mensajes_solo_amigos,
-  plan, premium_desde, premium_hasta, premium_origen
+  plan, premium_desde, premium_hasta, premium_origen,
+  marco_perfil, marco_color
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
@@ -23,7 +25,8 @@ const CAMPOS_PERFIL_PUBLICO = `
   deportes, created_at,
   hero_color, hero_foto,
   stats_hero_base, stats_hero_privadas,
-  plan, premium_hasta
+  plan, premium_hasta,
+  marco_perfil, marco_color
 `;
 
 /* =========================================================
@@ -57,12 +60,13 @@ function formatearPerfilPropio(row, stats = {}) {
     statsHeroPrivadas: row.stats_hero_privadas || {},
     notificacionesPrefs: row.notificaciones_prefs || { partidos: true, torneos: true, mensajes: true },
     mensajesSoloAmigos: row.mensajes_solo_amigos ?? false,
-    // ⚡ Plan
     plan: row.plan || 'basico',
     esPremium: calcularEsPremium(row),
     premiumDesde: row.premium_desde,
     premiumHasta: row.premium_hasta,
     premiumOrigen: row.premium_origen,
+    marcoPerfil: row.marco_perfil || 'default',
+    marcoColor: row.marco_color || null,
     statsHero: {
       partidos:  stats.partidos ?? 0,
       torneos:   stats.torneos  ?? 0,
@@ -104,15 +108,13 @@ function formatearPerfilPublico(row, stats = {}) {
     heroFoto: row.hero_foto || null,
     statsHero,
     statsHeroPrivadas: privadas,
-    // ⚡ Plan (público: solo plan + esPremium, NO las fechas)
     plan: row.plan || 'basico',
     esPremium: calcularEsPremium(row),
+    marcoPerfil: row.marco_perfil || 'default',
+    marcoColor: row.marco_color || null,
   };
 }
 
-/* =========================================================
-   CONTADORES AUTOMÁTICOS DEL HERO
-   ========================================================= */
 async function contarStatsHero(usuarioId) {
   const [partidosRes, torneosRes, equiposRes] = await Promise.all([
     pool.query(
@@ -134,9 +136,7 @@ async function contarStatsHero(usuarioId) {
       [usuarioId]
     ),
     pool.query(
-      `SELECT COUNT(*)::int AS total
-       FROM torneos
-       WHERE organizador_id = $1`,
+      `SELECT COUNT(*)::int AS total FROM torneos WHERE organizador_id = $1`,
       [usuarioId]
     ),
     pool.query(
@@ -253,6 +253,56 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     }
   }
 
+  const cambiosFinales = { ...cambios };
+
+  // Traemos plan si es necesario validar
+  const necesitaPlan =
+    (cambiosFinales.marcoPerfil !== undefined && cambiosFinales.marcoPerfil !== 'default') ||
+    (cambiosFinales.heroColor !== undefined && !HERO_COLORS.includes(cambiosFinales.heroColor));
+
+  let esPrem = false;
+  if (necesitaPlan) {
+    const { rows: uRows } = await pool.query(
+      'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+      [usuarioId]
+    );
+    esPrem = calcularEsPremium(uRows[0] || {});
+  }
+
+  // Validación: MARCO DE PERFIL
+  if (cambiosFinales.marcoPerfil !== undefined) {
+    const esMarcoPremium = cambiosFinales.marcoPerfil !== 'default';
+    if (esMarcoPremium && !esPrem) {
+      const err = new Error('Los marcos de perfil son exclusivos del plan Premium.');
+      err.status = 403;
+      throw err;
+    }
+    if (cambiosFinales.marcoPerfil === 'custom') {
+      if (!cambiosFinales.marcoColor) {
+        const err = new Error('Elegí un color para tu marco custom.');
+        err.status = 400;
+        throw err;
+      }
+      if (!esColorHex(cambiosFinales.marcoColor)) {
+        const err = new Error('El color del marco debe ser un hexadecimal válido (#RRGGBB).');
+        err.status = 400;
+        throw err;
+      }
+    } else {
+      cambiosFinales.marcoColor = null;
+    }
+  }
+
+  // Validación: HERO COLOR CUSTOM
+  if (cambiosFinales.heroColor !== undefined) {
+    const esPredefinido = HERO_COLORS.includes(cambiosFinales.heroColor);
+    if (!esPredefinido && !esPrem) {
+      const err = new Error('Los colores personalizados son exclusivos del plan Premium.');
+      err.status = 403;
+      throw err;
+    }
+  }
+
   const mapaCampos = {
     nombre: 'nombre',
     username: 'username',
@@ -267,7 +317,8 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     statsHeroPrivadas: 'stats_hero_privadas',
     notificacionesPrefs: 'notificaciones_prefs',
     mensajesSoloAmigos: 'mensajes_solo_amigos',
-    // ⚠️ NO incluimos plan/premium_* acá: esos se modifican solo por SQL manual.
+    marcoPerfil: 'marco_perfil',
+    marcoColor: 'marco_color',
   };
 
   const campos = [];
@@ -275,14 +326,14 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
   let i = 1;
 
   for (const [key, col] of Object.entries(mapaCampos)) {
-    if (cambios[key] === undefined) continue;
+    if (cambiosFinales[key] === undefined) continue;
 
     if (key === 'statsHeroBase' || key === 'statsHeroPrivadas' || key === 'notificacionesPrefs') {
       campos.push(`${col} = $${i}::jsonb`);
-      valores.push(JSON.stringify(cambios[key]));
+      valores.push(JSON.stringify(cambiosFinales[key]));
     } else {
       campos.push(`${col} = $${i}`);
-      valores.push(cambios[key]);
+      valores.push(cambiosFinales[key]);
     }
     i++;
   }

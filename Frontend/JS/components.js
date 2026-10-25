@@ -28,7 +28,7 @@ import {
   eliminarAmistad as eliminarAmistadAPI,
   bloquearUsuario as bloquearUsuarioAPI,
   desbloquearUsuario as desbloquearUsuarioAPI,
-  listarBloqueados as listarBloqueadosAPI // ⚡ AGREGADO ACÁ
+  listarBloqueados as listarBloqueadosAPI
 } from './services/amistades.service.js';
 
 import { renderFeedPublicaciones } from './utils/publicaciones-ui.js';
@@ -158,7 +158,6 @@ export function toast(mensaje, tipo = 'info') {
 /* ---------- MODALES ---------- */
 export function abrirModal(id) { 
   document.getElementById(id)?.classList.add('open'); 
-  // ⚡ Bloquea el scroll de la página cuando se abre el perfil en móvil
   if (id === 'modal-ver-perfil') {
     document.body.style.overflow = 'hidden';
   }
@@ -166,7 +165,6 @@ export function abrirModal(id) {
 
 export function cerrarModal(id) { 
   document.getElementById(id)?.classList.remove('open'); 
-  // ⚡ Devuelve el scroll al cerrar
   if (id === 'modal-ver-perfil') {
     document.body.style.overflow = '';
   }
@@ -619,10 +617,18 @@ export async function verPerfilUsuario(usuarioOId) {
   let heroStyle;
   if (u.heroFoto) {
     heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${u.heroFoto}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+  } else if (colorKey.startsWith('#')) {
+    heroStyle = `background: linear-gradient(135deg, ${colorKey} 0%, ${colorKey}DD 100%);`;
   } else {
     heroStyle = `background: linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%);`;
   }
   const isDarkText = preset.text === 'dark';
+
+  // Lógica para el MARCO
+  const mClass = u.marcoPerfil && u.marcoPerfil !== 'default' && u.marcoPerfil !== 'custom' ? `marco-${u.marcoPerfil}` : '';
+  const mStyle = u.marcoPerfil === 'custom' && u.marcoColor 
+    ? `border-color: ${u.marcoColor} !important; box-shadow: 0 0 15px ${u.marcoColor}80 !important;` 
+    : '';
 
   let opcionesMenu = '';
   if (estadoAmistad === 'amigos') {
@@ -636,7 +642,7 @@ export async function verPerfilUsuario(usuarioOId) {
       
       <div class="perfil-header-card__content">
         <div class="perfil-header-card__left">
-          <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="perfil-header-card__avatar" />
+          <img src="${u.avatar || 'assets/icons/usuario.svg'}" alt="" class="perfil-header-card__avatar ${mClass}" style="${mStyle}" />
           <div class="perfil-header-card__info">
             <h1 class="perfil-header-card__name">${escapeHtml(u.nombre || 'Usuario')}</h1>
             <p class="perfil-header-card__sub">
@@ -1000,7 +1006,6 @@ export function initConfiguracion() {
     });
   });
 
-  // ⚡ FIX: Uso de servicio directo y manejo de errores
   document.getElementById('btn-ver-bloqueados')?.addEventListener('click', async () => {
     cerrarModal('modal-privacidad');
     abrirModal('modal-ver-bloqueados');
@@ -1035,7 +1040,7 @@ export function initConfiguracion() {
           try {
             await desbloquearUsuarioAPI(id);
             toast('Usuario desbloqueado', 'success');
-            document.getElementById('btn-ver-bloqueados').click(); // Recargar lista
+            document.getElementById('btn-ver-bloqueados').click();
           } catch (err) {
             toast(err.message, 'error');
             btn.disabled = false;
@@ -1044,7 +1049,7 @@ export function initConfiguracion() {
         };
       });
     } catch (err) {
-      console.error("Error al traer bloqueados:", err); // ⚡ Para ver el error real en consola si falla
+      console.error("Error al traer bloqueados:", err);
       body.innerHTML = `<p class="text-sm text-danger text-center">Error al cargar la lista.</p>`;
     }
   });
@@ -1187,7 +1192,7 @@ async function cargarPreferenciasPrivacidad() {
     document.getElementById('priv-partidos').checked = !!privadas.partidos;
     document.getElementById('priv-torneos').checked = !!privadas.torneos;
     document.getElementById('priv-equipos').checked = !!privadas.equipos;
-    document.getElementById('priv-mensajes').checked = !!u.mensajesSoloAmigos; // ⚡ ACÁ
+    document.getElementById('priv-mensajes').checked = !!u.mensajesSoloAmigos;
   } catch (err) {
     console.warn('No se pudieron cargar las preferencias de privacidad', err);
   }

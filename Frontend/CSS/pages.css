@@ -14421,3 +14421,16 @@ select.field__input {
 [data-theme="dark"] .btn--ghost:hover svg {
   color: var(--color-primary) !important;
 }
+/* =========================================================
+   MARCOS DE PERFIL Y CUSTOM COLORS (Fase 2)
+   ========================================================= */
+.perfil-header-card__avatar.marco-oro { border-color: #FCD34D !important; box-shadow: 0 0 15px rgba(252, 211, 77, 0.6); }
+.perfil-header-card__avatar.marco-fuego { border-color: #F97316 !important; box-shadow: 0 0 15px rgba(249, 115, 22, 0.8); }
+.perfil-header-card__avatar.marco-neon { border-color: #A855F7 !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.8); }
+.perfil-header-card__avatar.marco-hielo { border-color: #06B6D4 !important; box-shadow: 0 0 15px rgba(6, 182, 212, 0.6); }
+.perfil-header-card__avatar.marco-galaxia { border-color: #6366F1 !important; box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), inset 0 0 10px rgba(99, 102, 241, 0.5); }
+
+/* El custom usa estilos inline, esta clase es solo para identificarlo */
+.perfil-header-card__avatar.marco-custom {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}

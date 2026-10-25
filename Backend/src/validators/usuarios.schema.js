@@ -1,11 +1,9 @@
 /* =========================================================
    usuarios.schema.js — Validación estricta con Zod
-   =========================================================
-   .strict() = rechaza campos extra (bloquea mass assignment)
-   Cada campo tiene límites para evitar DoS por payload gigante
-*/
+   ========================================================= */
 
 import { z } from 'zod';
+import { HERO_COLORS, MARCOS_VALIDOS, esColorHex } from '../utils/colores.js';
 
 /* =========================================================
    CAMPOS REUTILIZABLES
@@ -61,13 +59,13 @@ const avatarValido = z
   .refine(
     val => {
       if (!val) return true;
-      // Acepta http(s) o data:image/...
       return /^https?:\/\//i.test(val) ||
              /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val);
     },
     { message: 'El avatar debe ser una URL válida o una imagen' }
   )
-  /* Foto de banner: mismo formato que avatar, límite más generoso */
+
+/* Foto de banner: mismo formato que avatar, límite más generoso */
 const heroFotoValida = z
   .string()
   .max(2_100_000, 'La foto de banner es demasiado grande')
@@ -116,19 +114,15 @@ const deporteItem = z.object({
    SCHEMAS
    ========================================================= */
 
-/* ---------- PATCH /api/usuarios/me ---------- */
-/* =========================================================
-   HERO COLOR — presets permitidos
-   ========================================================= */
-const HERO_COLORS = [
-  'navy', 'black', 'carbon', 'blue', 'forest',
-  'purple', 'wine', 'coffee', 'mustard', 'red',
-  'orange', 'white',
-];
-
-const heroColorValido = z.enum(HERO_COLORS, {
-  errorMap: () => ({ message: 'Color de hero inválido' })
-});
+/* Acepta: predefinido ('navy', 'black', ...) o hex custom ('#FF5722') */
+const heroColorValido = z.union([
+  z.enum(HERO_COLORS, {
+    errorMap: () => ({ message: 'Color de hero inválido' }),
+  }),
+  z.string().refine(esColorHex, {
+    message: 'Color hexadecimal inválido (formato #RRGGBB)',
+  }),
+]);
 
 const statsHeroBaseSchema = z.object({
   partidos: z.number().int().min(0).max(1_000_000).optional(),
@@ -139,11 +133,13 @@ const statsHeroPrivadasSchema = z.object({
   torneos:  z.boolean().optional(),
   equipos:  z.boolean().optional(),
 }).strict();
+
 const notificacionesPrefsSchema = z.object({
   partidos: z.boolean().optional(),
   torneos:  z.boolean().optional(),
   mensajes: z.boolean().optional(),
 }).strict();
+
 /* ---------- PATCH /api/usuarios/me ---------- */
 export const schemaActualizarPerfil = z.object({
   nombre: nombreValido.optional(),
@@ -153,13 +149,19 @@ export const schemaActualizarPerfil = z.object({
   pais: paisValido,
   edad: edadValida,
   avatar: avatarValido,
-  // ⚡ Nuevos
   heroColor: heroColorValido.optional(),
   heroFoto: heroFotoValida,
   statsHeroBase: statsHeroBaseSchema.optional(),
   statsHeroPrivadas: statsHeroPrivadasSchema.optional(),
-  notificacionesPrefs: notificacionesPrefsSchema.optional(), // ⚡ NUEVO
-  mensajesSoloAmigos: z.boolean().optional(), // ⚡ NUEVO
+  notificacionesPrefs: notificacionesPrefsSchema.optional(),
+  mensajesSoloAmigos: z.boolean().optional(),
+  
+  // Marco de perfil (solo Premium)
+  marcoPerfil: z.enum(MARCOS_VALIDOS, {
+    errorMap: () => ({ message: 'Marco inválido' }),
+  }).optional(),
+  // Color del marco custom (#RRGGBB). Solo se usa si marcoPerfil === 'custom'.
+  marcoColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color inválido (formato #RRGGBB)').nullable().optional(),
 }).strict();
 
 /* ---------- PATCH /api/usuarios/me/deportes ---------- */
@@ -195,6 +197,7 @@ export const schemaEliminarCuenta = z.object({
       errorMap: () => ({ message: 'Escribí exactamente "ELIMINAR"' })
     }),
 }).strict();
+
 /* =========================================================
    BUSCAR USUARIOS
    ========================================================= */
@@ -206,6 +209,7 @@ export const schemaBuscarUsuarios = z.object({
     .transform(v => v.trim()),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 }).strict();
+
 /* ---------- Param :id (UUID) ---------- */
 export const schemaUuidParam = z
   .string()
