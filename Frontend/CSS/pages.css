@@ -14608,3 +14608,22 @@ select.field__input {
   object-fit: cover;
   border-radius: inherit;
 }
+/* ⚡ Personalización de torneos */
+.tournament-card__sport img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Si es un ícono del sistema, que mantenga su tamaño y no se estire */
+.tournament-card__sport img[src*="assets/icons/"] {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+/* Evitar que el modo oscuro invierta las fotos subidas */
+[data-theme="dark"] .tournament-card__sport img:not([src*="assets/icons/"]) {
+  filter: none !important;
+}

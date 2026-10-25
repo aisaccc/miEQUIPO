@@ -70,6 +70,12 @@ const COLOR_DEPORTE = {
 
 const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
 
+
+function esIconoImagen(valor) {
+  if (typeof valor !== 'string') return false;
+  return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor) || valor.startsWith('data:image/');
+}
+
 function colorDeporte(deporte) {
   return COLOR_DEPORTE[deporte] || COLOR_DEFAULT;
 }
@@ -223,16 +229,13 @@ export async function init() {
                     : cerrado ? 'badge--warning'
                     : 'badge--success';
 
-    // ⚡ AQUÍ EL CAMBIO: Si requiere aprobación (libreInscripcion false), dice "Inscripción" en vez de "Inscripción abierta"
     const badgeTexto = lleno ? 'Lleno'
                     : t.estado === 'en_curso' ? 'En curso'
                     : cerrado && t.estado === 'inscripcion' ? 'Inscripciones cerradas'
                     : t.estado === 'inscripcion' ? (t.libreInscripcion === false ? 'Inscripción' : 'Inscripción abierta')
                     : 'Finalizado';
 
-    const precioHtml = t.precio === 0
-      ? 'Gratis'
-      : `$${t.precio.toLocaleString('es-CL')}`;
+    const precioHtml = t.precio === 0 ? 'Gratis' : `$${t.precio.toLocaleString('es-CL')}`;
 
     const cuposLibres = t.cuposEquipos - inscritosCount;
     const cuposTexto = lleno
@@ -245,9 +248,28 @@ export async function init() {
 
     const color = colorDeporte(t.deporte);
     const iconoDeporte = emojiDeporte[t.deporte];
-    const iconoHtml = iconoDeporte
-      ? `<img src="${iconoDeporte}" alt="" style="width:28px;height:28px;object-fit:contain;display:block" />`
-      : (t.emoji || ICONOS.trofeo);
+    
+    // ⚡ Lógica de ícono personalizado
+    let iconoHtml = '';
+    let esCustomIcono = false;
+    if (t.iconoPersonalizado) {
+      iconoHtml = `<img src="${t.iconoPersonalizado}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block" />`;
+      esCustomIcono = true;
+    } else {
+      iconoHtml = iconoDeporte
+        ? `<img src="${iconoDeporte}" alt="" style="width:30px;height:30px;object-fit:contain;display:block" />`
+        : (t.emoji || ICONOS.trofeo);
+    }
+
+    // ⚡ Lógica de fondo personalizado (color o foto)
+    let bgStyle = `background:${color.bg}; color:${color.fg}`;
+    let imageBgStyle = '';
+    if (t.cardFoto) {
+      imageBgStyle = `background-image: url('${t.cardFoto}'); background-size: cover; background-position: center;`;
+    } else if (t.cardColor) {
+      bgStyle = `background: linear-gradient(135deg, ${t.cardColor} 0%, ${t.cardColor}DD 100%); color: #fff;`;
+      imageBgStyle = `background: linear-gradient(135deg, ${t.cardColor} 0%, ${t.cardColor}DD 100%);`;
+    }
 
     const tipoTexto = t.tipoParticipacion === 'individual' ? 'POR PERSONA' : 'POR EQUIPOS';
     const deporteUpper = (t.deporte || '').toUpperCase();
@@ -258,26 +280,19 @@ export async function init() {
       </button>
     ` : '';
 
-    const badgeRolHtml = mostrarBadgeRol
-      ? `<span class="badge badge--primary">${mostrarBadgeRol}</span>`
-      : '';
-
+    const badgeRolHtml = mostrarBadgeRol ? `<span class="badge badge--primary">${mostrarBadgeRol}</span>` : '';
     const deporteSlug = slugDeporte(t.deporte);
 
     return `
       <article class="tournament-card" data-id="${t.id}" data-deporte="${deporteSlug}">
-
         <div class="tournament-card__image">
-          <div class="tournament-card__image-bg"></div>
-          <button class="tournament-card__view" data-accion-torneo="ver" data-id="${t.id}">
-            Ver detalles
-          </button>
+          <div class="tournament-card__image-bg" style="${imageBgStyle}"></div>
+          <button class="tournament-card__view" data-accion-torneo="ver" data-id="${t.id}">Ver detalles</button>
         </div>
 
         <div class="tournament-card__body">
-
           <div class="tournament-card__top">
-            <div class="tournament-card__sport" style="background:${color.bg}; color:${color.fg}">
+            <div class="tournament-card__sport" style="${bgStyle}">
               ${iconoHtml}
             </div>
             <div class="tournament-card__top-right">
@@ -299,7 +314,6 @@ export async function init() {
             <span class="text-xs">${inscritosCount} / ${t.cuposEquipos} ${t.tipoParticipacion === 'individual' ? 'participantes' : 'equipos'}</span>
             ${cuposTexto}
           </div>
-
           <div class="tournament-card__progress">
             <div class="tournament-card__progress-bar" style="width:${porcentaje}%"></div>
           </div>
@@ -307,7 +321,6 @@ export async function init() {
           <div class="tournament-card__bottom">
             <div class="tournament-card__price">${precioHtml}</div>
           </div>
-
         </div>
       </article>
     `;
@@ -833,7 +846,6 @@ export async function init() {
   }
 
   function abrirModalCrear() {
-    // ⚡ VALIDACIÓN PREMIUM: Si es básico, no abrimos el modal
     if (!user?.esPremium) {
       toast('La creación de torneos es exclusiva del plan Premium.', 'error');
       return;
@@ -842,7 +854,78 @@ export async function init() {
     resetearFormulario();
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Crear torneo';
-    document.getElementById('btn-guardar-torneo').onclick = guardarNuevo;
+    
+    // ⚡ Lógica de Personalización Premium
+    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
+    const lockMsg = document.getElementById('premium-lock-msg');
+    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    
+    wrapperPremium.classList.remove('hidden');
+    
+    if (user?.esPremium) {
+      if (lockMsg) lockMsg.classList.add('hidden');
+      inputsPremium.forEach(el => el.disabled = false);
+      
+      document.getElementById('torneo-card-color').value = '#E8836A';
+      document.getElementById('torneo-card-foto-preview-wrapper').classList.add('hidden');
+      document.getElementById('torneo-card-foto-file').value = '';
+      document.getElementById('torneo-card-foto-quitar').classList.add('hidden');
+      
+      document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      document.getElementById('torneo-icono-file').value = '';
+      document.getElementById('torneo-icono-quitar').classList.add('hidden');
+      
+      // Manejadores de imágenes
+      let cardFotoBase64 = null;
+      let iconoFileBase64 = null;
+
+      document.getElementById('torneo-card-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          cardFotoBase64 = ev.target.result;
+          document.getElementById('torneo-card-foto-preview').src = cardFotoBase64;
+          document.getElementById('torneo-card-foto-preview-wrapper').classList.remove('hidden');
+          document.getElementById('torneo-card-foto-quitar').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-card-foto-quitar').onclick = () => {
+        cardFotoBase64 = null;
+        document.getElementById('torneo-card-foto-preview-wrapper').classList.add('hidden');
+        document.getElementById('torneo-card-foto-quitar').classList.add('hidden');
+        document.getElementById('torneo-card-foto-file').value = '';
+      };
+
+      document.getElementById('torneo-icono-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          iconoFileBase64 = ev.target.result;
+          document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`;
+          document.getElementById('torneo-icono-quitar').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-icono-quitar').onclick = () => {
+        iconoFileBase64 = null;
+        document.getElementById('torneo-icono-preview-wrapper').innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+        document.getElementById('torneo-icono-quitar').classList.add('hidden');
+        document.getElementById('torneo-icono-file').value = '';
+      };
+
+      document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo(cardFotoBase64, iconoFileBase64);
+      
+    } else {
+      if (lockMsg) lockMsg.classList.remove('hidden');
+      inputsPremium.forEach(el => el.disabled = true);
+      document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo(null, null);
+    }
+
     abrirModal('modal-crear-torneo');
   }
 
@@ -866,35 +949,25 @@ export async function init() {
 
     esEdicion = true;
     modalidadSeleccionada = torneo.modalidad || 'liga';
-    opcionesModalidad.forEach(op => {
-      op.classList.toggle('active', op.dataset.modalidad === modalidadSeleccionada);
-    });
+    opcionesModalidad.forEach(op => op.classList.toggle('active', op.dataset.modalidad === modalidadSeleccionada));
     actualizarConfiguracionPorModalidad();
 
     if (checkAutoFixture) checkAutoFixture.checked = torneo.autoFixture === true;
     actualizarAutoFixtureVisibility();
 
     tipoParticipacionSeleccionado = torneo.tipoParticipacion || 'equipo';
-    opcionesTipoParticipacion.forEach(op => {
-      op.classList.toggle('active', op.dataset.tipoParticipacion === tipoParticipacionSeleccionado);
-    });
+    opcionesTipoParticipacion.forEach(op => op.classList.toggle('active', op.dataset.tipoParticipacion === tipoParticipacionSeleccionado));
     actualizarHintTipoParticipacion();
 
     actualizarSistemaClasificacion(torneo.deporte);
-
     const sistemaGuardado = torneo.sistemaClasificacion || 'simple';
     sistemaClasificacionSeleccionado = sistemaGuardado;
-
-    opcionesSistema.forEach(op => {
-      op.classList.toggle('active', op.dataset.sistemaClasificacion === sistemaGuardado);
-    });
+    opcionesSistema.forEach(op => op.classList.toggle('active', op.dataset.sistemaClasificacion === sistemaGuardado));
     actualizarHintSistema();
 
     nivelTorneoSeleccionado = torneo.nivel || 'amistoso';
     if (nivelGridTorneo) {
-      nivelGridTorneo.querySelectorAll('[data-nivel-torneo]').forEach(op => {
-        op.classList.toggle('active', op.dataset.nivelTorneo === nivelTorneoSeleccionado);
-      });
+      nivelGridTorneo.querySelectorAll('[data-nivel-torneo]').forEach(op => op.classList.toggle('active', op.dataset.nivelTorneo === nivelTorneoSeleccionado));
     }
     if (checkLibreInsc) checkLibreInsc.checked = torneo.libreInscripcion !== false;
     actualizarLibreInscripcion();
@@ -907,11 +980,136 @@ export async function init() {
     if (inputEquiposClasif)  inputEquiposClasif.value = torneo.equiposClasifican ?? '';
     if (checkIncluyeEstad)   checkIncluyeEstad.checked = !!torneo.incluyeEstadisticas;
 
-    document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo);
+    // ⚡ Lógica de Personalización Premium (Edición)
+    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
+    const lockMsg = document.getElementById('premium-lock-msg');
+    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    
+    let cardFotoBase64 = torneo.cardFoto || null;
+    let iconoFileBase64 = torneo.iconoPersonalizado || null;
+
+    wrapperPremium.classList.remove('hidden');
+
+    if (user?.esPremium) {
+      if (lockMsg) lockMsg.classList.add('hidden');
+      inputsPremium.forEach(el => el.disabled = false);
+
+      document.getElementById('torneo-card-color').value = torneo.cardColor || '#E8836A';
+      
+      const previewFoto = document.getElementById('torneo-card-foto-preview');
+      const wrapperFoto = document.getElementById('torneo-card-foto-preview-wrapper');
+      const btnQuitarFoto = document.getElementById('torneo-card-foto-quitar');
+      
+      if (cardFotoBase64) { 
+        previewFoto.src = cardFotoBase64; 
+        wrapperFoto.classList.remove('hidden'); 
+        btnQuitarFoto.classList.remove('hidden');
+      } else { 
+        wrapperFoto.classList.add('hidden'); 
+        btnQuitarFoto.classList.add('hidden');
+      }
+
+      const previewIcono = document.getElementById('torneo-icono-preview-wrapper');
+      const btnQuitarIcono = document.getElementById('torneo-icono-quitar');
+      
+      if (iconoFileBase64) { 
+        previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
+        btnQuitarIcono.classList.remove('hidden');
+      } else { 
+        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
+        btnQuitarIcono.classList.add('hidden');
+      }
+
+      document.getElementById('torneo-card-foto-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+          cardFotoBase64 = ev.target.result; 
+          previewFoto.src = cardFotoBase64; 
+          wrapperFoto.classList.remove('hidden'); 
+          btnQuitarFoto.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-card-foto-quitar').onclick = () => { 
+        cardFotoBase64 = null; 
+        wrapperFoto.classList.add('hidden'); 
+        btnQuitarFoto.classList.add('hidden'); 
+        document.getElementById('torneo-card-foto-file').value = ''; 
+      };
+
+      document.getElementById('torneo-icono-file').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+          iconoFileBase64 = ev.target.result; 
+          previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
+          btnQuitarIcono.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-icono-quitar').onclick = () => { 
+        iconoFileBase64 = null; 
+        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
+        btnQuitarIcono.classList.add('hidden'); 
+        document.getElementById('torneo-icono-file').value = ''; 
+      };
+
+      document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo, cardFotoBase64, iconoFileBase64);
+      
+    } else {
+      if (lockMsg) lockMsg.classList.remove('hidden');
+      inputsPremium.forEach(el => el.disabled = true);
+      document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo, null, null);
+    }
+
     abrirModal('modal-crear-torneo');
   }
 
-  async function guardarNuevo() {
+  async function guardarEdicion(torneo, cardFotoBase64 = null, iconoFileBase64 = null) {
+    const datos = leerFormulario();
+    if (!datos) return;
+
+    const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
+
+    const btn = document.getElementById('btn-guardar-torneo');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      const payload = { ...datos, emoji };
+      
+      if (user?.esPremium) {
+        payload.cardColor = document.getElementById('torneo-card-color').value;
+        payload.cardFoto = cardFotoBase64;
+        payload.iconoPersonalizado = iconoFileBase64;
+      }
+
+      await editarTorneoAPI(torneo.id, payload);
+      toast('Torneo actualizado', 'success');
+
+      cerrarModal('modal-crear-torneo');
+      await recargarTorneos();
+
+      const torneoAEditar = sessionStorage.getItem('torneoAEditar');
+      if (torneoAEditar) {
+        sessionStorage.removeItem('torneoAEditar');
+        window.location.hash = `#/torneo/${torneoAEditar}`;
+      }
+    } catch (err) {
+      console.error('[torneos] Error al editar:', err);
+      toast(err.message || 'No se pudo actualizar el torneo', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  }
+
+  async function guardarNuevo(cardFotoBase64 = null, iconoFileBase64 = null) {
     const datos = leerFormulario();
     if (!datos) return;
 
@@ -922,7 +1120,16 @@ export async function init() {
     btn.textContent = 'Creando...';
 
     try {
-      await crearTorneoAPI({ ...datos, emoji });
+      const payload = { ...datos, emoji };
+      
+      // ⚡ Agregar campos premium si el usuario lo es
+      if (user?.esPremium) {
+        payload.cardColor = document.getElementById('torneo-card-color').value;
+        payload.cardFoto = cardFotoBase64;
+        payload.iconoPersonalizado = iconoFileBase64;
+      }
+
+      await crearTorneoAPI(payload);
       toast('¡Torneo creado!', 'success');
 
       cerrarModal('modal-crear-torneo');

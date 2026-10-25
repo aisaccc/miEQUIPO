@@ -139,6 +139,10 @@ export const schemaCrearTorneo = z.object({
   permiteEmpate: z.boolean().default(true),
   incluyeEstadisticas: z.boolean().default(false),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  cardColor: z.string().nullable().optional(),
+  cardFoto: z.string().nullable().optional(),
+  iconoPersonalizado: z.string().nullable().optional(),
 }).strict();
 
 /* ---------- PATCH /api/torneos/:id ---------- */
@@ -171,6 +175,10 @@ export const schemaEditarTorneo = z.object({
   permiteEmpate: z.boolean().optional(),
   incluyeEstadisticas: z.boolean().optional(),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
+  cardColor: z.string().nullable().optional(),
+  cardFoto: z.string().nullable().optional(),
+  iconoPersonalizado: z.string().nullable().optional(),
 }).strict();
 
 /* ---------- POST /api/torneos/:id/inscribir ---------- */

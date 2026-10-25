@@ -59,6 +59,16 @@ function formatearTorneo(row, extras = {}) {
     totalPartidos: extras.totalPartidos ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    incluyeEstadisticas: row.incluye_estadisticas,
+    equiposClasifican: row.equipos_clasifican,
+    canalChatId: row.canal_chat_id,
+    
+    // ⚡ NUEVOS CAMPOS
+    cardColor: row.card_color || null,
+    cardFoto: row.card_foto || null,
+    iconoPersonalizado: row.icono_personalizado || null,
+    
+    idaYVuelta: row.ida_y_vuelta ?? false,
   };
 }
 
@@ -1045,9 +1055,8 @@ export async function crearTorneo(datos, usuarioId) {
     sistemaClasificacion,
     puntosVictoria, puntosEmpate, puntosDerrota,
     permiteEmpate, incluyeEstadisticas, equiposClasifican,
+    cardColor, cardFoto, iconoPersonalizado // ⚡ NUEVOS
   } = datos;
-
-  const canalChatId = `torneo-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
   const { rows } = await pool.query(
     `INSERT INTO torneos (
@@ -1060,6 +1069,7 @@ export async function crearTorneo(datos, usuarioId) {
       puntos_victoria, puntos_empate, puntos_derrota,
       permite_empate, incluye_estadisticas, equipos_clasifican,
       canal_chat_id, organizador_id,
+      card_color, card_foto, icono_personalizado, -- ⚡ NUEVOS
       estado
     )
     VALUES (
@@ -1072,9 +1082,9 @@ export async function crearTorneo(datos, usuarioId) {
       $18, $19, $20,
       $21, $22, $23,
       $24, $25,
+      $26, $27, $28, -- ⚡ NUEVOS
       'inscripcion'
-    )
-    RETURNING *`,
+    )`,
     [
       nombre, deporte, emoji || null, descripcion || null, lugar,
       fechaInicio, fechaFin || null, fechaLimiteInscripcion || null,
@@ -1085,6 +1095,7 @@ export async function crearTorneo(datos, usuarioId) {
       puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
       permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
       canalChatId, usuarioId,
+      cardColor || null, cardFoto || null, iconoPersonalizado || null // ⚡ NUEVOS
     ]
   );
 
@@ -1184,6 +1195,10 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       permiteEmpate: 'permite_empate',
       incluyeEstadisticas: 'incluye_estadisticas',
       equiposClasifican: 'equipos_clasifican',
+      equiposClasifican: 'equipos_clasifican',
+      cardColor: 'card_color',
+      cardFoto: 'card_foto',
+      iconoPersonalizado: 'icono_personalizado',
     };
 
     const camposCriticos = [

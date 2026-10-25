@@ -4285,6 +4285,92 @@ export async function init(params = {}) {
     document.getElementById('torneo-equipos-clasifican-det').value = t.equiposClasifican ?? '';
     document.getElementById('torneo-incluye-estadisticas-det').checked = !!t.incluyeEstadisticas;
 
+    // ⚡ LÓGICA DE PERSONALIZACIÓN PREMIUM (EDICIÓN)
+    const wrapperPremium = document.getElementById('personalizacion-premium-wrapper-det');
+    const lockMsg = document.getElementById('premium-lock-msg-det');
+    const inputsPremium = wrapperPremium.querySelectorAll('input, button[type="button"]');
+    
+    // Variables en el scope de init para usarlas en guardarEdicionTorneo
+    window.__editCardFotoBase64 = t.cardFoto || null;
+    window.__editIconoFileBase64 = t.iconoPersonalizado || null;
+
+    wrapperPremium.classList.remove('hidden');
+
+    if (user?.esPremium) {
+      if (lockMsg) lockMsg.classList.add('hidden');
+      inputsPremium.forEach(el => el.disabled = false);
+
+      document.getElementById('torneo-card-color-det').value = t.cardColor || '#E8836A';
+      
+      const previewFoto = document.getElementById('torneo-card-foto-preview-det');
+      const wrapperFoto = document.getElementById('torneo-card-foto-preview-wrapper-det');
+      const btnQuitarFoto = document.getElementById('torneo-card-foto-quitar-det');
+      
+      if (window.__editCardFotoBase64) { 
+        previewFoto.src = window.__editCardFotoBase64; 
+        wrapperFoto.classList.remove('hidden'); 
+        btnQuitarFoto.classList.remove('hidden');
+      } else { 
+        wrapperFoto.classList.add('hidden'); 
+        btnQuitarFoto.classList.add('hidden');
+      }
+
+      const previewIcono = document.getElementById('torneo-icono-preview-wrapper-det');
+      const btnQuitarIcono = document.getElementById('torneo-icono-quitar-det');
+      
+      if (window.__editIconoFileBase64) { 
+        previewIcono.innerHTML = `<img src="${window.__editIconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
+        btnQuitarIcono.classList.remove('hidden');
+      } else { 
+        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
+        btnQuitarIcono.classList.add('hidden');
+      }
+
+      document.getElementById('torneo-card-foto-file-det').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1.5 * 1024 * 1024) return toast('Máx 1.5 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+          window.__editCardFotoBase64 = ev.target.result; 
+          previewFoto.src = window.__editCardFotoBase64; 
+          wrapperFoto.classList.remove('hidden'); 
+          btnQuitarFoto.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-card-foto-quitar-det').onclick = () => { 
+        window.__editCardFotoBase64 = null; 
+        wrapperFoto.classList.add('hidden'); 
+        btnQuitarFoto.classList.add('hidden'); 
+        document.getElementById('torneo-card-foto-file-det').value = ''; 
+      };
+
+      document.getElementById('torneo-icono-file-det').onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+          window.__editIconoFileBase64 = ev.target.result; 
+          previewIcono.innerHTML = `<img src="${window.__editIconoFileBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; 
+          btnQuitarIcono.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+      };
+
+      document.getElementById('torneo-icono-quitar-det').onclick = () => { 
+        window.__editIconoFileBase64 = null; 
+        previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; 
+        btnQuitarIcono.classList.add('hidden'); 
+        document.getElementById('torneo-icono-file-det').value = ''; 
+      };
+
+    } else {
+      if (lockMsg) lockMsg.classList.remove('hidden');
+      inputsPremium.forEach(el => el.disabled = true);
+    }
+    // ⚡ FIN LÓGICA PREMIUM
+
     abrirModal('modal-editar-torneo-detalle');
   }
 
@@ -4346,6 +4432,13 @@ export async function init(params = {}) {
       equiposClasifican,
       incluyeEstadisticas,
     };
+
+    // ⚡ AGREGAR CAMPOS PREMIUM SI ES PREMIUM
+    if (user?.esPremium) {
+      datos.cardColor = document.getElementById('torneo-card-color-det').value;
+      datos.cardFoto = window.__editCardFotoBase64;
+      datos.iconoPersonalizado = window.__editIconoFileBase64;
+    }
 
     const btn = document.getElementById('btn-guardar-torneo-det');
     btn.disabled = true;
