@@ -485,8 +485,13 @@ export async function init() {
     const customHeroColorWrapper = document.getElementById('edit-perf-hero-color-custom-wrapper');
     const inputCustomHeroColor = document.getElementById('edit-perf-hero-color-custom');
     
-    if (customHeroColorWrapper) customHeroColorWrapper.style.display = u.esPremium ? 'flex' : 'none';
-    if (colorSel.startsWith('#') && inputCustomHeroColor) inputCustomHeroColor.value = colorSel;
+    // Mostrar solo si es premium, usando style.display para evitar conflictos
+    if (customHeroColorWrapper) {
+      customHeroColorWrapper.style.display = u.esPremium ? 'flex' : 'none';
+    }
+    if (colorSel.startsWith('#') && inputCustomHeroColor) {
+      inputCustomHeroColor.value = colorSel;
+    }
 
     if (contColores) {
       contColores.innerHTML = HERO_COLORS.map(c => `
@@ -498,11 +503,17 @@ export async function init() {
           contColores.querySelectorAll('[data-color]').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           colorSel = btn.dataset.color;
+          // Si elige un preset, actualizamos el selector custom para que muestre un color parecido
+          if (inputCustomHeroColor) {
+            const preset = HERO_COLORS.find(x => x.key === colorSel);
+            if (preset) inputCustomHeroColor.value = preset.from;
+          }
         });
       });
     }
 
     if (inputCustomHeroColor) {
+      // Al usar la paleta nativa, guarda el hex elegido
       inputCustomHeroColor.addEventListener('input', (e) => {
         colorSel = e.target.value;
         contColores.querySelectorAll('[data-color]').forEach(b => b.classList.remove('active'));
