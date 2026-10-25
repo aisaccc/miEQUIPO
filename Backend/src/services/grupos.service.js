@@ -286,6 +286,34 @@ export async function crearGrupo(datos, usuarioId) {
   try {
     await client.query('BEGIN');
 
+    // ⚡ VALIDACIÓN DE LÍMITES POR PLAN
+    const { rows: uRows } = await client.query(
+      'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+      [usuarioId]
+    );
+    const esPrem = calcularEsPremium(uRows[0] || {});
+
+    if (!esPrem) {
+      const { rows: countRows } = await client.query(
+        'SELECT COUNT(*)::int AS total FROM grupos WHERE capitan_id = $1 AND tipo = $2',
+        [usuarioId, tipo]
+      );
+      const totalActual = countRows[0].total;
+
+      if (tipo === 'equipo' && totalActual >= 2) {
+        const err = new Error('Alcanzaste el límite de 2 equipos para el plan Básico. Pasate a Premium para crear más.');
+        err.status = 403;
+        throw err;
+      }
+
+      if (tipo === 'comunidad' && totalActual >= 1) {
+        const err = new Error('Alcanzaste el límite de 1 comunidad para el plan Básico. Pasate a Premium para crear más.');
+        err.status = 403;
+        throw err;
+      }
+    }
+    // ⚡ FIN VALIDACIÓN
+
     const { rows: yaExiste } = await client.query(
       `SELECT 1 FROM grupos WHERE LOWER(nombre) = LOWER($1) AND tipo = $2 AND capitan_id = $3`,
       [nombre, tipo, usuarioId]
