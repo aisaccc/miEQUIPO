@@ -1013,6 +1013,29 @@ export async function obtenerTorneo(torneoId, usuarioId) {
    CREAR TORNEO
    ========================================================= */
 export async function crearTorneo(datos, usuarioId) {
+  // ⚡ VALIDACIÓN PREMIUM EN BACKEND
+  const { rows: uRows } = await pool.query(
+    'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+    [usuarioId]
+  );
+  
+  if (!uRows[0]) {
+    const err = new Error('Usuario no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const capPlan = uRows[0].plan;
+  const capPremHasta = uRows[0].premium_hasta;
+  const esPrem = capPlan === 'premium' && (!capPremHasta || new Date(capPremHasta) > new Date());
+
+  if (!esPrem) {
+    const err = new Error('La creación de torneos es exclusiva del plan Premium.');
+    err.status = 403;
+    throw err;
+  }
+  // ⚡ FIN VALIDACIÓN PREMIUM
+
   const {
     nombre, deporte, emoji, descripcion, lugar,
     fechaInicio, fechaFin, fechaLimiteInscripcion,

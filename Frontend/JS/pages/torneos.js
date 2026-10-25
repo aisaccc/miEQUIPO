@@ -186,6 +186,11 @@ export async function init() {
 
   if (!contDisponibles) return null;
 
+  // ⚡ NUEVO: Agregar badge Premium al botón del hero si es básico
+  if (btnCrear && user && !user.esPremium) {
+    btnCrear.innerHTML += ` <span class="badge badge--warning" style="margin-left:8px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>`;
+  }
+
   /* ---------- HELPERS ---------- */
   async function misEquiposComoCapitanOAdmin() {
     try {
@@ -354,12 +359,17 @@ export async function init() {
     if (countEl) countEl.textContent = misCreados.length;
 
     if (misCreados.length === 0) {
+      // ⚡ NUEVO: Badge para el botón vacío si es básico
+      const badgeHtml = !user?.esPremium 
+        ? `<span class="badge badge--warning" style="margin-left:6px; font-size:10px; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">Premium</span>` 
+        : '';
+
       contCreados.innerHTML = `
         <div class="card" style="grid-column: 1 / -1;">
           <div class="empty-state">
             <div class="empty-state__icon">👑</div>
             <p>Aún no has creado ningún torneo.</p>
-            <button class="btn btn--primary mt-4" id="btn-vacio-crear-torneo">+ Crear mi primer torneo</button>
+            <button class="btn btn--primary mt-4" id="btn-vacio-crear-torneo">+ Crear mi primer torneo ${badgeHtml}</button>
           </div>
         </div>`;
       document.getElementById('btn-vacio-crear-torneo')?.addEventListener('click', () => abrirModalCrear());
@@ -823,6 +833,12 @@ export async function init() {
   }
 
   function abrirModalCrear() {
+    // ⚡ VALIDACIÓN PREMIUM: Si es básico, no abrimos el modal
+    if (!user?.esPremium) {
+      toast('La creación de torneos es exclusiva del plan Premium.', 'error');
+      return;
+    }
+
     resetearFormulario();
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Crear torneo';
