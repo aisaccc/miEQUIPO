@@ -982,8 +982,13 @@ export async function init() {
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Crear torneo';
     
-    tabsModal[0].click(); // Reset tab a tecnicos
-    inicializarVisuales(null);
+    // ⚡ FIX: Buscar las pestañas dinámicamente para que no falle
+    const tabs = document.querySelectorAll('[data-tab-torneo]');
+    if (tabs.length > 0) {
+      tabs[0].click(); 
+    }
+    
+    inicializarVisuales(null); // ⚡ Enviar null porque es un torneo nuevo
 
     document.getElementById('btn-guardar-torneo').onclick = () => guardarNuevo();
     abrirModal('modal-crear-torneo');
@@ -1040,7 +1045,12 @@ export async function init() {
     if (inputEquiposClasif)  inputEquiposClasif.value = torneo.equiposClasifican ?? '';
     if (checkIncluyeEstad)   checkIncluyeEstad.checked = !!torneo.incluyeEstadisticas;
 
-    tabsModal[0].click(); // Reset tab a tecnicos
+    // ⚡ FIX: Buscar las pestañas dinámicamente
+    const tabs = document.querySelectorAll('[data-tab-torneo]');
+    if (tabs.length > 0) {
+      tabs[0].click(); 
+    }
+    
     inicializarVisuales(torneo);
 
     document.getElementById('btn-guardar-torneo').onclick = () => guardarEdicion(torneo);
