@@ -126,6 +126,9 @@ export function initHeader() {
         if (accion === 'perfil') {
           window.location.hash = '#/perfil';
           menu.classList.remove('open');
+        } else if (accion === 'plan') {
+          renderPlanModal();
+          menu.classList.remove('open');
         } else if (accion === 'config') {
           abrirModal('modal-configuracion');
           menu.classList.remove('open');
@@ -1065,6 +1068,10 @@ export function initConfiguracion() {
         window.location.hash = '#/perfil'; 
         setTimeout(() => { document.getElementById('btn-editar-perfil')?.click(); }, 400); 
       }
+
+      if (accion === 'mi-plan') {
+        renderPlanModal();
+      }
       
       if (accion === 'cambiar-pass') {
         document.getElementById('pass-actual').value = '';
@@ -1300,3 +1307,51 @@ document.addEventListener('click', (e) => {
   
   cerrarModal('modal-ver-imagen');
 });
+
+/* =========================================================
+   MODAL DE PLANES
+   ========================================================= */
+export function renderPlanModal() {
+  const user = getSesion();
+  if (!user) return;
+
+  const statusBasico = document.getElementById('plan-status-basico');
+  const statusPremium = document.getElementById('plan-status-premium');
+  const cardBasico = document.getElementById('plan-card-basico');
+  const cardPremium = document.getElementById('plan-card-premium');
+
+  // Resetear estilos
+  cardBasico.classList.remove('plan-card--active');
+  cardPremium.classList.remove('plan-card--active');
+
+  if (user.esPremium) {
+    const fecha = user.premiumHasta ? new Date(user.premiumHasta).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin fecha de vencimiento';
+    
+    cardPremium.classList.add('plan-card--active');
+    statusPremium.innerHTML = `
+      <div style="text-align: center;">
+        <span class="badge badge--success" style="padding: 10px 16px; font-size: 14px; margin-bottom: 8px;">✓ Tu plan actual</span>
+        <div class="text-xs text-muted">Vence el ${fecha}</div>
+      </div>
+    `;
+    statusBasico.innerHTML = `<span class="btn btn--ghost" style="width: 100%; cursor: default; opacity: 0.5;">Plan inferior</span>`;
+  } else {
+    cardBasico.classList.add('plan-card--active');
+    statusBasico.innerHTML = `<span class="badge badge--neutral" style="padding: 10px 16px; font-size: 14px; width: 100%; justify-content: center;">Tu plan actual</span>`;
+    statusPremium.innerHTML = `
+      <button class="btn btn--primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="alert('¡MercadoPago estará disponible muy pronto!')">
+        Contratar Premium
+      </button>
+    `;
+  }
+
+  abrirModal('modal-planes');
+
+  // Conectar botón de cerrar
+  document.querySelectorAll('#modal-planes [data-cerrar-modal]').forEach(btn => {
+    btn.onclick = () => cerrarModal('modal-planes');
+  });
+  document.getElementById('modal-planes').onclick = (e) => {
+    if (e.target.id === 'modal-planes') cerrarModal('modal-planes');
+  };
+}
