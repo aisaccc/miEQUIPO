@@ -1,4 +1,4 @@
-import { getSesion } from '../auth.js';
+import { getSesion, obtenerUsuarioActual } from '../auth.js';
 import { toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes } from '../data-mock.js';
 import {
@@ -98,8 +98,17 @@ function colorDeporte(deporte) {
 }
 
 export async function init() {
-  const user = getSesion();
+  let user = getSesion(); // ⚡ Cambiamos const por let
   if (!user) return null;
+
+  // ⚡ NUEVO: Si la sesión es vieja y no tiene el campo, la actualizamos desde el backend
+  if (user.esPremium === undefined) {
+    try {
+      user = await obtenerUsuarioActual();
+    } catch (err) {
+      console.error('[mi-equipo] Error al refrescar sesión:', err);
+    }
+  }
 
   const contenedorEquipo    = document.getElementById('equipo-contenido');
   const contenedorComunidad = document.getElementById('comunidad-contenido');
@@ -1394,14 +1403,15 @@ export async function init() {
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
     // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
+    // ⚡ LÓGICA DE PERSONALIZACIÓN (CREATE)
     const user = getSesion();
     const wrapperPremium = document.getElementById('personalizacion-premium-wrapper');
-
+    
     // Si el usuario es Premium, mostrar el bloque
     if (user?.esPremium) {
       wrapperPremium.classList.remove('hidden');
-      wrapperPremium.hidden = false;
-      wrapperPremium.style.display = 'block';
+      wrapperPremium.hidden = false;                // ⚡ FIX
+      wrapperPremium.style.display = 'block';       // ⚡ FIX
           
       // Resetear campos
       document.getElementById('com-card-color').value = '#E8836A';
