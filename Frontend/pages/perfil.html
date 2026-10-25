@@ -1,305 +1,346 @@
 <!-- ================= HERO DEL PERFIL ================= -->
 <div class="profile-header-card">
-  <div class="profile-header-card__banner" id="perfil-hero" data-hero-color="navy"></div>
-  <div class="profile-header-card__body">
-    <!-- ⚡ Corregido a perfil-header-card__avatar -->
+  <div class="profile-header-card__banner" id="perfil-hero" data-hero-color="navy"></div>
+  <div class="profile-header-card__body">
     <img id="perfil-avatar" src="assets/icons/usuario.svg" alt="" class="perfil-header-card__avatar" />
-    <div class="profile-header-card__info">
-      <h1 id="perfil-nombre" class="profile-header-card__name"></h1>
-      <p id="perfil-username" class="profile-header-card__meta"></p>
-      <p id="perfil-bio" class="text-sm text-muted" style="margin:0 0 12px;"></p>
-      <div class="flex gap-2" style="flex-wrap:wrap">
-        <div id="perfil-deportes-chips"></div>
-        <div id="perfil-meta-chips"></div>
-      </div>
-    </div>
-    <div class="profile-header-card__actions">
-      <button class="btn btn--primary" id="btn-editar-perfil">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-        </svg>
-        Editar perfil
-      </button>
-    </div>
-  </div>
+    
+    <div class="profile-header-card__info">
+      <h1 id="perfil-nombre" class="profile-header-card__name"></h1>
+      <p id="perfil-username" class="profile-header-card__meta"></p>
+      <p id="perfil-bio" class="text-sm text-muted" style="margin:0 0 12px;"></p>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <div id="perfil-deportes-chips"></div>
+        <div id="perfil-meta-chips"></div>
+      </div>
+    </div>
+
+    <div class="profile-header-card__actions">
+      <button class="btn btn--primary" id="btn-editar-perfil">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+        </svg>
+        Editar perfil
+      </button>
+    </div>
+  </div>
 </div>
+
 <!-- ================= STATS DEL HERO ================= -->
 <div class="profile-stats-grid" id="perfil-stats-hero"></div>
+
 <!-- ================= SUBTABS ================= -->
 <div class="subtabs mb-4" id="perfil-subtabs">
-  <button class="subtab subtab--active" data-tab-perfil="publicaciones">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-      <circle cx="8.5" cy="8.5" r="1.5"/>
-      <polyline points="21 15 16 10 5 21"/>
-    </svg>
-    Publicaciones
-  </button>
-  <button class="subtab" data-tab-perfil="actividad">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="8" r="6"/>
-      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
-    </svg>
-    Actividad
-  </button>
-  <button class="subtab" data-tab-perfil="historial" id="tab-perfil-historial">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-    Historial
-  </button>
+  <button class="subtab subtab--active" data-tab-perfil="publicaciones">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+    Publicaciones
+  </button>
+  <button class="subtab" data-tab-perfil="actividad">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8" r="6"/>
+      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+    </svg>
+    Actividad
+  </button>
+  <button class="subtab" data-tab-perfil="historial" id="tab-perfil-historial">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    Historial
+  </button>
 </div>
+
 <!-- ================= PANEL: PUBLICACIONES ================= -->
 <div class="subpanel subpanel--active" id="panel-perfil-publicaciones">
-  <div id="perfil-publicaciones-grid"></div>
+  <div id="perfil-publicaciones-grid"></div>
 </div>
+
 <!-- ================= PANEL: ACTIVIDAD ================= -->
 <div class="subpanel" id="panel-perfil-actividad">
-  <div class="card mb-4">
-    <div class="card__header">
-      <div>
-        <div class="card__eyebrow">Actividad</div>
-        <h3 class="card__title" style="margin:0">Deportes y posiciones</h3>
-      </div>
-      <button class="btn btn--ghost btn--sm" id="btn-editar-deportes">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 20h9"/>
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-        </svg>
-        Editar
-      </button>
-    </div>
-    <div id="perfil-deportes-lista"></div>
-  </div>
-  <div id="perfil-stats-deportes"></div>
+  <div class="card mb-4">
+    <div class="card__header">
+      <div>
+        <div class="card__eyebrow">Actividad</div>
+        <h3 class="card__title" style="margin:0">Deportes y posiciones</h3>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="btn-editar-deportes">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+        </svg>
+        Editar
+      </button>
+    </div>
+    <div id="perfil-deportes-lista"></div>
+  </div>
+
+  <div id="perfil-stats-deportes"></div>
 </div>
+
 <!-- ================= PANEL: HISTORIAL ================= -->
 <div class="subpanel" id="panel-perfil-historial">
-  <div class="card" id="card-historial">
-    <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-3)">
-      <h3 class="card__title" style="margin:0; display:flex; align-items:center; gap:6px">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        Historial de partidos
-      </h3>
-      <span class="text-xs text-muted" id="historial-count">0 partidos jugados</span>
-    </div>
-    <div class="mb-4" style="display:flex; flex-direction:column; gap:var(--space-3)">
-      <div class="toolbar__filters" id="historial-filtros-rol">
-        <button class="chip chip--active" data-hist-rol="todos">Todos</button>
-        <button class="chip" data-hist-rol="organizador">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
-            <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/>
-          </svg>
-          Como organizador
-        </button>
-        <button class="chip" data-hist-rol="jugador">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          Como jugador
-        </button>
-        <button class="chip" data-hist-rol="equipo">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          Como equipo
-        </button>
-      </div>
-      <div class="form-row" style="gap:var(--space-2)">
-        <div class="field" style="margin:0">
-          <select id="historial-deporte" class="field__input">
-            <option value="">Todos los deportes</option>
-          </select>
-        </div>
-        <div class="field" style="margin:0">
-          <input type="date" id="historial-desde" class="field__input" placeholder="Desde" />
-        </div>
-        <div class="field" style="margin:0">
-          <input type="date" id="historial-hasta" class="field__input" placeholder="Hasta" />
-        </div>
-        <button class="btn btn--ghost btn--sm" id="btn-limpiar-filtros" title="Limpiar filtros">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-          Limpiar
-        </button>
-      </div>
-    </div>
-    <div id="perfil-historial"></div>
-    <div id="historial-cargar-mas-wrapper" class="mt-4" style="text-align:center; display:none">
-      <button class="btn btn--ghost" id="btn-historial-cargar-mas">
-        Cargar más
-      </button>
-    </div>
-  </div>
+  <div class="card" id="card-historial">
+    <div class="flex items-center justify-between mb-4" style="flex-wrap:wrap; gap:var(--space-3)">
+      <h3 class="card__title" style="margin:0; display:flex; align-items:center; gap:6px">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Historial de partidos
+      </h3>
+      <span class="text-xs text-muted" id="historial-count">0 partidos jugados</span>
+    </div>
+
+    <div class="mb-4" style="display:flex; flex-direction:column; gap:var(--space-3)">
+      <div class="toolbar__filters" id="historial-filtros-rol">
+        <button class="chip chip--active" data-hist-rol="todos">Todos</button>
+        <button class="chip" data-hist-rol="organizador">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
+            <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/>
+          </svg>
+          Como organizador
+        </button>
+        <button class="chip" data-hist-rol="jugador">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Como jugador
+        </button>
+        <button class="chip" data-hist-rol="equipo">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Como equipo
+        </button>
+      </div>
+
+      <div class="form-row" style="gap:var(--space-2)">
+        <div class="field" style="margin:0">
+          <select id="historial-deporte" class="field__input">
+            <option value="">Todos los deportes</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <input type="date" id="historial-desde" class="field__input" placeholder="Desde" />
+        </div>
+        <div class="field" style="margin:0">
+          <input type="date" id="historial-hasta" class="field__input" placeholder="Hasta" />
+        </div>
+        <button class="btn btn--ghost btn--sm" id="btn-limpiar-filtros" title="Limpiar filtros">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <div id="perfil-historial"></div>
+
+    <div id="historial-cargar-mas-wrapper" class="mt-4" style="text-align:center; display:none">
+      <button class="btn btn--ghost" id="btn-historial-cargar-mas">
+        Cargar más
+      </button>
+    </div>
+  </div>
 </div>
+
 <!-- ================= MODAL: EDITAR PERFIL ================= -->
 <div class="modal-backdrop" id="modal-editar-perfil">
-  <div class="modal" style="max-width: 560px;">
-    <div class="modal__header">
-      <h3 class="modal__title">Editar perfil</h3>
-      <button class="modal__close" data-cerrar-modal="modal-editar-perfil">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div class="modal__body">
-      <div class="field">
-        <label class="field__label">Foto de perfil</label>
-        <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4)">
-          <img id="edit-perf-avatar-preview" src="assets/icons/usuario.svg" alt="" class="avatar avatar--lg" />
-          <div style="flex:1">
-            <label class="btn btn--primary btn--sm" style="cursor:pointer; display:inline-flex">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                <circle cx="12" cy="13" r="4"/>
-              </svg>
-              Subir foto
-              <input type="file" id="edit-perf-avatar-file" accept="image/*" style="display:none" />
-            </label>
-            <button class="btn btn--ghost btn--sm" id="edit-perf-avatar-quitar">Quitar</button>
-          </div>
-        </div>
-        <label class="field__label">O elige una:</label>
-        <div id="perfil-galeria-avatares" class="posiciones-lista" style="min-height:auto"></div>
-      </div>
-      <!-- ⚡ NUEVO: MARCO DE PERFIL -->
-      <div class="field">
-        <label class="field__label" style="display:flex; justify-content:space-between;">
-          Marco de perfil
-          <span class="badge badge--warning" id="badge-marco-premium" style="display:none">Premium</span>
-        </label>
-        <div id="edit-perf-marcos" class="posiciones-lista" style="margin-bottom:8px;"></div>
-        <div id="edit-perf-marco-custom-wrapper" class="hidden" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-          <label class="field__label" style="margin:0;">Color del marco:</label>
-          <input type="color" id="edit-perf-marco-color" value="#E8836A" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="field__label" for="edit-perf-nombre">Nombre completo *</label>
-        <input type="text" id="edit-perf-nombre" class="field__input" maxlength="60" />
-      </div>
-      <div class="field">
-        <label class="field__label" for="edit-perf-username">Nombre de usuario *</label>
-        <input type="text" id="edit-perf-username" class="field__input" maxlength="30" pattern="[a-zA-Z0-9_]{3,20}" />
-      </div>
-      <div class="field">
-        <label class="field__label" for="edit-perf-bio">Bio</label>
-        <textarea id="edit-perf-bio" class="textarea" maxlength="200" placeholder="Cuéntanos algo sobre ti..."></textarea>
-      </div>
-      <div class="form-row">
-        <div class="field">
-          <label class="field__label" for="edit-perf-edad">Edad</label>
-          <input type="number" id="edit-perf-edad" class="field__input" min="10" max="100" placeholder="Ej: 25" />
-        </div>
-        <div class="field">
-          <label class="field__label" for="edit-perf-pais">País</label>
-          <select id="edit-perf-pais" class="field__input">
-            <option value="">Selecciona un país...</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label class="field__label" for="edit-perf-ciudad">Ciudad</label>
-        <input type="text" id="edit-perf-ciudad" class="field__input" maxlength="40" placeholder="Ej: Santiago" />
-      </div>
-      <div class="field">
-        <label class="field__label">Fondo del banner</label>
-        <p class="text-xs text-muted mb-3">
-          Elegí un color o subí una foto. Si subís una foto, se muestra en lugar del color.
-        </p>
-        <div id="edit-perf-hero-colores" class="perfil-color-picker"></div>
-        <!-- ⚡ NUEVO: COLOR CUSTOM PARA PREMIUM -->
-        <div id="edit-perf-hero-color-custom-wrapper" style="display: none; align-items: center; gap: 10px; margin-top: 12px;">
-          <label class="field__label" style="margin:0;">Color personalizado (Premium):</label>
-          <input type="color" id="edit-perf-hero-color-custom" value="#0F1B2D" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
-        </div>
-        <div class="perfil-hero-foto" style="margin-top:16px;">
-          <div class="perfil-hero-foto__label">O subí una foto (opcional, máx 1.5 MB)</div>
-          <div id="edit-perf-hero-foto-preview-wrapper" class="hidden">
-            <div class="perfil-hero-foto__preview">
-              <img id="edit-perf-hero-foto-preview" src="" alt="" />
-              <button class="perfil-hero-foto__del" id="edit-perf-hero-foto-quitar" type="button" title="Quitar foto">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-          </div>
-          <label class="btn btn--ghost btn--sm" style="cursor:pointer; display:inline-flex">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Subir foto
-            <input type="file" id="edit-perf-hero-foto-file" accept="image/*" style="display:none" />
-          </label>
-        </div>
-      </div>
-      <div class="field">
-        <label class="field__label">Estadísticas del hero</label>
-        <p class="text-xs text-muted mb-3">
-          Los partidos se suman automáticamente. Si querés, podés agregar un número base.
-          <br>
-          La visibilidad de tus stats se edita en <strong>Configuración → Privacidad</strong>.
-        </p>
-        <div class="perfil-stats-config">
-          <div class="perfil-stats-config__fila">
-            <div class="perfil-stats-config__info">
-              <strong>Partidos base</strong>
-              <span class="text-xs text-muted">Se suma a los partidos jugados</span>
-            </div>
-            <input type="number" id="edit-perf-base-partidos" class="field__input" min="0" value="0" style="max-width:120px" />
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="field__label">Deportes que practico</label>
-        <div style="display:flex; gap:8px; margin-bottom:var(--space-3)">
-          <select id="edit-perf-nuevo-deporte" class="field__input" style="flex:1">
-            <option value="">Agregar deporte...</option>
-          </select>
-          <button type="button" class="btn btn--primary btn--sm" id="edit-perf-add-deporte">+</button>
-        </div>
-        <div id="edit-perf-deportes-lista" class="feed-list"></div>
-      </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-perfil">Cancelar</button>
-      <button class="btn btn--primary" id="btn-guardar-perfil">Guardar cambios</button>
-    </div>
-  </div>
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Editar perfil</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-perfil">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal__body">
+
+      <div class="field">
+        <label class="field__label">Foto de perfil</label>
+
+        <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4)">
+          <img id="edit-perf-avatar-preview" src="assets/icons/usuario.svg" alt="" class="avatar avatar--lg" />
+          <div style="flex:1">
+            <label class="btn btn--primary btn--sm" style="cursor:pointer; display:inline-flex">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              Subir foto
+              <input type="file" id="edit-perf-avatar-file" accept="image/*" style="display:none" />
+            </label>
+            <button class="btn btn--ghost btn--sm" id="edit-perf-avatar-quitar">Quitar</button>
+          </div>
+        </div>
+
+        <label class="field__label">O elige una:</label>
+        <div id="perfil-galeria-avatares" class="posiciones-lista" style="min-height:auto"></div>
+      </div>
+
+      <!-- ⚡ MARCO DE PERFIL -->
+      <div class="field">
+        <label class="field__label" style="display:flex; justify-content:space-between;">
+          Marco de perfil
+          <span class="badge badge--warning" id="badge-marco-premium" style="display:none">Premium</span>
+        </label>
+        <div id="edit-perf-marcos" class="posiciones-lista" style="margin-bottom:8px;"></div>
+        
+        <!-- ⚡ Corregido: sin la clase hidden, con display:none -->
+        <div id="edit-perf-marco-custom-wrapper" style="display: none; align-items: center; gap: 10px; margin-top: 8px;">
+          <label class="field__label" style="margin:0;">Color del marco:</label>
+          <input type="color" id="edit-perf-marco-color" value="#E8836A" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-nombre">Nombre completo *</label>
+        <input type="text" id="edit-perf-nombre" class="field__input" maxlength="60" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-username">Nombre de usuario *</label>
+        <input type="text" id="edit-perf-username" class="field__input" maxlength="30" pattern="[a-zA-Z0-9_]{3,20}" />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-bio">Bio</label>
+        <textarea id="edit-perf-bio" class="textarea" maxlength="200" placeholder="Cuéntanos algo sobre ti..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="field__label" for="edit-perf-edad">Edad</label>
+          <input type="number" id="edit-perf-edad" class="field__input" min="10" max="100" placeholder="Ej: 25" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="edit-perf-pais">País</label>
+          <select id="edit-perf-pais" class="field__input">
+            <option value="">Selecciona un país...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-perf-ciudad">Ciudad</label>
+        <input type="text" id="edit-perf-ciudad" class="field__input" maxlength="40" placeholder="Ej: Santiago" />
+      </div>
+
+      <div class="field">
+        <label class="field__label">Fondo del banner</label>
+        <p class="text-xs text-muted mb-3">
+          Elegí un color o subí una foto. Si subís una foto, se muestra en lugar del color.
+        </p>
+
+        <div id="edit-perf-hero-colores" class="perfil-color-picker"></div>
+
+        <!-- ⚡ Corregido: sin la clase hidden, con display:none -->
+        <div id="edit-perf-hero-color-custom-wrapper" style="display: none; align-items: center; gap: 10px; margin-top: 12px;">
+          <label class="field__label" style="margin:0;">Color personalizado (Premium):</label>
+          <input type="color" id="edit-perf-hero-color-custom" value="#0F1B2D" style="width:40px; height:40px; padding:0; border:none; border-radius:8px; cursor:pointer;" />
+        </div>
+
+        <div class="perfil-hero-foto" style="margin-top:16px;">
+          <div class="perfil-hero-foto__label">O subí una foto (opcional, máx 1.5 MB)</div>
+
+          <div id="edit-perf-hero-foto-preview-wrapper" class="hidden">
+            <div class="perfil-hero-foto__preview">
+              <img id="edit-perf-hero-foto-preview" src="" alt="" />
+              <button class="perfil-hero-foto__del" id="edit-perf-hero-foto-quitar" type="button" title="Quitar foto">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <label class="btn btn--ghost btn--sm" style="cursor:pointer; display:inline-flex">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Subir foto
+            <input type="file" id="edit-perf-hero-foto-file" accept="image/*" style="display:none" />
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Estadísticas del hero</label>
+        <p class="text-xs text-muted mb-3">
+          Los partidos se suman automáticamente. Si querés, podés agregar un número base.
+          <br>
+          La visibilidad de tus stats se edita en <strong>Configuración → Privacidad</strong>.
+        </p>
+
+        <div class="perfil-stats-config">
+          <div class="perfil-stats-config__fila">
+            <div class="perfil-stats-config__info">
+              <strong>Partidos base</strong>
+              <span class="text-xs text-muted">Se suma a los partidos jugados</span>
+            </div>
+            <input type="number" id="edit-perf-base-partidos" class="field__input" min="0" value="0" style="max-width:120px" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Deportes que practico</label>
+
+        <div style="display:flex; gap:8px; margin-bottom:var(--space-3)">
+          <select id="edit-perf-nuevo-deporte" class="field__input" style="flex:1">
+            <option value="">Agregar deporte...</option>
+          </select>
+          <button type="button" class="btn btn--primary btn--sm" id="edit-perf-add-deporte">+</button>
+        </div>
+
+        <div id="edit-perf-deportes-lista" class="feed-list"></div>
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-perfil">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-perfil">Guardar cambios</button>
+    </div>
+  </div>
 </div>
+
 <!-- ================= MODAL: EDITAR STATS DE UN DEPORTE ================= -->
 <div class="modal-backdrop" id="modal-editar-stats-deporte">
-  <div class="modal" style="max-width: 460px;">
-    <div class="modal__header">
-      <h3 class="modal__title" id="stats-deporte-titulo">Editar estadísticas</h3>
-      <button class="modal__close" data-cerrar-modal="modal-editar-stats-deporte">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div class="modal__body">
-      <p class="text-xs text-muted mb-4">
-        Marca el ✓ de cada registro para que sea <strong>público</strong> en tu perfil.
-        Si lo dejas sin marcar, solo lo verás tú.
-      </p>
-      <div id="stats-deporte-campos"></div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats-deporte">Cancelar</button>
-      <button class="btn btn--primary" id="btn-guardar-stats-deporte">Guardar</button>
-    </div>
-  </div>
+  <div class="modal" style="max-width: 460px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="stats-deporte-titulo">Editar estadísticas</h3>
+      <button class="modal__close" data-cerrar-modal="modal-editar-stats-deporte">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal__body">
+      <p class="text-xs text-muted mb-4">
+        Marca el ✓ de cada registro para que sea <strong>público</strong> en tu perfil.
+        Si lo dejas sin marcar, solo lo verás tú.
+      </p>
+
+      <div id="stats-deporte-campos"></div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" data-cerrar-modal="modal-editar-stats-deporte">Cancelar</button>
+      <button class="btn btn--primary" id="btn-guardar-stats-deporte">Guardar</button>
+    </div>
+  </div>
 </div>
