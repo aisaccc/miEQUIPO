@@ -705,6 +705,12 @@ export async function init() {
     const wrapperBasico = document.getElementById('torneo-visual-basico');
     const wrapperPremium = document.getElementById('torneo-visual-premium');
 
+    // ⚡ FIX: Si no encuentra los contenedores, avisa y sale sin romper
+    if (!wrapperBasico || !wrapperPremium) {
+      console.warn('[torneos] No se encontraron los divs de la pestaña Visual. Verificá que el HTML del modal esté actualizado.');
+      return;
+    }
+
     if (user?.esPremium) {
       wrapperBasico.classList.add('hidden');
       wrapperPremium.classList.remove('hidden');
