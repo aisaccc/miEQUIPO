@@ -440,7 +440,13 @@ export async function init(params = {}) {
 
     /* ---------- COLOR DEL DEPORTE ---------- */
     const color = colorDeporteTorneo(t.deporte);
-    const heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+    
+    if (t.cardFoto) {
+      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${t.cardFoto}'); background-size: cover; background-position: center;`;
+    } else if (t.cardColor) {
+      heroStyle = `background: linear-gradient(135deg, ${t.cardColor} 0%, ${t.cardColor}DD 100%);`;
+    }
 
     /* =========================================================
        RENDER
