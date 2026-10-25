@@ -174,22 +174,33 @@ export async function init() {
   }
 
   function esIconoImagen(valor) {
-    return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
+    if (typeof valor !== 'string') return false;
+    // Detecta rutas de archivo (.png, .jpg, etc.) O textos Base64 (data:image/...)
+    return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor) || valor.startsWith('data:image/');
   }
 
   function renderIconoHtml(valor, size = 20) {
     if (esIconoImagen(valor)) {
+      const esBase64 = valor.startsWith('data:image/');
       const esBandera = valor.toLowerCase().includes('flag') || 
                         valor.toLowerCase().includes('bandera') || 
                         valor.toLowerCase().includes('pais') ||
                         valor.toLowerCase().includes('redondo') ||
                         valor.toLowerCase().includes('mundo');
-      const clase = esBandera ? 'icono-bandera' : 'icono-deporte';
-      return `<img src="${valor}" alt="icono" class="${clase}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+      
+      // ⚡ Si es una foto subida (Base64), le damos una clase exclusiva (icono-custom)
+      const clase = esBase64 ? 'icono-custom' : (esBandera ? 'icono-bandera' : 'icono-deporte');
+      
+      // ⚡ Si es Base64 y es para una tarjeta/hero (size > 30), forzamos que llene el cuadro.
+      // Si es un ícono del sistema, respetamos su tamaño original con "contain".
+      const estilo = (esBase64 && size > 30)
+        ? 'width:100%;height:100%;object-fit:cover;border-radius:inherit;' 
+        : `width:${size}px;height:${size}px;object-fit:contain;`;
+
+      return `<img src="${valor}" alt="icono" class="${clase}" style="${estilo}vertical-align:middle;display:inline-block" />`;
     }
     return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || SVG.shield}</span>`;
   }
-
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str == null ? '' : String(str);

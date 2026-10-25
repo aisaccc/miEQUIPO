@@ -100,8 +100,18 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
   const miembroReal = esMiembroGrupo || esCapitanGrupo || esAdminGrupo;
 
   const color = colorDeporte(grupo.deporte);
-  const heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
-  const escudoHero = renderIconoHtml(grupo.escudo || RUTA_ESCUDO, 48);
+  
+  // ⚡ Respetar el color y la foto personalizada del banner
+  let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
+  if (grupo.cardColor) {
+    heroStyle = `background: linear-gradient(135deg, ${grupo.cardColor} 0%, ${grupo.cardColor}DD 100%);`;
+  }
+  if (grupo.cardFoto) {
+    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
+  }
+
+  // ⚡ Usar el ícono personalizado si existe
+  const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
 
   const partidos = calcularPartidos(grupo.stats);
   const victorias = grupo.stats?.victorias;
@@ -497,14 +507,25 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
   // HELPERS LOCALES
   // ==========================================
   function esIconoImagen(valor) {
-    return typeof valor === 'string' && /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor);
+    if (typeof valor !== 'string') return false;
+    return /\.(png|jpg|jpeg|gif|svg|webp)$/i.test(valor) || valor.startsWith('data:image/');
   }
 
   function renderIconoHtml(valor, size = 20) {
     if (esIconoImagen(valor)) {
-      return `<img src="${valor}" alt="icono" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
+      const esBase64 = valor.startsWith('data:image/');
+      const esBandera = valor.toLowerCase().includes('flag') || 
+                        valor.toLowerCase().includes('bandera') || 
+                        valor.toLowerCase().includes('pais') ||
+                        valor.toLowerCase().includes('redondo') ||
+                        valor.toLowerCase().includes('mundo');
+      const clase = esBase64 ? 'icono-custom' : (esBandera ? 'icono-bandera' : 'icono-deporte');
+      const estilo = (esBase64 && size > 30)
+        ? 'width:100%;height:100%;object-fit:cover;border-radius:inherit;' 
+        : `width:${size}px;height:${size}px;object-fit:contain;`;
+      return `<img src="${valor}" alt="icono" class="${clase}" style="${estilo}vertical-align:middle;display:inline-block" />`;
     }
-    return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || SVG.shield}</span>`;
+    return `<span style="font-size:${size}px;line-height:1;vertical-align:middle">${valor || ''}</span>`;
   }
 
   function calcularPartidos(stats) {
