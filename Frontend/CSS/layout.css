@@ -1116,3 +1116,9 @@ body {
     margin-top: 10px;
   }
 }
+/* =========================================================
+   OCULTAR BARRA INFERIOR CUANDO HAY UN MODAL ABIERTO
+   ========================================================= */
+body:has(.modal-backdrop.open) .app-bottom-nav {
+  display: none !important;
+}
