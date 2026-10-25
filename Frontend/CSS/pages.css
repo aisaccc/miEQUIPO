@@ -14433,3 +14433,28 @@ select.field__input {
 .perfil-header-card__avatar.marco-custom {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+/* =========================================================
+   PERSONALIZACIÓN PREMIUM DE CARDS (Fase 2)
+   ========================================================= */
+#personalizacion-premium-wrapper {
+  background: var(--color-surface-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+#personalizacion-premium-wrapper .field {
+  margin-bottom: var(--space-4);
+}
+
+#personalizacion-premium-wrapper .field:last-child {
+  margin-bottom: 0;
+}
+
+#com-icono-preview-wrapper {
+  transition: all 0.2s ease;
+}
+
+#com-icono-preview-wrapper:hover {
+  border-color: var(--color-primary);
+}

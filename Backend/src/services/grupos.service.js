@@ -1,17 +1,10 @@
 /* =========================================================
    grupos.service.js — Lógica de negocio de grupos
-   =========================================================
-   Grupos = equipos + comunidades
-   SEGURIDAD:
-   - Todas las queries parametrizadas
-   - Ownership validado
-   - Transacciones en acciones sensibles
-   - Filtros de bloqueo
-*/
+   ========================================================= */
 
 import { pool } from '../config/db.js';
 import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js';
-import { crearNotificacion } from './notificaciones.service.js';  // ⚡ NUEVO
+import { crearNotificacion } from './notificaciones.service.js';
 import {
   crearCanalParaGrupo,
   agregarMiembroACanal,
@@ -22,27 +15,26 @@ import {
    HELPERS
    ========================================================= */
 
-function esUuidValido(str) {
-  if (!str) return false;
-  return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(String(str));
+function calcularEsPremium(row) {
+  const plan = row.cap_plan || row.plan;
+  const premiumHasta = row.cap_premium_hasta || row.premium_hasta;
+  
+  if (plan !== 'premium') return false;
+  if (!premiumHasta) return true;
+  return new Date(premiumHasta) > new Date();
 }
 
 function formatearGrupo(row, extras = {}) {
-  // ---------- Stats crudas ----------
   const statsRaw = row.stats || { victorias: 0, empates: 0, derrotas: 0 };
-
-  // ---------- Flags de privacidad por stat ----------
   const victoriasPrivadas = row.stats_victorias_privadas === true;
   const empatesPrivadas   = row.stats_empates_privadas   === true;
   const derrotasPrivadas  = row.stats_derrotas_privadas  === true;
 
-  // ---------- ¿El usuario puede ver las stats? ----------
   const esMiembro = extras.esMiembro ?? false;
   const esCapitan = extras.esCapitan ?? false;
   const esAdmin   = extras.esAdmin ?? false;
   const puedeVerTodo = esMiembro || esCapitan || esAdmin;
 
-  // ---------- Filtrar stats según privacidad ----------
   const stats = {
     victorias: (victoriasPrivadas && !puedeVerTodo) ? null : (statsRaw.victorias ?? 0),
     empates:   (empatesPrivadas   && !puedeVerTodo) ? null : (statsRaw.empates   ?? 0),
@@ -59,11 +51,9 @@ function formatearGrupo(row, extras = {}) {
     descripcion: row.descripcion,
     tipoAcceso: row.tipo_acceso,
     statsPrivadas: row.stats_privadas,
-    // Flags individuales (para que el frontend sepa cuáles están privados)
     statsVictoriasPrivadas: victoriasPrivadas,
     statsEmpatesPrivadas: empatesPrivadas,
     statsDerrotasPrivadas: derrotasPrivadas,
-    // Stats ya filtradas (null = no visible para este usuario)
     stats,
     hilos: row.hilos || [],
     capitanId: row.capitan_id,
@@ -73,23 +63,23 @@ function formatearGrupo(row, extras = {}) {
     esCapitan,
     esAdmin,
     esMiembro,
+    esPremium: calcularEsPremium(row), // ⚡ Plan del dueño
+    // ⚡ Nuevos campos de personalización
+    cardColor: row.card_color || null,
+    cardFoto: row.card_foto || null,
+    iconoPersonalizado: row.icono_personalizado || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 async function obtenerGrupoOFallar(client, grupoId) {
-  const { rows } = await client.query(
-    `SELECT * FROM grupos WHERE id = $1`,
-    [grupoId]
-  );
-
+  const { rows } = await client.query(`SELECT * FROM grupos WHERE id = $1`, [grupoId]);
   if (!rows[0]) {
     const err = new Error('Grupo no encontrado');
     err.status = 404;
     throw err;
   }
-
   return rows[0];
 }
 
@@ -102,25 +92,18 @@ function verificarCapitan(grupo, usuarioId) {
 }
 
 async function verificarCapitanOAdmin(client, grupoId, usuarioId) {
-  const { rows: capitanRows } = await client.query(
-    `SELECT capitan_id FROM grupos WHERE id = $1`,
-    [grupoId]
-  );
-
+  const { rows: capitanRows } = await client.query(`SELECT capitan_id FROM grupos WHERE id = $1`, [grupoId]);
   if (!capitanRows[0]) {
     const err = new Error('Grupo no encontrado');
     err.status = 404;
     throw err;
   }
-
   if (String(capitanRows[0].capitan_id) === String(usuarioId)) return;
 
   const { rows: adminRows } = await client.query(
-    `SELECT 1 FROM grupo_miembros
-     WHERE grupo_id = $1 AND usuario_id = $2 AND rol IN ('capitan', 'admin')`,
+    `SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2 AND rol IN ('capitan', 'admin')`,
     [grupoId, usuarioId]
   );
-
   if (adminRows.length === 0) {
     const err = new Error('No tenés permiso para realizar esta acción');
     err.status = 403;
@@ -132,58 +115,27 @@ async function verificarCapitanOAdmin(client, grupoId, usuarioId) {
    LISTAR GRUPOS
    ========================================================= */
 export async function listarGrupos(filtros, usuarioId) {
-  const {
-    tipo, deporte, ciudad, tipoAcceso,
-    soloMios, busqueda,
-    page = 1, limit = 20
-  } = filtros;
+  const { tipo, deporte, ciudad, tipoAcceso, soloMios, busqueda, page = 1, limit = 20 } = filtros;
 
   const condiciones = [];
   const valores = [];
   let i = 1;
 
-  if (tipo) {
-    condiciones.push(`g.tipo = $${i}`);
-    valores.push(tipo);
-    i++;
-  }
-
-  if (deporte) {
-    condiciones.push(`g.deporte = $${i}`);
-    valores.push(deporte);
-    i++;
-  }
-
-  if (ciudad) {
-    condiciones.push(`g.ciudad ILIKE $${i}`);
-    valores.push(`%${ciudad}%`);
-    i++;
-  }
-
-  if (tipoAcceso) {
-    condiciones.push(`g.tipo_acceso = $${i}`);
-    valores.push(tipoAcceso);
-    i++;
-  }
-
+  if (tipo) { condiciones.push(`g.tipo = $${i}`); valores.push(tipo); i++; }
+  if (deporte) { condiciones.push(`g.deporte = $${i}`); valores.push(deporte); i++; }
+  if (ciudad) { condiciones.push(`g.ciudad ILIKE $${i}`); valores.push(`%${ciudad}%`); i++; }
+  if (tipoAcceso) { condiciones.push(`g.tipo_acceso = $${i}`); valores.push(tipoAcceso); i++; }
   if (busqueda) {
     condiciones.push(`(g.nombre ILIKE $${i} OR g.descripcion ILIKE $${i} OR g.deporte ILIKE $${i})`);
     valores.push(`%${busqueda}%`);
     i++;
   }
-
   if (soloMios === 'true') {
-    condiciones.push(`(
-      g.capitan_id = $${i} OR EXISTS (
-        SELECT 1 FROM grupo_miembros gm
-        WHERE gm.grupo_id = g.id AND gm.usuario_id = $${i}
-      )
-    )`);
+    condiciones.push(`(g.capitan_id = $${i} OR EXISTS (SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = g.id AND gm.usuario_id = $${i}))`);
     valores.push(usuarioId);
     i++;
   }
 
-  // ⚡ BLOQUEO: excluir grupos donde el capitán esté bloqueado (en cualquier dirección)
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   if (bloqueados.length > 0) {
     const placeholders = [];
@@ -195,20 +147,13 @@ export async function listarGrupos(filtros, usuarioId) {
     condiciones.push(`g.capitan_id NOT IN (${placeholders.join(', ')})`);
   }
 
-  const where = condiciones.length > 0
-    ? `WHERE ${condiciones.join(' AND ')}`
-    : '';
+  const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
 
-  // Contar total
-  const { rows: countRows } = await pool.query(
-    `SELECT COUNT(*)::int AS total FROM grupos g ${where}`,
-    valores
-  );
+  const { rows: countRows } = await pool.query(`SELECT COUNT(*)::int AS total FROM grupos g ${where}`, valores);
   const total = countRows[0].total;
 
   const offset = (page - 1) * limit;
   const parametrosFinales = [...valores, limit, offset, usuarioId];
-
   const idxLimit = i;
   const idxOffset = i + 1;
   const idxUser = i + 2;
@@ -216,17 +161,12 @@ export async function listarGrupos(filtros, usuarioId) {
   const { rows } = await pool.query(
     `SELECT g.*,
        u.id AS u_id, u.nombre AS u_nombre, u.username AS u_username, u.avatar AS u_avatar,
+       u.plan AS cap_plan, u.premium_hasta AS cap_premium_hasta,
        (SELECT COUNT(*)::int FROM grupo_miembros WHERE grupo_id = g.id) AS total_miembros,
        (SELECT COUNT(*)::int FROM grupo_solicitudes WHERE grupo_id = g.id AND estado = 'pendiente') AS total_solicitudes,
        (g.capitan_id = $${idxUser}) AS es_capitan,
-       EXISTS (
-         SELECT 1 FROM grupo_miembros gm
-         WHERE gm.grupo_id = g.id AND gm.usuario_id = $${idxUser} AND gm.rol = 'admin'
-       ) AS es_admin,
-       EXISTS (
-         SELECT 1 FROM grupo_miembros gm
-         WHERE gm.grupo_id = g.id AND gm.usuario_id = $${idxUser}
-       ) AS es_miembro
+       EXISTS (SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = g.id AND gm.usuario_id = $${idxUser} AND gm.rol = 'admin') AS es_admin,
+       EXISTS (SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = g.id AND gm.usuario_id = $${idxUser}) AS es_miembro
      FROM grupos g
      JOIN usuarios u ON u.id = g.capitan_id
      ${where}
@@ -237,24 +177,14 @@ export async function listarGrupos(filtros, usuarioId) {
 
   return {
     data: rows.map(row => formatearGrupo(row, {
-      capitan: {
-        id: row.u_id,
-        nombre: row.u_nombre,
-        username: row.u_username,
-        avatar: row.u_avatar,
-      },
+      capitan: { id: row.u_id, nombre: row.u_nombre, username: row.u_username, avatar: row.u_avatar },
       totalMiembros: row.total_miembros,
       totalSolicitudes: row.total_solicitudes,
       esCapitan: row.es_capitan,
       esAdmin: row.es_admin,
       esMiembro: row.es_miembro,
     })),
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 }
 
@@ -264,7 +194,8 @@ export async function listarGrupos(filtros, usuarioId) {
 export async function obtenerGrupo(grupoId, usuarioId) {
   const { rows } = await pool.query(
     `SELECT g.*,
-       u.id AS u_id, u.nombre AS u_nombre, u.username AS u_username, u.avatar AS u_avatar
+       u.id AS u_id, u.nombre AS u_nombre, u.username AS u_username, u.avatar AS u_avatar,
+       u.plan AS cap_plan, u.premium_hasta AS cap_premium_hasta
      FROM grupos g
      JOIN usuarios u ON u.id = g.capitan_id
      WHERE g.id = $1`,
@@ -279,7 +210,6 @@ export async function obtenerGrupo(grupoId, usuarioId) {
 
   const grupo = rows[0];
 
-  // ⚡ BLOQUEO: si hay bloqueo con el capitán, no se puede ver el detalle
   if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
     const err = new Error('Grupo no disponible');
     err.status = 403;
@@ -288,57 +218,44 @@ export async function obtenerGrupo(grupoId, usuarioId) {
 
   const esCapitan = String(grupo.capitan_id) === String(usuarioId);
 
-  // ---------- Miembros ----------
   let miembros = [];
   let esAdmin = false;
   let esMiembro = false;
 
   const { rows: miembroRows } = await pool.query(
-    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union,
-            u.nombre, u.username, u.avatar
+    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union, u.nombre, u.username, u.avatar
      FROM grupo_miembros gm
      JOIN usuarios u ON u.id = gm.usuario_id
      WHERE gm.grupo_id = $1
-     ORDER BY
-       CASE gm.rol WHEN 'capitan' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
-       gm.fecha_union ASC`,
+     ORDER BY CASE gm.rol WHEN 'capitan' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END, gm.fecha_union ASC`,
     [grupoId]
   );
 
   esMiembro = miembroRows.some(m => String(m.id) === String(usuarioId));
-  esAdmin = miembroRows.some(m =>
-    String(m.id) === String(usuarioId) && m.rol === 'admin'
-  );
+  esAdmin = miembroRows.some(m => String(m.id) === String(usuarioId) && m.rol === 'admin');
 
-  // ⚡ CAMBIO: Si el equipo es público, cualquiera puede ver la lista de miembros.
-  // Si es privado, solo miembros o capitanes.
   if (esMiembro || esCapitan || grupo.tipo_acceso === 'publico') {
     miembros = miembroRows;
   }
 
-  // ---------- Solicitudes (solo capitán/admin) ----------
   let solicitudes = [];
   if (esCapitan || esAdmin) {
     const { rows: solRows } = await pool.query(
-      `SELECT gs.id, gs.usuario_id, gs.estado, gs.created_at AS fecha,
-              u.nombre, u.username, u.avatar
+      `SELECT gs.id, gs.usuario_id, gs.estado, gs.created_at AS fecha, u.nombre, u.username, u.avatar
        FROM grupo_solicitudes gs
        JOIN usuarios u ON u.id = gs.usuario_id
        WHERE gs.grupo_id = $1 AND gs.estado = 'pendiente'
        ORDER BY gs.created_at ASC`,
       [grupoId]
     );
-    // ⚡ BLOQUEO: filtrar solicitantes bloqueados (por si quedó algo residual)
     const bloqueadosCtx = await idsBloqueadosTotales(usuarioId);
     solicitudes = solRows.filter(s => !bloqueadosCtx.includes(s.usuario_id));
   }
 
-  // ---------- Mi solicitud pendiente (si no soy miembro ni capitán) ----------
   let miSolicitudPendiente = false;
   if (!esMiembro && !esCapitan) {
     const { rows: miSolRows } = await pool.query(
-      `SELECT 1 FROM grupo_solicitudes
-       WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
+      `SELECT 1 FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
       [grupoId, usuarioId]
     );
     miSolicitudPendiente = miSolRows.length > 0;
@@ -346,12 +263,7 @@ export async function obtenerGrupo(grupoId, usuarioId) {
 
   return {
     ...formatearGrupo(grupo, {
-      capitan: {
-        id: grupo.u_id,
-        nombre: grupo.u_nombre,
-        username: grupo.u_username,
-        avatar: grupo.u_avatar,
-      },
+      capitan: { id: grupo.u_id, nombre: grupo.u_nombre, username: grupo.u_username, avatar: grupo.u_avatar },
       totalMiembros: miembroRows.length,
       totalSolicitudes: solicitudes.length,
       esCapitan,
@@ -365,23 +277,17 @@ export async function obtenerGrupo(grupoId, usuarioId) {
 }
 
 /* =========================================================
-   CREAR GRUPO (equipo o comunidad)
+   CREAR GRUPO
    ========================================================= */
 export async function crearGrupo(datos, usuarioId) {
-  const {
-    tipo, nombre, escudo, deporte, ciudad, descripcion, tipoAcceso,
-  } = datos;
-
+  const { tipo, nombre, escudo, deporte, ciudad, descripcion, tipoAcceso } = datos;
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
     const { rows: yaExiste } = await client.query(
-      `SELECT 1 FROM grupos
-       WHERE LOWER(nombre) = LOWER($1)
-         AND tipo = $2
-         AND capitan_id = $3`,
+      `SELECT 1 FROM grupos WHERE LOWER(nombre) = LOWER($1) AND tipo = $2 AND capitan_id = $3`,
       [nombre, tipo, usuarioId]
     );
 
@@ -392,28 +298,18 @@ export async function crearGrupo(datos, usuarioId) {
     }
 
     const { rows } = await client.query(
-      `INSERT INTO grupos (
-        tipo, nombre, escudo, deporte, ciudad, descripcion,
-        tipo_acceso, capitan_id
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *`,
-      [
-        tipo, nombre, escudo || null, deporte, ciudad || null,
-        descripcion || null, tipoAcceso || 'publico', usuarioId,
-      ]
+      `INSERT INTO grupos (tipo, nombre, escudo, deporte, ciudad, descripcion, tipo_acceso, capitan_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [tipo, nombre, escudo || null, deporte, ciudad || null, descripcion || null, tipoAcceso || 'publico', usuarioId]
     );
 
     const grupo = rows[0];
 
-    // Agregar al creador como capitán en grupo_miembros
     await client.query(
-      `INSERT INTO grupo_miembros (grupo_id, usuario_id, rol)
-       VALUES ($1, $2, 'capitan')`,
+      `INSERT INTO grupo_miembros (grupo_id, usuario_id, rol) VALUES ($1, $2, 'capitan')`,
       [grupo.id, usuarioId]
     );
 
-    // ⚡ Crear canal de chat del grupo + agregar al capitán
     await crearCanalParaGrupo(client, grupo, usuarioId);
 
     await client.query('COMMIT');
@@ -427,7 +323,7 @@ export async function crearGrupo(datos, usuarioId) {
 }
 
 /* =========================================================
-   EDITAR GRUPO (solo capitán o admin)
+   EDITAR GRUPO
    ========================================================= */
 export async function editarGrupo(grupoId, cambios, usuarioId) {
   const client = await pool.connect();
@@ -438,6 +334,21 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
+    // ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
+    if (cambios.cardColor !== undefined || cambios.cardFoto !== undefined || cambios.iconoPersonalizado !== undefined) {
+      const { rows: uRows } = await client.query(
+        'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
+        [grupo.capitan_id]
+      );
+      const esPrem = calcularEsPremium(uRows[0] || {});
+      
+      if (!esPrem) {
+        const err = new Error('La personalización de la card es exclusiva del plan Premium.');
+        err.status = 403;
+        throw err;
+      }
+    }
+
     const permitidos = {
       nombre: 'nombre',
       escudo: 'escudo',
@@ -446,6 +357,9 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
       descripcion: 'descripcion',
       tipoAcceso: 'tipo_acceso',
       statsPrivadas: 'stats_privadas',
+      cardColor: 'card_color',
+      cardFoto: 'card_foto',
+      iconoPersonalizado: 'icono_personalizado',
     };
 
     const campos = [];
@@ -468,9 +382,7 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
     valores.push(grupoId);
 
     await client.query(
-      `UPDATE grupos
-       SET ${campos.join(', ')}, updated_at = NOW()
-       WHERE id = $${i}`,
+      `UPDATE grupos SET ${campos.join(', ')}, updated_at = NOW() WHERE id = $${i}`,
       valores
     );
 
@@ -485,51 +397,28 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
 }
 
 /* =========================================================
-   EDITAR STATS (solo capitán o admin)
+   EDITAR STATS
    ========================================================= */
 export async function editarStats(grupoId, datos, usuarioId) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
-    const stats = {
-      victorias: datos.victorias,
-      empates: datos.empates,
-      derrotas: datos.derrotas,
-    };
-
+    const stats = { victorias: datos.victorias, empates: datos.empates, derrotas: datos.derrotas };
     const camposFlags = [];
     const valoresFlags = [];
     let i = 1;
 
-    if (datos.victoriasPrivadas !== undefined) {
-      camposFlags.push(`stats_victorias_privadas = $${i}`);
-      valoresFlags.push(datos.victoriasPrivadas);
-      i++;
-    }
-    if (datos.empatesPrivadas !== undefined) {
-      camposFlags.push(`stats_empates_privadas = $${i}`);
-      valoresFlags.push(datos.empatesPrivadas);
-      i++;
-    }
-    if (datos.derrotasPrivadas !== undefined) {
-      camposFlags.push(`stats_derrotas_privadas = $${i}`);
-      valoresFlags.push(datos.derrotasPrivadas);
-      i++;
-    }
+    if (datos.victoriasPrivadas !== undefined) { camposFlags.push(`stats_victorias_privadas = $${i}`); valoresFlags.push(datos.victoriasPrivadas); i++; }
+    if (datos.empatesPrivadas !== undefined) { camposFlags.push(`stats_empates_privadas = $${i}`); valoresFlags.push(datos.empatesPrivadas); i++; }
+    if (datos.derrotasPrivadas !== undefined) { camposFlags.push(`stats_derrotas_privadas = $${i}`); valoresFlags.push(datos.derrotasPrivadas); i++; }
 
     valoresFlags.push(JSON.stringify(stats), grupoId);
 
     await client.query(
-      `UPDATE grupos
-       SET stats = $${i}::jsonb
-           ${camposFlags.length > 0 ? ', ' + camposFlags.join(', ') : ''},
-           updated_at = NOW()
-       WHERE id = $${i + 1}`,
+      `UPDATE grupos SET stats = $${i}::jsonb ${camposFlags.length > 0 ? ', ' + camposFlags.join(', ') : ''}, updated_at = NOW() WHERE id = $${i + 1}`,
       valoresFlags
     );
 
@@ -544,22 +433,15 @@ export async function editarStats(grupoId, datos, usuarioId) {
 }
 
 /* =========================================================
-   ELIMINAR GRUPO (solo capitán)
+   ELIMINAR GRUPO
    ========================================================= */
 export async function eliminarGrupo(grupoId, usuarioId) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     verificarCapitan(grupo, usuarioId);
-
-    await client.query(
-      `DELETE FROM grupos WHERE id = $1`,
-      [grupoId]
-    );
-
+    await client.query(`DELETE FROM grupos WHERE id = $1`, [grupoId]);
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Grupo eliminado' };
   } catch (err) {
@@ -571,72 +453,34 @@ export async function eliminarGrupo(grupoId, usuarioId) {
 }
 
 /* =========================================================
-   UNIRSE A UN GRUPO (o solicitar si es privado)
+   UNIRSE A UN GRUPO
    ========================================================= */
 export async function unirseAGrupo(grupoId, usuarioId) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const grupo = await obtenerGrupoOFallar(client, grupoId);
-
-    // ⚡ BLOQUEO con el capitán
     if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-      const err = new Error('No podés unirte a este grupo');
-      err.status = 403;
-      throw err;
+      const err = new Error('No podés unirte a este grupo'); err.status = 403; throw err;
     }
-
-    const { rows: yaEsMiembro } = await client.query(
-      `SELECT 1 FROM grupo_miembros
-       WHERE grupo_id = $1 AND usuario_id = $2`,
-      [grupoId, usuarioId]
-    );
-
-    if (yaEsMiembro.length > 0) {
-      const err = new Error('Ya sos miembro de este grupo');
-      err.status = 409;
-      throw err;
-    }
+    const { rows: yaEsMiembro } = await client.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
+    if (yaEsMiembro.length > 0) { const err = new Error('Ya sos miembro de este grupo'); err.status = 409; throw err; }
 
     if (grupo.tipo_acceso === 'privado') {
-      const { rows: yaSolicito } = await client.query(
-        `SELECT 1 FROM grupo_solicitudes
-         WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
-        [grupoId, usuarioId]
-      );
-
-      if (yaSolicito.length > 0) {
-        const err = new Error('Ya enviaste una solicitud a este grupo');
-        err.status = 409;
-        throw err;
-      }
-
-      // ⚡ Si ya existía una solicitud (aceptada o rechazada), la actualizamos a pendiente
+      const { rows: yaSolicito } = await client.query(`SELECT 1 FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, usuarioId]);
+      if (yaSolicito.length > 0) { const err = new Error('Ya enviaste una solicitud a este grupo'); err.status = 409; throw err; }
       await client.query(
-        `INSERT INTO grupo_solicitudes (grupo_id, usuario_id, estado)
-         VALUES ($1, $2, 'pendiente')
-         ON CONFLICT (grupo_id, usuario_id) 
-         DO UPDATE SET estado = 'pendiente', created_at = NOW()`,
+        `INSERT INTO grupo_solicitudes (grupo_id, usuario_id, estado) VALUES ($1, $2, 'pendiente')
+         ON CONFLICT (grupo_id, usuario_id) DO UPDATE SET estado = 'pendiente', created_at = NOW()`,
         [grupoId, usuarioId]
       );
-
       await client.query('COMMIT');
       return { ok: true, tipo: 'solicitud', mensaje: 'Solicitud enviada' };
     }
 
-    // Si es público → unirse directo
-    await client.query(
-      `INSERT INTO grupo_miembros (grupo_id, usuario_id, rol)
-       VALUES ($1, $2, 'miembro')`,
-      [grupoId, usuarioId]
-    );
-
-    // ⚡ Agregar al canal del grupo
+    await client.query(`INSERT INTO grupo_miembros (grupo_id, usuario_id, rol) VALUES ($1, $2, 'miembro')`, [grupoId, usuarioId]);
     const canalId = `grupo-${grupoId}`;
     await agregarMiembroACanal(client, canalId, usuarioId);
-
     await client.query('COMMIT');
     return { ok: true, tipo: 'inscripcion', mensaje: 'Te uniste al grupo' };
   } catch (err) {
@@ -652,41 +496,16 @@ export async function unirseAGrupo(grupoId, usuarioId) {
    ========================================================= */
 export async function salirDeGrupo(grupoId, usuarioId) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const grupo = await obtenerGrupoOFallar(client, grupoId);
+    if (await estanBloqueados(usuarioId, grupo.capitan_id)) { const err = new Error('No podés interactuar con este grupo'); err.status = 403; throw err; }
+    if (String(grupo.capitan_id) === String(usuarioId)) { const err = new Error('El capitán no puede salir. Eliminá el grupo si querés cerrarlo.'); err.status = 400; throw err; }
 
-    // ⚡ BLOQUEO con el capitán (por si quedó residual en el grupo)
-    if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-      const err = new Error('No podés interactuar con este grupo');
-      err.status = 403;
-      throw err;
-    }
-
-    if (String(grupo.capitan_id) === String(usuarioId)) {
-      const err = new Error('El capitán no puede salir. Eliminá el grupo si querés cerrarlo.');
-      err.status = 400;
-      throw err;
-    }
-
-    const { rowCount } = await client.query(
-      `DELETE FROM grupo_miembros
-       WHERE grupo_id = $1 AND usuario_id = $2`,
-      [grupoId, usuarioId]
-    );
-
-    if (rowCount === 0) {
-      const err = new Error('No sos miembro de este grupo');
-      err.status = 404;
-      throw err;
-    }
-
-    // ⚡ Quitar del canal del grupo
+    const { rowCount } = await client.query(`DELETE FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
+    if (rowCount === 0) { const err = new Error('No sos miembro de este grupo'); err.status = 404; throw err; }
     const canalId = `grupo-${grupoId}`;
     await quitarMiembroDeCanal(client, canalId, usuarioId);
-
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Saliste del grupo' };
   } catch (err) {
@@ -698,114 +517,42 @@ export async function salirDeGrupo(grupoId, usuarioId) {
 }
 
 /* =========================================================
-   CANCELAR SOLICITUD PENDIENTE (el propio usuario)
+   CANCELAR SOLICITUD PENDIENTE
    ========================================================= */
 export async function cancelarMiSolicitud(grupoId, usuarioId) {
-  const { rowCount } = await pool.query(
-    `DELETE FROM grupo_solicitudes
-     WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
-    [grupoId, usuarioId]
-  );
-
-  if (rowCount === 0) {
-    const err = new Error('No tenés una solicitud pendiente en este grupo');
-    err.status = 404;
-    throw err;
-  }
-
+  const { rowCount } = await pool.query(`DELETE FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, usuarioId]);
+  if (rowCount === 0) { const err = new Error('No tenés una solicitud pendiente en este grupo'); err.status = 404; throw err; }
   return { ok: true, mensaje: 'Solicitud cancelada' };
 }
 
 /* =========================================================
-   GESTIONAR SOLICITUD (solo capitán o admin)
+   GESTIONAR SOLICITUD
    ========================================================= */
 export async function gestionarSolicitud(grupoId, usuarioId, solicitanteId, accion) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
-    const grupo = await obtenerGrupoOFallar(client, grupoId);
+    await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
+    if (await estanBloqueados(usuarioId, solicitanteId)) { const err = new Error('No podés gestionar solicitudes de este usuario'); err.status = 403; throw err; }
 
-    // ⚡ BLOQUEO: si el solicitante está bloqueado (en cualquier dirección), no hay nada que gestionar
-    if (await estanBloqueados(usuarioId, solicitanteId)) {
-      const err = new Error('No podés gestionar solicitudes de este usuario');
-      err.status = 403;
-      throw err;
-    }
-
-    const { rows } = await client.query(
-      `SELECT * FROM grupo_solicitudes
-       WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
-      [grupoId, solicitanteId]
-    );
-
-    if (!rows[0]) {
-      const err = new Error('No hay una solicitud pendiente de ese usuario');
-      err.status = 404;
-      throw err;
-    }
+    const { rows } = await client.query(`SELECT * FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, solicitanteId]);
+    if (!rows[0]) { const err = new Error('No hay una solicitud pendiente de ese usuario'); err.status = 404; throw err; }
 
     if (accion === 'rechazar') {
-      await client.query(
-        `UPDATE grupo_solicitudes
-         SET estado = 'rechazada', resuelta_en = NOW()
-         WHERE grupo_id = $1 AND usuario_id = $2`,
-        [grupoId, solicitanteId]
-      );
-
-      // ⚡ Notificar al solicitante
-      const { rows: datosGrupo } = await client.query(
-        `SELECT nombre FROM grupos WHERE id = $1`,
-        [grupoId]
-      );
-      if (datosGrupo[0]) {
-        await crearNotificacion(
-          solicitanteId,
-          'rechazado',
-          `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue rechazada.`,
-          `#/mi-equipo`
-        );
-      }
-
+      await client.query(`UPDATE grupo_solicitudes SET estado = 'rechazada', resuelta_en = NOW() WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, solicitanteId]);
+      const { rows: datosGrupo } = await client.query(`SELECT nombre FROM grupos WHERE id = $1`, [grupoId]);
+      if (datosGrupo[0]) await crearNotificacion(solicitanteId, 'rechazado', `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue rechazada.`, `#/mi-equipo`);
       await client.query('COMMIT');
       return { ok: true, mensaje: 'Solicitud rechazada' };
     }
 
-    // Aprobar: agregar como miembro
-    await client.query(
-      `UPDATE grupo_solicitudes
-       SET estado = 'aceptada', resuelta_en = NOW()
-       WHERE grupo_id = $1 AND usuario_id = $2`,
-      [grupoId, solicitanteId]
-    );
-
-    await client.query(
-      `INSERT INTO grupo_miembros (grupo_id, usuario_id, rol)
-       VALUES ($1, $2, 'miembro')
-       ON CONFLICT (grupo_id, usuario_id) DO NOTHING`,
-      [grupoId, solicitanteId]
-    );
-
-    // ⚡ Agregar al canal del grupo
+    await client.query(`UPDATE grupo_solicitudes SET estado = 'aceptada', resuelta_en = NOW() WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, solicitanteId]);
+    await client.query(`INSERT INTO grupo_miembros (grupo_id, usuario_id, rol) VALUES ($1, $2, 'miembro') ON CONFLICT (grupo_id, usuario_id) DO NOTHING`, [grupoId, solicitanteId]);
     const canalId = `grupo-${grupoId}`;
     await agregarMiembroACanal(client, canalId, solicitanteId);
-
-    // ⚡ Notificar al solicitante
-    const { rows: datosGrupo } = await client.query(
-      `SELECT nombre FROM grupos WHERE id = $1`,
-      [grupoId]
-    );
-    if (datosGrupo[0]) {
-      await crearNotificacion(
-        solicitanteId,
-        'aprobado',
-        `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue aprobada.`,
-        `#/mi-equipo`
-      );
-    }
-
+    const { rows: datosGrupo } = await client.query(`SELECT nombre FROM grupos WHERE id = $1`, [grupoId]);
+    if (datosGrupo[0]) await crearNotificacion(solicitanteId, 'aprobado', `Tu solicitud para unirte a ${datosGrupo[0].nombre} fue aprobada.`, `#/mi-equipo`);
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Solicitud aprobada' };
   } catch (err) {
@@ -818,81 +565,30 @@ export async function gestionarSolicitud(grupoId, usuarioId, solicitanteId, acci
 
 /* =========================================================
    EXPULSAR MIEMBRO
-   =========================================================
-   - El capitán puede expulsar a cualquier miembro (excepto a sí mismo).
-   - El sub-capitán (admin) puede expulsar SOLO a miembros normales.
-     No puede tocar al capitán, ni a otros sub-capitanes, ni a sí mismo.
    ========================================================= */
 export async function expulsarMiembro(grupoId, usuarioId, miembroId) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
-    // ¿Me estoy expulsando a mí mismo?
-    if (String(usuarioId) === String(miembroId)) {
-      const err = new Error('No podés expulsarte a vos mismo. Usá "Salir del equipo".');
-      err.status = 400;
-      throw err;
-    }
+    if (String(usuarioId) === String(miembroId)) { const err = new Error('No podés expulsarte a vos mismo. Usá "Salir del equipo".'); err.status = 400; throw err; }
+    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No podés expulsar al capitán'); err.status = 400; throw err; }
 
-    // ¿Estoy intentando expulsar al capitán?
-    if (String(grupo.capitan_id) === String(miembroId)) {
-      const err = new Error('No podés expulsar al capitán');
-      err.status = 400;
-      throw err;
-    }
-
-    // ¿Soy capitán o sub-capitán?
     const soyCapitan = String(grupo.capitan_id) === String(usuarioId);
-
-    // Si soy sub-capitán, no puedo expulsar a otros sub-capitanes.
     if (!soyCapitan) {
-      const { rows: targetRows } = await client.query(
-        `SELECT rol FROM grupo_miembros
-         WHERE grupo_id = $1 AND usuario_id = $2`,
-        [grupoId, miembroId]
-      );
-
-      if (targetRows[0] && targetRows[0].rol === 'admin') {
-        const err = new Error('No podés expulsar a otro sub-capitán');
-        err.status = 403;
-        throw err;
-      }
+      const { rows: targetRows } = await client.query(`SELECT rol FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, miembroId]);
+      if (targetRows[0] && targetRows[0].rol === 'admin') { const err = new Error('No podés expulsar a otro sub-capitán'); err.status = 403; throw err; }
     }
 
-    const { rowCount } = await client.query(
-      `DELETE FROM grupo_miembros
-       WHERE grupo_id = $1 AND usuario_id = $2`,
-      [grupoId, miembroId]
-    );
-
-    if (rowCount === 0) {
-      const err = new Error('Ese usuario no es miembro del grupo');
-      err.status = 404;
-      throw err;
-    }
-
-    // ⚡ Quitar del canal del grupo
+    const { rowCount } = await client.query(`DELETE FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, miembroId]);
+    if (rowCount === 0) { const err = new Error('Ese usuario no es miembro del grupo'); err.status = 404; throw err; }
     const canalId = `grupo-${grupoId}`;
     await quitarMiembroDeCanal(client, canalId, miembroId);
 
-    // ⚡ Notificar al expulsado
-    const { rows: datosGrupo } = await client.query(
-      `SELECT nombre FROM grupos WHERE id = $1`,
-      [grupoId]
-    );
-    if (datosGrupo[0]) {
-      await crearNotificacion(
-        miembroId,
-        'expulsado',
-        `Fuiste expulsado de ${datosGrupo[0].nombre} por el capitán.`,
-        null
-      );
-    }
+    const { rows: datosGrupo } = await client.query(`SELECT nombre FROM grupos WHERE id = $1`, [grupoId]);
+    if (datosGrupo[0]) await crearNotificacion(miembroId, 'expulsado', `Fuiste expulsado de ${datosGrupo[0].nombre} por el capitán.`, null);
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Miembro expulsado' };
@@ -905,41 +601,20 @@ export async function expulsarMiembro(grupoId, usuarioId, miembroId) {
 }
 
 /* =========================================================
-   NOMBRAR / QUITAR ADMIN (solo capitán)
+   CAMBIAR ROL DE MIEMBRO
    ========================================================= */
 export async function cambiarRolMiembro(grupoId, usuarioId, miembroId, nuevoRol) {
   const client = await pool.connect();
-
   try {
     await client.query('BEGIN');
-
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     verificarCapitan(grupo, usuarioId);
 
-    if (String(grupo.capitan_id) === String(miembroId)) {
-      const err = new Error('No podés cambiar el rol del capitán');
-      err.status = 400;
-      throw err;
-    }
+    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No podés cambiar el rol del capitán'); err.status = 400; throw err; }
+    if (nuevoRol === 'capitan') { const err = new Error('Usá "admin" o "miembro". El capitán no se puede cambiar desde acá.'); err.status = 400; throw err; }
 
-    if (nuevoRol === 'capitan') {
-      const err = new Error('Usá "admin" o "miembro". El capitán no se puede cambiar desde acá.');
-      err.status = 400;
-      throw err;
-    }
-
-    const { rowCount } = await client.query(
-      `UPDATE grupo_miembros
-       SET rol = $1
-       WHERE grupo_id = $2 AND usuario_id = $3`,
-      [nuevoRol, grupoId, miembroId]
-    );
-
-    if (rowCount === 0) {
-      const err = new Error('Ese usuario no es miembro del grupo');
-      err.status = 404;
-      throw err;
-    }
+    const { rowCount } = await client.query(`UPDATE grupo_miembros SET rol = $1 WHERE grupo_id = $2 AND usuario_id = $3`, [nuevoRol, grupoId, miembroId]);
+    if (rowCount === 0) { const err = new Error('Ese usuario no es miembro del grupo'); err.status = 404; throw err; }
 
     await client.query('COMMIT');
     return { ok: true, mensaje: `Rol cambiado a ${nuevoRol}` };
@@ -956,87 +631,44 @@ export async function cambiarRolMiembro(grupoId, usuarioId, miembroId, nuevoRol)
    ========================================================= */
 export async function listarMiembros(grupoId, usuarioId) {
   const grupo = await obtenerGrupoOFallar(pool, grupoId);
-
-  // ⚡ BLOQUEO con el capitán
-  if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-    const err = new Error('Grupo no disponible');
-    err.status = 403;
-    throw err;
-  }
-
-  const { rows: miembroRows } = await pool.query(
-    `SELECT 1 FROM grupo_miembros
-     WHERE grupo_id = $1 AND usuario_id = $2`,
-    [grupoId, usuarioId]
-  );
-
+  if (await estanBloqueados(usuarioId, grupo.capitan_id)) { const err = new Error('Grupo no disponible'); err.status = 403; throw err; }
+  const { rows: miembroRows } = await pool.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
   const esMiembro = miembroRows.length > 0;
   const esCapitan = String(grupo.capitan_id) === String(usuarioId);
-
-  if (!esMiembro && !esCapitan) {
-    const err = new Error('No tenés acceso a los miembros de este grupo');
-    err.status = 403;
-    throw err;
-  }
+  if (!esMiembro && !esCapitan) { const err = new Error('No tenés acceso a los miembros de este grupo'); err.status = 403; throw err; }
 
   const { rows } = await pool.query(
-    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union,
-            u.nombre, u.username, u.avatar, u.ciudad
+    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union, u.nombre, u.username, u.avatar, u.ciudad
      FROM grupo_miembros gm
      JOIN usuarios u ON u.id = gm.usuario_id
      WHERE gm.grupo_id = $1
-     ORDER BY
-       CASE gm.rol WHEN 'capitan' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END,
-       gm.fecha_union ASC`,
+     ORDER BY CASE gm.rol WHEN 'capitan' THEN 1 WHEN 'admin' THEN 2 ELSE 3 END, gm.fecha_union ASC`,
     [grupoId]
   );
-
-  // ⚡ BLOQUEO: filtrar miembros bloqueados con el solicitante
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   return rows.filter(r => !bloqueados.includes(r.id));
 }
 
 /* =========================================================
-   LISTAR SOLICITUDES (solo capitán/admin)
+   LISTAR SOLICITUDES
    ========================================================= */
 export async function listarSolicitudes(grupoId, usuarioId) {
   const grupo = await obtenerGrupoOFallar(pool, grupoId);
-
-  // ⚡ BLOQUEO con el capitán
-  if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-    const err = new Error('Grupo no disponible');
-    err.status = 403;
-    throw err;
-  }
-
+  if (await estanBloqueados(usuarioId, grupo.capitan_id)) { const err = new Error('Grupo no disponible'); err.status = 403; throw err; }
   const esCapitan = String(grupo.capitan_id) === String(usuarioId);
-
   if (!esCapitan) {
-    const { rows: adminRows } = await pool.query(
-      `SELECT 1 FROM grupo_miembros
-       WHERE grupo_id = $1 AND usuario_id = $2 AND rol = 'admin'`,
-      [grupoId, usuarioId]
-    );
-    if (adminRows.length === 0) {
-      const err = new Error('Solo el capitán o admin puede ver las solicitudes');
-      err.status = 403;
-      throw err;
-    }
+    const { rows: adminRows } = await pool.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2 AND rol = 'admin'`, [grupoId, usuarioId]);
+    if (adminRows.length === 0) { const err = new Error('Solo el capitán o admin puede ver las solicitudes'); err.status = 403; throw err; }
   }
 
   const { rows } = await pool.query(
-    `SELECT gs.id, gs.usuario_id AS id_usuario, gs.estado, gs.created_at AS fecha,
-            u.nombre, u.username, u.avatar, u.ciudad
+    `SELECT gs.id, gs.usuario_id AS id_usuario, gs.estado, gs.created_at AS fecha, u.nombre, u.username, u.avatar, u.ciudad
      FROM grupo_solicitudes gs
      JOIN usuarios u ON u.id = gs.usuario_id
      WHERE gs.grupo_id = $1
-     ORDER BY
-       CASE gs.estado WHEN 'pendiente' THEN 1 ELSE 2 END,
-       gs.created_at ASC`,
+     ORDER BY CASE gs.estado WHEN 'pendiente' THEN 1 ELSE 2 END, gs.created_at ASC`,
     [grupoId]
   );
-
-  // ⚡ BLOQUEO: filtrar solicitantes bloqueados
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   return rows.filter(r => !bloqueados.includes(r.id_usuario));
 }
@@ -1046,29 +678,15 @@ export async function listarSolicitudes(grupoId, usuarioId) {
    ========================================================= */
 
 export async function esCapitanOAdminDeGrupo(grupoId, usuarioId) {
-  const { rows } = await pool.query(
-    `SELECT capitan_id FROM grupos WHERE id = $1`,
-    [grupoId]
-  );
-
+  const { rows } = await pool.query(`SELECT capitan_id FROM grupos WHERE id = $1`, [grupoId]);
   if (!rows[0]) return false;
   if (String(rows[0].capitan_id) === String(usuarioId)) return true;
-
-  const { rows: adminRows } = await pool.query(
-    `SELECT 1 FROM grupo_miembros
-     WHERE grupo_id = $1 AND usuario_id = $2 AND rol IN ('capitan', 'admin')`,
-    [grupoId, usuarioId]
-  );
-
+  const { rows: adminRows } = await pool.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2 AND rol IN ('capitan', 'admin')`, [grupoId, usuarioId]);
   return adminRows.length > 0;
 }
 
 export async function esMiembroDeGrupo(grupoId, usuarioId) {
-  const { rows } = await pool.query(
-    `SELECT 1 FROM grupo_miembros
-     WHERE grupo_id = $1 AND usuario_id = $2`,
-    [grupoId, usuarioId]
-  );
+  const { rows } = await pool.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
   return rows.length > 0;
 }
 
@@ -1076,32 +694,16 @@ export async function obtenerGruposDondeSoyCapitanOAdmin(usuarioId, tipo = null)
   const condiciones = [];
   const valores = [usuarioId];
   let i = 2;
-
-  if (tipo) {
-    condiciones.push(`g.tipo = $${i}`);
-    valores.push(tipo);
-    i++;
-  }
-
-  const where = condiciones.length > 0
-    ? `AND ${condiciones.join(' AND ')}`
-    : '';
-
+  if (tipo) { condiciones.push(`g.tipo = $${i}`); valores.push(tipo); i++; }
+  const where = condiciones.length > 0 ? `AND ${condiciones.join(' AND ')}` : '';
   const { rows } = await pool.query(
-    `SELECT g.*,
-       (SELECT COUNT(*)::int FROM grupo_miembros WHERE grupo_id = g.id) AS total_miembros
+    `SELECT g.*, (SELECT COUNT(*)::int FROM grupo_miembros WHERE grupo_id = g.id) AS total_miembros
      FROM grupos g
-     WHERE (
-       g.capitan_id = $1 OR EXISTS (
-         SELECT 1 FROM grupo_miembros gm
-         WHERE gm.grupo_id = g.id AND gm.usuario_id = $1 AND gm.rol IN ('capitan', 'admin')
-       )
-     )
+     WHERE (g.capitan_id = $1 OR EXISTS (SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = g.id AND gm.usuario_id = $1 AND gm.rol IN ('capitan', 'admin')))
      ${where}
      ORDER BY g.created_at DESC`,
     valores
   );
-
   return rows;
 }
 
@@ -1109,36 +711,17 @@ export async function obtenerGruposDondeSoyMiembro(usuarioId, tipo = null) {
   const condiciones = [];
   const valores = [usuarioId];
   let i = 2;
-
-  if (tipo) {
-    condiciones.push(`g.tipo = $${i}`);
-    valores.push(tipo);
-    i++;
-  }
-
-  const where = condiciones.length > 0
-    ? `AND ${condiciones.join(' AND ')}`
-    : '';
-
-  // ⚡ BLOQUEO: excluir grupos donde el capitán esté bloqueado
+  if (tipo) { condiciones.push(`g.tipo = $${i}`); valores.push(tipo); i++; }
+  const where = condiciones.length > 0 ? `AND ${condiciones.join(' AND ')}` : '';
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   if (bloqueados.length > 0) {
     const placeholders = [];
-    for (let j = 0; j < bloqueados.length; j++) {
-      placeholders.push(`$${i}`);
-      valores.push(bloqueados[j]);
-      i++;
-    }
+    for (let j = 0; j < bloqueados.length; j++) { placeholders.push(`$${i}`); valores.push(bloqueados[j]); i++; }
     condiciones.push(`g.capitan_id NOT IN (${placeholders.join(', ')})`);
   }
-
-  const whereConBloqueo = condiciones.length > 0
-    ? `AND ${condiciones.join(' AND ')}`
-    : '';
-
+  const whereConBloqueo = condiciones.length > 0 ? `AND ${condiciones.join(' AND ')}` : '';
   const { rows } = await pool.query(
-    `SELECT g.*,
-       (SELECT COUNT(*)::int FROM grupo_miembros WHERE grupo_id = g.id) AS total_miembros
+    `SELECT g.*, (SELECT COUNT(*)::int FROM grupo_miembros WHERE grupo_id = g.id) AS total_miembros
      FROM grupos g
      JOIN grupo_miembros gm ON gm.grupo_id = g.id
      WHERE gm.usuario_id = $1
@@ -1146,6 +729,5 @@ export async function obtenerGruposDondeSoyMiembro(usuarioId, tipo = null) {
      ORDER BY g.created_at DESC`,
     valores
   );
-
   return rows;
 }

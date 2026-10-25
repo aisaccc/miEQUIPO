@@ -1,11 +1,9 @@
 /* =========================================================
    grupos.schema.js — Validación estricta con Zod
-   =========================================================
-   Grupos = equipos + comunidades
-   .strict() = rechaza campos extra (bloquea mass assignment)
-*/
+   ========================================================= */
 
 import { z } from 'zod';
+import { esColorHex } from '../utils/colores.js';
 
 /* =========================================================
    HELPERS Y CAMPOS REUTILIZABLES
@@ -45,6 +43,15 @@ const escudoValido = z
   .nullable()
   .optional();
 
+// ⚡ Helper para validar imágenes en Base64 o URL
+const urlOBase64 = z.string().max(2_100_000).refine(
+  val => {
+    if (!val) return true;
+    return /^https?:\/\//i.test(val) || /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val);
+  },
+  { message: 'Debe ser una URL válida o una imagen en Base64' }
+).nullable().optional();
+
 const tipoValido = z.enum(['equipo', 'comunidad'], {
   errorMap: () => ({ message: 'Tipo inválido. Debe ser "equipo" o "comunidad"' })
 });
@@ -57,7 +64,6 @@ const tipoAccesoValido = z.enum(['publico', 'privado'], {
    SCHEMAS
    ========================================================= */
 
-/* ---------- POST /api/grupos ---------- */
 export const schemaCrearGrupo = z.object({
   tipo: tipoValido,
   nombre: nombreValido,
@@ -77,37 +83,34 @@ export const schemaEditarGrupo = z.object({
   descripcion: descripcionValida,
   tipoAcceso: tipoAccesoValido.optional(),
   statsPrivadas: z.boolean().optional(),
+  
+  // ⚡ NUEVOS CAMPOS PREMIUM (Personalización de card)
+  cardColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
+  cardFoto: urlOBase64,
+  iconoPersonalizado: urlOBase64,
 }).strict();
 
-/* ---------- PATCH /api/grupos/:id/stats ---------- */
 export const schemaEditarStats = z.object({
   victorias: z.number().int().min(0).max(10000),
   empates: z.number().int().min(0).max(10000),
   derrotas: z.number().int().min(0).max(10000),
-  // Flags de privacidad por stat (opcionales)
   victoriasPrivadas: z.boolean().optional(),
   empatesPrivadas: z.boolean().optional(),
   derrotasPrivadas: z.boolean().optional(),
 }).strict();
 
-/* ---------- POST /api/grupos/:id/unirse ---------- */
-/* Sin body, solo la ruta */
-
-/* ---------- PATCH /api/grupos/:id/solicitudes/:usuarioId ---------- */
 export const schemaGestionarSolicitud = z.object({
   accion: z.enum(['aprobar', 'rechazar'], {
     errorMap: () => ({ message: 'Acción inválida. Debe ser "aprobar" o "rechazar"' })
   }),
 }).strict();
 
-/* ---------- PATCH /api/grupos/:id/miembros/:usuarioId/rol ---------- */
 export const schemaCambiarRol = z.object({
   rol: z.enum(['capitan', 'admin', 'miembro'], {
     errorMap: () => ({ message: 'Rol inválido' })
   }),
 }).strict();
 
-/* ---------- GET /api/grupos (query params) ---------- */
 export const schemaListarGrupos = z.object({
   tipo: z.enum(['equipo', 'comunidad']).optional(),
   deporte: z.string().max(50).optional(),
@@ -119,5 +122,4 @@ export const schemaListarGrupos = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 }).strict();
 
-/* ---------- Param :id ---------- */
 export const schemaUuidParam = uuidValido;
