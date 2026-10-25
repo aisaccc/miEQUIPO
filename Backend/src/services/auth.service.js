@@ -1,9 +1,6 @@
 /* =========================================================
    auth.service.js — Lógica de negocio de autenticación
-   =========================================================
-   Este archivo NO sabe nada de req/res.
-   Solo recibe datos, toca la BD y devuelve resultados.
-*/
+   ========================================================= */
 
 import { pool } from '../config/db.js';
 import { hashearPassword, verificarPassword } from '../utils/password.js';
@@ -28,6 +25,9 @@ import {
    HELPERS
    ========================================================= */
 function formatearUsuario(row) {
+  // ⚡ NUEVO: Calcular esPremium
+  const esPremium = row.plan === 'premium' && (!row.premium_hasta || new Date(row.premium_hasta) > new Date());
+
   return {
     id: row.id,
     nombre: row.nombre,
@@ -42,6 +42,17 @@ function formatearUsuario(row) {
     emailVerificado: row.email_verificado,
     createdAt: row.created_at,
     lastLogin: row.last_login,
+    
+    // ⚡ NUEVO: Incluir datos del plan y personalización
+    plan: row.plan || 'basico',
+    esPremium: esPremium,
+    premiumDesde: row.premium_desde,
+    premiumHasta: row.premium_hasta,
+    premiumOrigen: row.premium_origen,
+    marcoPerfil: row.marco_perfil || 'default',
+    marcoColor: row.marco_color || null,
+    heroColor: row.hero_color || 'navy',
+    heroFoto: row.hero_foto || null,
   };
 }
 
@@ -49,7 +60,6 @@ function formatearUsuario(row) {
    REGISTRO
    ========================================================= */
 export async function registrarUsuario({ nombre, email, username, password }, meta = {}) {
-  // 1. Verificar duplicados
   const { rows: existentes } = await pool.query(
     `SELECT id, email, username
      FROM usuarios
@@ -72,21 +82,19 @@ export async function registrarUsuario({ nombre, email, username, password }, me
     }
   }
 
-  // 2. Hashear password
   const passwordHash = await hashearPassword(password);
 
-  // 3. Insertar usuario
   const { rows } = await pool.query(
     `INSERT INTO usuarios (nombre, email, username, password_hash)
      VALUES ($1, $2, $3, $4)
      RETURNING id, nombre, username, email, avatar, bio, edad, pais, ciudad,
-               deportes, email_verificado, created_at, last_login`,
+               deportes, email_verificado, created_at, last_login,
+               plan, premium_desde, premium_hasta, premium_origen, marco_perfil, marco_color, hero_color, hero_foto`,
     [nombre, email.toLowerCase(), username, passwordHash]
   );
 
   const usuario = rows[0];
 
-  // 4. Token de verificación de email
   const tokenVerificacion = generarTokenAleatorio(32);
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
@@ -98,18 +106,15 @@ export async function registrarUsuario({ nombre, email, username, password }, me
     [usuario.id, tokenHash, expiresAt]
   );
 
-  // 5. Enviar email (no bloquea si falla)
   try {
     await enviarEmailVerificacion(usuario.email, usuario.nombre, tokenVerificacion);
   } catch (mailErr) {
     console.error('[auth.service] No se pudo enviar email de verificación:', mailErr.message);
   }
 
-  // 6. Tokens de sesión
   const accessToken = generarAccessToken(usuario);
   const refreshToken = generarRefreshToken(usuario);
 
-  // 7. Guardar sesión
   await crearSesion(usuario.id, refreshToken, meta);
 
   return {
@@ -123,10 +128,12 @@ export async function registrarUsuario({ nombre, email, username, password }, me
    LOGIN
    ========================================================= */
 export async function loginUsuario({ identificador, password }, meta = {}) {
+  // ⚡ NUEVO: Agregados los campos premium al SELECT
   const { rows } = await pool.query(
     `SELECT id, nombre, username, email, password_hash, avatar, bio,
             edad, pais, ciudad, deportes, email_verificado,
-            created_at, last_login, activo
+            created_at, last_login, activo,
+            plan, premium_desde, premium_hasta, premium_origen, marco_perfil, marco_color, hero_color, hero_foto
      FROM usuarios
      WHERE LOWER(email) = LOWER($1)
         OR LOWER(username) = LOWER($1)
@@ -185,9 +192,11 @@ export async function refrescarTokens(refreshToken, meta = {}) {
     throw err;
   }
 
+  // ⚡ NUEVO: Agregados los campos premium al SELECT
   const { rows } = await pool.query(
     `SELECT id, nombre, username, email, avatar, bio, edad, pais, ciudad,
-            deportes, email_verificado, created_at, last_login
+            deportes, email_verificado, created_at, last_login,
+            plan, premium_desde, premium_hasta, premium_origen, marco_perfil, marco_color, hero_color, hero_foto
      FROM usuarios
      WHERE id = $1 AND activo = TRUE`,
     [sesion.usuario_id]
@@ -229,12 +238,14 @@ export async function cerrarTodasLasSesiones(usuarioId) {
 }
 
 /* =========================================================
-   OBTENER USUARIO ACTUAL
+   OBTENER USUARIO ACTUAL (Ruta /auth/me)
    ========================================================= */
 export async function obtenerUsuarioPorId(usuarioId) {
+  // ⚡ NUEVO: Agregados los campos premium al SELECT
   const { rows } = await pool.query(
     `SELECT id, nombre, username, email, avatar, bio, edad, pais, ciudad,
-            deportes, email_verificado, created_at, last_login
+            deportes, email_verificado, created_at, last_login,
+            plan, premium_desde, premium_hasta, premium_origen, marco_perfil, marco_color, hero_color, hero_foto
      FROM usuarios
      WHERE id = $1 AND activo = TRUE`,
     [usuarioId]
