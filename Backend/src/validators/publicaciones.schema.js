@@ -11,10 +11,29 @@ const contenidoValido = z
 
 const imagenValida = z
   .string()
-  .max(4_200_000, 'La imagen es demasiado grande (máx ~3MB)')
+  .max(25_000_000, 'Las imágenes son demasiado grandes (máx ~20MB)')
   .refine(
-    val => !val || /^https?:\/\//i.test(val) || /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val),
-    { message: 'La imagen debe ser una URL válida o una imagen' }
+    val => {
+      if (!val) return true;
+      // Aceptar URL
+      if (/^https?:\/\//i.test(val)) return true;
+      // Aceptar Base64 simple (retrocompatibilidad)
+      if (/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val)) return true;
+      // Aceptar JSON array de imágenes (nuevo formato multi-foto)
+      try {
+        const arr = JSON.parse(val);
+        if (Array.isArray(arr) && arr.length > 0 && arr.length <= 3) {
+          return arr.every(item =>
+            typeof item === 'string' && (
+              /^https?:\/\//i.test(item) ||
+              /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(item)
+            )
+          );
+        }
+      } catch (e) {}
+      return false;
+    },
+    { message: 'La imagen debe ser una URL válida, una imagen o un array de hasta 3 imágenes' }
   )
   .nullable()
   .optional();
