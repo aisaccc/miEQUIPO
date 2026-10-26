@@ -1130,3 +1130,19 @@ body:has(.modal-backdrop.open) .app-bottom-nav {
      para que el naranja se mantenga naranja */
   filter: invert(1) hue-rotate(180deg) brightness(1.2);
 }
+/* =========================================================
+   FIX DE RENDIMIENTO: SCROLL FLUIDO EN MÓVIL
+   ========================================================= */
+@media (max-width: 800px) {
+  /* Desactivamos el fondo fijo para que el celular no sufra */
+  .app-main {
+    background-attachment: scroll !important;
+  }
+  
+  /* Opcional: Desactivar efectos de "glass" (blur) en móviles para ganar fluidez */
+  .app-header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--color-surface) !important; /* Fondo sólido en vez de transparente */
+  }
+}
