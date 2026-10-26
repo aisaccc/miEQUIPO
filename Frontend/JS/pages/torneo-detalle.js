@@ -361,16 +361,26 @@ export async function init(params = {}) {
     const fechaHeroTexto = fechaIni && fechaFin ? `${fechaIni} — ${fechaFin}` : fechaIni;
 
     const color = colorDeporteTorneo(t.deporte);
+    
+    // ⚡ Fallback: si no hay Hero configurado, usa la Card
+    const fotoHero = t.heroFoto || t.cardFoto;
+    const colorHero = t.heroColor || t.cardColor;
+    
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
     
-    if (t.heroFoto) {
-      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${t.heroFoto}'); background-size: cover; background-position: center;`;
-    } else if (t.heroColor) {
-      heroStyle = `background: linear-gradient(135deg, ${t.heroColor} 0%, ${t.heroColor}DD 100%);`;
+    if (fotoHero) {
+      heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${fotoHero}'); background-size: cover; background-position: center;`;
+    } else if (colorHero) {
+      heroStyle = `background: linear-gradient(135deg, ${colorHero} 0%, ${colorHero}DD 100%);`;
     }
 
     /* ⚡ Marco del ícono del hero */
     const marcoHero = getMarcoData(t.marcoIcono, t.marcoColorIcono);
+
+    // ⚡ Usar ícono personalizado si existe
+    const iconoHero = t.iconoPersonalizado 
+      ? `<img src="${t.iconoPersonalizado}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block" />` 
+      : renderEmoji(t.emoji, 52);
 
     contenedor.innerHTML = `
       <div class="gd-top">
@@ -382,7 +392,7 @@ export async function init(params = {}) {
 
       <div class="td-hero" style="${heroStyle}">
         <div class="td-hero__left">
-          <div class="td-hero__sport ${marcoHero.clase}" style="${marcoHero.estilo}">${renderEmoji(t.emoji, 52)}</div>
+          <div class="td-hero__sport ${marcoHero.clase}" style="${marcoHero.estilo}">${iconoHero}</div>
           <div class="td-hero__info">
             <div class="td-hero__badges">
               <span class="badge ${badgeClase}">${badgeTexto}</span>

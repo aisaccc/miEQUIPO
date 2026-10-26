@@ -110,12 +110,15 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
 
   const color = colorDeporte(grupo.deporte);
   
+  // ⚡ Fallback: si no hay Hero configurado, usa la Card
+  const fotoHero = grupo.heroFoto || grupo.cardFoto;
+  const colorHero = grupo.heroColor || grupo.cardColor;
+  
   let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
-  if (grupo.heroColor) {
-    heroStyle = `background: linear-gradient(135deg, ${grupo.heroColor} 0%, ${grupo.heroColor}DD 100%);`;
-  }
-  if (grupo.heroFoto) {
-    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${grupo.heroFoto}'); background-size: cover; background-position: center;`;
+  if (fotoHero) {
+    heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.10) 0%, rgba(15,27,45,0.55) 100%), url('${fotoHero}'); background-size: cover; background-position: center;`;
+  } else if (colorHero) {
+    heroStyle = `background: linear-gradient(135deg, ${colorHero} 0%, ${colorHero}DD 100%);`;
   }
 
   const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
