@@ -14683,44 +14683,32 @@ select.field__input {
 [data-theme="dark"] .marco-icono-hielo { border-color: #67E8F9 !important; box-shadow: 0 0 20px rgba(103, 232, 249, 0.8) !important; }
 [data-theme="dark"] .marco-icono-galaxia { border-color: #A5B4FC !important; box-shadow: 0 0 25px rgba(165, 180, 252, 0.9) !important; }
 /* =========================================================
-   MOBILE FIX: 2 COLUMNAS PARA TORNEOS/EQUIPOS Y PARTIDOS NORMAL
+   MOBILE FIX: SOLO TORNEOS (2 COLUMNAS)
    ========================================================= */
 @media (max-width: 800px) {
-  
-  /* ========================
-     1. GRILLAS: TORNEOS, EQUIPOS Y COMUNIDADES (2 COLUMNAS)
-     ======================== */
-  .tournament-grid,
-  .grupo-grid {
+  /* 1. Forzar 2 columnas SOLO para Torneos */
+  .tournament-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px !important;
     width: 100%;
   }
 
-  /* ========================
-     2. PARTIDOS Y BÚSQUEDA (VOLVER A 1 COLUMNA NORMAL)
-     ======================== */
-  .match-list,
-  .card-grid {
-    grid-template-columns: 1fr !important; /* Partidos vuelve a pantalla completa */
-    gap: 16px !important;
-    width: 100%;
-  }
-
-  /* ========================
-     3. AJUSTES DE TARJETA DE TORNEO (2 COLUMNAS)
-     ======================== */
+  /* 2. Tarjeta de Torneo compacta */
   .tournament-card {
     padding: 12px !important;
     border-radius: 16px !important;
+    cursor: pointer !important; /* Para que se note que se puede tocar */
   }
+  
   .tournament-card__image {
-    display: none !important; 
+    display: none !important; /* Ocultamos la imagen porque no entra */
   }
+  
   .tournament-card__body {
     padding: 0 !important;
     gap: 8px !important;
   }
+  
   .tournament-card__sport {
     width: 40px !important;
     height: 40px !important;
@@ -14730,12 +14718,13 @@ select.field__input {
     width: 24px !important;
     height: 24px !important;
   }
-  .tournament-card__top-right {
-    display: none !important; /* Ocultamos badges grandes para que quepa el título */
+  
+  .tournament-card__top-right,
+  .tournament-card__eyebrow,
+  .tournament-card__meta {
+    display: none !important; /* Ocultamos badges, texto pequeño y fechas */
   }
-  .tournament-card__eyebrow {
-    display: none !important; 
-  }
+  
   .tournament-card__title {
     font-size: 14px !important;
     white-space: nowrap;
@@ -14744,9 +14733,7 @@ select.field__input {
     line-height: 1.2 !important;
     margin-top: 4px !important;
   }
-  .tournament-card__meta {
-    display: none !important; 
-  }
+  
   .tournament-card__progress-row {
     font-size: 10px !important;
     margin-top: 4px !important;
@@ -14754,78 +14741,18 @@ select.field__input {
     flex-direction: column !important;
     align-items: flex-start !important;
   }
+  
   .tournament-card__progress {
     height: 5px !important;
     margin-top: 6px !important;
   }
+  
   .tournament-card__bottom {
     padding-top: 6px !important;
     margin-top: 4px !important;
   }
+  
   .tournament-card__price {
     font-size: 13px !important;
-  }
-
-  /* ========================
-     4. AJUSTES DE TARJETA DE EQUIPO/COMUNIDAD (2 COLUMNAS)
-     ======================== */
-  .grupo-card {
-    border-radius: 16px !important;
-  }
-  .grupo-card__banner {
-    height: 60px !important;
-  }
-  .grupo-card__crest {
-    width: 44px !important;
-    height: 44px !important;
-    top: 36px !important;
-    left: 12px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 6px rgba(26, 24, 21, 0.14), 0 0 0 3px #fff !important;
-  }
-  .grupo-card__crest img {
-    width: 26px !important;
-    height: 26px !important;
-  }
-  .grupo-card__body {
-    padding: 24px 12px 12px !important;
-    gap: 4px !important;
-  }
-  .grupo-card__rol {
-    display: none !important; 
-  }
-  .grupo-card__title {
-    font-size: 14px !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 4px !important;
-  }
-  .grupo-card__deporte,
-  .grupo-card__desc {
-    display: none !important; 
-  }
-  .grupo-card__stats {
-    margin-top: 6px !important;
-    padding-top: 6px !important;
-    gap: 4px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    border-top: 1px solid var(--color-border);
-  }
-  .grupo-stat__value {
-    font-size: 14px !important;
-  }
-  .grupo-stat__label {
-    font-size: 10px !important;
-  }
-  .grupo-card__edit {
-    width: 30px !important;
-    height: 30px !important;
-    top: 8px !important;
-    right: 8px !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    color: black !important;
   }
 }
