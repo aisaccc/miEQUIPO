@@ -15096,7 +15096,7 @@ select.field__input {
   }
 }
 /* =========================================================
-   FIX DEFINITIVO: CARDS COMPACTAS Y MÁS COLOR
+   FIX DEFINITIVO: CARDS COMPACTAS CON BADGES FLOTANTES
    ========================================================= */
 @media (max-width: 800px) {
   
@@ -15112,10 +15112,9 @@ select.field__input {
     width: 100% !important;
   }
 
-  /* 1. TARJETA MÁS CHICA EN ALTURA */
   .grupo-card {
     width: 100% !important;
-    height: 185px !important; /* ⚡ Altura fija y compacta */
+    height: 185px !important; 
     min-height: 185px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -15124,16 +15123,15 @@ select.field__input {
     border-radius: 14px !important;
   }
 
-  /* 2. BANNER MÁS ALTO (Para lucir el color/foto) */
   .grupo-card__banner {
-    height: 65px !important; /* ⚡ Antes era 45px, ahora se ve más */
+    height: 65px !important; 
     flex-shrink: 0 !important;
   }
 
   .grupo-card__crest {
-    width: 44px !important; /* Ícono un poco más grande */
+    width: 44px !important; 
     height: 44px !important;
-    top: 43px !important; /* Ajustado al nuevo banner */
+    top: 43px !important; 
     left: 10px !important;
     border-radius: 12px !important;
   }
@@ -15143,25 +15141,51 @@ select.field__input {
     height: 24px !important;
   }
 
-  /* 3. CUERPO MÁS COMPACTO */
   .grupo-card__body {
-    padding: 26px 10px 8px !important; /* Menos padding arriba y abajo */
+    padding: 26px 10px 8px !important; 
     display: flex !important;
     flex-direction: column !important;
     flex: 1 !important; 
-    gap: 2px !important; /* Casi sin espacio entre elementos */
+    gap: 2px !important; 
   }
 
-  /* ⚡ OCULTAMOS LA CORONA PARA GANAR ESPACIO ⚡ */
+  /* ⚡ AQUÍ ESTÁ LA MAGIA: BADGES ARRIBA A LA DERECHA ⚡ */
   .grupo-card__rol {
-    display: none !important; 
+    display: flex !important; /* Los mostramos de nuevo */
+    position: absolute !important; /* Los sacamos del flujo */
+    top: 72px !important; /* Los ubicamos justo debajo del banner */
+    right: 10px !important; /* Pegados a la derecha */
+    z-index: 10 !important; /* Por encima de todo */
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* TÍTULO MÁS PEGADO */
+  /* Estilo de los badges (solo íconos redondeados) */
+  .grupo-card__rol .badge {
+    padding: 0 !important;
+    width: 24px !important; 
+    height: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important; /* Sombrita para que floten */
+  }
+
+  .grupo-card__rol .badge svg {
+    width: 13px !important;
+    height: 13px !important;
+    margin: 0 !important;
+    stroke-width: 2.5 !important;
+  }
+
+  /* TÍTULO: Le damos un margen a la derecha para que no choque con los badges */
   .grupo-card__title {
     font-size: 13px !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    padding-right: 60px !important; /* Evita que el texto se meta debajo de los badges */
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -15169,7 +15193,6 @@ select.field__input {
     width: 100% !important; 
   }
 
-  /* DEPORTE MÁS CHICO */
   .grupo-card__deporte {
     font-size: 9px !important;
     padding: 2px 5px !important;
@@ -15181,7 +15204,6 @@ select.field__input {
     display: none !important; 
   }
 
-  /* STATS PEGADAS AL FONDO */
   .grupo-card__stats {
     margin-top: auto !important; 
     padding-top: 6px !important;
