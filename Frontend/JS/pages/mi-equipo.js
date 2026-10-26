@@ -498,7 +498,7 @@ export async function init() {
               ${mostrarPorcentaje ? `
                 <div class="grupo-stat">
                   <div class="grupo-stat__value">${porcentaje}%</div>
-                  <div class="grupo-stat__label">% Victorias</div>
+                  <div class="grupo-stat__label">Victorias</div>
                 </div>
               ` : ''}
             </div>
@@ -735,7 +735,7 @@ export async function init() {
                 <div class="gd-stat__icon">${SVG.percent}</div>
                 <div class="gd-stat__texto">
                   <div class="gd-stat__value">${porcentaje}%</div>
-                  <div class="gd-stat__label">% Victorias</div>
+                  <div class="gd-stat__label">Victorias</div>
                 </div>
               </div>
             ` : ''}
@@ -2106,7 +2106,7 @@ export async function init() {
                     <div class="grupo-card__stats ${mostrarPorcentaje ? '' : 'grupo-card__stats--2'}">
                       <div class="grupo-stat"><div class="grupo-stat__value">${g.totalMiembros || 0}</div><div class="grupo-stat__label">Miembros</div></div>
                       <div class="grupo-stat"><div class="grupo-stat__value">${partidos}</div><div class="grupo-stat__label">Partidos</div></div>
-                      ${mostrarPorcentaje ? `<div class="grupo-stat"><div class="grupo-stat__value">${porcentaje}%</div><div class="grupo-stat__label">% Victorias</div></div>` : ''}
+                      ${mostrarPorcentaje ? `<div class="grupo-stat"><div class="grupo-stat__value">${porcentaje}%</div><div class="grupo-stat__label">Victorias</div></div>` : ''}
                     </div>
                   </div>
                 </article>

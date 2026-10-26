@@ -15064,16 +15064,9 @@ select.field__input {
   }
 
   /* CORTAR DESCRIPCIÓN */
+  /* CORTAR/O OCULTAR DESCRIPCIÓN */
   .grupo-card__desc {
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important; 
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-    margin-bottom: auto !important; 
-    word-break: break-all !important; 
+    display: none !important; /* ⚡ ACÁ OCULTAMOS LA DESCRIPCIÓN EN MÓVIL */
   }
 
   /* STATS */
