@@ -14683,50 +14683,61 @@ select.field__input {
 [data-theme="dark"] .marco-icono-hielo { border-color: #67E8F9 !important; box-shadow: 0 0 20px rgba(103, 232, 249, 0.8) !important; }
 [data-theme="dark"] .marco-icono-galaxia { border-color: #A5B4FC !important; box-shadow: 0 0 25px rgba(165, 180, 252, 0.9) !important; }
 /* =========================================================
-   MOBILE FIX: GRILLAS DE 3 COLUMNAS Y CARDS COMPACTAS
+   MOBILE FIX: 2 COLUMNAS PARA TORNEOS/EQUIPOS Y PARTIDOS NORMAL
    ========================================================= */
 @media (max-width: 800px) {
-  /* Forzar 3 columnas en todas las grillas principales */
+  
+  /* ========================
+     1. GRILLAS: TORNEOS, EQUIPOS Y COMUNIDADES (2 COLUMNAS)
+     ======================== */
   .tournament-grid,
-  .grupo-grid,
-  .match-list,
-  .card-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
+  .grupo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
     width: 100%;
   }
 
   /* ========================
-     TORNEOS (Tarjetas compactas)
+     2. PARTIDOS Y BÚSQUEDA (VOLVER A 1 COLUMNA NORMAL)
+     ======================== */
+  .match-list,
+  .card-grid {
+    grid-template-columns: 1fr !important; /* Partidos vuelve a pantalla completa */
+    gap: 16px !important;
+    width: 100%;
+  }
+
+  /* ========================
+     3. AJUSTES DE TARJETA DE TORNEO (2 COLUMNAS)
      ======================== */
   .tournament-card {
-    padding: 8px !important;
-    border-radius: 12px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
   }
   .tournament-card__image {
-    display: none !important; /* Ocultamos la imagen para que quepa */
+    display: none !important; 
   }
   .tournament-card__body {
     padding: 0 !important;
-    gap: 4px !important;
+    gap: 8px !important;
   }
   .tournament-card__sport {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
   }
   .tournament-card__sport img {
-    width: 20px !important;
-    height: 20px !important;
+    width: 24px !important;
+    height: 24px !important;
   }
   .tournament-card__top-right {
-    display: none !important; /* Ocultamos los badges grandes (Lleno, etc) */
+    display: none !important; /* Ocultamos badges grandes para que quepa el título */
   }
   .tournament-card__eyebrow {
-    display: none !important; /* Ocultamos el texto "FÚTBOL · POR EQUIPOS" */
+    display: none !important; 
   }
   .tournament-card__title {
-    font-size: 12px !important;
+    font-size: 14px !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -14734,57 +14745,57 @@ select.field__input {
     margin-top: 4px !important;
   }
   .tournament-card__meta {
-    display: none !important; /* Ocultamos fecha y lugar */
+    display: none !important; 
   }
   .tournament-card__progress-row {
-    font-size: 9px !important;
-    margin-top: 2px !important;
+    font-size: 10px !important;
+    margin-top: 4px !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
   }
   .tournament-card__progress {
-    height: 4px !important;
-    margin-top: 4px !important;
+    height: 5px !important;
+    margin-top: 6px !important;
   }
   .tournament-card__bottom {
-    padding-top: 4px !important;
+    padding-top: 6px !important;
     margin-top: 4px !important;
   }
   .tournament-card__price {
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   /* ========================
-     EQUIPOS / COMUNIDADES
+     4. AJUSTES DE TARJETA DE EQUIPO/COMUNIDAD (2 COLUMNAS)
      ======================== */
   .grupo-card {
-    border-radius: 12px !important;
+    border-radius: 16px !important;
   }
   .grupo-card__banner {
-    height: 40px !important;
+    height: 60px !important;
   }
   .grupo-card__crest {
-    width: 32px !important;
-    height: 32px !important;
-    top: 24px !important;
-    left: 8px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 2px 6px rgba(26, 24, 21, 0.14), 0 0 0 2px #fff !important;
+    width: 44px !important;
+    height: 44px !important;
+    top: 36px !important;
+    left: 12px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(26, 24, 21, 0.14), 0 0 0 3px #fff !important;
   }
   .grupo-card__crest img {
-    width: 20px !important;
-    height: 20px !important;
+    width: 26px !important;
+    height: 26px !important;
   }
   .grupo-card__body {
-    padding: 18px 8px 8px !important;
-    gap: 2px !important;
+    padding: 24px 12px 12px !important;
+    gap: 4px !important;
   }
   .grupo-card__rol {
-    display: none !important; /* Ocultamos el cartel de "Capitán" */
+    display: none !important; 
   }
   .grupo-card__title {
-    font-size: 12px !important;
+    font-size: 14px !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -14792,73 +14803,29 @@ select.field__input {
   }
   .grupo-card__deporte,
   .grupo-card__desc {
-    display: none !important; /* Ocultamos deporte y descripción */
+    display: none !important; 
   }
   .grupo-card__stats {
-    margin-top: 4px !important;
-    padding-top: 4px !important;
-    gap: 2px !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+    gap: 4px !important;
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
     border-top: 1px solid var(--color-border);
   }
   .grupo-stat__value {
-    font-size: 12px !important;
+    font-size: 14px !important;
   }
   .grupo-stat__label {
-    font-size: 8px !important;
+    font-size: 10px !important;
   }
   .grupo-card__edit {
-    width: 24px !important;
-    height: 24px !important;
-    top: 4px !important;
-    right: 4px !important;
-    background: rgba(255, 255, 255, 0.8) !important;
+    width: 30px !important;
+    height: 30px !important;
+    top: 8px !important;
+    right: 8px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
     color: black !important;
-  }
-
-  /* ========================
-     PARTIDOS (Si también querés 3 columnas)
-     ======================== */
-  .match-card {
-    padding: 8px !important;
-    gap: 6px !important;
-  }
-  .match-card__sport {
-    width: 28px !important;
-    height: 28px !important;
-  }
-  .match-card__sport img {
-    width: 16px !important;
-    height: 16px !important;
-  }
-  .match-card__title {
-    font-size: 11px !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .match-card__meta,
-  .match-card__badges-top,
-  .match-card__acciones-col .btn--ghost,
-  .match-card__progress-label {
-    display: none !important;
-  }
-  .match-card__precio-corner {
-    font-size: 10px !important;
-    text-align: left !important;
-  }
-  .match-card__left {
-     flex-direction: column !important;
-     align-items: flex-start !important;
-     gap: 4px !important;
-  }
-  .match-card__acciones-col {
-    min-width: 0 !important;
-  }
-  .match-card__acciones-col .btn--primary {
-    padding: 6px 8px !important;
-    font-size: 10px !important;
-    border-radius: 8px !important;
   }
 }
