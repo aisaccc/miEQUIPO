@@ -14964,7 +14964,7 @@ select.field__input {
   }
 }
 /* =========================================================
-   FIX DEFINITIVO: CARDS CUADRADAS Y CORTE DE TEXTO
+   FIX DEFINITIVO: CARDS CUADRADAS Y CONTENIDO ESCALADO
    ========================================================= */
 @media (max-width: 800px) {
   
@@ -14982,29 +14982,30 @@ select.field__input {
     width: 100% !important;
   }
 
-  /* 3. TARJETA CUADRADA Y ESTÁTICA (No se estira) */
+  /* 3. TARJETA CUADRADA (Un poco más alta para que entre el contenido) */
   .grupo-card {
     width: 100% !important;
-    aspect-ratio: 1 / 1.1 !important; /* Fuerza la forma rectangular-cuadrada */
+    aspect-ratio: 1 / 1.25 !important; /* Ajustado para que respiren los textos */
     height: auto !important;
     min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important; /* Corta cualquier cosa que se salga */
+    overflow: hidden !important; 
     position: relative !important;
     border-radius: 16px !important;
   }
 
   .grupo-card__banner {
-    height: 40px !important;
+    height: 45px !important; /* Banner más chico */
     flex-shrink: 0 !important;
   }
 
   .grupo-card__crest {
     width: 36px !important;
     height: 36px !important;
-    top: 22px !important; 
-    left: 8px !important;
+    top: 25px !important; 
+    left: 10px !important;
+    border-radius: 10px !important;
   }
 
   .grupo-card__crest img {
@@ -15012,41 +15013,65 @@ select.field__input {
     height: 20px !important;
   }
 
-  /* 4. EL CUERPO MANEJA EL RESTO DEL ESPACIO */
+  /* 4. EL CUERPO Y EL ESPACIADO INTERNO */
   .grupo-card__body {
-    padding: 20px 8px 8px !important; /* Menos padding para ganar espacio */
+    padding: 24px 10px 10px !important; 
     display: flex !important;
     flex-direction: column !important;
     flex: 1 !important; 
-    overflow: hidden !important; /* CLAVE: evita que el texto rompa la tarjeta */
+    gap: 4px !important; /* Reduce el espacio entre elementos */
+    overflow: hidden !important; 
   }
 
-  /* 5. CORTAR TEXTOS LARGOS (URLs, descripciones) */
+  /* ⚡ ACHICAR LOS BADGES (Equipo, Privado, Miembro) ⚡ */
+  .grupo-card__rol {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important; /* Menos espacio entre badges */
+    margin-bottom: 2px !important;
+  }
+
+  .grupo-card__rol .badge {
+    font-size: 9px !important; /* Texto más chico */
+    padding: 3px 6px !important; /* Cápsula más chica */
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 5. TÍTULO Y DEPORTE */
   .grupo-card__title {
     font-size: 13px !important;
-    margin-bottom: 2px !important;
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
   }
 
-  /* ⚡ ESTO ES LO QUE ARREGLA EL TEXTO QUE SE SALE A LA DERECHA ⚡ */
+  .grupo-card__deporte {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    margin-bottom: 4px !important;
+    align-self: flex-start !important;
+  }
+
+  /* 6. CORTAR DESCRIPCIÓN LARGA */
   .grupo-card__desc {
     display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important; /* Solo 2 líneas */
+    -webkit-line-clamp: 2 !important; 
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     font-size: 10px !important;
     line-height: 1.2 !important;
     margin-bottom: auto !important; /* Empuja las stats al fondo */
-    word-break: break-all !important; /* Rompe palabras sin espacios (URLs) */
-    overflow-wrap: anywhere !important;
+    word-break: break-all !important; 
   }
 
-  /* 6. STATS ALINEADAS AL FONDO */
+  /* 7. STATS (Alineadas al fondo) */
   .grupo-card__stats {
-    margin-top: auto !important; /* Se pega al fondo de la tarjeta */
+    margin-top: auto !important; 
     padding-top: 6px !important;
     border-top: 1px solid var(--color-border) !important;
     display: flex !important;
@@ -15061,7 +15086,7 @@ select.field__input {
   }
 
   .grupo-stat__value {
-    font-size: 13px !important;
+    font-size: 12px !important;
     line-height: 1.1 !important;
   }
 
