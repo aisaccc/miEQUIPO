@@ -3981,9 +3981,20 @@ export async function init(params = {}) {
     const wrapperBasico = document.getElementById('torneo-det-visual-basico');
     const wrapperPremium = document.getElementById('torneo-det-visual-premium');
 
+    // ⚡ Mostrar AMBOS wrappers. Bloquear Premium si no lo es.
+    wrapperBasico.classList.remove('hidden');
+    wrapperPremium.classList.remove('hidden');
+
+    renderPaletaDet('torneo-det-card-color-picker-basico', editCardColor, (c) => editCardColor = c);
+    renderPaletaDet('torneo-det-hero-color-picker-basico', editHeroColor, (c) => editHeroColor = c);
+
     if (user?.esPremium) {
-      wrapperBasico.classList.add('hidden');
-      wrapperPremium.classList.remove('hidden');
+      wrapperPremium.style.opacity = '1';
+      wrapperPremium.style.pointerEvents = 'auto';
+      const banner = wrapperPremium.querySelector('.premium-banner');
+      if (banner) banner.remove();
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = false);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'auto');
 
       document.getElementById('torneo-card-color-det').value = editCardColor;
       document.getElementById('torneo-hero-color-det').value = editHeroColor;
@@ -4032,16 +4043,21 @@ export async function init(params = {}) {
       };
       document.getElementById('torneo-icono-quitar-det').onclick = () => { editIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file-det').value = ''; };
 
-      /* ⚡ NUEVO: inicializar selector de marcos (solo Premium) */
       inicializarMarcosDet(torneoData);
 
     } else {
-      wrapperPremium.classList.add('hidden');
-      wrapperBasico.classList.remove('hidden');
-      renderPaletaDet('torneo-det-card-color-picker-basico', editCardColor, (c) => editCardColor = c);
-      renderPaletaDet('torneo-det-hero-color-picker-basico', editHeroColor, (c) => editHeroColor = c);
+      wrapperPremium.style.opacity = '0.6';
+      if (!wrapperPremium.querySelector('.premium-banner')) {
+        wrapperPremium.insertAdjacentHTML('afterbegin', `
+          <div class="premium-banner" style="background: rgba(232, 131, 106, 0.15); border: 1px solid var(--color-primary); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🔒</span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-primary-dark);">Estas opciones son exclusivas del Plan Premium.</span>
+          </div>
+        `);
+      }
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'none');
 
-      // Básicos: resetear marcos para no enviar valores viejos
       editMarcoIcono = 'default';
       editMarcoColorIcono = '#E8836A';
     }

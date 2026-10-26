@@ -71,7 +71,7 @@ const COLOR_DEPORTE = {
 const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
 const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
-/* ⚡ Marcos de ícono (una sola declaración a nivel módulo) */
+/* ⚡ Marcos de ícono */
 const MARCOS_ICONO = [
   { id: 'default', nombre: 'Normal', clase: '' },
   { id: 'oro', nombre: 'Oro', clase: 'marco-icono-oro' },
@@ -299,7 +299,6 @@ export async function init() {
     const color = colorDeporte(t.deporte);
     const iconoDeporte = emojiDeporte[t.deporte];
 
-    // ⚡ Ícono personalizado o por defecto
     let iconoHtml = '';
     if (t.iconoPersonalizado) {
       iconoHtml = `<img src="${t.iconoPersonalizado}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block" />`;
@@ -309,7 +308,6 @@ export async function init() {
         : (t.emoji || ICONOS.trofeo);
     }
 
-    // ⚡ Fondo de la Card
     let bgStyle = `background:${color.bg}; color:${color.fg}`;
     let imageBgStyle = '';
     if (t.cardFoto) {
@@ -319,7 +317,6 @@ export async function init() {
       imageBgStyle = `background: linear-gradient(135deg, ${t.cardColor} 0%, ${t.cardColor}DD 100%);`;
     }
 
-    // ⚡ Marco del ícono
     const marco = getMarcoData(t.marcoIcono, t.marcoColorIcono);
 
     const tipoTexto = t.tipoParticipacion === 'individual' ? 'POR PERSONA' : 'POR EQUIPOS';
@@ -722,7 +719,6 @@ export async function init() {
     });
   }
 
-  /* ⚡ NUEVO: Inicializa el selector de marcos */
   function inicializarMarcosVisuales(torneo) {
     visualMarcoIcono = torneo?.marcoIcono || 'default';
     visualMarcoColorIcono = torneo?.marcoColorIcono || '#E8836A';
@@ -776,9 +772,20 @@ export async function init() {
       return;
     }
 
+    // ⚡ Mostrar AMBOS wrappers. Bloquear Premium si no lo es.
+    wrapperBasico.classList.remove('hidden');
+    wrapperPremium.classList.remove('hidden');
+
+    renderPaleta('torneo-card-color-picker-basico', visualCardColor, (c) => visualCardColor = c);
+    renderPaleta('torneo-hero-color-picker-basico', visualHeroColor, (c) => visualHeroColor = c);
+
     if (user?.esPremium) {
-      wrapperBasico.classList.add('hidden');
-      wrapperPremium.classList.remove('hidden');
+      wrapperPremium.style.opacity = '1';
+      wrapperPremium.style.pointerEvents = 'auto';
+      const banner = wrapperPremium.querySelector('.premium-banner');
+      if (banner) banner.remove();
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = false);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'auto');
 
       document.getElementById('torneo-card-color').value = visualCardColor;
       document.getElementById('torneo-hero-color').value = visualHeroColor;
@@ -827,15 +834,21 @@ export async function init() {
       };
       document.getElementById('torneo-icono-quitar').onclick = () => { visualIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file').value = ''; };
 
-      // ⚡ NUEVO: inicializar selector de marcos (solo Premium)
       inicializarMarcosVisuales(torneo);
 
     } else {
-      wrapperPremium.classList.add('hidden');
-      wrapperBasico.classList.remove('hidden');
-      renderPaleta('torneo-card-color-picker-basico', visualCardColor, (c) => visualCardColor = c);
-      renderPaleta('torneo-hero-color-picker-basico', visualHeroColor, (c) => visualHeroColor = c);
-      // Básicos: resetear estado de marcos para no enviar valores viejos
+      wrapperPremium.style.opacity = '0.6';
+      if (!wrapperPremium.querySelector('.premium-banner')) {
+        wrapperPremium.insertAdjacentHTML('afterbegin', `
+          <div class="premium-banner" style="background: rgba(232, 131, 106, 0.15); border: 1px solid var(--color-primary); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🔒</span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-primary-dark);">Estas opciones son exclusivas del Plan Premium.</span>
+          </div>
+        `);
+      }
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'none');
+
       visualMarcoIcono = 'default';
       visualMarcoColorIcono = '#E8836A';
     }
@@ -1200,7 +1213,6 @@ export async function init() {
 
     const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
 
-    /* ⚡ FIX: enviar marcos también al crear */
     if (user?.esPremium) {
       datos.cardColor = document.getElementById('torneo-card-color').value;
       datos.heroColor = document.getElementById('torneo-hero-color').value;
@@ -1245,8 +1257,6 @@ export async function init() {
 
     const emoji = emojiDeporte[datos.deporte] || ICONOS.trofeo;
 
-    /* ⚡ FIX: los marcos ya vienen del estado visual inicializado en `inicializarVisuales`.
-       Antes acá estaba toda la lógica duplicada de marcos (mal ubicada y nunca ejecutada). */
     if (user?.esPremium) {
       datos.cardColor = document.getElementById('torneo-card-color').value;
       datos.heroColor = document.getElementById('torneo-hero-color').value;

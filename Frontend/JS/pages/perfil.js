@@ -595,10 +595,59 @@ export async function init() {
     const previewHeroWrapper = document.getElementById('edit-perf-hero-foto-preview-wrapper');
     const previewHeroImg = document.getElementById('edit-perf-hero-foto-preview');
     
-    // ⚡ NUEVO: Ocultar todo el bloque de subir foto si no es premium
     const heroFotoWrapperCompleto = document.querySelector('.perfil-hero-foto');
+    
     if (heroFotoWrapperCompleto) {
-      heroFotoWrapperCompleto.style.display = u.esPremium ? 'block' : 'none';
+      // Mostrar el bloque siempre
+      heroFotoWrapperCompleto.style.display = 'block';
+      
+      // Buscar la etiqueta de texto original y el botón de subir
+      const labelEl = heroFotoWrapperCompleto.querySelector('.perfil-hero-foto__label');
+      const btnSubir = heroFotoWrapperCompleto.querySelector('label.btn');
+
+      if (!u.esPremium) {
+        heroFotoWrapperCompleto.style.opacity = '0.6';
+        
+        // Modificar la etiqueta para que tenga el mismo estilo que el marco
+        if (labelEl) {
+          labelEl.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 8px;">
+              <span>Foto de portada</span>
+              <span class="badge badge--warning" style="font-size:10px; padding:2px 6px; border-radius:4px;">Premium</span>
+            </div>
+          `;
+        }
+        
+        // Ponerle el candadito al botón
+        if (btnSubir && !btnSubir.innerHTML.includes('🔒')) {
+          btnSubir.innerHTML = btnSubir.innerHTML.replace('Subir foto', 'Subir foto 🔒');
+        }
+
+        // Bloquear interacción
+        heroFotoWrapperCompleto.querySelectorAll('input, button, label').forEach(el => {
+          el.disabled = true;
+          el.style.pointerEvents = 'none';
+        });
+        
+      } else {
+        heroFotoWrapperCompleto.style.opacity = '1';
+        
+        // Restaurar el texto original si antes era básico
+        if (labelEl && labelEl.innerHTML.includes('badge--warning')) {
+          labelEl.innerHTML = 'O subí una foto (opcional, máx 1.5 MB)';
+        }
+        
+        // Quitar el candadito si estaba
+        if (btnSubir && btnSubir.innerHTML.includes('🔒')) {
+          btnSubir.innerHTML = btnSubir.innerHTML.replace('Subir foto 🔒', 'Subir foto');
+        }
+        
+        // Habilitar interacción
+        heroFotoWrapperCompleto.querySelectorAll('input, button, label').forEach(el => {
+          el.disabled = false;
+          el.style.pointerEvents = 'auto';
+        });
+      }
     }
 
     function actualizarPreviewHeroFoto() {

@@ -37,7 +37,6 @@ const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
 const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
-/* ⚡ Marcos de ícono (una sola declaración a nivel módulo) */
 const MARCOS_ICONO = [
   { id: 'default', nombre: 'Normal', clase: '' },
   { id: 'oro', nombre: 'Oro', clase: 'marco-icono-oro' },
@@ -48,7 +47,6 @@ const MARCOS_ICONO = [
   { id: 'custom', nombre: 'Personalizado', clase: 'marco-icono-custom' }
 ];
 
-/* ⚡ Helper: devuelve { clase, estilo } del marco */
 function getMarcoData(marcoIcono, marcoColorIcono) {
   if (!marcoIcono || marcoIcono === 'default') {
     return { clase: '', estilo: '' };
@@ -371,11 +369,7 @@ export async function init() {
     });
   }
 
-  /* =========================================================
-     ⚡ NUEVO: Inicializa el selector de marcos del modal de grupo
-     ========================================================= */
   function inicializarMarcosGrupo(grupo) {
-    // Estado local (se captura por closure en los listeners de guardar)
     let marcoIconoSel = grupo?.marcoIcono || 'default';
     let marcoColorIconoSel = grupo?.marcoColorIcono || '#E8836A';
 
@@ -412,14 +406,12 @@ export async function init() {
       };
     }
 
-    // Devuelve el estado para usarlo en el payload
     return {
       getMarcoIcono: () => marcoIconoSel,
       getMarcoColorIcono: () => marcoColorIconoSel,
     };
   }
 
-  // ⚡ RENDERIZADO DE LA CARD (Card usa card_*)
   function renderCardGrupo(grupo, esComunidad) {
     const capitan = grupo.esCapitan;
     const admin   = grupo.esAdmin;
@@ -459,7 +451,6 @@ export async function init() {
       bannerStyle = `background-image: url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
     }
 
-    /* ⚡ Marco del ícono */
     const marco = getMarcoData(grupo.marcoIcono, grupo.marcoColorIcono);
 
     const descripcionHtml = grupo.descripcion
@@ -568,7 +559,6 @@ export async function init() {
 
     const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
 
-    /* ⚡ Marco del ícono del hero */
     const marcoHero = getMarcoData(grupo.marcoIcono, grupo.marcoColorIcono);
 
     let botonesHtml = '';
@@ -1546,7 +1536,6 @@ export async function init() {
 
     document.getElementById('editar-stats-privadas-wrapper')?.classList.add('hidden');
 
-    // TABS
     const tabs = modal.querySelectorAll('[data-tab-grupo]');
     const tabTecnicos = document.getElementById('grupo-tab-tecnicos');
     const tabVisual = document.getElementById('grupo-tab-visual');
@@ -1574,7 +1563,6 @@ export async function init() {
       };
     });
 
-    // VISUAL
     const wrapperBasico = document.getElementById('grupo-visual-basico');
     const wrapperPremium = document.getElementById('grupo-visual-premium');
     
@@ -1584,12 +1572,22 @@ export async function init() {
     let heroFotoBase64 = null;
     let iconoFileBase64 = null;
 
-    // ⚡ Estado de marcos: se inicializa para que el closure del guardar pueda acceder
     let marcoState = null;
 
+    // ⚡ Mostrar AMBOS wrappers. Bloquear Premium si no lo es.
+    wrapperBasico.classList.remove('hidden');
+    wrapperPremium.classList.remove('hidden');
+
+    renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
+    renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
+
     if (user?.esPremium) {
-      wrapperBasico.classList.add('hidden');
-      wrapperPremium.classList.remove('hidden');
+      wrapperPremium.style.opacity = '1';
+      wrapperPremium.style.pointerEvents = 'auto';
+      const banner = wrapperPremium.querySelector('.premium-banner');
+      if (banner) banner.remove();
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = false);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'auto');
 
       document.getElementById('com-card-color').value = cardColor;
       document.getElementById('com-hero-color').value = heroColor;
@@ -1649,15 +1647,20 @@ export async function init() {
         document.getElementById('com-icono-file').value = '';
       };
 
-      // ⚡ Inicializar selector de marcos para el modal crear
       marcoState = inicializarMarcosGrupo(null);
 
     } else {
-      wrapperPremium.classList.add('hidden');
-      wrapperBasico.classList.remove('hidden');
-      
-      renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
-      renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
+      wrapperPremium.style.opacity = '0.6';
+      if (!wrapperPremium.querySelector('.premium-banner')) {
+        wrapperPremium.insertAdjacentHTML('afterbegin', `
+          <div class="premium-banner" style="background: rgba(232, 131, 106, 0.15); border: 1px solid var(--color-primary); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🔒</span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-primary-dark);">Estas opciones son exclusivas del Plan Premium.</span>
+          </div>
+        `);
+      }
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'none');
     }
 
     tabs[0].click(); // Reset tab
@@ -1683,7 +1686,6 @@ export async function init() {
           payload.cardFoto = cardFotoBase64;
           payload.heroFoto = heroFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
-          // ⚡ Marcos
           if (marcoState) {
             payload.marcoIcono = marcoState.getMarcoIcono();
             payload.marcoColorIcono = marcoState.getMarcoColorIcono();
@@ -1748,7 +1750,6 @@ export async function init() {
       else { wrapperPriv.classList.add('hidden'); chkPriv.checked = false; }
     }
 
-    // TABS
     const tabs = modal.querySelectorAll('[data-tab-grupo]');
     const tabTecnicos = document.getElementById('grupo-tab-tecnicos');
     const tabVisual = document.getElementById('grupo-tab-visual');
@@ -1776,7 +1777,6 @@ export async function init() {
       };
     });
 
-    // VISUAL
     const wrapperBasico = document.getElementById('grupo-visual-basico');
     const wrapperPremium = document.getElementById('grupo-visual-premium');
     
@@ -1786,12 +1786,22 @@ export async function init() {
     let heroFotoBase64 = grupo.heroFoto || null;
     let iconoFileBase64 = grupo.iconoPersonalizado || null;
 
-    // ⚡ Estado de marcos: se inicializa para que el closure del guardar pueda acceder
     let marcoState = null;
 
+    // ⚡ Mostrar AMBOS wrappers. Bloquear Premium si no lo es.
+    wrapperBasico.classList.remove('hidden');
+    wrapperPremium.classList.remove('hidden');
+
+    renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
+    renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
+
     if (user?.esPremium) {
-      wrapperBasico.classList.add('hidden');
-      wrapperPremium.classList.remove('hidden');
+      wrapperPremium.style.opacity = '1';
+      wrapperPremium.style.pointerEvents = 'auto';
+      const banner = wrapperPremium.querySelector('.premium-banner');
+      if (banner) banner.remove();
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = false);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'auto');
 
       document.getElementById('com-card-color').value = cardColor;
       document.getElementById('com-hero-color').value = heroColor;
@@ -1837,15 +1847,20 @@ export async function init() {
       };
       document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('com-icono-file').value = ''; };
 
-      // ⚡ Inicializar selector de marcos con los valores del grupo
       marcoState = inicializarMarcosGrupo(grupo);
 
     } else {
-      wrapperPremium.classList.add('hidden');
-      wrapperBasico.classList.remove('hidden');
-      
-      renderPaleta('grupo-card-color-picker-basico', cardColor, (c) => cardColor = c);
-      renderPaleta('grupo-hero-color-picker-basico', heroColor, (c) => heroColor = c);
+      wrapperPremium.style.opacity = '0.6';
+      if (!wrapperPremium.querySelector('.premium-banner')) {
+        wrapperPremium.insertAdjacentHTML('afterbegin', `
+          <div class="premium-banner" style="background: rgba(232, 131, 106, 0.15); border: 1px solid var(--color-primary); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">🔒</span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--color-primary-dark);">Estas opciones son exclusivas del Plan Premium.</span>
+          </div>
+        `);
+      }
+      wrapperPremium.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      wrapperPremium.querySelectorAll('.posiciones-lista').forEach(el => el.style.pointerEvents = 'none');
     }
 
     tabs[0].click(); // Reset tab
@@ -1873,7 +1888,6 @@ export async function init() {
           payload.cardFoto = cardFotoBase64;
           payload.heroFoto = heroFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
-          // ⚡ Marcos
           if (marcoState) {
             payload.marcoIcono = marcoState.getMarcoIcono();
             payload.marcoColorIcono = marcoState.getMarcoColorIcono();
@@ -2069,7 +2083,6 @@ export async function init() {
               if (g.cardColor) bannerStyle = `background: linear-gradient(135deg, ${g.cardColor} 0%, ${g.cardColor}DD 100%);`;
               if (g.cardFoto) bannerStyle = `background-image: url('${g.cardFoto}'); background-size: cover; background-position: center;`;
 
-              /* ⚡ Marco del ícono */
               const marco = getMarcoData(g.marcoIcono, g.marcoColorIcono);
 
               const partidos = calcularPartidos(g.stats); const porcentaje = calcularPorcentaje(g.stats);
