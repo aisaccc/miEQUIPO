@@ -14683,100 +14683,33 @@ select.field__input {
 [data-theme="dark"] .marco-icono-hielo { border-color: #67E8F9 !important; box-shadow: 0 0 20px rgba(103, 232, 249, 0.8) !important; }
 [data-theme="dark"] .marco-icono-galaxia { border-color: #A5B4FC !important; box-shadow: 0 0 25px rgba(165, 180, 252, 0.9) !important; }
 /* =========================================================
-   MOBILE FIX: SOLO TORNEOS (2 COLUMNAS)
-   ========================================================= */
-@media (max-width: 800px) {
-  /* 1. Forzar 2 columnas SOLO para Torneos */
-  .tournament-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-    width: 100%;
-  }
-
-  /* 2. Tarjeta de Torneo compacta */
-  .tournament-card {
-    padding: 12px !important;
-    border-radius: 16px !important;
-    cursor: pointer !important; /* Para que se note que se puede tocar */
-  }
-  
-  .tournament-card__image {
-    display: none !important; /* Ocultamos la imagen porque no entra */
-  }
-  
-  .tournament-card__body {
-    padding: 0 !important;
-    gap: 8px !important;
-  }
-  
-  .tournament-card__sport {
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 10px !important;
-  }
-  .tournament-card__sport img {
-    width: 24px !important;
-    height: 24px !important;
-  }
-  
-  .tournament-card__top-right,
-  .tournament-card__eyebrow,
-  .tournament-card__meta {
-    display: none !important; /* Ocultamos badges, texto pequeño y fechas */
-  }
-  
-  .tournament-card__title {
-    font-size: 14px !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2 !important;
-    margin-top: 4px !important;
-  }
-  
-  .tournament-card__progress-row {
-    font-size: 10px !important;
-    margin-top: 4px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-  }
-  
-  .tournament-card__progress {
-    height: 5px !important;
-    margin-top: 6px !important;
-  }
-  
-  .tournament-card__bottom {
-    padding-top: 6px !important;
-    margin-top: 4px !important;
-  }
-  
-  .tournament-card__price {
-    font-size: 13px !important;
-  }
-}
-/* =========================================================
-   MOBILE FIX: TORNEOS 1 COL, STATS 3 COL, PUBS 2 COL
+   MOBILE FIX DEFINITIVO (TORNEOS 1 COL, EQUIPOS 2 COL, STATS 3 COL)
    ========================================================= */
 @media (max-width: 800px) {
   
-  /* 1. TORNEOS: Volver a 1 sola columna (como al principio) */
+  /* 1. TORNEOS: 1 sola columna (Ancho completo) */
   .tournament-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* 2. ESTADÍSTICAS: Forzar 3 columnas en Perfil, Torneos y Equipos */
+  /* 2. EQUIPOS, COMUNIDADES Y BUSCADOR: 2 columnas */
+  .grupo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* 3. ESTADÍSTICAS: 3 columnas en todas partes (Perfil, Modal Perfil, Torneos, Equipos) */
   .profile-stats-grid,
+  .perfil-stats,
   .pd-stats,
-  .gd-stats,
-  .perfil-stats {
+  .gd-stats {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
   }
 
-  /* Achicar un poco el contenido de las stats para que entren en 3 columnas */
+  /* Achicar el contenido de las stats para que entren en 3 columnas */
   .profile-stat-card,
+  .perfil-stat,
   .pd-stat,
   .gd-stat {
     padding: 10px 6px !important;
@@ -14812,8 +14745,7 @@ select.field__input {
     line-height: 1.2 !important;
   }
 
-  /* 3. PUBLICACIONES DEL PERFIL: Forzar 2 columnas */
-  /* Solo aplica a la página de perfil y al modal de ver perfil */
+  /* 4. PUBLICACIONES DEL PERFIL: 2 columnas */
   #page-content .pubs-grid,
   #modal-ver-perfil .pubs-grid {
     grid-template-columns: repeat(2, 1fr) !important;
