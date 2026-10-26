@@ -14683,72 +14683,156 @@ select.field__input {
 [data-theme="dark"] .marco-icono-hielo { border-color: #67E8F9 !important; box-shadow: 0 0 20px rgba(103, 232, 249, 0.8) !important; }
 [data-theme="dark"] .marco-icono-galaxia { border-color: #A5B4FC !important; box-shadow: 0 0 25px rgba(165, 180, 252, 0.9) !important; }
 /* =========================================================
-   MOBILE FIX DEFINITIVO (TORNEOS 1 COL, EQUIPOS 2 COL, STATS 3 COL)
+   MOBILE FIX DEFINITIVO (STATS 3 COL, EQUIPOS CUADRADOS)
    ========================================================= */
 @media (max-width: 800px) {
   
-  /* 1. TORNEOS: 1 sola columna (Ancho completo) */
-  .tournament-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* 2. EQUIPOS, COMUNIDADES Y BUSCADOR: 2 columnas */
-  .grupo-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-  }
-
-  /* 3. ESTADÍSTICAS: 3 columnas en todas partes (Perfil, Modal Perfil, Torneos, Equipos) */
+  /* ==========================================
+     1. ESTADÍSTICAS EN 3 COLUMNAS (TODAS)
+     ========================================== */
+  /* Fuerza a 3 columnas en Perfil, Modal de Perfil, Actividad, Torneos y Equipos */
+  .stats-grid,
   .profile-stats-grid,
   .perfil-stats,
   .pd-stats,
   .gd-stats {
+    display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px !important;
+    width: 100% !important;
   }
 
-  /* Achicar el contenido de las stats para que entren en 3 columnas */
+  /* Achicar las cajas internas para que entren 3 en el celular */
+  .stat-box,
   .profile-stat-card,
   .perfil-stat,
   .pd-stat,
   .gd-stat {
-    padding: 10px 6px !important;
+    padding: 12px 6px !important;
+    display: flex !important;
     flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     text-align: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
+    min-height: 80px !important;
+  }
+
+  /* Achicar textos e íconos de las stats */
+  .stat-box__value,
+  .profile-stat-card__value,
+  .perfil-stat__value,
+  .pd-stat__value,
+  .gd-stat__value {
+    font-size: 18px !important;
+    line-height: 1 !important;
+  }
+
+  .stat-box__label,
+  .profile-stat-card__label,
+  .perfil-stat__label,
+  .pd-stat__label,
+  .gd-stat__label {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0 !important;
+    word-break: break-word !important;
   }
 
   .pd-stat__icon,
   .gd-stat__icon {
-    width: 32px !important;
-    height: 32px !important;
-    margin: 0 auto !important;
+    width: 26px !important;
+    height: 26px !important;
+    margin-bottom: 2px !important;
   }
+
   .pd-stat__icon svg,
   .gd-stat__icon svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
 
-  .pd-stat__value,
-  .gd-stat__value,
-  .profile-stat-card__value,
-  .perfil-stat__value {
-    font-size: 16px !important;
-  }
-
-  .pd-stat__label,
-  .gd-stat__label,
-  .profile-stat-card__label,
-  .perfil-stat__label {
-    font-size: 10px !important;
-    line-height: 1.2 !important;
-  }
-
-  /* 4. PUBLICACIONES DEL PERFIL: 2 columnas */
-  #page-content .pubs-grid,
-  #modal-ver-perfil .pubs-grid {
+  /* ==========================================
+     2. TARJETAS DE EQUIPOS/COMUNIDADES CUADRADAS
+     ========================================== */
+  .grupo-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .grupo-card {
+    aspect-ratio: 1 / 1.05 !important; /* Relación de aspecto casi cuadrada */
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important; /* Corta todo lo que se salga */
+    border-radius: 16px !important;
+  }
+
+  .grupo-card__banner {
+    height: 50px !important; /* Banner más chico para dejar espacio al texto */
+  }
+
+  .grupo-card__crest {
+    width: 40px !important;
+    height: 40px !important;
+    top: 30px !important;
+    left: 10px !important;
+  }
+
+  .grupo-card__crest img {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .grupo-card__body {
+    padding: 24px 10px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important; /* Ocupa el resto del espacio */
+    overflow: hidden !important;
+  }
+
+  .grupo-card__title {
+    font-size: 14px !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .grupo-card__deporte {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    margin-bottom: 4px !important;
+    align-self: flex-start !important;
+  }
+
+  /* ⚡ ACÁ SE CORTA LA DESCRIPCIÓN CON "..." */
+  .grupo-card__desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important; /* Máximo 2 líneas */
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    margin-bottom: auto !important; /* Empuja las stats abajo */
+  }
+
+  .grupo-card__stats {
+    margin-top: 6px !important;
+    padding-top: 6px !important;
     gap: 4px !important;
+    display: flex !important;
+    flex-wrap: wrap !important; /* Por si hay 3 stats, que no se desborden */
+  }
+
+  .grupo-stat__value {
+    font-size: 12px !important;
+  }
+
+  .grupo-stat__label {
+    font-size: 8px !important;
   }
 }
