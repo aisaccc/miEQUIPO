@@ -6543,13 +6543,9 @@ select.field__input {
 /* ---------- IMAGEN DE FONDO ---------- */
 .match-card::before {
   opacity: 0.30 !important;
-  filter: brightness(1.05) saturate(1.05) !important;
-  transition:
-    opacity 0.45s ease,
-    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  /* filter eliminado del estado base */
   transform: scale(1.02) !important;
 }
-
 .match-card:hover::before {
   opacity: 0.65 !important;
   filter: brightness(1.08) saturate(1.10) !important;
@@ -12331,7 +12327,16 @@ select.field__input {
 .match-card:nth-child(n+6),
 .grupo-card:nth-child(n+6),
 .tournament-card:nth-child(n+6),
-.feed-post:nth-child(n+6) { animation-delay: 0.20s; }
+/* Solo animar las primeras 6 */
+.match-card:nth-child(n+7) {
+  animation: none !important;
+}
+
+@media (max-width: 800px) {
+  .match-card {
+    animation: none !important; /* en móvil ni te molestes */
+  }
+}
 
 /* Respetar usuarios con preferencia de menos movimiento */
 @media (prefers-reduced-motion: reduce) {
@@ -15229,5 +15234,17 @@ select.field__input {
     font-size: 8px !important;
     text-transform: uppercase !important;
     margin-top: 2px !important;
+  }
+}
+.match-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 260px; /* alto aproximado de una card */
+}
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;      /* ← en vez de 100vw */
+    max-width: 100% !important;
   }
 }
