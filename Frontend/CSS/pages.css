@@ -14756,3 +14756,67 @@ select.field__input {
     font-size: 13px !important;
   }
 }
+/* =========================================================
+   MOBILE FIX: TORNEOS 1 COL, STATS 3 COL, PUBS 2 COL
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. TORNEOS: Volver a 1 sola columna (como al principio) */
+  .tournament-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 2. ESTADÍSTICAS: Forzar 3 columnas en Perfil, Torneos y Equipos */
+  .profile-stats-grid,
+  .pd-stats,
+  .gd-stats,
+  .perfil-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Achicar un poco el contenido de las stats para que entren en 3 columnas */
+  .profile-stat-card,
+  .pd-stat,
+  .gd-stat {
+    padding: 10px 6px !important;
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 6px !important;
+  }
+
+  .pd-stat__icon,
+  .gd-stat__icon {
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 auto !important;
+  }
+  .pd-stat__icon svg,
+  .gd-stat__icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .pd-stat__value,
+  .gd-stat__value,
+  .profile-stat-card__value,
+  .perfil-stat__value {
+    font-size: 16px !important;
+  }
+
+  .pd-stat__label,
+  .gd-stat__label,
+  .profile-stat-card__label,
+  .perfil-stat__label {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 3. PUBLICACIONES DEL PERFIL: Forzar 2 columnas */
+  /* Solo aplica a la página de perfil y al modal de ver perfil */
+  #page-content .pubs-grid,
+  #modal-ver-perfil .pubs-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+  }
+}
