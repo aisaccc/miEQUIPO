@@ -1122,3 +1122,11 @@ body {
 body:has(.modal-backdrop.open) .app-bottom-nav {
   display: none !important;
 }
+/* =========================================================
+   FIX: LOGO EN MODO OSCURO
+   ========================================================= */
+[data-theme="dark"] .app-header__logo img {
+  /* Invierte los colores (negro -> blanco) y rota el tono 
+     para que el naranja se mantenga naranja */
+  filter: invert(1) hue-rotate(180deg) brightness(1.2);
+}
