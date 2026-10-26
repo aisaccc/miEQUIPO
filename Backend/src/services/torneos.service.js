@@ -3,7 +3,7 @@
    ========================================================= */
 
 import { pool } from '../config/db.js';
-import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js'; // ⚡ NUEVO
+import { idsBloqueadosTotales, estanBloqueados } from '../utils/bloqueos.js';
 import {
   crearNotificacion,
   crearNotificacionMultiple,
@@ -12,7 +12,7 @@ import {
   agregarMiembrosACanal,
   quitarMiembrosDeCanal,
   obtenerCanalDeTorneo,
-  crearCanalParaTorneo,   // ⚡ NUEVO
+  crearCanalParaTorneo,
 } from './mensajes.service.js';
 
 /* =========================================================
@@ -59,13 +59,14 @@ function formatearTorneo(row, extras = {}) {
     totalPartidos: extras.totalPartidos ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    
-    // ⚡ NUEVOS CAMPOS
+
     cardColor: row.card_color || null,
     cardFoto: row.card_foto || null,
     iconoPersonalizado: row.icono_personalizado || null,
-    heroColor: row.hero_color || null, // ⚡ NUEVO
-    heroFoto: row.hero_foto || null,   // ⚡ NUEVO
+    heroColor: row.hero_color || null,
+    heroFoto: row.hero_foto || null,
+    marcoIcono: row.marco_icono || 'default',
+    marcoColorIcono: row.marco_color_icono || null,
   };
 }
 
@@ -570,7 +571,7 @@ async function armarFixtureAleatorioInterno(client, torneoId, torneo) {
 
   return {
     fases,
-    totalPartidos: partidosPrimerasFase,
+    totalPartidos: partidosPrimeraFase,
   };
 }
 
@@ -1018,7 +1019,7 @@ export async function crearTorneo(datos, usuarioId) {
     'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
     [usuarioId]
   );
-  
+
   if (!uRows[0]) {
     const err = new Error('Usuario no encontrado');
     err.status = 404;
@@ -1045,9 +1046,12 @@ export async function crearTorneo(datos, usuarioId) {
     puntosVictoria, puntosEmpate, puntosDerrota,
     permiteEmpate, incluyeEstadisticas, equiposClasifican,
     cardColor, cardFoto, iconoPersonalizado,
-    heroColor, heroFoto // ⚡ NUEVOS
+    heroColor, heroFoto,
+    marcoIcono, marcoColorIcono // ⚡ NUEVOS
   } = datos;
 
+  /* ⚡ FIX: coma faltante entre `)` y `[`, y agregados marcoIcono / marcoColorIcono
+     (la query tiene 32 placeholders — antes solo se le pasaban 30) */
   const { rows } = await pool.query(
     `INSERT INTO torneos (
       nombre, deporte, emoji, descripcion, lugar,
@@ -1060,7 +1064,7 @@ export async function crearTorneo(datos, usuarioId) {
       permite_empate, incluye_estadisticas, equipos_clasifican,
       canal_chat_id, organizador_id,
       card_color, card_foto, icono_personalizado,
-      hero_color, hero_foto, -- ⚡ NUEVOS
+      hero_color, hero_foto, marco_icono, marco_color_icono,
       estado
     )
     VALUES (
@@ -1074,9 +1078,10 @@ export async function crearTorneo(datos, usuarioId) {
       $21, $22, $23,
       $24, $25,
       $26, $27, $28,
-      $29, $30, -- ⚡ NUEVOS
+      $29, $30, $31, $32,
       'inscripcion'
-    )`,
+    )
+    RETURNING *`,
     [
       nombre, deporte, emoji || null, descripcion || null, lugar,
       fechaInicio, fechaFin || null, fechaLimiteInscripcion || null,
@@ -1086,9 +1091,10 @@ export async function crearTorneo(datos, usuarioId) {
       sistemaClasificacion || 'simple',
       puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
       permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
-      null, usuarioId, // ⚡ FIX: canalChatId no existía, ponemos null
+      null, usuarioId,
       cardColor || null, cardFoto || null, iconoPersonalizado || null,
-      heroColor || null, heroFoto || null // ⚡ NUEVOS
+      heroColor || null, heroFoto || null,
+      marcoIcono || 'default', marcoColorIcono || null, // ⚡ NUEVOS
     ]
   );
 
@@ -1121,12 +1127,16 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
     const torneoAntes = await obtenerTorneoOFallar(client, torneoId);
     await verificarPermisoResultados(client, torneoAntes, usuarioId);
 
-    // ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
-    if (
+    /* ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
+       Ahora incluye marcos (excepto 'default') y marcoColorIcono */
+    const pidePersonalizacionPremium =
       (cambios.cardFoto !== undefined && cambios.cardFoto !== null) ||
       (cambios.heroFoto !== undefined && cambios.heroFoto !== null) ||
-      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null)
-    ) {
+      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null) ||
+      (cambios.marcoIcono !== undefined && cambios.marcoIcono !== null && cambios.marcoIcono !== 'default') ||
+      (cambios.marcoColorIcono !== undefined && cambios.marcoColorIcono !== null);
+
+    if (pidePersonalizacionPremium) {
       const { rows: uRows } = await client.query(
         'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
         [torneoAntes.organizador_id]
@@ -1134,9 +1144,9 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       const capPlan = uRows[0]?.plan;
       const capPremHasta = uRows[0]?.premium_hasta;
       const esPrem = capPlan === 'premium' && (!capPremHasta || new Date(capPremHasta) > new Date());
-      
+
       if (!esPrem) {
-        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
+        const err = new Error('La personalización visual (fotos, ícono y marcos) es exclusiva del plan Premium.');
         err.status = 403;
         throw err;
       }
@@ -1211,8 +1221,11 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       cardColor: 'card_color',
       cardFoto: 'card_foto',
       iconoPersonalizado: 'icono_personalizado',
-      heroColor: 'hero_color', // ⚡ NUEVO
-      heroFoto: 'hero_foto',   // ⚡ NUEVO
+      heroColor: 'hero_color',
+      heroFoto: 'hero_foto',
+      // ⚡ NUEVOS — antes faltaban acá y por eso no se guardaban al editar
+      marcoIcono: 'marco_icono',
+      marcoColorIcono: 'marco_color_icono',
     };
 
     const camposCriticos = [

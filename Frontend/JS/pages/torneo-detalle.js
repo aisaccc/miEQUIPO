@@ -61,6 +61,20 @@ function formatoDeDeporte(deporte) {
   else if (reglas.labelMarcador === 'Carreras') campo = 'carreras';
   return { campo, label: reglas.labelMarcador || 'Resultado' };
 }
+/* ⚡ Helper: devuelve { clase, estilo } del marco del ícono */
+function getMarcoData(marcoIcono, marcoColorIcono) {
+  if (!marcoIcono || marcoIcono === 'default') {
+    return { clase: '', estilo: '' };
+  }
+  if (marcoIcono === 'custom') {
+    const color = marcoColorIcono || '#E8836A';
+    return {
+      clase: 'marco-icono-custom',
+      estilo: `border:3px solid ${color};box-shadow:0 0 15px ${color}80;`,
+    };
+  }
+  return { clase: `marco-icono-${marcoIcono}`, estilo: '' };
+}
 
 const FASES_LABEL = {
   '64avos': '64avos', '32avos': '32avos', '16avos': '16avos', '8vos': 'Octavos',
@@ -95,6 +109,16 @@ const COLOR_DEPORTE_TORNEO = {
 };
 const COLOR_DEPORTE_TORNEO_DEFAULT = { from: '#FF6B4A', to: '#C2410C' };
 const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
+/* ⚡ Marcos de ícono */
+const MARCOS_ICONO = [
+  { id: 'default', nombre: 'Normal', clase: '' },
+  { id: 'oro', nombre: 'Oro', clase: 'marco-icono-oro' },
+  { id: 'fuego', nombre: 'Fuego', clase: 'marco-icono-fuego' },
+  { id: 'neon', nombre: 'Neón', clase: 'marco-icono-neon' },
+  { id: 'hielo', nombre: 'Hielo', clase: 'marco-icono-hielo' },
+  { id: 'galaxia', nombre: 'Galaxia', clase: 'marco-icono-galaxia' },
+  { id: 'custom', nombre: 'Personalizado', clase: 'marco-icono-custom' }
+];
 
 function colorDeporteTorneo(deporte) {
   return COLOR_DEPORTE_TORNEO[deporte] || COLOR_DEPORTE_TORNEO_DEFAULT;
@@ -339,12 +363,14 @@ export async function init(params = {}) {
     const color = colorDeporteTorneo(t.deporte);
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
     
-    // ⚡ Usamos heroColor y heroFoto
     if (t.heroFoto) {
       heroStyle = `background-image: linear-gradient(180deg, rgba(15,27,45,0.20) 0%, rgba(15,27,45,0.65) 100%), url('${t.heroFoto}'); background-size: cover; background-position: center;`;
     } else if (t.heroColor) {
       heroStyle = `background: linear-gradient(135deg, ${t.heroColor} 0%, ${t.heroColor}DD 100%);`;
     }
+
+    /* ⚡ Marco del ícono del hero */
+    const marcoHero = getMarcoData(t.marcoIcono, t.marcoColorIcono);
 
     contenedor.innerHTML = `
       <div class="gd-top">
@@ -356,7 +382,7 @@ export async function init(params = {}) {
 
       <div class="td-hero" style="${heroStyle}">
         <div class="td-hero__left">
-          <div class="td-hero__sport">${renderEmoji(t.emoji, 52)}</div>
+          <div class="td-hero__sport ${marcoHero.clase}" style="${marcoHero.estilo}">${renderEmoji(t.emoji, 52)}</div>
           <div class="td-hero__info">
             <div class="td-hero__badges">
               <span class="badge ${badgeClase}">${badgeTexto}</span>
@@ -3675,11 +3701,14 @@ export async function init(params = {}) {
   let modalEditarInicializado = false;
 
   // ⚡ Variables visuales del modal de edición
+  // ⚡ Variables visuales del modal de edición
   let editCardColor = '#E8836A';
   let editHeroColor = '#0F1B2D';
   let editCardFotoBase64 = null;
   let editHeroFotoBase64 = null;
   let editIconoBase64 = null;
+  let editMarcoIcono = 'default';
+  let editMarcoColorIcono = '#E8836A';
 
   function renderPaletaDet(containerId, colorSeleccionado, onChange) {
     const cont = document.getElementById(containerId);
@@ -3903,6 +3932,45 @@ export async function init(params = {}) {
     hint.textContent = textos[estadoModal.sistemaClasificacion] || '';
   }
 
+  /* ⚡ NUEVO: Inicializa el selector de marcos del modal de editar torneo */
+  function inicializarMarcosDet(torneoData) {
+    editMarcoIcono = torneoData?.marcoIcono || 'default';
+    editMarcoColorIcono = torneoData?.marcoColorIcono || '#E8836A';
+
+    const contMarcos = document.getElementById('torneo-det-marcos-icono');
+    const colorWrapper = document.getElementById('torneo-det-marco-color-wrapper');
+    const inputColor = document.getElementById('torneo-det-marco-color-icono');
+
+    if (!contMarcos) return;
+
+    if (inputColor) inputColor.value = editMarcoColorIcono;
+
+    contMarcos.innerHTML = MARCOS_ICONO.map(m => `
+      <button type="button" class="posicion-chip ${m.id === editMarcoIcono ? 'active' : ''}" data-marco-det="${m.id}">${m.nombre}</button>
+    `).join('');
+
+    if (colorWrapper) {
+      colorWrapper.style.display = editMarcoIcono === 'custom' ? 'flex' : 'none';
+    }
+
+    contMarcos.querySelectorAll('[data-marco-det]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        contMarcos.querySelectorAll('[data-marco-det]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        editMarcoIcono = btn.dataset.marcoDet;
+        if (colorWrapper) {
+          colorWrapper.style.display = editMarcoIcono === 'custom' ? 'flex' : 'none';
+        }
+      });
+    });
+
+    if (inputColor) {
+      inputColor.oninput = (e) => {
+        editMarcoColorIcono = e.target.value;
+      };
+    }
+  }
+
   function inicializarVisualesDet(torneoData) {
     editCardColor = torneoData.cardColor || '#E8836A';
     editHeroColor = torneoData.heroColor || '#0F1B2D';
@@ -3964,11 +4032,18 @@ export async function init(params = {}) {
       };
       document.getElementById('torneo-icono-quitar-det').onclick = () => { editIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file-det').value = ''; };
 
+      /* ⚡ NUEVO: inicializar selector de marcos (solo Premium) */
+      inicializarMarcosDet(torneoData);
+
     } else {
       wrapperPremium.classList.add('hidden');
       wrapperBasico.classList.remove('hidden');
       renderPaletaDet('torneo-det-card-color-picker-basico', editCardColor, (c) => editCardColor = c);
       renderPaletaDet('torneo-det-hero-color-picker-basico', editHeroColor, (c) => editHeroColor = c);
+
+      // Básicos: resetear marcos para no enviar valores viejos
+      editMarcoIcono = 'default';
+      editMarcoColorIcono = '#E8836A';
     }
   }
 
@@ -4110,11 +4185,13 @@ export async function init(params = {}) {
       datos.cardFoto = editCardFotoBase64;
       datos.heroFoto = editHeroFotoBase64;
       datos.iconoPersonalizado = editIconoBase64;
+      // ⚡ NUEVO: enviar marcos al backend
+      datos.marcoIcono = editMarcoIcono;
+      datos.marcoColorIcono = editMarcoColorIcono;
     } else {
       datos.cardColor = editCardColor;
       datos.heroColor = editHeroColor;
     }
-
     const btn = document.getElementById('btn-guardar-torneo-det');
     btn.disabled = true;
     btn.textContent = 'Guardando...';

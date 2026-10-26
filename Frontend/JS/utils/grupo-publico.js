@@ -10,6 +10,21 @@ import { renderFeedPublicaciones } from '../utils/publicaciones-ui.js';
 const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
 
+/* ⚡ Helper: devuelve { clase, estilo } del marco */
+function getMarcoData(marcoIcono, marcoColorIcono) {
+  if (!marcoIcono || marcoIcono === 'default') {
+    return { clase: '', estilo: '' };
+  }
+  if (marcoIcono === 'custom') {
+    const color = marcoColorIcono || '#E8836A';
+    return {
+      clase: 'marco-icono-custom',
+      estilo: `border:3px solid ${color};box-shadow:0 0 15px ${color}80;`,
+    };
+  }
+  return { clase: `marco-icono-${marcoIcono}`, estilo: '' };
+}
+
 const SVG = {
   users: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   trophy: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
@@ -95,7 +110,6 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
 
   const color = colorDeporte(grupo.deporte);
   
-  // ⚡ Usar heroColor y heroFoto para el hero público
   let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
   if (grupo.heroColor) {
     heroStyle = `background: linear-gradient(135deg, ${grupo.heroColor} 0%, ${grupo.heroColor}DD 100%);`;
@@ -105,6 +119,9 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
   }
 
   const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
+
+  /* ⚡ Marco del ícono del hero */
+  const marcoHero = getMarcoData(grupo.marcoIcono, grupo.marcoColorIcono);
 
   const partidos = calcularPartidos(grupo.stats);
   const victorias = grupo.stats?.victorias;
@@ -192,7 +209,7 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
 
     <div class="gd-hero" style="${heroStyle}">
       <div class="gd-hero__left">
-        <div class="gd-hero__crest">
+        <div class="gd-hero__crest ${marcoHero.clase}" style="${marcoHero.estilo}">
           ${escudoHero}
         </div>
         <div class="gd-hero__info">

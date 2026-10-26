@@ -37,6 +37,32 @@ const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
 const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
+/* ⚡ Marcos de ícono (una sola declaración a nivel módulo) */
+const MARCOS_ICONO = [
+  { id: 'default', nombre: 'Normal', clase: '' },
+  { id: 'oro', nombre: 'Oro', clase: 'marco-icono-oro' },
+  { id: 'fuego', nombre: 'Fuego', clase: 'marco-icono-fuego' },
+  { id: 'neon', nombre: 'Neón', clase: 'marco-icono-neon' },
+  { id: 'hielo', nombre: 'Hielo', clase: 'marco-icono-hielo' },
+  { id: 'galaxia', nombre: 'Galaxia', clase: 'marco-icono-galaxia' },
+  { id: 'custom', nombre: 'Personalizado', clase: 'marco-icono-custom' }
+];
+
+/* ⚡ Helper: devuelve { clase, estilo } del marco */
+function getMarcoData(marcoIcono, marcoColorIcono) {
+  if (!marcoIcono || marcoIcono === 'default') {
+    return { clase: '', estilo: '' };
+  }
+  if (marcoIcono === 'custom') {
+    const color = marcoColorIcono || '#E8836A';
+    return {
+      clase: 'marco-icono-custom',
+      estilo: `border:3px solid ${color};box-shadow:0 0 15px ${color}80;`,
+    };
+  }
+  return { clase: `marco-icono-${marcoIcono}`, estilo: '' };
+}
+
 const SVG = {
   users: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   trophy: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
@@ -345,6 +371,54 @@ export async function init() {
     });
   }
 
+  /* =========================================================
+     ⚡ NUEVO: Inicializa el selector de marcos del modal de grupo
+     ========================================================= */
+  function inicializarMarcosGrupo(grupo) {
+    // Estado local (se captura por closure en los listeners de guardar)
+    let marcoIconoSel = grupo?.marcoIcono || 'default';
+    let marcoColorIconoSel = grupo?.marcoColorIcono || '#E8836A';
+
+    const contMarcos = document.getElementById('grupo-marcos-icono');
+    const colorWrapper = document.getElementById('grupo-marco-color-wrapper');
+    const inputColor = document.getElementById('grupo-marco-color-icono');
+
+    if (inputColor) inputColor.value = marcoColorIconoSel;
+
+    if (contMarcos) {
+      contMarcos.innerHTML = MARCOS_ICONO.map(m => `
+        <button type="button" class="posicion-chip ${m.id === marcoIconoSel ? 'active' : ''}" data-marco="${m.id}">${m.nombre}</button>
+      `).join('');
+
+      if (colorWrapper) {
+        colorWrapper.style.display = marcoIconoSel === 'custom' ? 'flex' : 'none';
+      }
+
+      contMarcos.querySelectorAll('[data-marco]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          contMarcos.querySelectorAll('[data-marco]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          marcoIconoSel = btn.dataset.marco;
+          if (colorWrapper) {
+            colorWrapper.style.display = marcoIconoSel === 'custom' ? 'flex' : 'none';
+          }
+        });
+      });
+    }
+
+    if (inputColor) {
+      inputColor.oninput = (e) => {
+        marcoColorIconoSel = e.target.value;
+      };
+    }
+
+    // Devuelve el estado para usarlo en el payload
+    return {
+      getMarcoIcono: () => marcoIconoSel,
+      getMarcoColorIcono: () => marcoColorIconoSel,
+    };
+  }
+
   // ⚡ RENDERIZADO DE LA CARD (Card usa card_*)
   function renderCardGrupo(grupo, esComunidad) {
     const capitan = grupo.esCapitan;
@@ -385,6 +459,9 @@ export async function init() {
       bannerStyle = `background-image: url('${grupo.cardFoto}'); background-size: cover; background-position: center;`;
     }
 
+    /* ⚡ Marco del ícono */
+    const marco = getMarcoData(grupo.marcoIcono, grupo.marcoColorIcono);
+
     const descripcionHtml = grupo.descripcion
       ? `<p class="grupo-card__desc">${grupo.descripcion}</p>`
       : `<p class="grupo-card__desc grupo-card__desc--vacia">Sin descripción</p>`;
@@ -395,7 +472,7 @@ export async function init() {
           ${lapizHtml}
         </div>
 
-        <div class="grupo-card__crest">
+        <div class="grupo-card__crest ${marco.clase}" style="${marco.estilo}">
           ${escudoHtml}
         </div>
 
@@ -467,7 +544,6 @@ export async function init() {
 
     const color = colorDeporte(grupo.deporte);
     
-    // ⚡ Usar heroColor y heroFoto
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
     if (grupo.heroColor) {
       heroStyle = `background: linear-gradient(135deg, ${grupo.heroColor} 0%, ${grupo.heroColor}DD 100%);`;
@@ -491,6 +567,9 @@ export async function init() {
     const labelMiembros = esComunidad ? 'miembros' : 'jugadores';
 
     const escudoHero = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 48);
+
+    /* ⚡ Marco del ícono del hero */
+    const marcoHero = getMarcoData(grupo.marcoIcono, grupo.marcoColorIcono);
 
     let botonesHtml = '';
 
@@ -575,7 +654,7 @@ export async function init() {
 
       <div class="gd-hero" style="${heroStyle}">
         <div class="gd-hero__left">
-          <div class="gd-hero__crest">
+          <div class="gd-hero__crest ${marcoHero.clase}" style="${marcoHero.estilo}">
             ${escudoHero}
           </div>
           <div class="gd-hero__info">
@@ -1505,6 +1584,9 @@ export async function init() {
     let heroFotoBase64 = null;
     let iconoFileBase64 = null;
 
+    // ⚡ Estado de marcos: se inicializa para que el closure del guardar pueda acceder
+    let marcoState = null;
+
     if (user?.esPremium) {
       wrapperBasico.classList.add('hidden');
       wrapperPremium.classList.remove('hidden');
@@ -1566,6 +1648,10 @@ export async function init() {
         previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
         document.getElementById('com-icono-file').value = '';
       };
+
+      // ⚡ Inicializar selector de marcos para el modal crear
+      marcoState = inicializarMarcosGrupo(null);
+
     } else {
       wrapperPremium.classList.add('hidden');
       wrapperBasico.classList.remove('hidden');
@@ -1597,6 +1683,11 @@ export async function init() {
           payload.cardFoto = cardFotoBase64;
           payload.heroFoto = heroFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
+          // ⚡ Marcos
+          if (marcoState) {
+            payload.marcoIcono = marcoState.getMarcoIcono();
+            payload.marcoColorIcono = marcoState.getMarcoColorIcono();
+          }
         } else {
           payload.cardColor = cardColor;
           payload.heroColor = heroColor;
@@ -1695,6 +1786,9 @@ export async function init() {
     let heroFotoBase64 = grupo.heroFoto || null;
     let iconoFileBase64 = grupo.iconoPersonalizado || null;
 
+    // ⚡ Estado de marcos: se inicializa para que el closure del guardar pueda acceder
+    let marcoState = null;
+
     if (user?.esPremium) {
       wrapperBasico.classList.add('hidden');
       wrapperPremium.classList.remove('hidden');
@@ -1743,6 +1837,9 @@ export async function init() {
       };
       document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('com-icono-file').value = ''; };
 
+      // ⚡ Inicializar selector de marcos con los valores del grupo
+      marcoState = inicializarMarcosGrupo(grupo);
+
     } else {
       wrapperPremium.classList.add('hidden');
       wrapperBasico.classList.remove('hidden');
@@ -1776,6 +1873,11 @@ export async function init() {
           payload.cardFoto = cardFotoBase64;
           payload.heroFoto = heroFotoBase64;
           payload.iconoPersonalizado = iconoFileBase64;
+          // ⚡ Marcos
+          if (marcoState) {
+            payload.marcoIcono = marcoState.getMarcoIcono();
+            payload.marcoColorIcono = marcoState.getMarcoColorIcono();
+          }
         } else {
           payload.cardColor = cardColor;
           payload.heroColor = heroColor;
@@ -1967,13 +2069,16 @@ export async function init() {
               if (g.cardColor) bannerStyle = `background: linear-gradient(135deg, ${g.cardColor} 0%, ${g.cardColor}DD 100%);`;
               if (g.cardFoto) bannerStyle = `background-image: url('${g.cardFoto}'); background-size: cover; background-position: center;`;
 
+              /* ⚡ Marco del ícono */
+              const marco = getMarcoData(g.marcoIcono, g.marcoColorIcono);
+
               const partidos = calcularPartidos(g.stats); const porcentaje = calcularPorcentaje(g.stats);
               const victoriasVisibles = statEsVisible(g.stats?.victorias); const mostrarPorcentaje = victoriasVisibles && partidos > 0;
 
               return `
                 <article class="grupo-card" data-grupo-id="${g.id}" role="button" tabindex="0">
                   <div class="grupo-card__banner" style="${bannerStyle}"></div>
-                  <div class="grupo-card__crest">${escudoHtml}</div>
+                  <div class="grupo-card__crest ${marco.clase}" style="${marco.estilo}">${escudoHtml}</div>
                   <div class="grupo-card__body">
                     <div class="grupo-card__rol">
                       <span class="badge badge--neutral">${esComunidad ? SVG.globe + ' Comunidad' : SVG.users + ' Equipo'}</span>

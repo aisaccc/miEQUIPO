@@ -64,12 +64,14 @@ function formatearGrupo(row, extras = {}) {
     esAdmin,
     esMiembro,
     esPremium: calcularEsPremium(row),
-    // ⚡ Nuevos campos de personalización
+    // ⚡ Campos visuales
     cardColor: row.card_color || null,
     cardFoto: row.card_foto || null,
     iconoPersonalizado: row.icono_personalizado || null,
-    heroColor: row.hero_color || null, // ⚡ NUEVO
-    heroFoto: row.hero_foto || null,   // ⚡ NUEVO
+    heroColor: row.hero_color || null,
+    heroFoto: row.hero_foto || null,
+    marcoIcono: row.marco_icono || 'default',
+    marcoColorIcono: row.marco_color_icono || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -284,7 +286,8 @@ export async function obtenerGrupo(grupoId, usuarioId) {
 export async function crearGrupo(datos, usuarioId) {
   const { 
     tipo, nombre, escudo, deporte, ciudad, descripcion, tipoAcceso,
-    cardColor, cardFoto, iconoPersonalizado, heroColor, heroFoto // ⚡ NUEVOS
+    cardColor, cardFoto, iconoPersonalizado, heroColor, heroFoto,
+    marcoIcono, marcoColorIcono // ⚡ NUEVOS
   } = datos;
   const client = await pool.connect();
 
@@ -318,9 +321,15 @@ export async function crearGrupo(datos, usuarioId) {
         throw err;
       }
 
-      // ⚡ NUEVO: Bloquear subida de fotos en creación
-      if (cardFoto || heroFoto || iconoPersonalizado) {
-        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
+      // ⚡ Bloquear fotos, ícono custom y marcos
+      if (
+        cardFoto ||
+        heroFoto ||
+        iconoPersonalizado ||
+        (marcoIcono && marcoIcono !== 'default') ||
+        (marcoColorIcono != null)
+      ) {
+        const err = new Error('La personalización visual (fotos, ícono y marcos) es exclusiva del plan Premium.');
         err.status = 403;
         throw err;
       }
@@ -338,15 +347,19 @@ export async function crearGrupo(datos, usuarioId) {
       throw err;
     }
 
+    /* ⚡ FIX: agregadas columnas marco_icono y marco_color_icono */
     const { rows } = await client.query(
       `INSERT INTO grupos (
         tipo, nombre, escudo, deporte, ciudad, descripcion, tipo_acceso, capitan_id,
-        card_color, card_foto, icono_personalizado, hero_color, hero_foto
+        card_color, card_foto, icono_personalizado, hero_color, hero_foto,
+        marco_icono, marco_color_icono
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         tipo, nombre, escudo || null, deporte, ciudad || null, descripcion || null, tipoAcceso || 'publico', usuarioId,
-        cardColor || null, cardFoto || null, iconoPersonalizado || null, heroColor || null, heroFoto || null
+        cardColor || null, cardFoto || null, iconoPersonalizado || null,
+        heroColor || null, heroFoto || null,
+        marcoIcono || 'default', marcoColorIcono || null, // ⚡ NUEVOS
       ]
     );
 
@@ -381,12 +394,16 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
-    // ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
-    if (
+    /* ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
+       Ahora incluye marcos (excepto 'default') y marcoColorIcono */
+    const pidePersonalizacionPremium =
       (cambios.cardFoto !== undefined && cambios.cardFoto !== null) ||
       (cambios.heroFoto !== undefined && cambios.heroFoto !== null) ||
-      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null)
-    ) {
+      (cambios.iconoPersonalizado !== undefined && cambios.iconoPersonalizado !== null) ||
+      (cambios.marcoIcono !== undefined && cambios.marcoIcono !== null && cambios.marcoIcono !== 'default') ||
+      (cambios.marcoColorIcono !== undefined && cambios.marcoColorIcono !== null);
+
+    if (pidePersonalizacionPremium) {
       const { rows: uRows } = await client.query(
         'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
         [grupo.capitan_id]
@@ -394,7 +411,7 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
       const esPrem = calcularEsPremium(uRows[0] || {});
       
       if (!esPrem) {
-        const err = new Error('La subida de fotos personalizadas y el ícono son exclusivos del plan Premium.');
+        const err = new Error('La personalización visual (fotos, ícono y marcos) es exclusiva del plan Premium.');
         err.status = 403;
         throw err;
       }
@@ -411,8 +428,11 @@ export async function editarGrupo(grupoId, cambios, usuarioId) {
       cardColor: 'card_color',
       cardFoto: 'card_foto',
       iconoPersonalizado: 'icono_personalizado',
-      heroColor: 'hero_color', // ⚡ NUEVO
-      heroFoto: 'hero_foto',   // ⚡ NUEVO
+      heroColor: 'hero_color',
+      heroFoto: 'hero_foto',
+      // ⚡ NUEVOS — antes faltaban acá
+      marcoIcono: 'marco_icono',
+      marcoColorIcono: 'marco_color_icono',
     };
 
     const campos = [];
@@ -459,7 +479,6 @@ export async function editarStats(grupoId, datos, usuarioId) {
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
-    // ⚡ NUEVO: VALIDACIÓN PREMIUM
     const { rows: uRows } = await client.query(
       'SELECT plan, premium_hasta FROM usuarios WHERE id = $1',
       [grupo.capitan_id]
@@ -780,7 +799,6 @@ export async function obtenerGruposDondeSoyMiembro(usuarioId, tipo = null) {
   const valores = [usuarioId];
   let i = 2;
   if (tipo) { condiciones.push(`g.tipo = $${i}`); valores.push(tipo); i++; }
-  const where = condiciones.length > 0 ? `AND ${condiciones.join(' AND ')}` : '';
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   if (bloqueados.length > 0) {
     const placeholders = [];

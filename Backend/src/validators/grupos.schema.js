@@ -43,7 +43,6 @@ const escudoValido = z
   .nullable()
   .optional();
 
-// ⚡ Helper para validar imágenes en Base64 o URL
 const urlOBase64 = z.string().max(2_100_000).refine(
   val => {
     if (!val) return true;
@@ -60,6 +59,20 @@ const tipoAccesoValido = z.enum(['publico', 'privado'], {
   errorMap: () => ({ message: 'Tipo de acceso inválido' })
 }).default('publico');
 
+/* ⚡ NUEVO: Marcos de ícono */
+const marcoIconoValido = z
+  .enum(['default', 'oro', 'fuego', 'neon', 'hielo', 'galaxia', 'custom'], {
+    errorMap: () => ({ message: 'Marco de ícono inválido' })
+  })
+  .nullable()
+  .optional();
+
+const marcoColorIconoValido = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Color hex inválido (formato #RRGGBB)')
+  .nullable()
+  .optional();
+
 /* =========================================================
    SCHEMAS
    ========================================================= */
@@ -73,12 +86,14 @@ export const schemaCrearGrupo = z.object({
   descripcion: descripcionValida,
   tipoAcceso: tipoAccesoValido,
   
-  // ⚡ CAMPOS VISUALES (Añadidos para creación)
+  // CAMPOS VISUALES
   cardColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
   cardFoto: urlOBase64,
   iconoPersonalizado: urlOBase64,
   heroColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
   heroFoto: urlOBase64,
+  marcoIcono: marcoIconoValido,
+  marcoColorIcono: marcoColorIconoValido,
 }).strict();
 
 /* ---------- PATCH /api/grupos/:id ---------- */
@@ -91,12 +106,14 @@ export const schemaEditarGrupo = z.object({
   tipoAcceso: tipoAccesoValido.optional(),
   statsPrivadas: z.boolean().optional(),
   
-  // ⚡ CAMPOS VISUALES PREMIUM (Personalización de card y hero)
+  // CAMPOS VISUALES
   cardColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
   cardFoto: urlOBase64,
   iconoPersonalizado: urlOBase64,
   heroColor: z.string().refine(val => !val || esColorHex(val), { message: 'Color hex inválido' }).nullable().optional(),
   heroFoto: urlOBase64,
+  marcoIcono: marcoIconoValido,
+  marcoColorIcono: marcoColorIconoValido,
 }).strict();
 
 export const schemaEditarStats = z.object({

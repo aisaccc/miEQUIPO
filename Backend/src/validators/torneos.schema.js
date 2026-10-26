@@ -104,6 +104,20 @@ const sistemaClasificacionValido = z
   })
   .default('simple');
 
+/* ⚡ NUEVO: Marcos de ícono */
+const marcoIconoValido = z
+  .enum(['default', 'oro', 'fuego', 'neon', 'hielo', 'galaxia', 'custom'], {
+    errorMap: () => ({ message: 'Marco de ícono inválido' })
+  })
+  .nullable()
+  .optional();
+
+const marcoColorIconoValido = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Color hex inválido (formato #RRGGBB)')
+  .nullable()
+  .optional();
+
 /* =========================================================
    SCHEMAS
    ========================================================= */
@@ -127,10 +141,8 @@ export const schemaCrearTorneo = z.object({
   tipoParticipacion: tipoParticipacionValido,
   idaYVuelta: z.boolean().default(false),
 
-  // Auto-fixture para eliminación
   autoFixture: z.boolean().default(false),
 
-  // ⚡ NUEVO: sistema de clasificación
   sistemaClasificacion: sistemaClasificacionValido,
 
   puntosVictoria: z.number().int().min(0).max(10).default(3),
@@ -140,12 +152,14 @@ export const schemaCrearTorneo = z.object({
   incluyeEstadisticas: z.boolean().default(false),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
   
-  // ⚡ CAMPOS VISUALES
+  // CAMPOS VISUALES
   cardColor: z.string().nullable().optional(),
   cardFoto: z.string().nullable().optional(),
   iconoPersonalizado: z.string().nullable().optional(),
   heroColor: z.string().nullable().optional(),
   heroFoto: z.string().nullable().optional(),
+  marcoIcono: marcoIconoValido,
+  marcoColorIcono: marcoColorIconoValido,
 }).strict();
 
 /* ---------- PATCH /api/torneos/:id ---------- */
@@ -169,7 +183,6 @@ export const schemaEditarTorneo = z.object({
 
   autoFixture: z.boolean().optional(),
 
-  // ⚡ NUEVO
   sistemaClasificacion: sistemaClasificacionValido.optional(),
 
   puntosVictoria: z.number().int().min(0).max(10).optional(),
@@ -179,12 +192,14 @@ export const schemaEditarTorneo = z.object({
   incluyeEstadisticas: z.boolean().optional(),
   equiposClasifican: z.number().int().min(0).max(64).nullable().optional(),
   
-  // ⚡ CAMPOS VISUALES
+  // CAMPOS VISUALES
   cardColor: z.string().nullable().optional(),
   cardFoto: z.string().nullable().optional(),
   iconoPersonalizado: z.string().nullable().optional(),
   heroColor: z.string().nullable().optional(),
   heroFoto: z.string().nullable().optional(),
+  marcoIcono: marcoIconoValido,
+  marcoColorIcono: marcoColorIconoValido,
 }).strict();
 
 /* ---------- POST /api/torneos/:id/inscribir ---------- */
@@ -231,7 +246,6 @@ export const schemaCrearPartidoTorneo = z.object({
   jornadaId: uuidValido.nullable().optional(),
 }).strict();
 
-/* ---------- PATCH /api/torneos/:id/partidos/:partidoId/resultado ---------- */
 export const schemaCargarResultado = z.object({
   resultado: z.record(z.any()),
   estadisticas: z.record(z.any()).nullable().optional(),
@@ -265,10 +279,6 @@ export const schemaListarTorneos = z.object({
   campoFecha: z.enum(['inscripcion', 'torneo']).optional(),
 }).strict();
 
-/* =========================================================
-   JORNADAS (liga)
-   ========================================================= */
-
 export const schemaCrearJornada = z.object({
   nombre: z.string().min(1).max(60).transform(v => v.trim()),
   fecha: fechaOpcional,
@@ -279,9 +289,6 @@ export const schemaEditarJornada = z.object({
   fecha: fechaOpcional,
 }).strict();
 
-/* =========================================================
-   GUARDAR JORNADA BULK
-   ========================================================= */
 const schemaPartidoBulk = z.object({
   id: uuidValido,
   fecha: z
@@ -313,15 +320,7 @@ export const schemaGuardarJornadaBulk = z.object({
   partidosEliminar: z.array(uuidValido).optional(),
 }).strict();
 
-/* =========================================================
-   FIXTURE AUTOMÁTICO — LIGA
-   ========================================================= */
 export const schemaGenerarFixtureLiga = z.object({}).strict();
-
-/* =========================================================
-   FIXTURE — ELIMINACIÓN
-   ========================================================= */
-
 export const schemaArmarFixtureAleatorio = z.object({}).strict();
 
 export const schemaArmarFixtureManual = z.object({
@@ -335,35 +334,22 @@ export const schemaArmarFixtureManual = z.object({
 
 export const schemaConfirmarFixture = z.object({}).strict();
 
-/* =========================================================
-   EDITAR CRUCE INDIVIDUAL
-   ========================================================= */
 export const schemaEditarCruce = z.object({
   equipoLocalId: z.string().max(100).nullable().optional(),
   equipoVisitanteId: z.string().max(100).nullable().optional(),
 }).strict();
 
-/* =========================================================
-   PARAMS
-   ========================================================= */
 export const schemaUuidParam = uuidValido;
 
 export const schemaEquipoIdParam = z
   .string()
   .max(100, 'ID de equipo inválido');
 
-
-/* =========================================================
-   SUB-ORGANIZADORES — INVITACIÓN (D.3)
-   ========================================================= */
-
-/* POST /api/torneos/:id/organizadores/invitaciones */
 export const schemaInvitarOrganizador = z.object({
   usuarioId: uuidValido,
   permisos: permisosValidos,
 }).strict();
 
-/* PATCH /api/torneos/:id/organizadores/invitaciones/responder */
 export const schemaResponderInvitacionOrganizador = z.object({
   aceptar: z.boolean({
     required_error: 'Tenés que indicar si aceptás o rechazás',
