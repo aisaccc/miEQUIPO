@@ -426,11 +426,11 @@ export async function init() {
 
     let badgeRolHtml = '';
     if (capitan) {
-      badgeRolHtml = `<span class="badge badge--primary">${SVG.crown} Eres capitán</span>`;
+      badgeRolHtml = `<span class="badge badge--primary" title="Eres capitán">${SVG.crown}</span>`;
     } else if (admin) {
-      badgeRolHtml = `<span class="badge badge--warning">${SVG.crown} Sub-capitán</span>`;
+      badgeRolHtml = `<span class="badge badge--warning" title="Sub-capitán">${SVG.crown}</span>`;
     } else {
-      badgeRolHtml = `<span class="badge badge--neutral">${SVG.user} Miembro</span>`;
+      badgeRolHtml = `<span class="badge badge--neutral" title="Miembro">${SVG.user}</span>`;
     }
 
     const puedeEditar = capitan || admin;
@@ -2097,9 +2097,9 @@ export async function init() {
                   <div class="grupo-card__crest ${marco.clase}" style="${marco.estilo}">${escudoHtml}</div>
                   <div class="grupo-card__body">
                     <div class="grupo-card__rol">
-                      <span class="badge badge--neutral">${esComunidad ? SVG.globe + ' Comunidad' : SVG.users + ' Equipo'}</span>
-                      ${esPrivado ? `<span class="badge badge--warning">${SVG.lock} Privado</span>` : ''}
-                      ${yaSoyMiembro ? `<span class="badge badge--success">✓ Miembro</span>` : ''}
+                      <span class="badge badge--neutral" title="${esComunidad ? 'Comunidad' : 'Equipo'}">${esComunidad ? SVG.globe : SVG.users}</span>
+                      ${esPrivado ? `<span class="badge badge--warning" title="Privado">${SVG.lock}</span>` : ''}
+                      ${yaSoyMiembro ? `<span class="badge badge--success" title="Miembro">${SVG.check}</span>` : ''}
                     </div>
                     <h3 class="grupo-card__title">${g.nombre}</h3>
                     <p class="grupo-card__sub">${g.deporte}${g.ciudad ? ' · ' + g.ciudad : ''}</p>

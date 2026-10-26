@@ -14964,28 +14964,25 @@ select.field__input {
   }
 }
 /* =========================================================
-   FIX DEFINITIVO: CARDS CUADRADAS Y CONTENIDO ESCALADO
+   FIX DEFINITIVO: CARDS CUADRADAS CON BADGES DE ÍCONOS
    ========================================================= */
 @media (max-width: 800px) {
   
-  /* 1. OBLIGAR A LA PÁGINA A NO HACER SCROLL HORIZONTAL */
   html, body {
     overflow-x: hidden !important;
     width: 100% !important;
     max-width: 100vw !important;
   }
 
-  /* 2. EQUIPOS Y COMUNIDADES: 2 columnas perfectas */
   .grupo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
     width: 100% !important;
   }
 
-  /* 3. TARJETA CUADRADA (Un poco más alta para que entre el contenido) */
   .grupo-card {
     width: 100% !important;
-    aspect-ratio: 1 / 1.25 !important; /* Ajustado para que respiren los textos */
+    aspect-ratio: 1 / 1.25 !important; 
     height: auto !important;
     min-height: 0 !important;
     display: flex !important;
@@ -14996,7 +14993,7 @@ select.field__input {
   }
 
   .grupo-card__banner {
-    height: 45px !important; /* Banner más chico */
+    height: 45px !important; 
     flex-shrink: 0 !important;
   }
 
@@ -15013,40 +15010,50 @@ select.field__input {
     height: 20px !important;
   }
 
-  /* 4. EL CUERPO Y EL ESPACIADO INTERNO */
   .grupo-card__body {
     padding: 24px 10px 10px !important; 
     display: flex !important;
     flex-direction: column !important;
     flex: 1 !important; 
-    gap: 4px !important; /* Reduce el espacio entre elementos */
+    gap: 4px !important; 
     overflow: hidden !important; 
   }
 
-  /* ⚡ ACHICAR LOS BADGES (Equipo, Privado, Miembro) ⚡ */
+  /* ⚡ ACHICAR Y REDONDEAR LOS BADGES (Solo íconos) ⚡ */
   .grupo-card__rol {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 4px !important; /* Menos espacio entre badges */
-    margin-bottom: 2px !important;
+    gap: 4px !important;
+    margin-bottom: 4px !important; /* Más espacio para el título */
   }
 
   .grupo-card__rol .badge {
-    font-size: 9px !important; /* Texto más chico */
-    padding: 3px 6px !important; /* Cápsula más chica */
-    line-height: 1.1 !important;
-    white-space: nowrap !important;
+    padding: 0 !important;
+    width: 22px !important; /* Tamaño fijo para hacerlo cuadrado/ovalado */
+    height: 22px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important; /* Puntas ovaladas */
   }
 
-  /* 5. TÍTULO Y DEPORTE */
+  .grupo-card__rol .badge svg {
+    width: 12px !important;
+    height: 12px !important;
+    margin: 0 !important;
+    stroke-width: 2.5 !important; /* Ícono más marcado */
+  }
+
+  /* TÍTULO Y DEPORTE */
   .grupo-card__title {
     font-size: 13px !important;
-    margin-top: 2px !important;
-    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     line-height: 1.2 !important;
+    width: 100% !important; /* Asegura que ocupe todo el ancho disponible */
   }
 
   .grupo-card__deporte {
@@ -15056,7 +15063,7 @@ select.field__input {
     align-self: flex-start !important;
   }
 
-  /* 6. CORTAR DESCRIPCIÓN LARGA */
+  /* CORTAR DESCRIPCIÓN */
   .grupo-card__desc {
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important; 
@@ -15065,11 +15072,11 @@ select.field__input {
     text-overflow: ellipsis !important;
     font-size: 10px !important;
     line-height: 1.2 !important;
-    margin-bottom: auto !important; /* Empuja las stats al fondo */
+    margin-bottom: auto !important; 
     word-break: break-all !important; 
   }
 
-  /* 7. STATS (Alineadas al fondo) */
+  /* STATS */
   .grupo-card__stats {
     margin-top: auto !important; 
     padding-top: 6px !important;
