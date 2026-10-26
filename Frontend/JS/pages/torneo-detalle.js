@@ -362,9 +362,9 @@ export async function init(params = {}) {
 
     const color = colorDeporteTorneo(t.deporte);
     
-    // ⚡ Fallback: si no hay Hero configurado, usa la Card
-    const fotoHero = t.heroFoto || t.cardFoto;
-    const colorHero = t.heroColor || t.cardColor;
+    // ⚡ Completamente independientes
+    const fotoHero = t.heroFoto;
+    const colorHero = t.heroColor;
     
     let heroStyle = `background: linear-gradient(135deg, ${color.from} 0%, ${color.to} 100%);`;
     

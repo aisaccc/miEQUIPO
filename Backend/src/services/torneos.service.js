@@ -1053,49 +1053,49 @@ export async function crearTorneo(datos, usuarioId) {
   /* ⚡ FIX: coma faltante entre `)` y `[`, y agregados marcoIcono / marcoColorIcono
      (la query tiene 32 placeholders — antes solo se le pasaban 30) */
   const { rows } = await pool.query(
-    `INSERT INTO torneos (
-      nombre, deporte, emoji, descripcion, lugar,
-      fecha_inicio, fecha_fin, fecha_limite_inscripcion,
-      cupos_equipos, precio,
-      modalidad, nivel, libre_inscripcion,
-      tipo_participacion, ida_y_vuelta, auto_fixture,
-      sistema_clasificacion,
-      puntos_victoria, puntos_empate, puntos_derrota,
-      permite_empate, incluye_estadisticas, equipos_clasifican,
-      canal_chat_id, organizador_id,
-      card_color, card_foto, icono_personalizado,
-      hero_color, hero_foto, marco_icono, marco_color_icono,
-      estado
-    )
-    VALUES (
-      $1, $2, $3, $4, $5,
-      $6, $7, $8,
-      $9, $10,
-      $11, $12, $13,
-      $14, $15, $16,
-      $17,
-      $18, $19, $20,
-      $21, $22, $23,
-      $24, $25,
-      $26, $27, $28,
-      $29, $30, $31, $32,
-      'inscripcion'
-    )
-    RETURNING *`,
-    [
-      nombre, deporte, emoji || null, descripcion || null, lugar,
-      fechaInicio, fechaFin || null, fechaLimiteInscripcion || null,
-      cuposEquipos, precio || 0,
-      modalidad || 'liga', nivel || 'amistoso', libreInscripcion ?? true,
-      tipoParticipacion || 'equipo', idaYVuelta ?? false, autoFixture ?? false,
-      sistemaClasificacion || 'simple',
-      puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
-      permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
-      null, usuarioId,
-      cardColor || null, cardFoto || null, iconoPersonalizado || null,
-      heroColor || null, heroFoto || null,
-      marcoIcono || 'default', marcoColorIcono || null, // ⚡ NUEVOS
-    ]
+      `INSERT INTO torneos (
+        nombre, deporte, emoji, descripcion, lugar,
+        fecha_inicio, fecha_fin, fecha_limite_inscripcion,
+        cupos_equipos, precio,
+        modalidad, nivel, libre_inscripcion,
+        tipo_participacion, ida_y_vuelta, auto_fixture,
+        sistema_clasificacion,
+        puntos_victoria, puntos_empate, puntos_derrota,
+        permite_empate, incluye_estadisticas, equipos_clasifican,
+        canal_chat_id, organizador_id,
+        card_color, card_foto, icono_personalizado,
+        hero_color, hero_foto, marco_icono, marco_color_icono,
+        estado
+      )
+      VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8,
+        $9, $10,
+        $11, $12, $13,
+        $14, $15, $16,
+        $17,
+        $18, $19, $20,
+        $21, $22, $23,
+        $24, $25,
+        $26, $27, $28,
+        $29, $30, $31, $32,
+        'inscripcion'
+      )
+      RETURNING *`,
+      [
+        nombre, deporte, emoji || null, descripcion || null, lugar,
+        fechaInicio, fechaFin || null, fechaLimiteInscripcion || null,
+        cuposEquipos, precio || 0,
+        modalidad || 'liga', nivel || 'amistoso', libreInscripcion ?? true,
+        tipoParticipacion || 'equipo', idaYVuelta ?? false, autoFixture ?? false,
+        sistemaClasificacion || 'simple',
+        puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
+        permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
+        null, usuarioId,
+        cardColor || null, cardFoto || null, iconoPersonalizado || null,
+        heroColor || null, heroFoto || null,
+        marcoIcono || 'default', marcoColorIcono || null, // ⚡ AGREGADOS
+      ]
   );
 
   const torneo = rows[0];

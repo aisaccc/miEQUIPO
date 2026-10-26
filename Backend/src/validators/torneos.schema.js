@@ -158,9 +158,10 @@ export const schemaCrearTorneo = z.object({
   iconoPersonalizado: z.string().nullable().optional(),
   heroColor: z.string().nullable().optional(),
   heroFoto: z.string().nullable().optional(),
-  marcoIcono: marcoIconoValido,
-  marcoColorIcono: marcoColorIconoValido,
+  marcoIcono: z.string().nullable().optional(),       // ⚡ Verificar
+  marcoColorIcono: z.string().nullable().optional(),  // ⚡ Verificar
 }).strict();
+
 
 /* ---------- PATCH /api/torneos/:id ---------- */
 export const schemaEditarTorneo = z.object({
