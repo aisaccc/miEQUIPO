@@ -199,8 +199,8 @@ export const schemaEditarTorneo = z.object({
   iconoPersonalizado: z.string().nullable().optional(),
   heroColor: z.string().nullable().optional(),
   heroFoto: z.string().nullable().optional(),
-  marcoIcono: marcoIconoValido,
-  marcoColorIcono: marcoColorIconoValido,
+  marcoIcono: z.string().nullable().optional(),
+  marcoColorIcono: z.string().nullable().optional(),
 }).strict();
 
 /* ---------- POST /api/torneos/:id/inscribir ---------- */

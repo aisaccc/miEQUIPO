@@ -174,10 +174,14 @@ function normalizarTorneo(t) {
     fixtureBloqueado: t.fixtureBloqueado ?? t.fixture_bloqueado ?? false,
     autoFixture: t.autoFixture ?? t.auto_fixture ?? false,
 
-    // ⚡ AGREGÁ ESTOS 3 (personalización premium):
+    // ⚡ PERSONALIZACIÓN VISUAL (Card, Hero y Marcos)
     cardColor: t.cardColor ?? t.card_color ?? null,
     cardFoto: t.cardFoto ?? t.card_foto ?? null,
     iconoPersonalizado: t.iconoPersonalizado ?? t.icono_personalizado ?? null,
+    heroColor: t.heroColor ?? t.hero_color ?? null,
+    heroFoto: t.heroFoto ?? t.hero_foto ?? null,
+    marcoIcono: t.marcoIcono ?? t.marco_icono ?? 'default',
+    marcoColorIcono: t.marcoColorIcono ?? t.marco_color_icono ?? null,
 
     puntosVictoria: t.puntosVictoria ?? t.puntos_victoria ?? 3,
     idaYVuelta: t.idaYVuelta ?? t.ida_y_vuelta ?? false,
