@@ -1,4 +1,4 @@
-const CACHE_NAME = 'roster-cache-v1';
+const CACHE_NAME = 'roster-cache-v2';
 const urlsToCache = [
   './',
   './index.html',

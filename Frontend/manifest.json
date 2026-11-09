@@ -7,7 +7,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0B111A",
-  "theme_color": "#E8836A",
+  "theme_color": "#0B111A", 
   "icons": [
     {
       "src": "assets/images/Logotipo_deportivo_Roster-removebg-preview2.png",
