@@ -8,7 +8,7 @@ const urlsToCache = [
   './CSS/layout.css',
   './CSS/components.css',
   './CSS/pages.css',
-  './assets/images/Logotipo_deportivo_Roster-removebg-preview.png',
+  './assets/images/Logotipo_deportivo_Roster-removebg-preview2.png',
   './JS/main.js'
 ];
 
