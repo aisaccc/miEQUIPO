@@ -12,6 +12,9 @@
     })();
   </script>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#E8836A" />
+  <link rel="apple-touch-icon" href="assets/images/Logotipo_deportivo_Roster-removebg-preview.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1110,7 +1113,14 @@
   </div>
 
   <!-- ================= INICIALIZACIÓN ================= -->
-  <script type="module" src="JS/main.js?v=190"></script>
+  <script type="module" src="JS/main.js?v=191"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+  </script>
   
 </body>
 </html>

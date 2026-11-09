@@ -1,0 +1,25 @@
+{
+  "name": "Roster - Red Social Deportiva",
+  "short_name": "Roster",
+  "description": "Conecta con tu comunidad, arma tu equipo y compite en los mejores torneos.",
+  "start_url": "./app.html#/inicio",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B111A",
+  "theme_color": "#E8836A",
+  "icons": [
+    {
+      "src": "assets/images/Logotipo_deportivo_Roster-removebg-preview.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/Logotipo_deportivo_Roster-removebg-preview.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
