@@ -261,9 +261,11 @@ export async function editarStatsJugador(req, res, next) {
 export async function editarFormacion(req, res, next) {
   try {
     const grupoId = validar(schemaUuidParam, req.params.id);
-    // Usamos el schema de editar grupo que ya incluye formacion
     const { formacion } = validar(schemaEditarGrupo, req.body);
     
+    // ⚡ DEBUG: Mira la consola del backend para ver si llegan las fichas
+    console.log('📥 Recibiendo formación:', formacion?.length, 'fichas');
+
     const resultado = await gruposService.editarFormacion(grupoId, formacion, req.usuario.id);
     res.json(resultado);
   } catch (err) {

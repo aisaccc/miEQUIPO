@@ -114,17 +114,15 @@ export const schemaEditarGrupo = z.object({
   heroFoto: urlOBase64,
   marcoIcono: marcoIconoValido,
   marcoColorIcono: marcoColorIconoValido,
-  // ... (campos existentes)
-  marcoColorIcono: marcoColorIconoValido,
   
-  // ⚡ NUEVO: Formación
+  // ⚡ FORMACIÓN
   formacion: z.array(z.object({
     id: z.string(),
     nombre: z.string().max(50).nullable().optional(),
     x: z.number(),
     y: z.number(),
     esPelota: z.boolean().optional(),
-    esRival: z.boolean().optional(), // ⚡ AGREGAR ESTO
+    esRival: z.boolean().optional(),
     usuarioId: z.string().uuid().nullable().optional(),
   })).nullable().optional(),
 }).strict();

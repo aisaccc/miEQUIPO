@@ -1331,7 +1331,6 @@ export async function init() {
     const iconoBalon = emojisDeporte[grupo.deporte] || '⚽';
     const bgUrl = `fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
     
-    // ⚡ NUEVO: Lógica de permisos
     const esCapOAdmin = grupo.esCapitan || grupo.esAdmin;
     const puedeEditar = grupo.formacionAbierta || esCapOAdmin;
 
@@ -1375,18 +1374,21 @@ export async function init() {
       </div>
     `;
 
-    // ⚡ Listener para el interruptor (solo si es cap/admin)
+    // ⚡ Listener del Switch corregido
     if (esCapOAdmin) {
       document.getElementById('toggle-formacion-abierta').onchange = async (e) => {
         const checked = e.target.checked;
         try {
           await editarFormacionAbiertaAPI(grupo.id, checked);
           toast(`Edición ${checked ? 'abierta' : 'cerrada'} para todos`, 'success');
-          // Recargamos la vista para aplicar los permisos
+          
+          // ⚡ ACTUALIZAMOS EL OBJETO EN MEMORIA ANTES DE RENDERIZAR
+          grupo.formacionAbierta = checked; 
+          
           await renderDetalleGrupo(grupo, false, () => {}, false);
         } catch (err) {
           toast(err.message || 'Error al cambiar el ajuste', 'error');
-          e.target.checked = !checked; // Revertir visualmente
+          e.target.checked = !checked; 
         }
       };
     }
@@ -1428,11 +1430,8 @@ export async function init() {
       `;
       }).join('');
 
-      // ⚡ Si no puede editar, no agregamos los listeners de arrastre
       if (!puedeEditar) {
-        contCirculos.querySelectorAll('.ficha-jugador').forEach(el => {
-          el.style.cursor = 'default';
-        });
+        contCirculos.querySelectorAll('.ficha-jugador').forEach(el => { el.style.cursor = 'default'; });
         return; 
       }
 
@@ -1547,7 +1546,6 @@ export async function init() {
         btn.disabled = true; btn.textContent = 'Guardando...';
         
         try {
-          // ⚡ Limpiamos y aseguramos que todos los campos vayan correctamente
           const formacionParaGuardar = formacion.map(f => ({
             id: f.id,
             nombre: f.nombre || '',
@@ -1560,6 +1558,11 @@ export async function init() {
 
           await editarFormacionAPI(grupo.id, formacionParaGuardar);
           toast('Formación guardada', 'success');
+          
+          // ⚡ Recargamos los datos del grupo para asegurarnos de que se reflejen
+          const grupoActualizado = await obtenerGrupo(grupo.id);
+          grupo.formacion = grupoActualizado.formacion;
+          
         } catch (err) {
           toast(err.message || 'Error al guardar', 'error');
         } finally {
