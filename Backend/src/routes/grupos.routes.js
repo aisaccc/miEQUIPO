@@ -55,5 +55,16 @@ router.patch('/:id/solicitudes/:usuarioId', gruposController.gestionarSolicitud)
    ========================================================= */
 router.get('/:grupoId/publicaciones', publicacionesController.listarPorGrupo);
 router.post('/:grupoId/publicaciones', publicacionesController.crearEnGrupo);
+/* =========================================================
+   MIEMBROS
+   ========================================================= */
+router.get('/:id/miembros', gruposController.listarMiembros);
+router.delete('/:id/miembros/:usuarioId', gruposController.expulsarMiembro);
+router.patch('/:id/miembros/:usuarioId/rol', gruposController.cambiarRolMiembro);
 
+// ⚡ NUEVO: Stats por jugador
+router.patch('/:id/miembros/:usuarioId/stats', gruposController.editarStatsJugador);
+
+// ⚡ NUEVO: Formación
+router.patch('/:id/formacion', gruposController.editarFormacion);
 export default router;

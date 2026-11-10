@@ -1,6 +1,7 @@
 import { getSesion, obtenerUsuarioActual } from '../auth.js';
 import { toast, abrirModal, cerrarModal } from '../components.js';
 import { deportes } from '../data-mock.js';
+import { tieneFormacion } from '../utils/reglas-deporte.js'; // ⚡ NUEVO
 import {
   listarGrupos,
   obtenerGrupo,
@@ -14,6 +15,8 @@ import {
   cambiarRolMiembro as cambiarRolMiembroAPI,
   listarSolicitudes as listarSolicitudesAPI,
   gestionarSolicitud as gestionarSolicitudAPI,
+  editarFormacion as editarFormacionAPI,       // ⚡ NUEVO
+  editarStatsJugador as editarStatsJugadorAPI, // ⚡ NUEVO
 } from '../services/grupos.service.js';
 
 import {
@@ -610,6 +613,7 @@ export async function init() {
     const contenedor = esComunidad ? document.getElementById('comunidad-contenido') : document.getElementById('equipo-contenido');
     if (!contenedor) return;
 
+    // ⚡ NUEVA LÓGICA: Añadimos "Formación" si el deporte lo permite
     const botonesSubtabs = esComunidad ? [
       { id: 'publicaciones', icono: SVG.image, label: 'Publicaciones' },
       { id: 'chat', icono: SVG.chat, label: 'Chat' },
@@ -619,6 +623,7 @@ export async function init() {
       { id: 'chat', icono: SVG.chat, label: 'Chat' },
       { id: 'publicaciones', icono: SVG.image, label: 'Publicaciones' },
       { id: 'plantilla', icono: SVG.users, label: 'Plantilla' },
+      ...(tieneFormacion(grupo.deporte) ? [{ id: 'formacion', icono: SVG.pin, label: 'Formación' }] : []),
       { id: 'info', icono: SVG.medal, label: 'Información' }
     ];
 
@@ -784,6 +789,8 @@ export async function init() {
         await renderSubtabChat(contSubtabs, grupo);
       } else if (subTabDetalleEquipo === 'publicaciones') {
         await renderSubtabPublicaciones(contSubtabs, grupo, esComunidad, esMiembro, capitan, admin);
+      } else if (subTabDetalleEquipo === 'formacion') {
+        await renderSubtabFormacion(contSubtabs, grupo);
       }
     }
   }
@@ -1090,6 +1097,10 @@ export async function init() {
           if (puedeExpulsar) opcionesMenu += `<button class="gd-jugador__dropdown-item gd-jugador__dropdown-item--danger" data-expulsar-miembro="${j.id}">${SVG.trash} Expulsar del equipo</button>`;
         }
 
+        // ⚡ NUEVO: Botón de editar stats
+        const puedeEditarStats = soyYoMismo || soyCapitan || soyAdmin;
+        const statsBtnHtml = puedeEditarStats ? `<button class="gd-jugador__menu-btn" data-stats-jugador="${j.id}" title="Editar estadísticas" style="margin-right: 8px;">${SVG.chart}</button>` : '';
+
         return `
           <div class="gd-jugador">
             <img src="${avatar}" class="gd-jugador__avatar" alt="" data-autor-id="${j.id}" style="cursor:pointer" />
@@ -1101,6 +1112,7 @@ export async function init() {
               </div>
               <div class="gd-jugador__sub">${j.posicion || 'Sin posición'}</div>
             </div>
+            ${statsBtnHtml}
             ${puedeAbrirMenu ? `<div class="gd-jugador__menu-wrapper"><button class="gd-jugador__menu-btn" data-jugador-menu="${j.id}" title="Opciones"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button><div class="gd-jugador__dropdown" data-dropdown-for="${j.id}" style="display:none">${opcionesMenu}</div></div>` : ''}
           </div>
         `;
@@ -1129,6 +1141,16 @@ export async function init() {
         btn.addEventListener('click', async (e) => { e.stopPropagation(); if (!confirm('¿Expulsar a este miembro del equipo?')) return; try { await expulsarMiembroAPI(grupoId, btn.dataset.expulsarMiembro); toast('Miembro expulsado', 'info'); await cargarMiembrosDeGrupo(grupoId); } catch (err) { toast(err.message || 'Error', 'error'); } });
       });
 
+      // ⚡ NUEVO: Listener para el botón de stats
+      cont.querySelectorAll('[data-stats-jugador]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const jugadorId = btn.dataset.statsJugador;
+          const jugador = miembros.find(m => String(m.id) === String(jugadorId));
+          abrirModalStatsJugador(jugador, grupoId, () => cargarMiembrosDeGrupo(grupoId));
+        });
+      });
+
       cont.querySelectorAll('[data-autor-id]').forEach(el => {
         el.addEventListener('click', (e) => { e.stopPropagation(); import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId)); });
       });
@@ -1137,6 +1159,278 @@ export async function init() {
     }
   }
 
+  // ⚡ NUEVO: Modal para editar stats del jugador
+  function abrirModalStatsJugador(jugador, grupoId, onRefresh) {
+    let modal = document.getElementById('modal-stats-jugador');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modal-stats-jugador';
+      modal.className = 'modal-backdrop';
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 440px;">
+          <div class="modal__header">
+            <h3 class="modal__title" id="modal-sj-titulo">Stats</h3>
+            <button class="modal__close" data-cerrar-modal="modal-stats-jugador">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal__body">
+            <div id="stats-jugador-dinamico"></div>
+          </div>
+          <div class="modal__footer">
+            <button class="btn btn--ghost" data-cerrar-modal="modal-stats-jugador">Cancelar</button>
+            <button class="btn btn--primary" id="btn-guardar-stats-jugador">Guardar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    modal.querySelector('#modal-sj-titulo').textContent = `Stats de ${jugador.nombre}`;
+    const contDinamico = modal.querySelector('#stats-jugador-dinamico');
+    const stats = jugador.stats || {};
+    
+    contDinamico.innerHTML = `
+      <div class="field">
+        <label class="field__label">Partidos Ganados</label>
+        <input type="number" id="sj-victorias" class="field__input" value="${stats.victorias ?? 0}" min="0" />
+      </div>
+      <div class="field">
+        <label class="field__label">Partidos Empatados</label>
+        <input type="number" id="sj-empates" class="field__input" value="${stats.empates ?? 0}" min="0" />
+      </div>
+      <div class="field">
+        <label class="field__label">Partidos Perdidos</label>
+        <input type="number" id="sj-derrotas" class="field__input" value="${stats.derrotas ?? 0}" min="0" />
+      </div>
+    `;
+
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(b => b.onclick = () => cerrarModal('modal-stats-jugador'));
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-stats-jugador'); };
+    
+    modal.querySelector('#btn-guardar-stats-jugador').onclick = async () => {
+      const btn = modal.querySelector('#btn-guardar-stats-jugador');
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        const nuevosStats = {
+          victorias: Number(document.getElementById('sj-victorias').value) || 0,
+          empates: Number(document.getElementById('sj-empates').value) || 0,
+          derrotas: Number(document.getElementById('sj-derrotas').value) || 0,
+        };
+        await editarStatsJugadorAPI(grupoId, jugador.id, nuevosStats);
+        toast('Stats guardadas', 'success');
+        cerrarModal('modal-stats-jugador');
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        toast(err.message || 'Error al guardar', 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Guardar';
+      }
+    };
+
+    abrirModal('modal-stats-jugador');
+  }
+
+  // ⚡ NUEVO: Pestaña de Formación
+  // ⚡ NUEVO: Pestaña de Formación
+  async function renderSubtabFormacion(cont, grupo) {
+    // Mapeo exacto de los archivos que subiste
+    const mapaCanchas = {
+      'Fútbol': 'cancha-futbol.png',
+      'Fútbol americano': 'cancha-futbol-americano.png',
+      'Básquetbol': 'cancha-basquetball.png', // ⚡ OJO: Doble L
+      'Béisbol': 'cancha-beisbol.png',
+      'Rugby': 'cancha-rugby.png',
+      'Hockey': 'cancha-hockey.png',
+      'Handball': 'cancha-handball.png',
+      'Vóleibol': 'cancha-voleibol.png'
+    };
+    const bgUrl = `assets/fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
+
+    cont.innerHTML = `
+      <div class="gd-card">
+        <div class="gd-card__eyebrow">Formación Táctica</div>
+        <h3 class="gd-card__title">Pizarra</h3>
+        <div class="campo-formacion-wrapper" id="campo-formacion-wrapper">
+          <div class="campo-formacion" id="campo-formacion" data-deporte="${grupo.deporte}">
+            <img src="${bgUrl}" class="campo-formacion__img" alt="Cancha" onerror="this.style.display='none'" />
+          </div>
+          <div class="campo-formacion-acciones">
+            <button class="btn btn--ghost btn--sm" id="btn-agregar-ficha">+ Añadir Ficha</button>
+            <button class="btn btn--ghost btn--sm" id="btn-agregar-rival" style="color: var(--color-danger); border-color: var(--color-danger);">+ Añadir Rival</button>
+            <button class="btn btn--primary btn--sm" id="btn-guardar-formacion">Guardar Formación</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const campo = document.getElementById('campo-formacion');
+    let formacion = grupo.formacion && grupo.formacion.length > 0 ? grupo.formacion : null;
+    
+    // Traer miembros para inicializar o limpiar los que ya no están
+    const grupoCompleto = await obtenerGrupo(grupo.id);
+    const miembros = grupoCompleto.miembros || [];
+    const idsMiembros = new Set(miembros.map(m => String(m.id)));
+
+    if (!formacion) {
+      // Inicializar con miembros + pelota
+      formacion = miembros.map((m, i) => ({
+        id: `ficha-${Date.now()}-${i}`,
+        nombre: m.nombre,
+        usuarioId: m.id,
+        x: 20 + (i % 3) * 20,
+        y: 20 + Math.floor(i / 3) * 20,
+        esPelota: false,
+        esRival: false
+      }));
+      formacion.push({ id: 'pelota', nombre: 'Pelota', x: 50, y: 50, esPelota: true });
+    } else {
+      // ⚡ Limpieza automática: si un usuario ya no está en el equipo, borramos su ficha
+      formacion = formacion.filter(f => f.esPelota || f.esRival || !f.usuarioId || idsMiembros.has(String(f.usuarioId)));
+    }
+
+    // ⚡ Función interna para pedir el nombre sin usar prompt()
+    function pedirNombreFicha(ficha, onSuccess) {
+      const nombre = window.prompt("Ingresá el nombre del jugador:", ficha.nombre || "Jugador");
+      if (nombre !== null) {
+        ficha.nombre = nombre.trim() || 'Anónimo';
+        onSuccess();
+      }
+    }
+
+    function renderCirculos() {
+      campo.innerHTML = formacion.map(f => {
+        const colorClass = f.esPelota ? 'ficha-jugador--pelota' : (f.esRival ? 'ficha-jugador--rival' : '');
+        const icono = f.esPelota ? '⚽' : (f.nombre ? f.nombre.charAt(0).toUpperCase() : '?');
+        
+        return `
+        <div class="ficha-jugador ${colorClass}" 
+             data-id="${f.id}" 
+             style="left: ${f.x}%; top: ${f.y}%;">
+          <div class="ficha-jugador__inner">
+            ${icono}
+          </div>
+          <div class="ficha-jugador__nombre" data-edit-name="${f.id}">${f.nombre || 'Anónimo'}</div>
+          ${!f.esPelota ? `<button class="ficha-jugador__del" data-del-ficha="${f.id}" title="Eliminar">✕</button>` : ''}
+        </div>
+      `;
+      }).join('');
+
+      // Drag & Drop
+      campo.querySelectorAll('.ficha-jugador').forEach(el => {
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+
+        const onStart = (e) => {
+          if (e.target.closest('[data-del-ficha]') || e.target.closest('[data-edit-name]')) return;
+          isDragging = true;
+          const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+          const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+          startX = clientX; startY = clientY;
+          initialX = el.offsetLeft; initialY = el.offsetTop;
+          el.style.zIndex = 100; el.style.cursor = 'grabbing';
+        };
+
+        const onMove = (e) => {
+          if (!isDragging) return;
+          e.preventDefault();
+          const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+          const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+          const dx = clientX - startX; const dy = clientY - startY;
+
+          let newX = initialX + dx; let newY = initialY + dy;
+
+          if (newX < 0) newX = 0;
+          if (newY < 0) newY = 0;
+          if (newX > campo.clientWidth - el.clientWidth) newX = campo.clientWidth - el.clientWidth;
+          if (newY > campo.clientHeight - el.clientHeight) newY = campo.clientHeight - el.clientHeight;
+
+          el.style.left = `${newX}px`; el.style.top = `${newY}px`;
+
+          const id = el.dataset.id; const f = formacion.find(x => x.id === id);
+          if (f) { f.x = (newX / campo.clientWidth) * 100; f.y = (newY / campo.clientHeight) * 100; }
+        };
+
+        const onEnd = () => { isDragging = false; el.style.zIndex = 10; el.style.cursor = 'grab'; };
+
+        el.addEventListener('mousedown', onStart);
+        el.addEventListener('touchstart', onStart, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchend', onEnd);
+      });
+
+      // Delete
+      campo.querySelectorAll('[data-del-ficha]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.delFicha;
+          formacion = formacion.filter(f => f.id !== id);
+          renderCirculos();
+        });
+      });
+
+      // ⚡ Edit Name (al hacer clic en el nombre)
+      campo.querySelectorAll('[data-edit-name]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = el.dataset.editName;
+          const f = formacion.find(x => x.id === id);
+          if (f) {
+            pedirNombreFicha(f, () => renderCirculos());
+          }
+        });
+      });
+    }
+
+    renderCirculos();
+
+    // ⚡ Botón Añadir Ficha (Jugador normal)
+    document.getElementById('btn-agregar-ficha').onclick = () => {
+      const nuevaFicha = {
+        id: `ficha-${Date.now()}`,
+        nombre: 'Jugador',
+        usuarioId: null,
+        x: 50, y: 50, 
+        esPelota: false, 
+        esRival: false
+      };
+      pedirNombreFicha(nuevaFicha, () => {
+        formacion.push(nuevaFicha);
+        renderCirculos();
+      });
+    };
+
+    // ⚡ Botón Añadir Rival (Rojo)
+    document.getElementById('btn-agregar-rival').onclick = () => {
+      const nuevaFicha = {
+        id: `rival-${Date.now()}`,
+        nombre: 'Rival',
+        usuarioId: null,
+        x: 50, y: 50, 
+        esPelota: false, 
+        esRival: true // ⚡ Bandera de rival
+      };
+      pedirNombreFicha(nuevaFicha, () => {
+        formacion.push(nuevaFicha);
+        renderCirculos();
+      });
+    };
+
+    document.getElementById('btn-guardar-formacion').onclick = async (e) => {
+      const btn = e.target;
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        await editarFormacionAPI(grupo.id, formacion);
+        toast('Formación guardada', 'success');
+      } catch (err) {
+        toast(err.message || 'Error al guardar', 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Guardar Formación';
+      }
+    };
+  }
   async function renderPanelEquipo() {
     const contenedor = document.getElementById('equipo-contenido');
     if (!contenedor) return;

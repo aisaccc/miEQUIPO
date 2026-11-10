@@ -74,7 +74,12 @@ function formatearGrupo(row, extras = {}) {
     marcoColorIcono: row.marco_color_icono || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    marcoIcono: row.marco_icono || 'default',
+    marcoColorIcono: row.marco_color_icono || null,
+    formacion: row.formacion || [], // ⚡ NUEVO
+    createdAt: row.created_at,
   };
+  
 }
 
 async function obtenerGrupoOFallar(client, grupoId) {
@@ -227,7 +232,7 @@ export async function obtenerGrupo(grupoId, usuarioId) {
   let esMiembro = false;
 
   const { rows: miembroRows } = await pool.query(
-    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union, u.nombre, u.username, u.avatar
+    `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union, gm.stats, u.nombre, u.username, u.avatar
      FROM grupo_miembros gm
      JOIN usuarios u ON u.id = gm.usuario_id
      WHERE gm.grupo_id = $1
@@ -816,4 +821,58 @@ export async function obtenerGruposDondeSoyMiembro(usuarioId, tipo = null) {
     valores
   );
   return rows;
+}
+/* =========================================================
+   FORMACIÓN
+   ========================================================= */
+export async function editarFormacion(grupoId, formacion, usuarioId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await obtenerGrupoOFallar(client, grupoId);
+    await verificarCapitanOAdmin(client, grupoId, usuarioId);
+
+    await client.query(
+      `UPDATE grupos SET formacion = $1::jsonb, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(formacion), grupoId]
+    );
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: 'Formación guardada' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* =========================================================
+   STATS POR JUGADOR
+   ========================================================= */
+export async function editarStatsJugador(grupoId, usuarioId, stats, autorId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await obtenerGrupoOFallar(client, grupoId);
+
+    // Solo el propio jugador, o el capitán/admin pueden editar
+    const esElMismo = String(usuarioId) === String(autorId);
+    if (!esElMismo) {
+      await verificarCapitanOAdmin(client, grupoId, autorId);
+    }
+
+    await client.query(
+      `UPDATE grupo_miembros SET stats = $1::jsonb WHERE grupo_id = $2 AND usuario_id = $3`,
+      [JSON.stringify(stats), grupoId, usuarioId]
+    );
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: 'Stats actualizadas' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

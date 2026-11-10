@@ -151,3 +151,16 @@ export async function listarSolicitudes(id) {
 export async function gestionarSolicitud(grupoId, usuarioId, accion) {
   return api.patch(`/grupos/${grupoId}/solicitudes/${usuarioId}`, { accion });
 }
+/* =========================================================
+   STATS POR JUGADOR
+   ========================================================= */
+export async function editarStatsJugador(grupoId, usuarioId, stats) {
+  return api.patch(`/grupos/${grupoId}/miembros/${usuarioId}/stats`, { stats });
+}
+
+/* =========================================================
+   FORMACIÓN
+   ========================================================= */
+export async function editarFormacion(grupoId, formacion) {
+  return api.patch(`/grupos/${grupoId}/formacion`, { formacion });
+}

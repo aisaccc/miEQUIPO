@@ -389,3 +389,23 @@ export function calcularGanador(deporte, resultado, sistemaClasificacion = null)
 
   return null;
 }
+/* =========================================================
+   HELPER: ¿el deporte tiene formación táctica?
+   ========================================================= */
+/* =========================================================
+   HELPER: ¿el deporte tiene formación táctica?
+   ========================================================= */
+export const DEPORTES_CON_FORMACION = [
+  'Fútbol', 
+  'Fútbol americano', 
+  'Básquetbol', 
+  'Béisbol', 
+  'Rugby', 
+  'Hockey', 
+  'Handball',
+  'Vóleibol' // ⚡ NUEVO
+];
+
+export function tieneFormacion(deporte) {
+  return DEPORTES_CON_FORMACION.includes(deporte);
+}

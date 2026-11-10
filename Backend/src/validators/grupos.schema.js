@@ -114,6 +114,18 @@ export const schemaEditarGrupo = z.object({
   heroFoto: urlOBase64,
   marcoIcono: marcoIconoValido,
   marcoColorIcono: marcoColorIconoValido,
+  // ... (campos existentes)
+  marcoColorIcono: marcoColorIconoValido,
+  
+  // ⚡ NUEVO: Formación
+  formacion: z.array(z.object({
+    id: z.string(),
+    nombre: z.string().max(50).nullable().optional(),
+    x: z.number(),
+    y: z.number(),
+    esPelota: z.boolean().optional(),
+    usuarioId: z.string().uuid().nullable().optional(),
+  })).nullable().optional(),
 }).strict();
 
 export const schemaEditarStats = z.object({
@@ -149,3 +161,6 @@ export const schemaListarGrupos = z.object({
 }).strict();
 
 export const schemaUuidParam = uuidValido;
+export const schemaEditarStatsJugador = z.object({
+  stats: z.record(z.any()), // Acepta un objeto JSON libre para las stats
+}).strict();

@@ -15258,3 +15258,184 @@ select.field__input {
 [data-theme="dark"] .auth__mobile-logo img {
   filter: brightness(0) invert(1);
 }
+/* =========================================================
+   FIX MOBILE v24 DEFINITIVO
+   ========================================================= */
+@media (max-width: 800px) {
+  /* 1. Texto desbordado */
+  .gd-hero__desc, .perfil-header-card__name, .perfil-header-card__bio,
+  .grupo-card__title, .grupo-card__desc, .match-card__title {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  .grupo-card__desc {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 2. Stats en 3 columnas */
+  .gd-stats, .pd-stats, .profile-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .gd-stat, .pd-stat, .profile-stat-card {
+    padding: 10px 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    min-height: 70px !important;
+  }
+
+  .gd-stat__value, .pd-stat__value, .profile-stat-card__value {
+    font-size: 18px !important; line-height: 1 !important;
+  }
+
+  .gd-stat__label, .pd-stat__label, .profile-stat-card__label {
+    font-size: 9px !important; text-transform: uppercase !important;
+    letter-spacing: 0 !important; line-height: 1.1 !important;
+    word-break: break-word !important;
+  }
+
+  .gd-stat__icon, .pd-stat__icon {
+    width: 24px !important; height: 24px !important; margin-bottom: 4px !important;
+  }
+
+  /* 3. Cards cuadradas */
+  .grupo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .grupo-card {
+    aspect-ratio: 1 / 1.2 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .grupo-card__banner { height: 50px !important; }
+  .grupo-card__crest { width: 40px !important; height: 40px !important; top: 30px !important; left: 10px !important; }
+  .grupo-card__crest img { width: 24px !important; height: 24px !important; }
+  .grupo-card__body { padding: 24px 10px 10px !important; flex: 1 !important; overflow: hidden !important; }
+
+  /* 4. Modal Ver Perfil a pantalla completa */
+  #modal-ver-perfil.modal-backdrop.open {
+    padding: 0 !important; background: var(--color-bg) !important;
+    display: block !important; width: 100vw !important;
+  }
+
+  #modal-ver-perfil .modal {
+    position: fixed !important; top: 0 !important; left: 0 !important;
+    width: 100vw !important; height: 100dvh !important;
+    max-height: 100dvh !important; border-radius: 0 !important; margin: 0 !important;
+  }
+
+  #modal-ver-perfil .modal__body {
+    height: 100dvh !important; max-height: 100dvh !important;
+    overflow-y: auto !important; padding: 0 !important;
+  }
+
+  /* Ajustes extra Hero */
+  .gd-hero {
+    flex-direction: column !important; align-items: stretch !important;
+    padding: 20px !important; gap: 16px !important;
+  }
+  .gd-hero__left { flex-direction: row !important; align-items: center !important; gap: 16px !important; }
+  .gd-hero__crest { width: 60px !important; height: 60px !important; }
+  .gd-hero__crest img { width: 40px !important; height: 40px !important; }
+  .gd-hero__title { font-size: 24px !important; }
+  .gd-hero__actions { flex-direction: row !important; flex-wrap: wrap !important; }
+  .gd-hero__action { flex: 1 !important; min-width: 120px !important; }
+}
+
+/* =========================================================
+   PIZARRA DE FORMACIÓN
+   ========================================================= */
+.campo-formacion-wrapper { display: flex; flex-direction: column; gap: 16px; }
+
+.campo-formacion {
+  position: relative; 
+  width: 100%; 
+  aspect-ratio: 2 / 3; /* Formato vertical (celular) */
+  background: #1a1815; /* Fondo por si la imagen no carga */
+  border-radius: 12px; 
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  touch-action: none; /* Evita que la pantalla haga scroll al arrastrar */
+}
+
+/* ⚡ LA MAGIA: Rotamos la imagen horizontal para que llene el vertical */
+.campo-formacion__img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  transform: translate(-50%, -50%) rotate(90deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ficha-jugador {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center;
+  cursor: grab; z-index: 10; user-select: none; touch-action: none;
+}
+
+.ficha-jugador__inner {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--color-surface); color: var(--color-primary-dark);
+  font-weight: 800; font-size: 18px; display: grid; place-items: center;
+  border: 3px solid var(--color-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease;
+}
+
+/* ⚡ Ficha Rival (Roja) */
+.ficha-jugador--rival .ficha-jugador__inner {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #dc2626;
+}
+
+/* Ficha Pelota */
+.ficha-jugador--pelota .ficha-jugador__inner {
+  background: transparent; border: none; box-shadow: none;
+  font-size: 32px; width: auto; height: auto;
+}
+
+.ficha-jugador:hover .ficha-jugador__inner { transform: scale(1.1); }
+
+.ficha-jugador__nombre {
+  margin-top: 4px; background: rgba(0,0,0,0.6); color: #fff;
+  padding: 2px 6px; border-radius: 4px; font-size: 10px;
+  font-weight: 600; white-space: nowrap; pointer-events: auto; cursor: pointer;
+}
+.ficha-jugador__nombre:hover { background: var(--color-primary); }
+
+.ficha-jugador__del {
+  position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-danger); color: #fff; border: none;
+  font-size: 10px; font-weight: 800; display: grid; place-items: center;
+  cursor: pointer; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+
+.ficha-jugador:hover .ficha-jugador__del,
+.ficha-jugador:active .ficha-jugador__del { opacity: 1; }
+
+.campo-formacion-acciones { 
+  display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
+}
