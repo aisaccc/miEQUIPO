@@ -15407,48 +15407,52 @@ select.field__input {
   width: 44px; 
   height: 44px; 
   border-radius: 50%;
-  background: var(--color-surface); 
-  color: var(--color-primary-dark);
+  background: #FFFFFF; /* ⚡ Blanco puro para máximo contraste */
+  color: #0F1B2D;      /* Texto oscuro para que se lea perfecto */
   font-weight: 800; 
   font-size: 18px; 
   display: grid; 
   place-items: center;
-  border: 3px solid var(--color-primary); 
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  border: 3px solid var(--color-primary); /* Borde naranja */
+  /* ⚡ Sombra más grande para despegar la ficha de la cancha */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.8);
   transition: transform 0.1s ease;
 }
 
+/* Ficha Rival (Roja) con más contraste */
 .ficha-jugador--rival .ficha-jugador__inner {
-  background: #fee2e2;
-  color: #991b1b;
-  border-color: #dc2626;
+  background: #DC2626; /* Rojo sólido */
+  color: #FFFFFF;      /* Letra blanca */
+  border-color: #991B1B; /* Borde rojo oscuro */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.8);
 }
 
+/* Ficha Pelota: le damos un brillo para que resalte */
 .ficha-jugador--pelota .ficha-jugador__inner {
   background: transparent; 
   border: none; 
-  box-shadow: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   font-size: 32px; 
   width: auto; 
   height: auto;
+  filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5)); /* Sombra al emoji */
 }
 
-.ficha-jugador:hover .ficha-jugador__inner { 
-  transform: scale(1.1); 
-}
-
+/* El nombre debajo de la ficha */
 .ficha-jugador__nombre {
-  margin-top: 4px; 
-  background: rgba(0,0,0,0.6); 
+  margin-top: 6px; 
+  background: rgba(0,0,0,0.85); /* Fondo más oscuro */
   color: #fff;
-  padding: 2px 6px; 
-  border-radius: 4px; 
-  font-size: 10px;
-  font-weight: 600; 
+  padding: 3px 8px; 
+  border-radius: 6px; 
+  font-size: 11px;
+  font-weight: 700; 
   white-space: nowrap; 
   pointer-events: none; 
   min-width: 10px; 
   min-height: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .campo-formacion-acciones { 

@@ -1168,7 +1168,7 @@ export async function init() {
           const valor = statsJugador[statDef.key];
           if (valor !== undefined && valor !== null && valor !== '') {
             // Si es tiempo, formatearlo un poco (opcional, aquí lo dejamos tal cual)
-            statsHtml += `<span class="gd-jugador__stat" title="${statDef.label}">${statDef.icon} <span>${valor}</span></span>`;
+            statsHtml += `<span class="gd-jugador__stat">${statDef.label}: <strong>${valor}</strong></span>`;
           }
         });
 
