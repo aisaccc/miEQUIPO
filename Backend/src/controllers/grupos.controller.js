@@ -19,6 +19,7 @@ import {
   schemaUuidParam,
 } from '../validators/grupos.schema.js';
 import { schemaEditarStatsJugador } from '../validators/grupos.schema.js';
+import { schemaEditarFormacionAbierta } from '../validators/grupos.schema.js';
 
 /* =========================================================
    GET /api/grupos
@@ -264,6 +265,17 @@ export async function editarFormacion(req, res, next) {
     const { formacion } = validar(schemaEditarGrupo, req.body);
     
     const resultado = await gruposService.editarFormacion(grupoId, formacion, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+export async function editarFormacionAbierta(req, res, next) {
+  try {
+    const grupoId = validar(schemaUuidParam, req.params.id);
+    const { formacionAbierta } = validar(schemaEditarFormacionAbierta, req.body);
+    
+    const resultado = await gruposService.editarFormacionAbierta(grupoId, formacionAbierta, req.usuario.id);
     res.json(resultado);
   } catch (err) {
     next(err);

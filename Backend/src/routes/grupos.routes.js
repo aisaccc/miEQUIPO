@@ -67,4 +67,5 @@ router.patch('/:id/miembros/:usuarioId/stats', gruposController.editarStatsJugad
 
 // ⚡ NUEVO: Formación
 router.patch('/:id/formacion', gruposController.editarFormacion);
+router.patch('/:id/formacion/ajustes', gruposController.editarFormacionAbierta); // ⚡ NUEVO
 export default router;

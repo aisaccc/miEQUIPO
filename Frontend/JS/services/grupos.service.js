@@ -164,3 +164,6 @@ export async function editarStatsJugador(grupoId, usuarioId, stats) {
 export async function editarFormacion(grupoId, formacion) {
   return api.patch(`/grupos/${grupoId}/formacion`, { formacion });
 }
+export async function editarFormacionAbierta(grupoId, formacionAbierta) {
+  return api.patch(`/grupos/${grupoId}/formacion/ajustes`, { formacionAbierta });
+}

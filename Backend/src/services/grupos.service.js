@@ -76,7 +76,8 @@ function formatearGrupo(row, extras = {}) {
     updatedAt: row.updated_at,
     marcoIcono: row.marco_icono || 'default',
     marcoColorIcono: row.marco_color_icono || null,
-    formacion: row.formacion || [], // ⚡ NUEVO
+    formacion: row.formacion || [],
+    formacionAbierta: row.formacion_abierta || false, // ⚡ NUEVO
     createdAt: row.created_at,
   };
   
@@ -829,8 +830,22 @@ export async function editarFormacion(grupoId, formacion, usuarioId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await obtenerGrupoOFallar(client, grupoId);
-    await verificarCapitanOAdmin(client, grupoId, usuarioId);
+    const grupo = await obtenerGrupoOFallar(client, grupoId);
+    
+    // ⚡ VALIDACIÓN: Si está cerrada, solo Cap/Admin. Si está abierta, cualquiera.
+    let esCapOAdmin = false;
+    try {
+      await verificarCapitanOAdmin(client, grupoId, usuarioId);
+      esCapOAdmin = true;
+    } catch (e) {
+      esCapOAdmin = false;
+    }
+
+    if (!grupo.formacion_abierta && !esCapOAdmin) {
+      const err = new Error('La edición de la formación está cerrada. Solo el capitán o sub-capitán pueden modificarla.');
+      err.status = 403;
+      throw err;
+    }
 
     await client.query(
       `UPDATE grupos SET formacion = $1::jsonb, updated_at = NOW() WHERE id = $2`,
@@ -846,7 +861,6 @@ export async function editarFormacion(grupoId, formacion, usuarioId) {
     client.release();
   }
 }
-
 /* =========================================================
    STATS POR JUGADOR
    ========================================================= */
@@ -869,6 +883,27 @@ export async function editarStatsJugador(grupoId, usuarioId, stats, autorId) {
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Stats actualizadas' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+export async function editarFormacionAbierta(grupoId, formacionAbierta, usuarioId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await obtenerGrupoOFallar(client, grupoId);
+    await verificarCapitanOAdmin(client, grupoId, usuarioId);
+
+    await client.query(
+      `UPDATE grupos SET formacion_abierta = $1, updated_at = NOW() WHERE id = $2`,
+      [formacionAbierta, grupoId]
+    );
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: 'Ajuste actualizado' };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

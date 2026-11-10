@@ -17,6 +17,7 @@ import {
   gestionarSolicitud as gestionarSolicitudAPI,
   editarFormacion as editarFormacionAPI,       // ⚡ NUEVO
   editarStatsJugador as editarStatsJugadorAPI, // ⚡ NUEVO
+  editarFormacionAbierta as editarFormacionAbiertaAPI
 } from '../services/grupos.service.js';
 
 import {
@@ -1317,43 +1318,78 @@ export async function init() {
   // ⚡ NUEVO: Pestaña de Formación
   async function renderSubtabFormacion(cont, grupo) {
     const mapaCanchas = {
-      'Fútbol': 'cancha-futbol.png',
-      'Fútbol americano': 'cancha-futbol-americano.png',
-      'Básquetbol': 'cancha-basquetbol.png',
-      'Béisbol': 'cancha-beisbol.png',
-      'Rugby': 'cancha-rugby.png',
-      'Hockey': 'cancha-hockey.png',
-      'Handball': 'cancha-handball.png',
-      'Vóleibol': 'cancha-voleibol.png'
+      'Fútbol': 'cancha-futbol.png', 'Fútbol americano': 'cancha-futbol-americano.png',
+      'Básquetbol': 'cancha-basquetbol.png', 'Béisbol': 'cancha-beisbol.png',
+      'Rugby': 'cancha-rugby.png', 'Hockey': 'cancha-hockey.png',
+      'Handball': 'cancha-handball.png', 'Vóleibol': 'cancha-voleibol.png'
     };
     
     const emojisDeporte = {
       'Fútbol': '⚽', 'Fútbol americano': '🏈', 'Básquetbol': '🏀', 'Béisbol': '⚾',
-      'Rugby': '🏉', 'Hockey': '🏒', 'Handball': '🤾', 'Vóleibol': '🏐',
-      'Tenis': '🎾', 'Tenis de mesa': '🏓', 'Pádel': '🎾', 'Golf': '⛳',
-      'Natación': '🏊', 'Atletismo': '🏃', 'Boxeo': '🥊',
+      'Rugby': '🏉', 'Hockey': '🏒', 'Handball': '🤾', 'Vóleibol': '🏐'
     };
     const iconoBalon = emojisDeporte[grupo.deporte] || '⚽';
     const bgUrl = `fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
+    
+    // ⚡ NUEVO: Lógica de permisos
+    const esCapOAdmin = grupo.esCapitan || grupo.esAdmin;
+    const puedeEditar = grupo.formacionAbierta || esCapOAdmin;
 
     cont.innerHTML = `
       <div class="gd-card">
         <div class="gd-card__eyebrow">Formación Táctica</div>
         <h3 class="gd-card__title">Pizarra</h3>
+        
+        ${esCapOAdmin ? `
+          <div class="formacion-toggle-wrapper mb-4">
+            <label class="switch">
+              <input type="checkbox" id="toggle-formacion-abierta" ${grupo.formacionAbierta ? 'checked' : ''} />
+              <span class="switch__slider"></span>
+              <div>
+                <div class="switch__label">Permitir edición a todos los miembros</div>
+                <div class="switch__hint">Si está desactivado, solo capitán y sub-capitanes pueden mover y guardar.</div>
+              </div>
+            </label>
+          </div>
+        ` : ''}
+
         <div class="campo-formacion-wrapper" id="campo-formacion-wrapper">
           <div class="campo-formacion" id="campo-formacion" data-deporte="${grupo.deporte}">
             <img src="${bgUrl}" class="campo-formacion__img" alt="Cancha" />
             <div id="campo-circulos" style="position:absolute; inset:0; z-index: 5;"></div>
           </div>
+          
           <div class="campo-formacion-acciones">
-            <button class="btn btn--ghost btn--sm" id="btn-agregar-ficha">+ Añadir Ficha</button>
-            <button class="btn btn--ghost btn--sm" id="btn-agregar-rival" style="color: var(--color-danger); border-color: var(--color-danger);">+ Añadir Rival</button>
-            <button class="btn btn--ghost btn--sm" id="btn-agregar-balon">+ Añadir Balón</button>
-            <button class="btn btn--primary btn--sm" id="btn-guardar-formacion">Guardar Formación</button>
+            ${puedeEditar ? `
+              <button class="btn btn--ghost btn--sm" id="btn-agregar-ficha">+ Añadir Ficha</button>
+              <button class="btn btn--ghost btn--sm" id="btn-agregar-rival" style="color: var(--color-danger); border-color: var(--color-danger);">+ Añadir Rival</button>
+              <button class="btn btn--ghost btn--sm" id="btn-agregar-balon">+ Añadir Balón</button>
+              <button class="btn btn--primary btn--sm" id="btn-guardar-formacion">Guardar Formación</button>
+            ` : `
+              <div class="aviso-formacion-cerrada">
+                🔒 La edición de la formación está cerrada por el capitán.
+              </div>
+            `}
           </div>
         </div>
       </div>
     `;
+
+    // ⚡ Listener para el interruptor (solo si es cap/admin)
+    if (esCapOAdmin) {
+      document.getElementById('toggle-formacion-abierta').onchange = async (e) => {
+        const checked = e.target.checked;
+        try {
+          await editarFormacionAbiertaAPI(grupo.id, checked);
+          toast(`Edición ${checked ? 'abierta' : 'cerrada'} para todos`, 'success');
+          // Recargamos la vista para aplicar los permisos
+          await renderDetalleGrupo(grupo, false, () => {}, false);
+        } catch (err) {
+          toast(err.message || 'Error al cambiar el ajuste', 'error');
+          e.target.checked = !checked; // Revertir visualmente
+        }
+      };
+    }
 
     const campo = document.getElementById('campo-formacion');
     const contCirculos = document.getElementById('campo-circulos');
@@ -1386,13 +1422,19 @@ export async function init() {
         
         return `
         <div class="ficha-jugador ${colorClass}" data-id="${f.id}" style="left: ${f.x}%; top: ${f.y}%;">
-          <div class="ficha-jugador__inner">
-            ${f.esPelota ? iconoBalon : inicial}
-          </div>
+          <div class="ficha-jugador__inner">${f.esPelota ? iconoBalon : inicial}</div>
           ${nombreHtml}
         </div>
       `;
       }).join('');
+
+      // ⚡ Si no puede editar, no agregamos los listeners de arrastre
+      if (!puedeEditar) {
+        contCirculos.querySelectorAll('.ficha-jugador').forEach(el => {
+          el.style.cursor = 'default';
+        });
+        return; 
+      }
 
       contCirculos.querySelectorAll('.ficha-jugador').forEach(el => {
         let isDragging = false;
@@ -1402,13 +1444,11 @@ export async function init() {
         const onStart = (e) => {
           isDragging = true;
           hasMoved = false;
-          
           const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
           const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
           startX = clientX; startY = clientY;
           initialX = el.offsetLeft; initialY = el.offsetTop;
           
-          // ⚡ Calculamos el radio del círculo real (ignorando el texto del nombre)
           const innerEl = el.querySelector('.ficha-jugador__inner');
           innerHalfW = innerEl ? (innerEl.clientWidth / 2) : 22;
           innerHalfH = innerEl ? (innerEl.clientHeight / 2) : 22;
@@ -1426,8 +1466,6 @@ export async function init() {
           if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
 
           let newX = initialX + dx; let newY = initialY + dy;
-
-          // ⚡ Límites exactos basados en el círculo
           if (newX < innerHalfW) newX = innerHalfW;
           if (newY < innerHalfH) newY = innerHalfH;
           if (newX > campo.clientWidth - innerHalfW) newX = campo.clientWidth - innerHalfW;
@@ -1445,7 +1483,6 @@ export async function init() {
           el.style.zIndex = 10; 
           el.style.cursor = 'grab'; 
           
-          // ⚡ Si fue un clic rápido, mostramos las opciones
           if (!hasMoved) {
             const id = el.dataset.id;
             const f = formacion.find(x => x.id === id);
@@ -1488,34 +1525,36 @@ export async function init() {
 
     renderCirculos();
 
-    document.getElementById('btn-agregar-ficha').onclick = () => {
-      formacion.push({ id: `ficha-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: false });
-      renderCirculos();
-    };
+    if (puedeEditar) {
+      document.getElementById('btn-agregar-ficha').onclick = () => {
+        formacion.push({ id: `ficha-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: false });
+        renderCirculos();
+      };
 
-    document.getElementById('btn-agregar-rival').onclick = () => {
-      formacion.push({ id: `rival-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: true });
-      renderCirculos();
-    };
+      document.getElementById('btn-agregar-rival').onclick = () => {
+        formacion.push({ id: `rival-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: true });
+        renderCirculos();
+      };
 
-    document.getElementById('btn-agregar-balon').onclick = () => {
-      if (formacion.some(f => f.esPelota)) return toast('Ya hay un balón en la pizarra', 'info');
-      formacion.push({ id: `balon-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: true });
-      renderCirculos();
-    };
+      document.getElementById('btn-agregar-balon').onclick = () => {
+        if (formacion.some(f => f.esPelota)) return toast('Ya hay un balón en la pizarra', 'info');
+        formacion.push({ id: `balon-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: true });
+        renderCirculos();
+      };
 
-    document.getElementById('btn-guardar-formacion').onclick = async (e) => {
-      const btn = e.target;
-      btn.disabled = true; btn.textContent = 'Guardando...';
-      try {
-        await editarFormacionAPI(grupo.id, formacion);
-        toast('Formación guardada', 'success');
-      } catch (err) {
-        toast(err.message || 'Error al guardar', 'error');
-      } finally {
-        btn.disabled = false; btn.textContent = 'Guardar Formación';
-      }
-    };
+      document.getElementById('btn-guardar-formacion').onclick = async (e) => {
+        const btn = e.target;
+        btn.disabled = true; btn.textContent = 'Guardando...';
+        try {
+          await editarFormacionAPI(grupo.id, formacion);
+          toast('Formación guardada', 'success');
+        } catch (err) {
+          toast(err.message || 'Error al guardar', 'error');
+        } finally {
+          btn.disabled = false; btn.textContent = 'Guardar Formación';
+        }
+      };
+    }
   }
   async function renderPanelEquipo() {
     const contenedor = document.getElementById('equipo-contenido');

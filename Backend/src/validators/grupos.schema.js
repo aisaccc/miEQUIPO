@@ -164,3 +164,6 @@ export const schemaUuidParam = uuidValido;
 export const schemaEditarStatsJugador = z.object({
   stats: z.record(z.any()), // Acepta un objeto JSON libre para las stats
 }).strict();
+export const schemaEditarFormacionAbierta = z.object({
+  formacionAbierta: z.boolean(),
+}).strict();
