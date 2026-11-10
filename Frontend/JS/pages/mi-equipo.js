@@ -96,6 +96,68 @@ const SVG = {
   alert: `<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
   inbox: `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
 };
+// ⚡ NUEVO: Diccionario de estadísticas e íconos minimalistas por deporte
+const STATS_POR_DEPORTE = {
+  'Fútbol': [
+    { key: 'goles', label: 'Goles', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>` },
+    { key: 'asistencias', label: 'Asistencias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>` }
+  ],
+  'Básquetbol': [
+    { key: 'puntos', label: 'Puntos', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5"/></svg>` },
+    { key: 'asistencias', label: 'Asistencias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>` },
+    { key: 'rebotes', label: 'Rebotes', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8"/><path d="m8 16 4 4 4-4"/><path d="M20 12H4"/></svg>` }
+  ],
+  'Béisbol': [
+    { key: 'carreras', label: 'Carreras', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>` },
+    { key: 'hits', label: 'Home runs', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 4H6v16h12z"/></svg>` },
+    { key: 'rbi', label: 'Ponches', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>` }
+  ],
+  'Vóleibol': [
+    { key: 'puntos', label: 'Puntos', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>` },
+    { key: 'aces', label: 'Aces', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-3 9h8L11 22"/></svg>` },
+    { key: 'bloqueos', label: 'Bloqueos', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>` }
+  ],
+  'Tenis': [
+    { key: 'aces', label: 'Aces', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-3 9h8L11 22"/></svg>` },
+    { key: 'victorias', label: 'Victorias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>` }
+  ],
+  'Natación': [
+    { key: 'mejor_tiempo', label: 'Mejor Tiempo', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>` }
+  ],
+  'Atletismo': [
+    { key: 'mejor_tiempo', label: 'Mejor Tiempo', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>` }
+  ],
+  'Ciclismo': [
+    { key: 'mejor_tiempo', label: 'Mejor Tiempo', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>` }
+  ],
+  'Rugby': [
+    { key: 'puntos', label: 'Trys', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/></svg>` },
+    { key: 'tackles', label: 'Tackles', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2 5 11l4 4L18 6z"/></svg>` }
+  ],
+  'Hockey': [
+    { key: 'goles', label: 'Goles', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/></svg>` },
+    { key: 'asistencias', label: 'Asistencias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>` }
+  ],
+  'Handball': [
+    { key: 'goles', label: 'Goles', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/></svg>` },
+    { key: 'asistencias', label: 'Asistencias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>` }
+  ],
+  'Fútbol americano': [
+    { key: 'tacles', label: 'Tackles', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2 5 11l4 4L18 6z"/></svg>` },
+    { key: 'touchdowns', label: 'Touchdowns', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>` }
+  ],
+  'Golf': [
+    { key: 'birdies', label: 'Birdies', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/></svg>` },
+    { key: 'mejor_ronda', label: 'Mejor Ronda', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>` }
+  ],
+  'Boxeo': [
+    { key: 'kos', label: 'KOs', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 4H6v16h12z"/></svg>` },
+    { key: 'victorias', label: 'Victorias', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>` }
+  ]
+};
+const STATS_DEFAULT = [
+  { key: 'partidos', label: 'Partidos', icon: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>` }
+];
 
 const COLOR_DEPORTE = {
   'Fútbol':            { from: '#FF6B4A', to: '#C2410C' },
@@ -1081,6 +1143,8 @@ export async function init() {
 
       const soyCapitan = grupoCompleto.esCapitan; const soyAdmin = grupoCompleto.esAdmin;
 
+      const statsDeEsteDeporte = STATS_POR_DEPORTE[grupoCompleto.deporte] || STATS_DEFAULT;
+
       cont.innerHTML = miembros.map(j => {
         const esElCapitan = j.rol === 'capitan'; const esSubCapitan = j.rol === 'admin';
         const soyYoMismo = String(j.id) === String(user.id); const avatar = j.avatar || AVATAR_FALLBACK;
@@ -1097,7 +1161,17 @@ export async function init() {
           if (puedeExpulsar) opcionesMenu += `<button class="gd-jugador__dropdown-item gd-jugador__dropdown-item--danger" data-expulsar-miembro="${j.id}">${SVG.trash} Expulsar del equipo</button>`;
         }
 
-        // ⚡ NUEVO: Botón de editar stats
+        // ⚡ NUEVO: Generar HTML de las stats del jugador
+        const statsJugador = j.stats || {};
+        let statsHtml = '';
+        statsDeEsteDeporte.forEach(statDef => {
+          const valor = statsJugador[statDef.key];
+          if (valor !== undefined && valor !== null && valor !== '') {
+            // Si es tiempo, formatearlo un poco (opcional, aquí lo dejamos tal cual)
+            statsHtml += `<span class="gd-jugador__stat" title="${statDef.label}">${statDef.icon} <span>${valor}</span></span>`;
+          }
+        });
+
         const puedeEditarStats = soyYoMismo || soyCapitan || soyAdmin;
         const statsBtnHtml = puedeEditarStats ? `<button class="gd-jugador__menu-btn" data-stats-jugador="${j.id}" title="Editar estadísticas" style="margin-right: 8px;">${SVG.chart}</button>` : '';
 
@@ -1110,7 +1184,10 @@ export async function init() {
                 ${esElCapitan ? `<span class="badge badge--primary" style="margin-left:6px">${SVG.crown}</span>` : ''}
                 ${esSubCapitan && !esElCapitan ? `<span class="badge badge--warning" style="margin-left:6px">${SVG.crown}</span>` : ''}
               </div>
-              <div class="gd-jugador__sub">${j.posicion || 'Sin posición'}</div>
+              <div class="gd-jugador__sub">
+                ${j.posicion || 'Sin posición'}
+                ${statsHtml ? `<div class="gd-jugador__stats-list">${statsHtml}</div>` : ''}
+              </div>
             </div>
             ${statsBtnHtml}
             ${puedeAbrirMenu ? `<div class="gd-jugador__menu-wrapper"><button class="gd-jugador__menu-btn" data-jugador-menu="${j.id}" title="Opciones"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button><div class="gd-jugador__dropdown" data-dropdown-for="${j.id}" style="display:none">${opcionesMenu}</div></div>` : ''}
@@ -1141,18 +1218,18 @@ export async function init() {
         btn.addEventListener('click', async (e) => { e.stopPropagation(); if (!confirm('¿Expulsar a este miembro del equipo?')) return; try { await expulsarMiembroAPI(grupoId, btn.dataset.expulsarMiembro); toast('Miembro expulsado', 'info'); await cargarMiembrosDeGrupo(grupoId); } catch (err) { toast(err.message || 'Error', 'error'); } });
       });
 
-      // ⚡ NUEVO: Listener para el botón de stats
+
+      cont.querySelectorAll('[data-autor-id]').forEach(el => {
+        el.addEventListener('click', (e) => { e.stopPropagation(); import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId)); });
+      });
+            // ⚡ NUEVO: Listener para el botón de stats
       cont.querySelectorAll('[data-stats-jugador]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const jugadorId = btn.dataset.statsJugador;
           const jugador = miembros.find(m => String(m.id) === String(jugadorId));
-          abrirModalStatsJugador(jugador, grupoId, () => cargarMiembrosDeGrupo(grupoId));
+          abrirModalStatsJugador(jugador, grupoId, grupoCompleto.deporte, () => cargarMiembrosDeGrupo(grupoId));
         });
-      });
-
-      cont.querySelectorAll('[data-autor-id]').forEach(el => {
-        el.addEventListener('click', (e) => { e.stopPropagation(); import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId)); });
       });
     } catch (err) {
       cont.innerHTML = `<p class="text-sm text-muted text-center">No se pudieron cargar los miembros</p>`;
@@ -1160,7 +1237,8 @@ export async function init() {
   }
 
   // ⚡ NUEVO: Modal para editar stats del jugador
-  function abrirModalStatsJugador(jugador, grupoId, onRefresh) {
+  // ⚡ NUEVO: Modal para editar stats del jugador (Dinámico por deporte)
+  function abrirModalStatsJugador(jugador, grupoId, deporte, onRefresh) {
     let modal = document.getElementById('modal-stats-jugador');
     if (!modal) {
       modal = document.createElement('div');
@@ -1188,22 +1266,20 @@ export async function init() {
 
     modal.querySelector('#modal-sj-titulo').textContent = `Stats de ${jugador.nombre}`;
     const contDinamico = modal.querySelector('#stats-jugador-dinamico');
-    const stats = jugador.stats || {};
+    const statsActuales = jugador.stats || {};
     
-    contDinamico.innerHTML = `
-      <div class="field">
-        <label class="field__label">Partidos Ganados</label>
-        <input type="number" id="sj-victorias" class="field__input" value="${stats.victorias ?? 0}" min="0" />
-      </div>
-      <div class="field">
-        <label class="field__label">Partidos Empatados</label>
-        <input type="number" id="sj-empates" class="field__input" value="${stats.empates ?? 0}" min="0" />
-      </div>
-      <div class="field">
-        <label class="field__label">Partidos Perdidos</label>
-        <input type="number" id="sj-derrotas" class="field__input" value="${stats.derrotas ?? 0}" min="0" />
-      </div>
-    `;
+    // ⚡ Obtener las stats correspondientes al deporte
+    const statsDeEsteDeporte = STATS_POR_DEPORTE[deporte] || STATS_DEFAULT;
+    
+    contDinamico.innerHTML = statsDeEsteDeporte.map(statDef => {
+      const valorActual = statsActuales[statDef.key] !== undefined ? statsActuales[statDef.key] : '';
+      return `
+        <div class="field">
+          <label class="field__label">${statDef.label}</label>
+          <input type="text" id="sj-${statDef.key}" class="field__input" value="${valorActual}" placeholder="Ej: 5" />
+        </div>
+      `;
+    }).join('');
 
     modal.querySelectorAll('[data-cerrar-modal]').forEach(b => b.onclick = () => cerrarModal('modal-stats-jugador'));
     modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-stats-jugador'); };
@@ -1212,11 +1288,14 @@ export async function init() {
       const btn = modal.querySelector('#btn-guardar-stats-jugador');
       btn.disabled = true; btn.textContent = 'Guardando...';
       try {
-        const nuevosStats = {
-          victorias: Number(document.getElementById('sj-victorias').value) || 0,
-          empates: Number(document.getElementById('sj-empates').value) || 0,
-          derrotas: Number(document.getElementById('sj-derrotas').value) || 0,
-        };
+        const nuevosStats = {};
+        statsDeEsteDeporte.forEach(statDef => {
+          const input = document.getElementById(`sj-${statDef.key}`);
+          if (input && input.value.trim() !== '') {
+            nuevosStats[statDef.key] = input.value.trim(); // Guardamos como texto o número según convenga
+          }
+        });
+
         await editarStatsJugadorAPI(grupoId, jugador.id, nuevosStats);
         toast('Stats guardadas', 'success');
         cerrarModal('modal-stats-jugador');
@@ -1233,11 +1312,14 @@ export async function init() {
 
   // ⚡ NUEVO: Pestaña de Formación
   // ⚡ NUEVO: Pestaña de Formación
+  // ⚡ NUEVO: Pestaña de Formación
+  // ⚡ NUEVO: Pestaña de Formación
+  // ⚡ NUEVO: Pestaña de Formación
   async function renderSubtabFormacion(cont, grupo) {
     const mapaCanchas = {
       'Fútbol': 'cancha-futbol.png',
       'Fútbol americano': 'cancha-futbol-americano.png',
-      'Básquetbol': 'cancha-basquetball.png',
+      'Básquetbol': 'cancha-basquetbol.png',
       'Béisbol': 'cancha-beisbol.png',
       'Rugby': 'cancha-rugby.png',
       'Hockey': 'cancha-hockey.png',
@@ -1245,6 +1327,13 @@ export async function init() {
       'Vóleibol': 'cancha-voleibol.png'
     };
     
+    const emojisDeporte = {
+      'Fútbol': '⚽', 'Fútbol americano': '🏈', 'Básquetbol': '🏀', 'Béisbol': '⚾',
+      'Rugby': '🏉', 'Hockey': '🏒', 'Handball': '🤾', 'Vóleibol': '🏐',
+      'Tenis': '🎾', 'Tenis de mesa': '🏓', 'Pádel': '🎾', 'Golf': '⛳',
+      'Natación': '🏊', 'Atletismo': '🏃', 'Boxeo': '🥊',
+    };
+    const iconoBalon = emojisDeporte[grupo.deporte] || '⚽';
     const bgUrl = `fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
 
     cont.innerHTML = `
@@ -1253,14 +1342,13 @@ export async function init() {
         <h3 class="gd-card__title">Pizarra</h3>
         <div class="campo-formacion-wrapper" id="campo-formacion-wrapper">
           <div class="campo-formacion" id="campo-formacion" data-deporte="${grupo.deporte}">
-            <!-- La imagen queda fija acá -->
             <img src="${bgUrl}" class="campo-formacion__img" alt="Cancha" />
-            <!-- ⚡ Los círculos van en este contenedor aparte -->
             <div id="campo-circulos" style="position:absolute; inset:0; z-index: 5;"></div>
           </div>
           <div class="campo-formacion-acciones">
             <button class="btn btn--ghost btn--sm" id="btn-agregar-ficha">+ Añadir Ficha</button>
             <button class="btn btn--ghost btn--sm" id="btn-agregar-rival" style="color: var(--color-danger); border-color: var(--color-danger);">+ Añadir Rival</button>
+            <button class="btn btn--ghost btn--sm" id="btn-agregar-balon">+ Añadir Balón</button>
             <button class="btn btn--primary btn--sm" id="btn-guardar-formacion">Guardar Formación</button>
           </div>
         </div>
@@ -1268,7 +1356,7 @@ export async function init() {
     `;
 
     const campo = document.getElementById('campo-formacion');
-    const contCirculos = document.getElementById('campo-circulos'); // ⚡ El nuevo contenedor
+    const contCirculos = document.getElementById('campo-circulos');
     
     let formacion = grupo.formacion && grupo.formacion.length > 0 ? grupo.formacion : null;
     
@@ -1286,50 +1374,45 @@ export async function init() {
         esPelota: false,
         esRival: false
       }));
-      formacion.push({ id: 'pelota', nombre: 'Pelota', x: 50, y: 50, esPelota: true });
     } else {
       formacion = formacion.filter(f => f.esPelota || f.esRival || !f.usuarioId || idsMiembros.has(String(f.usuarioId)));
     }
 
-    function pedirNombreFicha(ficha, onSuccess) {
-      const nombre = window.prompt("Ingresá el nombre del jugador:", ficha.nombre || "Jugador");
-      if (nombre !== null) {
-        ficha.nombre = nombre.trim() || 'Anónimo';
-        onSuccess();
-      }
-    }
-
     function renderCirculos() {
-      // ⚡ Ahora inyectamos los círculos SOLO en su contenedor, no en la cancha entera
       contCirculos.innerHTML = formacion.map(f => {
         const colorClass = f.esPelota ? 'ficha-jugador--pelota' : (f.esRival ? 'ficha-jugador--rival' : '');
-        const icono = f.esPelota ? '⚽' : (f.nombre ? f.nombre.charAt(0).toUpperCase() : '?');
+        const inicial = f.nombre && !f.esPelota ? f.nombre.charAt(0).toUpperCase() : '';
+        const nombreHtml = f.esPelota ? '' : `<div class="ficha-jugador__nombre">${f.nombre || ''}</div>`;
         
         return `
-        <div class="ficha-jugador ${colorClass}" 
-             data-id="${f.id}" 
-             style="left: ${f.x}%; top: ${f.y}%;">
+        <div class="ficha-jugador ${colorClass}" data-id="${f.id}" style="left: ${f.x}%; top: ${f.y}%;">
           <div class="ficha-jugador__inner">
-            ${icono}
+            ${f.esPelota ? iconoBalon : inicial}
           </div>
-          <div class="ficha-jugador__nombre" data-edit-name="${f.id}">${f.nombre || 'Anónimo'}</div>
-          ${!f.esPelota ? `<button class="ficha-jugador__del" data-del-ficha="${f.id}" title="Eliminar">✕</button>` : ''}
+          ${nombreHtml}
         </div>
       `;
       }).join('');
 
-      // Los event listeners se los asignamos a los círculos del nuevo contenedor
       contCirculos.querySelectorAll('.ficha-jugador').forEach(el => {
         let isDragging = false;
-        let startX, startY, initialX, initialY;
+        let hasMoved = false;
+        let startX, startY, initialX, initialY, innerHalfW, innerHalfH;
 
         const onStart = (e) => {
-          if (e.target.closest('[data-del-ficha]') || e.target.closest('[data-edit-name]')) return;
           isDragging = true;
+          hasMoved = false;
+          
           const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
           const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
           startX = clientX; startY = clientY;
           initialX = el.offsetLeft; initialY = el.offsetTop;
+          
+          // ⚡ Calculamos el radio del círculo real (ignorando el texto del nombre)
+          const innerEl = el.querySelector('.ficha-jugador__inner');
+          innerHalfW = innerEl ? (innerEl.clientWidth / 2) : 22;
+          innerHalfH = innerEl ? (innerEl.clientHeight / 2) : 22;
+          
           el.style.zIndex = 100; el.style.cursor = 'grabbing';
         };
 
@@ -1340,13 +1423,15 @@ export async function init() {
           const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
           const dx = clientX - startX; const dy = clientY - startY;
 
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+
           let newX = initialX + dx; let newY = initialY + dy;
 
-          if (newX < 0) newX = 0;
-          if (newY < 0) newY = 0;
-          // Usamos las dimensiones del 'campo' principal (la cancha)
-          if (newX > campo.clientWidth - el.clientWidth) newX = campo.clientWidth - el.clientWidth;
-          if (newY > campo.clientHeight - el.clientHeight) newY = campo.clientHeight - el.clientHeight;
+          // ⚡ Límites exactos basados en el círculo
+          if (newX < innerHalfW) newX = innerHalfW;
+          if (newY < innerHalfH) newY = innerHalfH;
+          if (newX > campo.clientWidth - innerHalfW) newX = campo.clientWidth - innerHalfW;
+          if (newY > campo.clientHeight - innerHalfH) newY = campo.clientHeight - innerHalfH;
 
           el.style.left = `${newX}px`; el.style.top = `${newY}px`;
 
@@ -1354,7 +1439,28 @@ export async function init() {
           if (f) { f.x = (newX / campo.clientWidth) * 100; f.y = (newY / campo.clientHeight) * 100; }
         };
 
-        const onEnd = () => { isDragging = false; el.style.zIndex = 10; el.style.cursor = 'grab'; };
+        const onEnd = () => { 
+          if (!isDragging) return;
+          isDragging = false; 
+          el.style.zIndex = 10; 
+          el.style.cursor = 'grab'; 
+          
+          // ⚡ Si fue un clic rápido, mostramos las opciones
+          if (!hasMoved) {
+            const id = el.dataset.id;
+            const f = formacion.find(x => x.id === id);
+            if (f) {
+              if (f.esPelota) {
+                if (confirm('¿Querés eliminar el balón?')) {
+                  formacion = formacion.filter(x => x.id !== f.id);
+                  renderCirculos();
+                }
+              } else {
+                abrirOpcionesFicha(f, () => renderCirculos());
+              }
+            }
+          }
+        };
 
         el.addEventListener('mousedown', onStart);
         el.addEventListener('touchstart', onStart, { passive: false });
@@ -1363,36 +1469,39 @@ export async function init() {
         document.addEventListener('mouseup', onEnd);
         document.addEventListener('touchend', onEnd);
       });
+    }
 
-      contCirculos.querySelectorAll('[data-del-ficha]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const id = btn.dataset.delFicha;
-          formacion = formacion.filter(f => f.id !== id);
-          renderCirculos();
-        });
-      });
-
-      contCirculos.querySelectorAll('[data-edit-name]').forEach(el => {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const id = el.dataset.editName;
-          const f = formacion.find(x => x.id === id);
-          if (f) pedirNombreFicha(f, () => renderCirculos());
-        });
-      });
+    function abrirOpcionesFicha(ficha, onSuccess) {
+      const nuevoNombre = window.prompt(`Nombre de la ficha (deja vacío para eliminar):`, ficha.nombre || '');
+      if (nuevoNombre === null) return; 
+      
+      if (nuevoNombre.trim() === '') {
+        if (confirm('¿Querés eliminar esta ficha?')) {
+          formacion = formacion.filter(f => f.id !== ficha.id);
+          onSuccess();
+        }
+      } else {
+        ficha.nombre = nuevoNombre.trim();
+        onSuccess();
+      }
     }
 
     renderCirculos();
 
     document.getElementById('btn-agregar-ficha').onclick = () => {
-      const nuevaFicha = { id: `ficha-${Date.now()}`, nombre: 'Jugador', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: false };
-      pedirNombreFicha(nuevaFicha, () => { formacion.push(nuevaFicha); renderCirculos(); });
+      formacion.push({ id: `ficha-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: false });
+      renderCirculos();
     };
 
     document.getElementById('btn-agregar-rival').onclick = () => {
-      const nuevaFicha = { id: `rival-${Date.now()}`, nombre: 'Rival', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: true };
-      pedirNombreFicha(nuevaFicha, () => { formacion.push(nuevaFicha); renderCirculos(); });
+      formacion.push({ id: `rival-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: true });
+      renderCirculos();
+    };
+
+    document.getElementById('btn-agregar-balon').onclick = () => {
+      if (formacion.some(f => f.esPelota)) return toast('Ya hay un balón en la pizarra', 'info');
+      formacion.push({ id: `balon-${Date.now()}`, nombre: '', usuarioId: null, x: 50, y: 50, esPelota: true });
+      renderCirculos();
     };
 
     document.getElementById('btn-guardar-formacion').onclick = async (e) => {

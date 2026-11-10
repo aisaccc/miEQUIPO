@@ -15363,44 +15363,58 @@ select.field__input {
 /* =========================================================
    PIZARRA DE FORMACIÓN
    ========================================================= */
-.campo-formacion-wrapper { display: flex; flex-direction: column; gap: 16px; }
+.campo-formacion-wrapper { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+  align-items: center;
+  width: 100%;
+}
 
 .campo-formacion {
   position: relative; 
   width: 100%; 
-  aspect-ratio: 2 / 3; /* Formato vertical */
-  background: #1a1815; /* Fondo oscuro por si falla */
+  max-width: 450px; 
+  background: #1a1815; 
   border-radius: 12px; 
   overflow: hidden;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5), var(--shadow-md);
   touch-action: none; 
+  display: flex; 
 }
 
-/* Forzamos la imagen a llenar el espacio y la rotamos */
-/* ⚡ LA MAGIA: Rotamos la imagen y la hacemos 1.5 veces más ancha para que cubra todo */
 .campo-formacion__img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150% !important; /* ⚡ Esto es la clave */
-  height: 100% !important;
-  object-fit: cover !important;
-  transform: translate(-50%, -50%) rotate(90deg);
+  display: block;
+  width: 100%;
+  height: auto;
   z-index: 0;
   pointer-events: none;
 }
 
 .ficha-jugador {
-  position: absolute; transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; align-items: center;
-  cursor: grab; z-index: 10; user-select: none; touch-action: none;
+  position: absolute; 
+  transform: translate(-50%, -50%);
+  display: flex; 
+  flex-direction: column; 
+  align-items: center;
+  cursor: grab; 
+  z-index: 10; 
+  user-select: none; 
+  touch-action: none;
 }
 
 .ficha-jugador__inner {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--color-surface); color: var(--color-primary-dark);
-  font-weight: 800; font-size: 18px; display: grid; place-items: center;
-  border: 3px solid var(--color-primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  width: 44px; 
+  height: 44px; 
+  border-radius: 50%;
+  background: var(--color-surface); 
+  color: var(--color-primary-dark);
+  font-weight: 800; 
+  font-size: 18px; 
+  display: grid; 
+  place-items: center;
+  border: 3px solid var(--color-primary); 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   transition: transform 0.1s ease;
 }
 
@@ -15411,31 +15425,69 @@ select.field__input {
 }
 
 .ficha-jugador--pelota .ficha-jugador__inner {
-  background: transparent; border: none; box-shadow: none;
-  font-size: 32px; width: auto; height: auto;
+  background: transparent; 
+  border: none; 
+  box-shadow: none;
+  font-size: 32px; 
+  width: auto; 
+  height: auto;
 }
 
-.ficha-jugador:hover .ficha-jugador__inner { transform: scale(1.1); }
+.ficha-jugador:hover .ficha-jugador__inner { 
+  transform: scale(1.1); 
+}
 
 .ficha-jugador__nombre {
-  margin-top: 4px; background: rgba(0,0,0,0.6); color: #fff;
-  padding: 2px 6px; border-radius: 4px; font-size: 10px;
-  font-weight: 600; white-space: nowrap; pointer-events: auto; cursor: pointer;
+  margin-top: 4px; 
+  background: rgba(0,0,0,0.6); 
+  color: #fff;
+  padding: 2px 6px; 
+  border-radius: 4px; 
+  font-size: 10px;
+  font-weight: 600; 
+  white-space: nowrap; 
+  pointer-events: none; 
+  min-width: 10px; 
+  min-height: 10px;
 }
-.ficha-jugador__nombre:hover { background: var(--color-primary); }
-
-.ficha-jugador__del {
-  position: absolute; top: -8px; right: -8px;
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--color-danger); color: #fff; border: none;
-  font-size: 10px; font-weight: 800; display: grid; place-items: center;
-  cursor: pointer; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  opacity: 0; transition: opacity 0.15s ease;
-}
-
-.ficha-jugador:hover .ficha-jugador__del,
-.ficha-jugador:active .ficha-jugador__del { opacity: 1; }
 
 .campo-formacion-acciones { 
-  display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
+  display: flex; 
+  gap: 8px; 
+  justify-content: center; 
+  flex-wrap: wrap;
+  width: 100%; 
+  max-width: 450px;
+}
+/* ⚡ ESTILOS PARA LAS STATS EN LA PLANTILLA */
+.gd-jugador__stats-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.gd-jugador__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.gd-jugador__stat svg {
+  color: var(--color-primary);
+}
+
+/* Modo oscuro */
+[data-theme="dark"] .gd-jugador__stat {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+[data-theme="dark"] .gd-jugador__stat svg {
+  color: var(--color-primary-dark);
 }
