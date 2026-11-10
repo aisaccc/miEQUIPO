@@ -1545,8 +1545,20 @@ export async function init() {
       document.getElementById('btn-guardar-formacion').onclick = async (e) => {
         const btn = e.target;
         btn.disabled = true; btn.textContent = 'Guardando...';
+        
         try {
-          await editarFormacionAPI(grupo.id, formacion);
+          // ⚡ Limpiamos y aseguramos que todos los campos vayan correctamente
+          const formacionParaGuardar = formacion.map(f => ({
+            id: f.id,
+            nombre: f.nombre || '',
+            x: f.x,
+            y: f.y,
+            esPelota: f.esPelota === true,
+            esRival: f.esRival === true,
+            usuarioId: f.usuarioId || null,
+          }));
+
+          await editarFormacionAPI(grupo.id, formacionParaGuardar);
           toast('Formación guardada', 'success');
         } catch (err) {
           toast(err.message || 'Error al guardar', 'error');

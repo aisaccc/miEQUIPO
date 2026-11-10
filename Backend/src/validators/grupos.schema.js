@@ -124,6 +124,7 @@ export const schemaEditarGrupo = z.object({
     x: z.number(),
     y: z.number(),
     esPelota: z.boolean().optional(),
+    esRival: z.boolean().optional(), // ⚡ AGREGAR ESTO
     usuarioId: z.string().uuid().nullable().optional(),
   })).nullable().optional(),
 }).strict();
