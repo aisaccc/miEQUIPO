@@ -15368,21 +15368,23 @@ select.field__input {
 .campo-formacion {
   position: relative; 
   width: 100%; 
-  aspect-ratio: 2 / 3; /* Formato vertical (celular) */
-  background: #1a1815; /* Fondo por si la imagen no carga */
+  aspect-ratio: 2 / 3; /* Formato vertical */
+  background: #1a1815; /* Fondo oscuro por si falla */
   border-radius: 12px; 
   overflow: hidden;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-  touch-action: none; /* Evita que la pantalla haga scroll al arrastrar */
+  touch-action: none; 
 }
 
-/* ⚡ LA MAGIA: Rotamos la imagen horizontal para que llene el vertical */
+/* Forzamos la imagen a llenar el espacio y la rotamos */
+/* ⚡ LA MAGIA: Rotamos la imagen y la hacemos 1.5 veces más ancha para que cubra todo */
 .campo-formacion__img {
   position: absolute;
   top: 50%;
   left: 50%;
-  height: 100%;
-  width: auto;
+  width: 150% !important; /* ⚡ Esto es la clave */
+  height: 100% !important;
+  object-fit: cover !important;
   transform: translate(-50%, -50%) rotate(90deg);
   z-index: 0;
   pointer-events: none;
@@ -15402,14 +15404,12 @@ select.field__input {
   transition: transform 0.1s ease;
 }
 
-/* ⚡ Ficha Rival (Roja) */
 .ficha-jugador--rival .ficha-jugador__inner {
   background: #fee2e2;
   color: #991b1b;
   border-color: #dc2626;
 }
 
-/* Ficha Pelota */
 .ficha-jugador--pelota .ficha-jugador__inner {
   background: transparent; border: none; box-shadow: none;
   font-size: 32px; width: auto; height: auto;

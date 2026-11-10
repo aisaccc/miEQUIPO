@@ -1234,18 +1234,18 @@ export async function init() {
   // ⚡ NUEVO: Pestaña de Formación
   // ⚡ NUEVO: Pestaña de Formación
   async function renderSubtabFormacion(cont, grupo) {
-    // Mapeo exacto de los archivos que subiste
     const mapaCanchas = {
       'Fútbol': 'cancha-futbol.png',
       'Fútbol americano': 'cancha-futbol-americano.png',
-      'Básquetbol': 'cancha-basquetball.png', // ⚡ OJO: Doble L
+      'Básquetbol': 'cancha-basquetball.png',
       'Béisbol': 'cancha-beisbol.png',
       'Rugby': 'cancha-rugby.png',
       'Hockey': 'cancha-hockey.png',
       'Handball': 'cancha-handball.png',
       'Vóleibol': 'cancha-voleibol.png'
     };
-    const bgUrl = `assets/fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
+    
+    const bgUrl = `fields/${mapaCanchas[grupo.deporte] || 'cancha-futbol.png'}`;
 
     cont.innerHTML = `
       <div class="gd-card">
@@ -1253,7 +1253,10 @@ export async function init() {
         <h3 class="gd-card__title">Pizarra</h3>
         <div class="campo-formacion-wrapper" id="campo-formacion-wrapper">
           <div class="campo-formacion" id="campo-formacion" data-deporte="${grupo.deporte}">
-            <img src="${bgUrl}" class="campo-formacion__img" alt="Cancha" onerror="this.style.display='none'" />
+            <!-- La imagen queda fija acá -->
+            <img src="${bgUrl}" class="campo-formacion__img" alt="Cancha" />
+            <!-- ⚡ Los círculos van en este contenedor aparte -->
+            <div id="campo-circulos" style="position:absolute; inset:0; z-index: 5;"></div>
           </div>
           <div class="campo-formacion-acciones">
             <button class="btn btn--ghost btn--sm" id="btn-agregar-ficha">+ Añadir Ficha</button>
@@ -1265,15 +1268,15 @@ export async function init() {
     `;
 
     const campo = document.getElementById('campo-formacion');
+    const contCirculos = document.getElementById('campo-circulos'); // ⚡ El nuevo contenedor
+    
     let formacion = grupo.formacion && grupo.formacion.length > 0 ? grupo.formacion : null;
     
-    // Traer miembros para inicializar o limpiar los que ya no están
     const grupoCompleto = await obtenerGrupo(grupo.id);
     const miembros = grupoCompleto.miembros || [];
     const idsMiembros = new Set(miembros.map(m => String(m.id)));
 
     if (!formacion) {
-      // Inicializar con miembros + pelota
       formacion = miembros.map((m, i) => ({
         id: `ficha-${Date.now()}-${i}`,
         nombre: m.nombre,
@@ -1285,11 +1288,9 @@ export async function init() {
       }));
       formacion.push({ id: 'pelota', nombre: 'Pelota', x: 50, y: 50, esPelota: true });
     } else {
-      // ⚡ Limpieza automática: si un usuario ya no está en el equipo, borramos su ficha
       formacion = formacion.filter(f => f.esPelota || f.esRival || !f.usuarioId || idsMiembros.has(String(f.usuarioId)));
     }
 
-    // ⚡ Función interna para pedir el nombre sin usar prompt()
     function pedirNombreFicha(ficha, onSuccess) {
       const nombre = window.prompt("Ingresá el nombre del jugador:", ficha.nombre || "Jugador");
       if (nombre !== null) {
@@ -1299,7 +1300,8 @@ export async function init() {
     }
 
     function renderCirculos() {
-      campo.innerHTML = formacion.map(f => {
+      // ⚡ Ahora inyectamos los círculos SOLO en su contenedor, no en la cancha entera
+      contCirculos.innerHTML = formacion.map(f => {
         const colorClass = f.esPelota ? 'ficha-jugador--pelota' : (f.esRival ? 'ficha-jugador--rival' : '');
         const icono = f.esPelota ? '⚽' : (f.nombre ? f.nombre.charAt(0).toUpperCase() : '?');
         
@@ -1316,8 +1318,8 @@ export async function init() {
       `;
       }).join('');
 
-      // Drag & Drop
-      campo.querySelectorAll('.ficha-jugador').forEach(el => {
+      // Los event listeners se los asignamos a los círculos del nuevo contenedor
+      contCirculos.querySelectorAll('.ficha-jugador').forEach(el => {
         let isDragging = false;
         let startX, startY, initialX, initialY;
 
@@ -1342,6 +1344,7 @@ export async function init() {
 
           if (newX < 0) newX = 0;
           if (newY < 0) newY = 0;
+          // Usamos las dimensiones del 'campo' principal (la cancha)
           if (newX > campo.clientWidth - el.clientWidth) newX = campo.clientWidth - el.clientWidth;
           if (newY > campo.clientHeight - el.clientHeight) newY = campo.clientHeight - el.clientHeight;
 
@@ -1361,8 +1364,7 @@ export async function init() {
         document.addEventListener('touchend', onEnd);
       });
 
-      // Delete
-      campo.querySelectorAll('[data-del-ficha]').forEach(btn => {
+      contCirculos.querySelectorAll('[data-del-ficha]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const id = btn.dataset.delFicha;
@@ -1371,51 +1373,26 @@ export async function init() {
         });
       });
 
-      // ⚡ Edit Name (al hacer clic en el nombre)
-      campo.querySelectorAll('[data-edit-name]').forEach(el => {
+      contCirculos.querySelectorAll('[data-edit-name]').forEach(el => {
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           const id = el.dataset.editName;
           const f = formacion.find(x => x.id === id);
-          if (f) {
-            pedirNombreFicha(f, () => renderCirculos());
-          }
+          if (f) pedirNombreFicha(f, () => renderCirculos());
         });
       });
     }
 
     renderCirculos();
 
-    // ⚡ Botón Añadir Ficha (Jugador normal)
     document.getElementById('btn-agregar-ficha').onclick = () => {
-      const nuevaFicha = {
-        id: `ficha-${Date.now()}`,
-        nombre: 'Jugador',
-        usuarioId: null,
-        x: 50, y: 50, 
-        esPelota: false, 
-        esRival: false
-      };
-      pedirNombreFicha(nuevaFicha, () => {
-        formacion.push(nuevaFicha);
-        renderCirculos();
-      });
+      const nuevaFicha = { id: `ficha-${Date.now()}`, nombre: 'Jugador', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: false };
+      pedirNombreFicha(nuevaFicha, () => { formacion.push(nuevaFicha); renderCirculos(); });
     };
 
-    // ⚡ Botón Añadir Rival (Rojo)
     document.getElementById('btn-agregar-rival').onclick = () => {
-      const nuevaFicha = {
-        id: `rival-${Date.now()}`,
-        nombre: 'Rival',
-        usuarioId: null,
-        x: 50, y: 50, 
-        esPelota: false, 
-        esRival: true // ⚡ Bandera de rival
-      };
-      pedirNombreFicha(nuevaFicha, () => {
-        formacion.push(nuevaFicha);
-        renderCirculos();
-      });
+      const nuevaFicha = { id: `rival-${Date.now()}`, nombre: 'Rival', usuarioId: null, x: 50, y: 50, esPelota: false, esRival: true };
+      pedirNombreFicha(nuevaFicha, () => { formacion.push(nuevaFicha); renderCirculos(); });
     };
 
     document.getElementById('btn-guardar-formacion').onclick = async (e) => {
