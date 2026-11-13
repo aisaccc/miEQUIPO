@@ -45,6 +45,41 @@ let cleanupActual = null;
 
 /* ---------- NAVEGAR A UNA RUTA ---------- */
 export async function navegar(hash) {
+  // --- NUEVO: INTERCEPTOR DE INVITACIONES ---
+  if (hash.startsWith('#/join/')) {
+    const contenedor = document.getElementById('page-content');
+    if (contenedor) {
+      contenedor.innerHTML = `<div class="page-loader"><div class="spinner"></div><span>Procesando invitación...</span></div>`;
+    }
+    
+    const parts = hash.split('/');
+    const tipo = parts[2]; // 'amistad' o 'grupo'
+    const token = parts[3];
+
+    if (tipo && token) {
+      try {
+        const { unirsePorLinkAmistad } = await import('./services/amistades.service.js');
+        const { unirsePorLinkGrupo } = await import('./services/grupos.service.js');
+        const { toast } = await import('./components.js');
+
+        if (tipo === 'amistad') {
+          await unirsePorLinkAmistad(token);
+          toast('¡Ahora son amigos!', 'success');
+        } else if (tipo === 'grupo') {
+          await unirsePorLinkGrupo(token);
+          toast('¡Te uniste exitosamente!', 'success');
+        }
+      } catch (e) {
+        const { toast } = await import('./components.js');
+        toast(e.message || 'Invitación inválida o expirada', 'error');
+      }
+      // Redirigimos al inicio o al perfil después de procesar
+      window.location.hash = '#/inicio';
+      return;
+    }
+  }
+  // --- FIN INTERCEPTOR ---
+
   let ruta = RUTAS[hash];
   let params = {};
 
@@ -105,7 +140,7 @@ export async function navegar(hash) {
 
     let modulo = modulosCargados[ruta.script];
     if (!modulo) {
-      modulo = await import(`./pages/${ruta.script}.js?v=207`);
+      modulo = await import(`./pages/${ruta.script}.js?v=208`);
       modulosCargados[ruta.script] = modulo;
     }
 

@@ -198,3 +198,84 @@ export async function listarBloqueados(usuarioId) {
   );
   return rows;
 }
+/* =========================================================
+   GENERAR LINK DE AMISTAD
+   ========================================================= */
+export async function generarLinkAmistad(usuarioId) {
+  const { rows } = await pool.query(
+    `INSERT INTO invitaciones_links (tipo, referencia_id, creador_id) 
+     VALUES ('amistad', $1, $1) RETURNING token`,
+    [usuarioId]
+  );
+  return { token: rows[0].token };
+}
+
+/* =========================================================
+   CONSUMIR LINK DE AMISTAD (Auto-amistad)
+   ========================================================= */
+export async function aceptarLinkAmistad(token, usuarioId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { rows: inv } = await client.query(
+      `SELECT referencia_id FROM invitaciones_links WHERE token = $1 AND tipo = 'amistad'`,
+      [token]
+    );
+
+    if (!inv[0]) {
+      const err = new Error('Link de invitación inválido o expirado');
+      err.status = 404;
+      throw err;
+    }
+
+    const amigoId = inv[0].referencia_id;
+
+    if (amigoId === usuarioId) {
+      const err = new Error('No podés hacerte amigo de vos mismo');
+      err.status = 400;
+      throw err;
+    }
+
+    // Revisar si ya son amigos o hay pendiente
+    const { rows: existe } = await client.query(
+      `SELECT id, estado FROM amistades WHERE (usuario_id = $1 AND amigo_id = $2) OR (usuario_id = $2 AND amigo_id = $1)`,
+      [usuarioId, amigoId]
+    );
+
+    if (existe.length > 0) {
+      if (existe[0].estado === 'aceptada') {
+        await client.query('COMMIT');
+        return { ok: true, mensaje: 'Ya son amigos', yaEranAmigos: true };
+      }
+      // Si ya hay una solicitud pendiente, la aceptamos directamente
+      await client.query(
+        `UPDATE amistades SET estado = 'aceptada', updated_at = NOW() WHERE id = $1`,
+        [existe[0].id]
+      );
+    } else {
+      // Crear amistad directa (aceptada)
+      await client.query(
+        `INSERT INTO amistades (usuario_id, amigo_id, estado) VALUES ($1, $2, 'aceptada')`,
+        [amigoId, usuarioId]
+      );
+    }
+
+    // Notificar al creador del link
+    const { rows: user } = await client.query(`SELECT nombre FROM usuarios WHERE id = $1`, [usuarioId]);
+    await crearNotificacion(
+      amigoId,
+      'solicitud_aceptada',
+      `${user[0].nombre} aceptó tu link y ahora son amigos`,
+      `#/perfil`
+    );
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: '¡Ahora son amigos!' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}

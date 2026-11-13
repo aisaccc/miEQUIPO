@@ -19,5 +19,7 @@ router.delete('/desbloquear/:usuarioId', amistadesController.desbloquear);
 // ⚡ RUTAS DINÁMICAS AL FINAL
 router.post('/:amigoId', amistadesController.enviar);
 router.delete('/:amigoId', amistadesController.eliminar);
+router.get('/link', amistadesController.generarLink);
+router.post('/link/:token', amistadesController.unirsePorLink);
 
 export default router;

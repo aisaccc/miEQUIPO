@@ -634,8 +634,12 @@ export async function init() {
 
     if (capitan) {
       botonesHtml = `
+        <button class="btn gd-hero__action gd-hero__action--primary" data-accion-grupo="invitar" data-id="${grupo.id}">
+          ${SVG.userPlus} Invitar
+        </button>
         <button class="btn gd-hero__action gd-hero__action--primary" data-accion-grupo="gestionar" data-id="${grupo.id}">
           ${SVG.users} Gestionar miembros
+        </button>
           ${(grupo.totalSolicitudes || 0) > 0 ? `<span class="badge badge--primary" style="margin-left:6px">${grupo.totalSolicitudes}</span>` : ''}
         </button>
         <button class="btn gd-hero__action" data-accion-grupo="editar" data-id="${grupo.id}">
@@ -652,8 +656,12 @@ export async function init() {
       `;
     } else if (admin) {
       botonesHtml = `
+        <button class="btn gd-hero__action gd-hero__action--primary" data-accion-grupo="invitar" data-id="${grupo.id}">
+          ${SVG.userPlus} Invitar
+        </button>
         <button class="btn gd-hero__action gd-hero__action--primary" data-accion-grupo="gestionar" data-id="${grupo.id}">
           ${SVG.users} Gestionar miembros
+        </button>
           ${(grupo.totalSolicitudes || 0) > 0 ? `<span class="badge badge--primary" style="margin-left:6px">${grupo.totalSolicitudes}</span>` : ''}
         </button>
         <button class="btn gd-hero__action" data-accion-grupo="editar" data-id="${grupo.id}">
@@ -826,6 +834,7 @@ export async function init() {
         if (accion === 'eliminar')            confirmarEliminarGrupo(grupo, esComunidad);
         if (accion === 'salir')               confirmarSalirGrupo(grupo, esComunidad);
         if (accion === 'cancelar-solicitud')  cancelarSolicitudUI(grupo, esComunidad);
+        if (accion === 'invitar')             abrirModalInvitarGrupo(grupo, esComunidad); 
       });
     });
 
@@ -2594,4 +2603,98 @@ export async function init() {
     if (intervaloCanal) clearInterval(intervaloCanal);
     if (intervaloDetalle) clearInterval(intervaloDetalle);
   };
+    async function abrirModalInvitarGrupo(grupo) {
+    let modal = document.getElementById('modal-invitar-grupo');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modal-invitar-grupo';
+      modal.className = 'modal-backdrop';
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+          <div class="modal__header">
+            <h3 class="modal__title">Invitar a ${grupo.nombre}</h3>
+            <button class="modal__close" data-cerrar-modal="modal-invitar-grupo">✕</button>
+          </div>
+          <div class="modal__body">
+            <div style="margin-bottom: 16px;">
+              <button class="btn btn--primary w-full" id="btn-copiar-link-grupo">
+                🔗 Generar y copiar link de invitación
+              </button>
+              <p class="text-xs text-muted text-center mt-2">Al abrir el link, la persona se unirá automáticamente.</p>
+            </div>
+            <hr style="border-color: var(--color-border); margin: 16px 0;">
+            <h4 class="mb-2">Invitar a tus amigos</h4>
+            <div id="lista-amigos-invitar" style="max-height: 300px; overflow-y: auto;">
+              <div class="page-loader"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Configurar botón de copiar link
+    modal.querySelector('#btn-copiar-link-grupo').onclick = async () => {
+      try {
+        const { generarLinkGrupo } = await import('../services/grupos.service.js');
+        const { token } = await generarLinkGrupo(grupo.id);
+        const url = `${window.location.origin}${window.location.pathname}#/join/grupo/${token}`;
+        await navigator.clipboard.writeText(url);
+        toast('Link copiado. ¡Compártelo!', 'success');
+      } catch (err) {
+        toast(err.message || 'Error al generar link', 'error');
+      }
+    };
+
+    modal.querySelectorAll('[data-cerrar-modal]').forEach(b => b.onclick = () => cerrarModal('modal-invitar-grupo'));
+    modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-invitar-grupo'); };
+    abrirModal('modal-invitar-grupo');
+
+    // Cargar lista de amigos
+    const contAmigos = modal.querySelector('#lista-amigos-invitar');
+    try {
+      const { listarAmigos } = await import('../services/amistades.service.js');
+      const { invitarAmigoAGrupo } = await import('../services/grupos.service.js');
+      
+      const amigos = await listarAmigos();
+      
+      // Obtener miembros actuales para no invitar a los que ya están
+      const grupoCompleto = await obtenerGrupo(grupo.id);
+      const idsMiembros = new Set((grupoCompleto.miembros || []).map(m => String(m.id)));
+
+      const amigosNoMiembros = amigos.filter(a => !idsMiembros.has(String(a.id)));
+
+      if (amigosNoMiembros.length === 0) {
+        contAmigos.innerHTML = `<p class="text-sm text-muted text-center">No tienes amigos para invitar que no estén ya en el grupo.</p>`;
+        return;
+      }
+
+      contAmigos.innerHTML = amigosNoMiembros.map(a => `
+        <div class="amigo-item">
+          <img src="${a.avatar || AVATAR_FALLBACK}" class="avatar avatar--sm" />
+          <div class="amigo-item__info">
+            <div class="amigo-item__name">${a.nombre}</div>
+            <div class="amigo-item__sub">@${a.username}</div>
+          </div>
+          <button class="btn btn--primary btn--sm" data-invitar-amigo="${a.id}">Invitar</button>
+        </div>
+      `).join('');
+
+      contAmigos.querySelectorAll('[data-invitar-amigo]').forEach(btn => {
+        btn.onclick = async () => {
+          btn.disabled = true; btn.textContent = 'Invitado';
+          try {
+            await invitarAmigoAGrupo(grupo.id, btn.dataset.invitarAmigo);
+            toast('Invitación enviada', 'success');
+          } catch (err) {
+            toast(err.message || 'Error al invitar', 'error');
+            btn.disabled = false; btn.textContent = 'Invitar';
+          }
+        };
+      });
+
+    } catch (err) {
+      contAmigos.innerHTML = `<p class="text-sm text-danger text-center">Error al cargar amigos</p>`;
+    }
+  }
 }

@@ -167,3 +167,14 @@ export async function editarFormacion(grupoId, formacion) {
 export async function editarFormacionAbierta(grupoId, formacionAbierta) {
   return api.patch(`/grupos/${grupoId}/formacion/ajustes`, { formacionAbierta });
 }
+export async function generarLinkGrupo(grupoId) {
+  return api.get(`/grupos/${grupoId}/link`);
+}
+
+export async function unirsePorLinkGrupo(token) {
+  return api.post(`/grupos/link/${token}`, {});
+}
+
+export async function invitarAmigoAGrupo(grupoId, amigoId) {
+  return api.post(`/grupos/${grupoId}/invitar/${amigoId}`, {});
+}

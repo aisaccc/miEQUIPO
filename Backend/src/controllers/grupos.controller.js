@@ -283,3 +283,27 @@ export async function editarFormacionAbierta(req, res, next) {
     next(err);
   }
 }
+export async function generarLinkInvitacion(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await gruposService.generarLinkGrupo(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) { next(err); }
+}
+
+export async function unirsePorLink(req, res, next) {
+  try {
+    const { token } = req.params;
+    const resultado = await gruposService.unirsePorLink(token, req.usuario.id);
+    res.json(resultado);
+  } catch (err) { next(err); }
+}
+
+export async function invitarAmigo(req, res, next) {
+  try {
+    const grupoId = validar(schemaUuidParam, req.params.id);
+    const amigoId = validar(schemaUuidParam, req.params.amigoId);
+    const resultado = await gruposService.invitarAmigoAGrupo(grupoId, amigoId, req.usuario.id);
+    res.json(resultado);
+  } catch (err) { next(err); }
+}

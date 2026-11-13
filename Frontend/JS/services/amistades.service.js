@@ -36,3 +36,10 @@ export async function desbloquearUsuario(usuarioId) {
 export async function listarBloqueados() {
   return await api.get('/amistades/bloqueados');
 }
+export async function generarLinkAmistad() {
+  return api.get('/amistades/link');
+}
+
+export async function unirsePorLinkAmistad(token) {
+  return api.post(`/amistades/link/${token}`, {});
+}

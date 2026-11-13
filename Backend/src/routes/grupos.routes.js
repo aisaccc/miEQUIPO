@@ -68,4 +68,8 @@ router.patch('/:id/miembros/:usuarioId/stats', gruposController.editarStatsJugad
 // ⚡ NUEVO: Formación
 router.patch('/:id/formacion', gruposController.editarFormacion);
 router.patch('/:id/formacion/ajustes', gruposController.editarFormacionAbierta); // ⚡ NUEVO
+// ⚡ NUEVOS: Links de invitación
+router.get('/:id/link', gruposController.generarLinkInvitacion);
+router.post('/link/:token', gruposController.unirsePorLink);
+router.post('/:id/invitar/:amigoId', gruposController.invitarAmigo);
 export default router;

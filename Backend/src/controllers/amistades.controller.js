@@ -70,3 +70,17 @@ export async function listarBloqueados(req, res, next) {
     res.json({ bloqueados });
   } catch (err) { next(err); }
 }
+export async function generarLink(req, res, next) {
+  try {
+    const resultado = await amistadesService.generarLinkAmistad(req.usuario.id);
+    res.json(resultado);
+  } catch (err) { next(err); }
+}
+
+export async function unirsePorLink(req, res, next) {
+  try {
+    const { token } = req.params;
+    const resultado = await amistadesService.aceptarLinkAmistad(token, req.usuario.id);
+    res.json(resultado);
+  } catch (err) { next(err); }
+}

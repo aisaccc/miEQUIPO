@@ -501,18 +501,21 @@ export async function eliminarMiCuenta(usuarioId, password) {
 }
 
 /* =========================================================
-   BUSCAR USUARIOS (para invitar a sub-organizadores)
+   BUSCAR USUARIOS (Mejorado para invitaciones)
    ========================================================= */
 export async function buscarUsuarios(query, usuarioExcluirId, limit = 20) {
   const q = `%${String(query).trim()}%`;
 
   const { rows } = await pool.query(
-    `SELECT id, nombre, username, avatar
-     FROM usuarios
-     WHERE activo = TRUE
-       AND id != $1
-       AND (nombre ILIKE $2 OR username ILIKE $2)
-     ORDER BY nombre ASC
+    `SELECT u.id, u.nombre, u.username, u.avatar,
+            a.estado AS estado_amistad,
+            (a.usuario_id = $1) AS solicitud_enviada_por_mi
+     FROM usuarios u
+     LEFT JOIN amistades a ON (a.usuario_id = $1 AND a.amigo_id = u.id) OR (a.amigo_id = $1 AND a.usuario_id = u.id)
+     WHERE u.activo = TRUE
+       AND u.id != $1
+       AND (u.nombre ILIKE $2 OR u.username ILIKE $2)
+     ORDER BY u.nombre ASC
      LIMIT $3`,
     [usuarioExcluirId, q, limit]
   );

@@ -2311,18 +2311,20 @@ export async function init(params = {}) {
     document.getElementById('btn-abrir-chat')?.addEventListener('click', () => irAlTabChatTorneo());
 
     document.getElementById('btn-compartir-torneo')?.addEventListener('click', async () => {
-      const url = window.location.href;
+      // ⚡ Forzamos un link limpio usando el ID del torneo actual
+      const url = `${window.location.origin}${window.location.pathname}#/torneo/${t.id}`;
+      
       try {
         if (navigator.share) {
           await navigator.share({ title: t.nombre, url });
         } else {
           await navigator.clipboard.writeText(url);
-          toast('Enlace copiado', 'success');
+          toast('Enlace del torneo copiado', 'success');
         }
       } catch {
         try {
           await navigator.clipboard.writeText(url);
-          toast('Enlace copiado', 'success');
+          toast('Enlace del torneo copiado', 'success');
         } catch {
           toast('No se pudo copiar el enlace', 'error');
         }

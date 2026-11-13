@@ -911,3 +911,113 @@ export async function editarFormacionAbierta(grupoId, formacionAbierta, usuarioI
     client.release();
   }
 }
+/* =========================================================
+   GENERAR LINK DE GRUPO
+   ========================================================= */
+export async function generarLinkGrupo(grupoId, usuarioId) {
+  await obtenerGrupoOFallar(pool, grupoId);
+  await verificarCapitanOAdmin(pool, grupoId, usuarioId); // Solo staff puede generar links
+
+  const { rows } = await pool.query(
+    `INSERT INTO invitaciones_links (tipo, referencia_id, creador_id) 
+     VALUES ('grupo', $1, $2) RETURNING token`,
+    [grupoId, usuarioId]
+  );
+  return { token: rows[0].token };
+}
+
+/* =========================================================
+   UNIRSE POR LINK (Auto-unión)
+   ========================================================= */
+export async function unirsePorLink(token, usuarioId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const { rows: inv } = await client.query(
+      `SELECT referencia_id FROM invitaciones_links WHERE token = $1 AND tipo = 'grupo'`,
+      [token]
+    );
+
+    if (!inv[0]) {
+      const err = new Error('Link de invitación inválido o expirado');
+      err.status = 404;
+      throw err;
+    }
+
+    const grupoId = inv[0].referencia_id;
+    const grupo = await obtenerGrupoOFallar(client, grupoId);
+
+    // Verificar bloqueos
+    if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
+      const err = new Error('No podés unirte a este grupo'); err.status = 403; throw err;
+    }
+
+    // Verificar si ya es miembro
+    const { rows: yaEsMiembro } = await client.query(
+      `SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, 
+      [grupoId, usuarioId]
+    );
+    if (yaEsMiembro.length > 0) {
+      await client.query('COMMIT');
+      return { ok: true, mensaje: 'Ya sos miembro de este grupo', yaEraMiembro: true };
+    }
+
+    // Unir directamente (ignorando si es privado, porque tiene el link)
+    await client.query(
+      `INSERT INTO grupo_miembros (grupo_id, usuario_id, rol) VALUES ($1, $2, 'miembro')`, 
+      [grupoId, usuarioId]
+    );
+    
+    // Agregar al canal de chat
+    const canalId = `grupo-${grupoId}`;
+    await agregarMiembroACanal(client, canalId, usuarioId);
+
+    // Notificar al capitán
+    const { rows: user } = await client.query(`SELECT nombre FROM usuarios WHERE id = $1`, [usuarioId]);
+    await crearNotificacion(
+      grupo.capitan_id,
+      'aprobado',
+      `${user[0].nombre} se unió a tu grupo ${grupo.nombre} mediante un link de invitación.`,
+      `#/mi-equipo`
+    );
+
+    await client.query('COMMIT');
+    return { ok: true, mensaje: '¡Te uniste al grupo exitosamente!' };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/* =========================================================
+   INVITAR AMIGO A GRUPO (Desde la lista de amigos)
+   ========================================================= */
+export async function invitarAmigoAGrupo(grupoId, amigoId, usuarioId) {
+  await obtenerGrupoOFallar(pool, grupoId);
+  await verificarCapitanOAdmin(pool, grupoId, usuarioId);
+
+  // Verificar si ya es miembro
+  const { rows: yaEsMiembro } = await pool.query(
+    `SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, 
+    [grupoId, amigoId]
+  );
+  if (yaEsMiembro.length > 0) {
+    const err = new Error('Ese usuario ya es miembro del grupo'); err.status = 400; throw err;
+  }
+
+  const { rows: grupoRows } = await pool.query(`SELECT nombre FROM grupos WHERE id = $1`, [grupoId]);
+  const { rows: userRows } = await pool.query(`SELECT nombre FROM usuarios WHERE id = $1`, [usuarioId]);
+
+  // Enviar notificación al amigo
+  await crearNotificacion(
+    amigoId,
+    'invitacion_grupo',
+    `${userRows[0].nombre} te invitó a unirte al grupo ${grupoRows[0].nombre}`,
+    `#/mi-equipo` // El frontend puede leer el ID desde aquí si se mejora a futuro
+  );
+
+  return { ok: true, mensaje: 'Invitación enviada' };
+}
