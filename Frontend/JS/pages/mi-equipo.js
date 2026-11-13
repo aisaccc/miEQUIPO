@@ -2654,18 +2654,47 @@ export async function init() {
   subtabs.forEach(st => { st.addEventListener('click', () => cambiarTab(st.dataset.tabEquipo)); });
   inputBuscarCanal?.addEventListener('input', (e) => { filtroBusquedaCanal = e.target.value; renderListaCanales(); });
 
-  await recargarGrupos();
-  await renderPanelEquipo();
-  await renderPanelComunidad();
-    // ⚡ NUEVO: Abrir la pestaña de comunidad si venimos del inicio
-  const tabGuardada = sessionStorage.getItem('tabMiEquipo');
-  if (tabGuardada) {
-    sessionStorage.removeItem('tabMiEquipo');
-    setTimeout(() => {
-      cambiarTab(tabGuardada);
-    }, 300);
+  // ⚡ 1. LEER EL TARGET PRIMERO (Antes de renderizar nada)
+  const targetStr = sessionStorage.getItem('miEquipoTarget');
+  let targetObj = null;
+  
+  if (targetStr) {
+    sessionStorage.removeItem('miEquipoTarget');
+    try { targetObj = JSON.parse(targetStr); } catch(e) {}
   }
-    // ... tu return existente
+
+  // ⚡ 2. CONFIGURAR VARIABLES DE APERTURA ANTES DE RENDERIZAR
+  if (targetObj) {
+    if (targetObj.tab === 'comunidad') {
+      if (targetObj.id) {
+        grupoAbiertoComunidad = targetObj.id;
+        subTabDetalleEquipo = 'info'; // Abre directo en info
+      }
+    } else if (targetObj.tab === 'equipo') {
+      if (targetObj.id) {
+        grupoAbiertoEquipo = targetObj.id;
+        subTabDetalleEquipo = 'info'; // Abre directo en info (o 'chat' si prefieres)
+      }
+    }
+  }
+
+  // ⚡ 3. CARGAR DATOS BASE
+  await recargarGrupos();
+  await cargarCanales();
+
+  // ⚡ 4. RENDERIZAR LA PESTAÑA CORRECTA DIRECTAMENTE
+  if (targetObj && targetObj.tab) {
+    await cambiarTab(targetObj.tab);
+  } else {
+    await cambiarTab('equipo'); // Comportamiento por defecto (si entras desde el menú lateral)
+  }
+
+  // ⚡ 5. (ELIMINADO el setTimeout de tabMiEquipo que causaba el salto)
+
+  return () => {
+    if (intervaloCanal) clearInterval(intervaloCanal);
+    if (intervaloDetalle) clearInterval(intervaloDetalle);
+  };
 
   return () => {
     if (intervaloCanal) clearInterval(intervaloCanal);

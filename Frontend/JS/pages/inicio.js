@@ -151,11 +151,11 @@ export async function init() {
     try {
       const { data } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 3 });
       if (!data || data.length === 0) {
-        cont.innerHTML = `<div class="aside-empty"><div class="aside-empty__icon">${ICONOS.escudo}</div><div class="aside-empty__text">No pertenecés a ningún equipo todavía.</div></div>`;
+        cont.innerHTML = `<div class="aside-empty"><div class="aside-empty__icon">${ICONOS.escudo}</div><div class="aside-empty__text">No perteneces a ningún equipo todavía.</div></div>`;
         return;
       }
       cont.innerHTML = data.map(g => `
-        <a class="aside-item" href="#/mi-equipo" data-grupo-id="${g.id}">
+        <a class="aside-item" href="#/mi-equipo" data-grupo-id="${g.id}" data-tipo="equipo">
           <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.escudo}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
@@ -163,10 +163,11 @@ export async function init() {
           </div>
         </a>`).join('');
       
-      // ⚡ Al hacer clic, guardamos el ID para que mi-equipo.js lo abra automáticamente
       cont.querySelectorAll('[data-grupo-id]').forEach(el => {
-        el.addEventListener('click', () => {
-          sessionStorage.setItem('grupoAInvitacion', el.dataset.grupoId);
+        el.addEventListener('click', (e) => {
+          e.preventDefault(); // ⚡ Evita que el <a> salte antes de tiempo
+          sessionStorage.setItem('miEquipoTarget', JSON.stringify({ tab: 'equipo', id: el.dataset.grupoId }));
+          window.location.hash = '#/mi-equipo';
         });
       });
     } catch (err) {
@@ -186,7 +187,7 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(g => `
-        <div class="aside-item" data-grupo-id="${g.id}" style="cursor:pointer">
+        <div class="aside-item" data-grupo-id="${g.id}" data-tipo="comunidad" style="cursor:pointer">
           <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.globo}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
@@ -195,11 +196,10 @@ export async function init() {
           <button class="btn btn--ghost btn--sm" data-unirse-comunidad="${g.id}">Unirme</button>
         </div>`).join('');
 
-      // ⚡ Redirigir a la comunidad al hacer clic en la tarjeta
       cont.querySelectorAll('[data-grupo-id]').forEach(el => {
         el.addEventListener('click', (e) => {
-          if (e.target.closest('[data-unirse-comunidad]')) return; // Si toca "Unirme", no redirigir
-          sessionStorage.setItem('grupoAInvitacion', el.dataset.grupoId);
+          if (e.target.closest('[data-unirse-comunidad]')) return;
+          sessionStorage.setItem('miEquipoTarget', JSON.stringify({ tab: 'comunidad', id: el.dataset.grupoId }));
           window.location.hash = '#/mi-equipo';
         });
       });
@@ -243,11 +243,16 @@ export async function init() {
 
   /* ---------- BOTONES ASIDE ---------- */
   document.getElementById('btn-ver-partidos')?.addEventListener('click', () => { window.location.hash = '#/partidos'; });
-  document.getElementById('btn-ver-mi-equipo')?.addEventListener('click', () => { window.location.hash = '#/mi-equipo'; });
   
-  // ⚡ FIX: "Ver todas" de comunidades te manda a la pestaña correcta
-  document.getElementById('btn-ver-comunidades')?.addEventListener('click', () => {
-    sessionStorage.setItem('tabMiEquipo', 'comunidad');
+  document.getElementById('btn-ver-mi-equipo')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.setItem('miEquipoTarget', JSON.stringify({ tab: 'equipo', id: null }));
+    window.location.hash = '#/mi-equipo';
+  });
+  
+  document.getElementById('btn-ver-comunidades')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.setItem('miEquipoTarget', JSON.stringify({ tab: 'comunidad', id: null }));
     window.location.hash = '#/mi-equipo';
   });
 
