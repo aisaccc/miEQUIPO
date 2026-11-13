@@ -1362,13 +1362,6 @@ select.field__input {
    AJUSTES PERSONALIZADOS (colores custom)
    ========================================= */
 
-/* Grupo sugerido — fondo gris suave */
-#grupos-sugeridos {
-  background: var(--color-surface-2);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  margin: 0 calc(var(--space-3) * -1);
-}
 
 #grupos-sugeridos .feed-item:hover {
   background: rgba(255, 255, 255, 0.7);

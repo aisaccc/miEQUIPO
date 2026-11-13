@@ -1111,17 +1111,15 @@ export async function init() {
 
     cont.innerHTML = html;
     
-    cont.querySelectorAll('[data-ver-imagen-detalle]').forEach(el => {
-      el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenDetalle); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); });
-    });
-
-    // ⚡ NUEVO: Listener para abrir el perfil al hacer clic en el avatar
+    // ⚡ NUEVO: Listener para abrir el perfil desde los avatares en el chat global
     cont.querySelectorAll('[data-autor-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
       });
     });
+
+    cont.querySelectorAll('[data-ver-imagen-global]').forEach(el => { el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenGlobal); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); }); });
 
     conectarAccionesMensaje(cont, {
       usuarioId: user.id,
@@ -1892,7 +1890,7 @@ export async function init() {
     if (!panelCanalEl) return;
     let canal;
     try { canal = await obtenerCanalAPI(canalId); }
-    catch (err) { panelCanalEl.innerHTML = `<div class="chat-empty"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><p class="chat-empty__text">No se pudo cargar el canal</p></div>`; return; }
+    catch (err) { /* ... */ return; }
 
     const iconoHtml = renderIconoHtml(canal.icono || RUTA_ESCUDO, 28);
     const tipoLabel = canal.tipo === 'equipo' ? 'Equipo' : canal.tipo === 'comunidad' ? 'Comunidad' : 'Torneo';
@@ -1900,8 +1898,15 @@ export async function init() {
     panelCanalEl.innerHTML = `
       <div class="chat-header">
         <button class="chat-back-btn" id="btn-volver-canal-global"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
-        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">${iconoHtml}</div>
-        <div class="chat-header__info"><div class="chat-header__name">${escapeHtml(canal.nombre)}</div><div class="chat-header__sub">${tipoLabel} · ${canal.totalMiembros || 0} miembros</div></div>
+        
+        <!-- ⚡ AGREGAMOS IDs Y CURSOR AQUÍ -->
+        <div class="chat-header__avatar" id="chat-header-ir-info-global" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden;cursor:pointer">
+          ${iconoHtml}
+        </div>
+        <div class="chat-header__info" id="chat-header-ir-info-text-global" style="cursor:pointer">
+          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
+          <div class="chat-header__sub">${tipoLabel} · ${canal.totalMiembros || 0} miembros</div>
+        </div>
       </div>
       <div class="chat-mensajes" id="chat-mensajes-canal"></div>
       <div class="chat-input-preview hidden" id="chat-canal-preview"><div class="chat-input-preview__img-wrapper"><img id="chat-canal-preview-img" src="" alt="" /><button type="button" class="chat-input-preview__del" id="chat-canal-preview-del" title="Quitar">✕</button></div></div>
@@ -1911,6 +1916,38 @@ export async function init() {
         <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
+
+    // ⚡ NUEVO: Listener para ir a la pestaña "Información" desde el header global
+    // ⚡ NUEVO: Listener para ir a la pestaña "Información" desde el header global
+    // ⚡ NUEVO: Listener para ir a la pestaña "Información" desde el header global
+    const irAInfo = async () => {
+      // Buscamos el ID del grupo de forma segura en las propiedades del canal
+      const canalInfo = canales.find(c => String(c.id) === String(canalId));
+      
+      const grupoId = canal.grupoId 
+                   || canal.grupo_id 
+                   || canalInfo?.grupoId 
+                   || canalInfo?.grupo_id 
+                   || canalId.replace('grupo-', ''); 
+
+      const esEquipo = misEquipos.some(g => String(g.id) === String(grupoId));
+      const esComunidad = misComunidades.some(g => String(g.id) === String(grupoId));
+      
+      if (esEquipo) {
+        grupoAbiertoEquipo = grupoId;
+        subTabDetalleEquipo = 'info';
+        await cambiarTab('equipo');
+      } else if (esComunidad) {
+        grupoAbiertoComunidad = grupoId;
+        subTabDetalleEquipo = 'info';
+        await cambiarTab('comunidad');
+      } else {
+        toast('No se pudo encontrar el detalle de este grupo', 'error');
+      }
+    };
+
+    document.getElementById('chat-header-ir-info-global')?.addEventListener('click', irAInfo);
+    document.getElementById('chat-header-ir-info-text-global')?.addEventListener('click', irAInfo);
 
     document.getElementById('btn-volver-canal-global')?.addEventListener('click', () => { panelCanalEl.classList.remove('chat-layout__panel--abierto'); const listaCanales = document.querySelector('.chat-layout__list'); if (listaCanales) listaCanales.classList.remove('chat-layout__list--oculto'); canalActualId = null; });
 
@@ -1950,7 +1987,7 @@ export async function init() {
       html += `
         <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
           ${!m.eliminadoParaTodos ? `<button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>` : ''}
-          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" data-autor-id="${m.autorId}" style="cursor:pointer" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
             ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
@@ -1961,6 +1998,14 @@ export async function init() {
     });
 
     cont.innerHTML = html;
+    
+    // ⚡ NUEVO: Listener para abrir el perfil desde los avatares en el chat global
+    cont.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
+      });
+    });
     cont.querySelectorAll('[data-ver-imagen-global]').forEach(el => { el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenGlobal); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); }); });
 
     conectarAccionesMensaje(cont, { usuarioId: user.id, obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)), onCopiar: (texto) => navigator.clipboard.writeText(texto), onEliminarParaMi: (id) => eliminarMensajeParaMiAPI(id), onEliminarParaTodos: (id) => eliminarMensajeParaTodosAPI(id), onRefrescar: () => refrescarMensajesGlobal(canalId) });
@@ -2655,6 +2700,7 @@ export async function init() {
   inputBuscarCanal?.addEventListener('input', (e) => { filtroBusquedaCanal = e.target.value; renderListaCanales(); });
 
   // ⚡ 1. LEER EL TARGET PRIMERO (Antes de renderizar nada)
+  // ⚡ 1. LEER EL TARGET PRIMERO (Antes de renderizar nada)
   const targetStr = sessionStorage.getItem('miEquipoTarget');
   let targetObj = null;
   
@@ -2663,38 +2709,45 @@ export async function init() {
     try { targetObj = JSON.parse(targetStr); } catch(e) {}
   }
 
-  // ⚡ 2. CONFIGURAR VARIABLES DE APERTURA ANTES DE RENDERIZAR
+  // ⚡ 2. PREVENIR EL PARPADEO VISUAL (Ocultar paneles por defecto al instante)
+  if (targetObj && targetObj.tab) {
+    // Ocultamos todos los paneles inmediatamente
+    document.getElementById('panel-equipo')?.classList.remove('subpanel--active');
+    document.getElementById('panel-comunidad')?.classList.remove('subpanel--active');
+    document.getElementById('panel-chat')?.classList.remove('subpanel--active');
+    document.getElementById('panel-buscar')?.classList.remove('subpanel--active');
+    
+    // Ocultamos el hero (fecha) y las pestañas para que no se vea "Mi Equipo"
+    document.getElementById('mi-equipo-eyebrow')?.closest('.page-hero')?.classList.add('hidden');
+    document.querySelector('[data-tab-equipo]')?.closest('.subtabs')?.classList.add('hidden');
+  }
+
+  // ⚡ 3. CONFIGURAR VARIABLES DE APERTURA
   if (targetObj) {
     if (targetObj.tab === 'comunidad') {
       if (targetObj.id) {
         grupoAbiertoComunidad = targetObj.id;
-        subTabDetalleEquipo = 'info'; // Abre directo en info
+        subTabDetalleEquipo = 'info';
       }
     } else if (targetObj.tab === 'equipo') {
       if (targetObj.id) {
         grupoAbiertoEquipo = targetObj.id;
-        subTabDetalleEquipo = 'info'; // Abre directo en info (o 'chat' si prefieres)
+        subTabDetalleEquipo = 'info'; 
       }
     }
   }
 
-  // ⚡ 3. CARGAR DATOS BASE
+  // ⚡ 4. CARGAR DATOS BASE
   await recargarGrupos();
   await cargarCanales();
 
-  // ⚡ 4. RENDERIZAR LA PESTAÑA CORRECTA DIRECTAMENTE
+  // ⚡ 5. RENDERIZAR LA PESTAÑA CORRECTA
   if (targetObj && targetObj.tab) {
     await cambiarTab(targetObj.tab);
+    mostrarChromePagina(); // Volvemos a mostrar el hero y las pestañas
   } else {
-    await cambiarTab('equipo'); // Comportamiento por defecto (si entras desde el menú lateral)
+    await cambiarTab('equipo'); // Por defecto si entras del menú lateral
   }
-
-  // ⚡ 5. (ELIMINADO el setTimeout de tabMiEquipo que causaba el salto)
-
-  return () => {
-    if (intervaloCanal) clearInterval(intervaloCanal);
-    if (intervaloDetalle) clearInterval(intervaloDetalle);
-  };
 
   return () => {
     if (intervaloCanal) clearInterval(intervaloCanal);

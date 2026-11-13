@@ -530,7 +530,7 @@ export async function init() {
             </svg>
           </button>
           ` : ''}
-          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" data-autor-id="${m.autorId}" style="cursor:pointer" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
             ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
@@ -545,11 +545,11 @@ export async function init() {
 
     cont.innerHTML = html;
 
-    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagen);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
+    // ⚡ NUEVO: Listener para abrir el perfil desde los avatares en el chat 1 a 1
+    cont.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
       });
     });
 
