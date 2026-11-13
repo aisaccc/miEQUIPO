@@ -349,7 +349,7 @@ async function cargarAmigosHeader(desdePolling = false) {
           <!-- BOTÓN LINK -->
           <div style="padding: 12px; text-align: center;">
             <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
-              🔗 Copiar link para Añadir Amigo
+              🔗 Añadir amigo
             </button>
           </div>
         `;
