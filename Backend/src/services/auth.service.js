@@ -192,7 +192,6 @@ export async function refrescarTokens(refreshToken, meta = {}) {
     throw err;
   }
 
-  // ⚡ NUEVO: Agregados los campos premium al SELECT
   const { rows } = await pool.query(
     `SELECT id, nombre, username, email, avatar, bio, edad, pais, ciudad,
             deportes, email_verificado, created_at, last_login,
@@ -209,7 +208,9 @@ export async function refrescarTokens(refreshToken, meta = {}) {
     throw err;
   }
 
-  await revocarSesionPorRefresh(refreshToken);
+  // ⚡ FIX: ELIMINAMOS EL revocarSesionPorRefresh(refreshToken) para evitar que 
+  // las pestañas múltiples o los cortes de red te saquen. 
+  // El token viejo expirará naturalmente en la BD en 30 días.
 
   const nuevoAccess = generarAccessToken(usuario);
   const nuevoRefresh = generarRefreshToken(usuario);

@@ -1,12 +1,12 @@
 /* =========================================================
-   api.js — Cliente HTTP centralizado (v4 - A PRUEBA DE BALAS)
+   api.js — Cliente HTTP centralizado (v6 - A PRUEBA DE TODO)
    ========================================================= */
 
 const API_URL = 'https://miequipo.onrender.com/api';
 
 const KEY_ACCESS  = 'miejquipo_access_token';
 const KEY_REFRESH = 'miejquipo_refresh_token';
-const TIMEOUT_MS  = 60000; // ⚡ 60 segundos para que Render despierte
+const TIMEOUT_MS  = 60000; 
 
 export function getAccessToken() { return localStorage.getItem(KEY_ACCESS); }
 export function getRefreshToken() { return localStorage.getItem(KEY_REFRESH); }
@@ -44,13 +44,18 @@ async function intentarRefresh() {
         body: JSON.stringify({ refreshToken }),
       });
 
-      // ⚡ Si es 429, 500, 502 o 503, NO BORRAMOS SESIÓN. Solo avisamos.
+      // Errores de servidor o red, NO borramos tokens
       if (res.status === 429 || res.status >= 500) {
         throw new ApiError('Servidor ocupado o despertando. Intentá de nuevo.', res.status);
       }
 
-      // Solo borramos si el token de refresco de verdad expiró (401/403)
-      if (!res.ok) {
+      // 400 o 404: error del cliente, no de sesión
+      if (res.status >= 400 && res.status !== 401 && res.status !== 403) {
+        throw new ApiError('Error al renovar sesión', res.status);
+      }
+
+      // Solo si el refresh realmente expiró
+      if (res.status === 401 || res.status === 403) {
         limpiarTokens();
         throw new ApiError('Sesión expirada', 401);
       }
@@ -59,7 +64,6 @@ async function intentarRefresh() {
       setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
       return data;
     } catch (netErr) {
-      // ⚡ Error de red o timeout: NO BORRAMOS LA SESIÓN
       if (netErr.name === 'AbortError') throw new ApiError('El servidor tardó demasiado.', 0);
       if (netErr instanceof ApiError) throw netErr;
       throw new ApiError('Error de conexión con el servidor.', 0);
@@ -103,15 +107,25 @@ async function request(endpoint, options = {}) {
 
   // Si es 401, intentamos refrescar el token
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
+    const tokenOriginal = getAccessToken();
+
     try {
       await intentarRefresh();
       return request(endpoint, { ...options, sinRefresh: true });
     } catch (refreshErr) {
-      // ⚡ Si el refresh falló por servidor ocupado o red, NO te sacamos al login.
-      if (refreshErr.status === 0 || refreshErr.status === 429 || refreshErr.status >= 500) {
+      // Si el fallo es de red o servidor, avisamos pero no te sacamos al login.
+      if (refreshErr.status === 0 || refreshErr.status === 429 || refreshErr.status >= 500 || refreshErr.status === 400) {
         throw refreshErr;
       }
-      // Si el token de verdad murió (401), te sacamos.
+
+      // 🛡️ FIX MULTI-PESTAÑAS: Si otro tab ya refrescó el token exitosamente, 
+      // reintentamos la petición con el nuevo token.
+      const tokenActual = getAccessToken();
+      if (tokenActual && tokenActual !== tokenOriginal) {
+        return request(endpoint, { ...options, sinRefresh: true });
+      }
+
+      // Si el token es el mismo y falló, el refresh de verdad murió.
       limpiarTokens();
       redirigirALogin();
       throw new ApiError('Sesión expirada. Iniciá sesión de nuevo.', 401);

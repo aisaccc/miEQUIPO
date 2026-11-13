@@ -1,10 +1,9 @@
 /* =========================================================
-   main.js — Punto de entrada de la app (app.html) (v2)
+   main.js — Punto de entrada de la app (app.html) (v3)
    =========================================================
-   Cambios v2:
-   - El router arranca PRIMERO (UI más rápida)
-   - Componentes con requests escalonados (no todos en el ms 0)
-   - Componentes sin requests, inmediatos
+   Cambios v3:
+   - Se agregó el auto-refresco de sesión en segundo plano
+   - Se mejoró el orden de carga de componentes
 */
 
 import { iniciarRouter } from './router.js';
@@ -20,8 +19,11 @@ import {
   initNotificaciones,
   initConfiguracion,
   initTheme,
-  initBadgeMensajes, // ⚡ AGREGAR ESTO
+  initBadgeMensajes,
 } from './components.js';
+
+// ⚡ NUEVO: Importar el auto-refresco
+import { iniciarAutoRefresco } from './services/auth.service.js';
 
 if (!estaAutenticado()) {
   window.location.href = 'index.html';
@@ -80,20 +82,21 @@ async function init() {
 
   // 5. ⚡ Componentes CON requests — escalonados para no saturar
   setTimeout(() => {
+    try { initBadgeMensajes(); } catch (err) { console.warn('[main] initBadgeMensajes:', err); }
+  }, 300);
+
+  setTimeout(() => {
     try { initDropdowns(); } catch (err) { console.warn('[main] initDropdowns:', err); }
-  }, 400);
+  }, 600);
 
   setTimeout(() => {
     try { initNotificaciones(); } catch (err) { console.warn('[main] initNotificaciones:', err); }
   }, 900);
 
-  // ⚡ AGREGAR ESTO:
-  setTimeout(() => {
-    try { initBadgeMensajes(); } catch (err) { console.warn('[main] initBadgeMensajes:', err); }
-  }, 500);
-  
+  // 6. ⚡ NUEVO: Iniciar el auto-refresco de sesión cada 10 minutos
+  iniciarAutoRefresco();
 
-  // 6. Logout del sidebar
+  // 7. Logout del sidebar
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', async (e) => {
@@ -110,7 +113,7 @@ async function init() {
     });
   }
 
-  // 7. Logout del menú de usuario
+  // 8. Logout del menú de usuario
   document.addEventListener('click', async (e) => {
     const item = e.target.closest('[data-action="logout"]');
     if (!item) return;
@@ -124,6 +127,7 @@ async function init() {
 }
 
 init();
+
 /* =========================================================
    SCROLL INTELIGENTE (Ocultar barra inferior en móvil)
    ========================================================= */

@@ -147,3 +147,26 @@ export async function verificarEmail(token) {
   const data = await api.post('/auth/verificar-email', { token }, { auth: false });
   return data;
 }
+/* =========================================================
+   REFRESCO AUTOMÁTICO EN SEGUNDO PLANO
+   =========================================================
+   Esto evita que la sesión muera si el usuario está inactivo.
+*/
+let intervaloRefresco = null;
+
+export function iniciarAutoRefresco() {
+  if (intervaloRefresco) return;
+
+  // Refresca cada 10 minutos (600,000 ms)
+  intervaloRefresco = setInterval(async () => {
+    // Solo intentar si hay un usuario logueado
+    if (localStorage.getItem('miejquipo_refresh_token')) {
+      try {
+        await refrescarSesion();
+        console.log('[Auth] Token refrescado automáticamente');
+      } catch (err) {
+        console.warn('[Auth] Falló el refresco automático, esperando al interceptor...');
+      }
+    }
+  }, 10 * 60 * 1000);
+}
