@@ -1,119 +1,146 @@
 /* =========================================================
    stats-por-deporte.js — Registros disponibles por deporte
-   =========================================================
-   Cada deporte tiene su lista de estadísticas posibles.
-   El usuario elige cuáles lleva y cuáles son públicas.
-*/
+   ========================================================= */
 
 export const statsPorDeporte = {
   'Fútbol': [
-    { nombre: 'Goles',       clave: 'goles' },
-    { nombre: 'Asistencias', clave: 'asistencias' },
-    { nombre: 'Partidos',    clave: 'partidos' },
-    { nombre: 'Tarjetas',    clave: 'tarjetas' }
+    { nombre: 'Goles',       clave: 'goles',       tipo: 'entero' },
+    { nombre: 'Asistencias', clave: 'asistencias', tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Básquetbol': [
-    { nombre: 'Puntos',      clave: 'puntos' },
-    { nombre: 'Rebotes',     clave: 'rebotes' },
-    { nombre: 'Asistencias', clave: 'asistencias' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Puntos',      clave: 'puntos',      tipo: 'entero' },
+    { nombre: 'Rebotes',     clave: 'rebotes',     tipo: 'entero' },
+    { nombre: 'Asistencias', clave: 'asistencias', tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Vóleibol': [
-    { nombre: 'Puntos',      clave: 'puntos' },
-    { nombre: 'Aces',        clave: 'aces' },
-    { nombre: 'Bloqueos',    clave: 'bloqueos' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Puntos',      clave: 'puntos',      tipo: 'entero' },
+    { nombre: 'Aces',        clave: 'aces',        tipo: 'entero' },
+    { nombre: 'Bloqueos',    clave: 'bloqueos',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Béisbol': [
-    { nombre: 'Homeruns',    clave: 'homeruns' },
-    { nombre: 'Vueltas',     clave: 'vueltas' },
-    { nombre: 'Pitcheo',     clave: 'pitcheo' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Homeruns',    clave: 'homeruns',    tipo: 'entero' },
+    { nombre: 'Carreras',    clave: 'carreras',    tipo: 'entero' },
+    { nombre: 'Pitcheos',    clave: 'pitcheos',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Hockey': [
-    { nombre: 'Goles',       clave: 'goles' },
-    { nombre: 'Asistencias', clave: 'asistencias' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Goles',       clave: 'goles',       tipo: 'entero' },
+    { nombre: 'Asistencias', clave: 'asistencias', tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Rugby': [
-    { nombre: 'Tries',       clave: 'tries' },
-    { nombre: 'Conversiones',clave: 'conversiones' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Tries',       clave: 'tries',       tipo: 'entero' },
+    { nombre: 'Conversiones',clave: 'conversiones',tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Handball': [
-    { nombre: 'Goles',       clave: 'goles' },
-    { nombre: 'Asistencias', clave: 'asistencias' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Goles',       clave: 'goles',       tipo: 'entero' },
+    { nombre: 'Asistencias', clave: 'asistencias', tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
   'Fútbol americano': [
-    { nombre: 'Touchdowns',  clave: 'touchdowns' },
-    { nombre: 'Yardas',      clave: 'yardas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Touchdowns',  clave: 'touchdowns',  tipo: 'entero' },
+    { nombre: 'Yardas',      clave: 'yardas',      tipo: 'decimal' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' }
   ],
-
-  /* ---------- Individuales: Victoria / Derrota ---------- */
   'Tenis': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Aces',        clave: 'aces',        tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' }
   ],
   'Pádel': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Aces',        clave: 'aces',        tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' }
   ],
   'Squash': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Aces',        clave: 'aces',        tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' }
   ],
   'Tenis de mesa': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' }
   ],
   'Bádminton': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Partidos',    clave: 'partidos' }
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Partidos',    clave: 'partidos',    tipo: 'entero' }
   ],
   'Boxeo': [
-    { nombre: 'Victorias',   clave: 'victorias' },
-    { nombre: 'Derrotas',    clave: 'derrotas' },
-    { nombre: 'Empates',     clave: 'empates' }
+    { nombre: 'KOs',         clave: 'kos',         tipo: 'entero' },
+    { nombre: 'Encuentros',  clave: 'encuentros',  tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Derrotas',    clave: 'derrotas',    tipo: 'entero' },
+    { nombre: 'Empates',     clave: 'empates',     tipo: 'entero' }
   ],
   'Golf': [
-    { nombre: 'Torneos ganados', clave: 'torneos_ganados' },
-    { nombre: 'Mejor score',     clave: 'mejor_score' }
+    { nombre: 'Torneos ganados', clave: 'torneos_ganados', tipo: 'entero' },
+    { nombre: 'Hoyos en uno',    clave: 'hoyo_en_uno',     tipo: 'entero' },
+    { nombre: 'Mejor score (golpes)', clave: 'mejor_score',tipo: 'entero' },
+    { nombre: 'Victorias',       clave: 'victorias',       tipo: 'entero' }
   ],
   'Natación': [
-    { nombre: 'Medallas',   clave: 'medallas' },
-    { nombre: 'Competencias', clave: 'competencias' }
+    { nombre: 'Medallas',   clave: 'medallas',   tipo: 'entero' },
+    { nombre: 'Competencias', clave: 'competencias', tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias', tipo: 'entero' }
   ],
   'Atletismo': [
-    { nombre: 'Medallas',   clave: 'medallas' },
-    { nombre: 'Competencias', clave: 'competencias' }
+    { nombre: 'Medallas',   clave: 'medallas',     tipo: 'entero' },
+    { nombre: 'Competencias', clave: 'competencias', tipo: 'entero' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' },
+    { nombre: 'Mejor tiempo (mm:ss)', clave: 'mejor_tiempo', tipo: 'tiempo' }
   ],
   'Ciclismo': [
-    { nombre: 'Carreras',   clave: 'carreras' },
-    { nombre: 'Kilómetros', clave: 'kilometros' }
+    { nombre: 'Competencias', clave: 'competencias', tipo: 'entero' },
+    { nombre: 'Kilómetros (km)', clave: 'kilometros', tipo: 'decimal' },
+    { nombre: 'Mejor tiempo (hh:mm)', clave: 'mejor_tiempo', tipo: 'tiempo' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' }
   ],
   'Surf': [
-    { nombre: 'Sesiones',   clave: 'sesiones' },
-    { nombre: 'Mejores olas', clave: 'mejores_olas' }
+    { nombre: 'Sesiones',   clave: 'sesiones',   tipo: 'entero' },
+    { nombre: 'Victorias',  clave: 'victorias',  tipo: 'entero' },
+    { nombre: 'Mejor puntaje (pts)', clave: 'mejor_puntaje', tipo: 'decimal' }
   ],
   'Escalada': [
-    { nombre: 'Rutas',      clave: 'rutas' },
-    { nombre: 'Grado máximo', clave: 'grado_maximo' }
+    { nombre: 'Mejor tiempo (mm:ss)', clave: 'mejor_tiempo', tipo: 'tiempo' },
+    { nombre: 'Grado máximo (ej. V5)', clave: 'grado_maximo', tipo: 'texto' },
+    { nombre: 'Victorias',   clave: 'victorias',   tipo: 'entero' }
   ]
 };
 
-/** Helper: devuelve las stats de un deporte (o array vacío) */
 export function getStatsDeDeporte(deporte) {
   return statsPorDeporte[deporte] || [];
 }
 
-/** Helper: ¿este deporte es individual? (sin posiciones y con victorias/derrotas) */
 export function esDeporteIndividual(deporte) {
   const individuales = ['Tenis', 'Pádel', 'Squash', 'Tenis de mesa', 'Bádminton', 'Boxeo', 'Golf', 'Natación', 'Atletismo', 'Ciclismo', 'Surf', 'Escalada'];
   return individuales.includes(deporte);

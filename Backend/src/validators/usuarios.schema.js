@@ -91,7 +91,10 @@ const posicionValida = z
   .transform(v => v.trim());
 
 const statValor = z.object({
-  valor: z.number().int().min(0).max(1_000_000),
+  valor: z.union([
+    z.number().min(0).max(1_000_000),  // Acepta números (enteros y decimales)
+    z.string().max(50)                 // Acepta strings (tiempos, textos, etc.)
+  ]),
   publico: z.boolean().default(false)
 }).strict();
 
