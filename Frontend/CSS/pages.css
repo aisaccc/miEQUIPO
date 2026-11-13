@@ -15525,3 +15525,84 @@ select.field__input {
   stroke: currentColor !important; 
   color: currentColor !important;
 }
+/* =========================================================
+   FIX GLOBAL: MENÚS Y DROPDOWNS EN MODO OSCURO
+   ========================================================= */
+
+/* 1. Arreglo específico para el menú de los jugadores (tu foto) */
+[data-theme="dark"] .gd-jugador__dropdown {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important; /* Sombra más oscura */
+}
+
+/* 2. Arreglo global preventivo para otros menús desplegables */
+[data-theme="dark"] .dropdown__panel,
+[data-theme="dark"] .user-menu__dropdown,
+[data-theme="dark"] .conv-item__dropdown,
+[data-theme="dark"] .pub-menu,
+[data-theme="dark"] .msg-menu {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* 3. Arreglo preventivo para los Hover (cuando pasas el mouse) */
+[data-theme="dark"] .gd-jugador__dropdown-item:hover {
+  background: var(--color-surface-2) !important;
+}
+
+[data-theme="dark"] .gd-jugador__dropdown-item--danger:hover {
+  background: rgba(220, 38, 38, 0.15) !important;
+}
+/* =========================================================
+   FIX DEFINITIVO MODO OSCURO: MENÚS DESPLEGABLES
+   ========================================================= */
+[data-theme="dark"] .gd-jugador__dropdown,
+[data-theme="dark"] .dropdown__panel,
+[data-theme="dark"] .user-menu__dropdown {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Hover en modo oscuro */
+[data-theme="dark"] .gd-jugador__dropdown-item:hover {
+  background-color: var(--color-surface-2) !important;
+}
+
+[data-theme="dark"] .gd-jugador__dropdown-item--danger:hover {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+/* =========================================================
+   UI MEJORADA - MENÚ DE AMIGOS
+   ========================================================= */
+
+/* Input de búsqueda moderno */
+#buscar-mis-amigos:focus {
+  outline: none;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.15);
+}
+
+/* Quitar el borde al último amigo de la lista para que no se corte feo */
+#lista-amigos-render .amigo-item:last-child,
+#pane-solicitudes .amigo-item:last-child {
+  border-bottom: none !important;
+}
+
+/* Pestañas más limpias */
+.dropdown__tabs .dropdown__tab {
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.dropdown__tabs .dropdown__tab.active {
+  background: var(--color-surface) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Hover en los items de amigo */
+.amigo-item:hover {
+  background: transparent !important; /* Quitamos el fondo para que no se vea como bloque */
+  opacity: 0.8;
+}

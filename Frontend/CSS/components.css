@@ -1542,3 +1542,7 @@ body:has(#modal-ver-perfil.open) {
 .modal-backdrop {
   z-index: 9999 !important; 
 }
+/* Oculta el botón de buscar si la pestaña de solicitudes está activa */
+#dropdown-amigos:has(#pane-solicitudes.active) .dropdown__footer {
+  display: none !important;
+}

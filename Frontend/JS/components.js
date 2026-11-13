@@ -268,7 +268,6 @@ export function initDropdowns() {
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
-      // ⚡ Cerrar el user menu
       document.getElementById('user-menu')?.classList.remove('open');
       
       dropdowns.forEach(other => { if (other !== dd) other.classList.remove('open'); });
@@ -293,8 +292,27 @@ export function initDropdowns() {
       tab.classList.add('active');
       document.querySelectorAll('.dropdown__pane[id^="pane-"]').forEach(p => p.classList.remove('active'));
       document.getElementById('pane-' + tab.dataset.tabAmigos)?.classList.add('active');
+      const footer = document.querySelector('#dropdown-amigos .dropdown__footer');
+      if (footer) {
+        if (tab.dataset.tabAmigos === 'solicitudes') {
+          footer.style.display = 'none'; // Lo ocultamos en Solicitudes
+        } else {
+          footer.style.display = 'block'; // Lo mostramos en Mis Amigos
+        }
+      }
     });
   });
+
+
+  // ⚡ FIX: Conectando el botón correcto (btn-buscar-amigos)
+  const btnBuscarGlobal = document.getElementById('btn-buscar-amigos');
+  if (btnBuscarGlobal) {
+    btnBuscarGlobal.addEventListener('click', (e) => {
+      e.preventDefault();
+      dropdowns.forEach(dd => dd.classList.remove('open')); // Cierra el menú
+      abrirModalBuscarAmigosGlobal(); // Abre la ventana flotante
+    });
+  }
 
   cargarAmigosHeader();
 
@@ -310,7 +328,6 @@ export function initDropdowns() {
     if (!document.hidden) cargarAmigosHeader(true);
   });
 }
-
 async function cargarAmigosHeader(desdePolling = false) {
   if (desdePolling && isFetchingAmigos) return;
   isFetchingAmigos = true;
@@ -324,157 +341,141 @@ async function cargarAmigosHeader(desdePolling = false) {
       listarSolicitudesAPI()
     ]);
 
-    // ... (código de badges y solicitudes queda igual) ...
+    const badgeMain = document.getElementById('badge-amigos');
+    const countSol = document.getElementById('count-amigos-sol');
+    const countList = document.getElementById('count-amigos-lista');
 
+    if (badgeMain) {
+      badgeMain.textContent = solicitudes.length;
+      badgeMain.classList.toggle('hidden', solicitudes.length === 0);
+    }
+    if (countSol) countSol.textContent = solicitudes.length;
+    if (countList) countList.textContent = amigos.length;
+
+    // ⚡ 1. PESTAÑA SOLICITUDES (100% Limpia, sin buscadores)
+    const paneSol = document.getElementById('pane-solicitudes');
+    if (paneSol) {
+      if (solicitudes.length === 0) {
+        paneSol.innerHTML = `
+          <div style="text-align: center; padding: 30px 10px; color: var(--color-text-muted);">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <p class="text-sm">No hay solicitudes pendientes.</p>
+          </div>`;
+      } else {
+        paneSol.innerHTML = solicitudes.map(s => `
+          <div class="amigo-item" style="padding: 10px 0; border-bottom: 1px solid var(--color-border);">
+            <img src="${s.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${s.id}" style="cursor:pointer" />
+            <div class="amigo-item__info" data-autor-id="${s.id}" style="cursor:pointer">
+              <div class="amigo-item__name">${escapeHtml(s.nombre)}</div>
+              <div class="amigo-item__sub">@${escapeHtml(s.username)}</div>
+            </div>
+            <div class="amigo-item__actions" style="gap: 6px;">
+              <button class="btn btn--primary btn--sm" data-aceptar="${s.id}" style="padding: 6px 10px;">Aceptar</button>
+              <button class="btn btn--ghost btn--sm" data-rechazar="${s.id}" style="padding: 6px 10px;">✕</button>
+            </div>
+          </div>`).join('');
+
+        paneSol.querySelectorAll('[data-autor-id]').forEach(el => {
+          el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId));
+        });
+        paneSol.querySelectorAll('[data-aceptar]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            try {
+              await responderSolicitudAPI(btn.dataset.aceptar, 'aceptar');
+              toast('Solicitud aceptada', 'success');
+              cargarAmigosHeader();
+            } catch (err) { toast(err.message, 'error'); }
+          });
+        });
+        paneSol.querySelectorAll('[data-rechazar]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            try {
+              await responderSolicitudAPI(btn.dataset.rechazar, 'rechazar');
+              toast('Solicitud rechazada', 'info');
+              cargarAmigosHeader();
+            } catch (err) { toast(err.message, 'error'); }
+          });
+        });
+      }
+    }
+
+    // ⚡ 2. PESTAÑA AMIGOS (Buscador local + Lista + Link)
     const paneList = document.getElementById('pane-lista');
     if (paneList) {
       if (!document.getElementById('buscar-mis-amigos')) {
         paneList.innerHTML = `
-          <!-- BARRA 1: Buscar en mis amigos -->
-          <div class="dropdown__search">
-            <input type="text" id="buscar-mis-amigos" placeholder="Buscar en mis amigos..." />
+          <div style="padding-top: 10px; margin-bottom: 12px;">
+            <div style="position: relative;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--color-text-muted)" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%);"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="buscar-mis-amigos" placeholder="Buscar en mis amigos..." style="width: 100%; padding: 10px 14px 10px 36px; border-radius: 20px; border: 1px solid var(--color-border); background: var(--color-surface-2); font-size: 13px; transition: border-color 0.2s;" />
+            </div>
           </div>
-          
-          <!-- LISTA DE MIS AMIGOS -->
-          <div id="lista-amigos-render" style="padding: 8px;"></div>
-          
-          <!-- BARRA 2: Buscar nuevos usuarios -->
-          <div class="dropdown__search" style="border-top: 1px solid var(--color-border); border-bottom: none; background: var(--color-surface-2);">
-            <input type="text" id="buscar-global-amigos" placeholder="Buscar nuevos usuarios por @nombre..." style="background: var(--color-surface);" />
-          </div>
-          
-          <!-- RESULTADOS GLOBALES -->
-          <div id="resultados-busqueda-amigo" class="hidden" style="padding: 8px;"></div>
-
-          <!-- BOTÓN LINK -->
-          <div style="padding: 12px; text-align: center;">
-            <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
-              🔗 Añadir amigo
+          <div id="lista-amigos-render"></div>
+          <div style="padding: 16px 0; text-align: center; margin-top: 10px;">
+            <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary); padding: 10px; border-radius: var(--radius-md);">
+              🔗 Copiar link para Añadir Amigo
             </button>
           </div>
         `;
 
-        // Evento: Link de Amistad
         document.getElementById('btn-generar-link-amigo').addEventListener('click', async () => {
           try {
             const { generarLinkAmistad } = await import('./services/amistades.service.js');
             const { token } = await generarLinkAmistad();
             const url = `${window.location.origin}${window.location.pathname}#/join/amistad/${token}`;
-            
-            if (navigator.share) {
-              await navigator.share({ title: '¡Agregame en Roster!', url });
-            } else {
-              await navigator.clipboard.writeText(url);
-              toast('Link copiado al portapapeles', 'success');
-            }
+            if (navigator.share) await navigator.share({ title: '¡Agregame en Roster!', url });
+            else { await navigator.clipboard.writeText(url); toast('Link copiado al portapapeles', 'success'); }
           } catch (err) { toast('Error al generar link', 'error'); }
         });
 
-        // Evento: Buscar en Mis Amigos
         document.getElementById('buscar-mis-amigos').addEventListener('input', (e) => {
           const q = e.target.value.toLowerCase().trim();
           const items = document.querySelectorAll('#lista-amigos-render .amigo-item');
           items.forEach(item => {
             const nombre = item.querySelector('.amigo-item__name').textContent.toLowerCase();
-            item.style.display = nombre.includes(q) ? 'flex' : 'none';
+            const username = item.querySelector('.amigo-item__sub').textContent.toLowerCase();
+            item.style.display = (nombre.includes(q) || username.includes(q)) ? 'flex' : 'none';
           });
-        });
-
-        // Evento: Buscar Globalmente
-        let timeoutBusqueda;
-        document.getElementById('buscar-global-amigos').addEventListener('input', (e) => {
-          clearTimeout(timeoutBusqueda);
-          const q = e.target.value.trim();
-          const contRes = document.getElementById('resultados-busqueda-amigo');
-          const listaRender = document.getElementById('lista-amigos-render');
-          
-          if (q.length < 2) {
-            contRes.classList.add('hidden');
-            listaRender.classList.remove('hidden');
-            return;
-          }
-
-          timeoutBusqueda = setTimeout(async () => {
-            contRes.classList.remove('hidden');
-            listaRender.classList.add('hidden');
-            contRes.innerHTML = `<p class="text-sm text-muted text-center">Buscando...</p>`;
-            
-            try {
-              const { buscarUsuarios } = await import('./services/usuarios.service.js');
-              const resultados = await buscarUsuarios(q);
-              
-              if (resultados.length === 0) {
-                contRes.innerHTML = `<p class="text-sm text-muted text-center">No se encontraron usuarios.</p>`;
-                return;
-              }
-              
-              contRes.innerHTML = resultados.map(u => `
-                <div class="amigo-item">
-                  <img src="${u.avatar || 'assets/icons/usuario.svg'}" class="avatar avatar--md" data-autor-id="${u.id}" style="cursor:pointer" />
-                  <div class="amigo-item__info" data-autor-id="${u.id}" style="cursor:pointer">
-                    <div class="amigo-item__name">${escapeHtml(u.nombre)}</div>
-                    <div class="amigo-item__sub">@${escapeHtml(u.username)}</div>
-                  </div>
-                  ${u.estado_amistad === 'aceptada' 
-                    ? `<span class="badge badge--success">Amigos</span>`
-                    : u.estado_amistad === 'pendiente'
-                      ? `<span class="badge badge--warning">Pendiente</span>`
-                      : `<button class="btn btn--primary btn--sm" data-add-amigo="${u.id}">Agregar</button>`
-                  }
-                </div>
-              `).join('');
-
-              contRes.querySelectorAll('[data-autor-id]').forEach(el => {
-                el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId));
-              });
-
-              contRes.querySelectorAll('[data-add-amigo]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                  btn.disabled = true; btn.textContent = '...';
-                  try {
-                    const { enviarSolicitud } = await import('./services/amistades.service.js');
-                    await enviarSolicitud(btn.dataset.addAmigo);
-                    toast('Solicitud enviada', 'success');
-                    btn.outerHTML = `<span class="badge badge--warning">Pendiente</span>`;
-                  } catch (err) {
-                    toast(err.message, 'error');
-                    btn.disabled = false; btn.textContent = 'Agregar';
-                  }
-                });
-              });
-            } catch (err) {
-              contRes.innerHTML = `<p class="text-sm text-danger text-center">Error al buscar.</p>`;
-            }
-          }, 400);
         });
       }
 
-      // Render de Amigos actuales
       const listaRender = document.getElementById('lista-amigos-render');
       if (listaRender) {
         if (amigos.length === 0) {
-          listaRender.innerHTML = `<p class="text-sm text-muted text-center" style="padding:20px">Aún no tenés amigos.</p>`;
+          listaRender.innerHTML = `
+            <div style="text-align: center; padding: 30px 10px; color: var(--color-text-muted);">
+              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 8px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <p class="text-sm">Aún no tenés amigos agregados.</p>
+            </div>`;
         } else {
           listaRender.innerHTML = amigos.map(a => `
-            <div class="amigo-item" style="position:relative">
+            <div class="amigo-item" style="position:relative; padding: 10px 0; border-bottom: 1px solid var(--color-border);">
               <img src="${a.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${a.id}" style="cursor:pointer" />
               <div class="amigo-item__info" data-autor-id="${a.id}" style="cursor:pointer">
                 <div class="amigo-item__name">${escapeHtml(a.nombre)}</div>
                 <div class="amigo-item__sub">@${escapeHtml(a.username)}</div>
               </div>
-              <button class="btn btn--ghost btn--sm" data-msg-id="${a.id}">Mensaje</button>
+              <button class="btn btn--ghost btn--sm" data-msg-id="${a.id}" style="padding: 6px 12px; font-size: 12px;">Mensaje</button>
             </div>
           `).join('');
           
-          listaRender.querySelectorAll('[data-autor-id]').forEach(el => {
-            el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId));
+          listaRender.querySelectorAll('[data-autor-id]').forEach(el => el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId)));
+          listaRender.querySelectorAll('[data-msg-id]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              try {
+                const { crearConversacion } = await import('./services/mensajes.service.js');
+                const conv = await crearConversacion(btn.dataset.msgId);
+                document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+                window.location.hash = '#/mensajes';
+                setTimeout(() => { document.querySelector(`[data-conv="${conv.id}"]`)?.click(); }, 400);
+              } catch (err) { toast(err.message, 'error'); }
+            });
           });
-          // (Mantén aquí tus eventos de botón de mensaje)
         }
       }
     }
   } catch (err) {
-    console.error(err);
+    console.error('[components] Error al cargar amigos header:', err);
   } finally {
     isFetchingAmigos = false;
   }
@@ -1423,4 +1424,112 @@ export function renderPlanModal() {
   document.getElementById('modal-planes').onclick = (e) => {
     if (e.target.id === 'modal-planes') cerrarModal('modal-planes');
   };
+}
+// ⚡ NUEVO MODAL DE BÚSQUEDA GLOBAL DE AMIGOS
+async function abrirModalBuscarAmigosGlobal() {
+  let modal = document.getElementById('modal-buscar-amigos-global');
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-buscar-amigos-global';
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 450px;">
+        <div class="modal__header">
+          <h3 class="modal__title">Buscar nuevos amigos</h3>
+          <button class="modal__close" data-cerrar-modal="modal-buscar-amigos-global">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="dropdown__search" style="border: none; padding: 0; margin-bottom: 16px;">
+            <input type="text" id="input-buscar-global-modal" class="field__input" placeholder="Escribe el nombre o @usuario..." autofocus />
+          </div>
+          <div id="resultados-busqueda-global-modal" style="max-height: 300px; overflow-y: auto;">
+            <p class="text-sm text-muted text-center" style="padding: 20px;">Escribe para buscar usuarios...</p>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // Configurar eventos de cierre
+  modal.querySelectorAll('[data-cerrar-modal]').forEach(b => b.onclick = () => cerrarModal('modal-buscar-amigos-global'));
+  modal.onclick = (e) => { if (e.target === modal) cerrarModal('modal-buscar-amigos-global'); };
+
+  abrirModal('modal-buscar-amigos-global');
+  
+  const input = modal.querySelector('#input-buscar-global-modal');
+  const contResultados = modal.querySelector('#resultados-busqueda-global-modal');
+  
+  // Limpiar input al abrir
+  input.value = '';
+  contResultados.innerHTML = `<p class="text-sm text-muted text-center" style="padding: 20px;">Escribe para buscar usuarios...</p>`;
+  setTimeout(() => input.focus(), 100);
+
+  // Evento de búsqueda
+  let timeoutBusqueda;
+  input.addEventListener('input', (e) => {
+    clearTimeout(timeoutBusqueda);
+    const q = e.target.value.trim();
+    
+    if (q.length < 2) {
+      contResultados.innerHTML = `<p class="text-sm text-muted text-center" style="padding: 20px;">Escribe al menos 2 letras...</p>`;
+      return;
+    }
+
+    timeoutBusqueda = setTimeout(async () => {
+      contResultados.innerHTML = `<div class="page-loader"><div class="spinner"></div></div>`;
+      try {
+        const { buscarUsuarios } = await import('./services/usuarios.service.js');
+        const { enviarSolicitud } = await import('./services/amistades.service.js');
+        const resultados = await buscarUsuarios(q);
+
+        if (resultados.length === 0) {
+          contResultados.innerHTML = `<p class="text-sm text-muted text-center">No se encontraron usuarios.</p>`;
+          return;
+        }
+
+        contResultados.innerHTML = resultados.map(u => `
+          <div class="amigo-item">
+            <img src="${u.avatar || 'assets/icons/usuario.svg'}" class="avatar avatar--md" data-autor-id="${u.id}" style="cursor:pointer" />
+            <div class="amigo-item__info" data-autor-id="${u.id}" style="cursor:pointer">
+              <div class="amigo-item__name">${escapeHtml(u.nombre)}</div>
+              <div class="amigo-item__sub">@${escapeHtml(u.username)}</div>
+            </div>
+            ${u.estado_amistad === 'aceptada' 
+              ? `<span class="badge badge--success">Amigos</span>`
+              : u.estado_amistad === 'pendiente'
+                ? `<span class="badge badge--warning">Pendiente</span>`
+                : `<button class="btn btn--primary btn--sm" data-add-amigo="${u.id}">Agregar</button>`
+            }
+          </div>
+        `).join('');
+
+        // Eventos de los resultados
+        contResultados.querySelectorAll('[data-autor-id]').forEach(el => {
+          el.addEventListener('click', () => {
+            cerrarModal('modal-buscar-amigos-global');
+            verPerfilUsuario(el.dataset.autorId);
+          });
+        });
+
+        contResultados.querySelectorAll('[data-add-amigo]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true; btn.textContent = '...';
+            try {
+              await enviarSolicitud(btn.dataset.addAmigo);
+              toast('Solicitud enviada', 'success');
+              btn.outerHTML = `<span class="badge badge--warning">Pendiente</span>`;
+            } catch (err) {
+              toast(err.message, 'error');
+              btn.disabled = false; btn.textContent = 'Agregar';
+            }
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        contResultados.innerHTML = `<p class="text-sm text-danger text-center">Error al buscar usuarios.</p>`;
+      }
+    }, 400);
+  });
 }
