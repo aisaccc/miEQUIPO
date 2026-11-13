@@ -974,7 +974,7 @@ export async function unirsePorLink(token, usuarioId) {
     );
     if (yaEsMiembro.length > 0) {
       await client.query('COMMIT');
-      return { ok: true, mensaje: 'Ya sos miembro de este grupo', yaEraMiembro: true };
+      return { ok: true, mensaje: 'Ya eres miembro de este grupo', yaEraMiembro: true, grupoId: grupoId, grupoNombre: grupo.nombre };
     }
 
     // Unir directamente (ignorando si es privado, porque tiene el link)
@@ -997,7 +997,7 @@ export async function unirsePorLink(token, usuarioId) {
     );
 
     await client.query('COMMIT');
-    return { ok: true, mensaje: '¡Te uniste al grupo exitosamente!' };
+    return { ok: true, mensaje: '¡Te uniste al grupo exitosamente!', grupoId: grupoId, grupoNombre: grupo.nombre };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

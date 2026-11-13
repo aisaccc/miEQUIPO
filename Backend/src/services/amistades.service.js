@@ -237,7 +237,9 @@ export async function aceptarLinkAmistad(token, usuarioId) {
       throw err;
     }
 
-    // Revisar si ya son amigos o hay pendiente
+    const { rows: user } = await client.query(`SELECT nombre FROM usuarios WHERE id = $1`, [amigoId]);
+    const creadorNombre = user[0]?.nombre || 'El usuario';
+
     const { rows: existe } = await client.query(
       `SELECT id, estado FROM amistades WHERE (usuario_id = $1 AND amigo_id = $2) OR (usuario_id = $2 AND amigo_id = $1)`,
       [usuarioId, amigoId]
@@ -246,32 +248,18 @@ export async function aceptarLinkAmistad(token, usuarioId) {
     if (existe.length > 0) {
       if (existe[0].estado === 'aceptada') {
         await client.query('COMMIT');
-        return { ok: true, mensaje: 'Ya son amigos', yaEranAmigos: true };
+        return { ok: true, creadorNombre, yaEranAmigos: true };
       }
-      // Si ya hay una solicitud pendiente, la aceptamos directamente
-      await client.query(
-        `UPDATE amistades SET estado = 'aceptada', updated_at = NOW() WHERE id = $1`,
-        [existe[0].id]
-      );
+      await client.query(`UPDATE amistades SET estado = 'aceptada', updated_at = NOW() WHERE id = $1`, [existe[0].id]);
     } else {
-      // Crear amistad directa (aceptada)
-      await client.query(
-        `INSERT INTO amistades (usuario_id, amigo_id, estado) VALUES ($1, $2, 'aceptada')`,
-        [amigoId, usuarioId]
-      );
+      await client.query(`INSERT INTO amistades (usuario_id, amigo_id, estado) VALUES ($1, $2, 'aceptada')`, [amigoId, usuarioId]);
     }
 
-    // Notificar al creador del link
-    const { rows: user } = await client.query(`SELECT nombre FROM usuarios WHERE id = $1`, [usuarioId]);
-    await crearNotificacion(
-      amigoId,
-      'solicitud_aceptada',
-      `${user[0].nombre} aceptó tu link y ahora son amigos`,
-      `#/perfil`
-    );
+    const { rows: userTu } = await client.query(`SELECT nombre FROM usuarios WHERE id = $1`, [usuarioId]);
+    await crearNotificacion(amigoId, 'solicitud_aceptada', `${userTu[0].nombre} aceptó tu link y ahora son amigos`, `#/perfil`);
 
     await client.query('COMMIT');
-    return { ok: true, mensaje: '¡Ahora son amigos!' };
+    return { ok: true, creadorNombre };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

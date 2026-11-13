@@ -48,12 +48,10 @@ export async function navegar(hash) {
   // --- NUEVO: INTERCEPTOR DE INVITACIONES ---
   if (hash.startsWith('#/join/')) {
     const contenedor = document.getElementById('page-content');
-    if (contenedor) {
-      contenedor.innerHTML = `<div class="page-loader"><div class="spinner"></div><span>Procesando invitación...</span></div>`;
-    }
+    if (contenedor) contenedor.innerHTML = `<div class="page-loader"><div class="spinner"></div><span>Procesando...</span></div>`;
     
     const parts = hash.split('/');
-    const tipo = parts[2]; // 'amistad' o 'grupo'
+    const tipo = parts[2]; 
     const token = parts[3];
 
     if (tipo && token) {
@@ -63,18 +61,24 @@ export async function navegar(hash) {
         const { toast } = await import('./components.js');
 
         if (tipo === 'amistad') {
-          await unirsePorLinkAmistad(token);
-          toast('¡Ahora son amigos!', 'success');
+          const res = await unirsePorLinkAmistad(token);
+          if (res.yaEranAmigos) toast(`Tú y ${res.creadorNombre} ya son amigos`, 'info');
+          else toast(`${res.creadorNombre} y tú ahora son amigos`, 'success');
+          window.location.hash = '#/inicio';
         } else if (tipo === 'grupo') {
-          await unirsePorLinkGrupo(token);
-          toast('¡Te uniste exitosamente!', 'success');
+          const res = await unirsePorLinkGrupo(token);
+          if (res.yaEraMiembro) toast(`Ya eres parte de ${res.grupoNombre}`, 'info');
+          else toast(`¡Te uniste a ${res.grupoNombre}!`, 'success');
+          
+          // ⚡ GUARDAMOS EL ID PARA QUE MI-EQUIPO LO ABRA AUTOMÁTICAMENTE
+          sessionStorage.setItem('grupoAInvitacion', res.grupoId);
+          window.location.hash = '#/mi-equipo';
         }
       } catch (e) {
         const { toast } = await import('./components.js');
         toast(e.message || 'Invitación inválida o expirada', 'error');
+        window.location.hash = '#/inicio';
       }
-      // Redirigimos al inicio o al perfil después de procesar
-      window.location.hash = '#/inicio';
       return;
     }
   }
@@ -140,7 +144,7 @@ export async function navegar(hash) {
 
     let modulo = modulosCargados[ruta.script];
     if (!modulo) {
-      modulo = await import(`./pages/${ruta.script}.js?v=209`);
+      modulo = await import(`./pages/${ruta.script}.js?v=210`);
       modulosCargados[ruta.script] = modulo;
     }
 

@@ -173,6 +173,8 @@ export function initHeader() {
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
+      // ⚡ Cerrar otros dropdowns
+      document.querySelectorAll('.dropdown').forEach(dd => dd.classList.remove('open'));
       menu.classList.toggle('open');
     });
 
@@ -266,6 +268,9 @@ export function initDropdowns() {
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
+      // ⚡ Cerrar el user menu
+      document.getElementById('user-menu')?.classList.remove('open');
+      
       dropdowns.forEach(other => { if (other !== dd) other.classList.remove('open'); });
       dd.classList.toggle('open');
     });
@@ -323,20 +328,33 @@ async function cargarAmigosHeader(desdePolling = false) {
 
     const paneList = document.getElementById('pane-lista');
     if (paneList) {
-      // 1. Inyectamos el HTML base SOLO UNA VEZ
-      if (!document.getElementById('input-buscar-amigo')) {
+      if (!document.getElementById('buscar-mis-amigos')) {
         paneList.innerHTML = `
-          <div style="padding: 10px; border-bottom: 1px solid var(--color-border);">
-            <input type="text" id="input-buscar-amigo" class="field__input" placeholder="Buscar usuario por @nombre..." style="margin-bottom: 8px; font-size:13px; padding:8px;" />
+          <!-- BARRA 1: Buscar en mis amigos -->
+          <div class="dropdown__search">
+            <input type="text" id="buscar-mis-amigos" placeholder="Buscar en mis amigos..." />
+          </div>
+          
+          <!-- LISTA DE MIS AMIGOS -->
+          <div id="lista-amigos-render" style="padding: 8px;"></div>
+          
+          <!-- BARRA 2: Buscar nuevos usuarios -->
+          <div class="dropdown__search" style="border-top: 1px solid var(--color-border); border-bottom: none; background: var(--color-surface-2);">
+            <input type="text" id="buscar-global-amigos" placeholder="Buscar nuevos usuarios por @nombre..." style="background: var(--color-surface);" />
+          </div>
+          
+          <!-- RESULTADOS GLOBALES -->
+          <div id="resultados-busqueda-amigo" class="hidden" style="padding: 8px;"></div>
+
+          <!-- BOTÓN LINK -->
+          <div style="padding: 12px; text-align: center;">
             <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
               🔗 Copiar link para Añadir Amigo
             </button>
           </div>
-          <div id="resultados-busqueda-amigo" class="hidden" style="padding: 10px;"></div>
-          <div id="lista-amigos-render" style="padding: 10px;"></div>
         `;
 
-        // Evento para Generar Link de Amistad
+        // Evento: Link de Amistad
         document.getElementById('btn-generar-link-amigo').addEventListener('click', async () => {
           try {
             const { generarLinkAmistad } = await import('./services/amistades.service.js');
@@ -349,15 +367,22 @@ async function cargarAmigosHeader(desdePolling = false) {
               await navigator.clipboard.writeText(url);
               toast('Link copiado al portapapeles', 'success');
             }
-          } catch (err) { 
-            toast('Error al generar link (Revisa la consola)', 'error'); 
-            console.error(err);
-          }
+          } catch (err) { toast('Error al generar link', 'error'); }
         });
 
-        // Evento para Buscar Usuarios
+        // Evento: Buscar en Mis Amigos
+        document.getElementById('buscar-mis-amigos').addEventListener('input', (e) => {
+          const q = e.target.value.toLowerCase().trim();
+          const items = document.querySelectorAll('#lista-amigos-render .amigo-item');
+          items.forEach(item => {
+            const nombre = item.querySelector('.amigo-item__name').textContent.toLowerCase();
+            item.style.display = nombre.includes(q) ? 'flex' : 'none';
+          });
+        });
+
+        // Evento: Buscar Globalmente
         let timeoutBusqueda;
-        document.getElementById('input-buscar-amigo').addEventListener('input', (e) => {
+        document.getElementById('buscar-global-amigos').addEventListener('input', (e) => {
           clearTimeout(timeoutBusqueda);
           const q = e.target.value.trim();
           const contRes = document.getElementById('resultados-busqueda-amigo');
@@ -417,16 +442,14 @@ async function cargarAmigosHeader(desdePolling = false) {
                   }
                 });
               });
-
             } catch (err) {
-              contRes.innerHTML = `<p class="text-sm text-danger text-center">Error al buscar. Revisa la consola.</p>`;
-              console.error(err);
+              contRes.innerHTML = `<p class="text-sm text-danger text-center">Error al buscar.</p>`;
             }
           }, 400);
         });
       }
 
-      // 2. Renderizamos la lista de amigos en su contenedor específico (sin duplicar)
+      // Render de Amigos actuales
       const listaRender = document.getElementById('lista-amigos-render');
       if (listaRender) {
         if (amigos.length === 0) {
@@ -443,10 +466,10 @@ async function cargarAmigosHeader(desdePolling = false) {
             </div>
           `).join('');
           
-          // Aquí tendrías que volver a conectar los eventos de mensajes y ver perfil, etc.
           listaRender.querySelectorAll('[data-autor-id]').forEach(el => {
             el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId));
           });
+          // (Mantén aquí tus eventos de botón de mensaje)
         }
       }
     }
