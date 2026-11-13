@@ -155,20 +155,26 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(g => `
-        <a class="aside-item" href="#/mi-equipo">
+        <a class="aside-item" href="#/mi-equipo" data-grupo-id="${g.id}">
           <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.escudo}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
             <div class="aside-item__meta">${escapeHtml(g.deporte || 'Sin deporte')}</div>
           </div>
         </a>`).join('');
+      
+      // ⚡ Al hacer clic, guardamos el ID para que mi-equipo.js lo abra automáticamente
+      cont.querySelectorAll('[data-grupo-id]').forEach(el => {
+        el.addEventListener('click', () => {
+          sessionStorage.setItem('grupoAInvitacion', el.dataset.grupoId);
+        });
+      });
     } catch (err) {
       console.error('[inicio] Error al cargar equipos:', err);
       cont.innerHTML = `<div class="aside-empty"><div class="aside-empty__icon">${ICONOS.alerta}</div><div class="aside-empty__text">No se pudieron cargar tus equipos.</div></div>`;
     }
   }
 
-  /* ---------- ASIDE: COMUNIDADES ---------- */
   async function cargarComunidades() {
     const cont = document.getElementById('grupos-sugeridos');
     if (!cont) return;
@@ -180,7 +186,7 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(g => `
-        <div class="aside-item">
+        <div class="aside-item" data-grupo-id="${g.id}" style="cursor:pointer">
           <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.globo}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
@@ -188,6 +194,16 @@ export async function init() {
           </div>
           <button class="btn btn--ghost btn--sm" data-unirse-comunidad="${g.id}">Unirme</button>
         </div>`).join('');
+
+      // ⚡ Redirigir a la comunidad al hacer clic en la tarjeta
+      cont.querySelectorAll('[data-grupo-id]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.closest('[data-unirse-comunidad]')) return; // Si toca "Unirme", no redirigir
+          sessionStorage.setItem('grupoAInvitacion', el.dataset.grupoId);
+          window.location.hash = '#/mi-equipo';
+        });
+      });
+
       cont.querySelectorAll('[data-unirse-comunidad]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -228,7 +244,16 @@ export async function init() {
   /* ---------- BOTONES ASIDE ---------- */
   document.getElementById('btn-ver-partidos')?.addEventListener('click', () => { window.location.hash = '#/partidos'; });
   document.getElementById('btn-ver-mi-equipo')?.addEventListener('click', () => { window.location.hash = '#/mi-equipo'; });
-  document.getElementById('btn-ver-comunidades')?.addEventListener('click', () => { window.location.hash = '#/mi-equipo'; });
+  
+  // ⚡ FIX: "Ver todas" de comunidades te manda a la pestaña correcta
+  document.getElementById('btn-ver-comunidades')?.addEventListener('click', () => {
+    sessionStorage.setItem('tabMiEquipo', 'comunidad');
+    window.location.hash = '#/mi-equipo';
+  });
+
+  // ⚡ FIX: Eliminar el botón de crear comunidad del aside
+  const btnCrearComunidadAside = document.getElementById('btn-crear-comunidad');
+  if (btnCrearComunidadAside) btnCrearComunidadAside.style.display = 'none';
   document.getElementById('btn-crear-comunidad')?.addEventListener('click', () => {
     window.location.hash = '#/mi-equipo';
     toast('Ve a "Mi Equipo" para crear tu comunidad', 'info');

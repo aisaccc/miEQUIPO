@@ -8,17 +8,12 @@ import {
   listarMensajes,
   enviarMensaje,
   marcarLeidos,
-  listarCanales,
-  obtenerCanal,
-  listarMensajesDeCanal,
-  enviarMensajeACanal,
-  marcarCanalLeido,
-  vaciarConversacionParaMi,    // ⚡ NUEVO
-  eliminarMensajeParaMi,       // ⚡ NUEVO
-  eliminarMensajeParaTodos     // ⚡ NUEVO
+  vaciarConversacionParaMi,
+  eliminarMensajeParaMi,
+  eliminarMensajeParaTodos
 } from '../services/mensajes.service.js';
 import { listarGrupos } from '../services/grupos.service.js';
-import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js'; // ⚡ NUEVO
+import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
 
 export async function init() {
   const user = getSesion();
@@ -37,9 +32,6 @@ export async function init() {
   let intervaloRefresco = null;
   let filtroTexto = '';
   let conversaciones = [];
-  let canales = [];
-  let tabActual = 'conv'; 
-  const listaCanalesEl = document.getElementById('lista-canales');
   let menuAbiertoId = null;
   let ultimoHashMensajes = null;
   let ultimaConvRenderizada = null;
@@ -122,15 +114,6 @@ export async function init() {
     } catch (err) {
       console.error('[mensajes] Error al cargar conversaciones:', err);
       conversaciones = [];
-    }
-  }
-
-  async function recargarCanales() {
-    try {
-      canales = await listarCanales();
-    } catch (err) {
-      console.error('[mensajes] Error al cargar canales:', err);
-      canales = [];
     }
   }
 
@@ -220,48 +203,6 @@ export async function init() {
         e.stopPropagation();
         abrirMenuConv(btn.dataset.menu, btn);
       });
-    });
-  }
-
-  function renderListaCanales() {
-    if (!listaCanalesEl) return;
-
-    if (canales.length === 0) {
-      listaCanalesEl.innerHTML = `
-        <div class="empty-state" style="padding:var(--space-5) var(--space-3)">
-          <div class="empty-state__icon" style="font-size:36px">🛡️</div>
-          <p class="text-sm text-muted">No estás en ningún equipo o torneo</p>
-        </div>`;
-      return;
-    }
-
-    listaCanalesEl.innerHTML = canales.map(c => {
-      const ultimo = c.ultimoMensaje;
-      const preview = ultimo
-        ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? '📷 Imagen' : ''))
-        : 'Sin mensajes aún';
-
-      return `
-        <div class="conv-item" data-canal="${c.id}">
-          <div class="conv-item__avatar" style="display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--color-surface-2); border-radius:50%;">
-            ${c.icono || '💬'}
-          </div>
-          <div class="conv-item__info">
-            <div class="conv-item__top">
-              <div class="conv-item__name">${escapeHtml(c.nombre)}</div>
-              ${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}
-            </div>
-            <div class="conv-item__bottom">
-              <div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>
-              ${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    listaCanalesEl.querySelectorAll('.conv-item').forEach(el => {
-      el.addEventListener('click', () => abrirCanal(el.dataset.canal));
     });
   }
 
@@ -369,7 +310,7 @@ export async function init() {
   }
 
   /* =========================================================
-     ABRIR CONVERSACIÓN / CANAL
+     ABRIR CONVERSACIÓN
      ========================================================= */
   async function abrirConversacion(convId) {
     convActualId = convId;
@@ -396,34 +337,6 @@ export async function init() {
     intervaloRefresco = setInterval(async () => {
       if (convActualId === convId) {
         await refrescarMensajes(convId);
-      }
-    }, 3000);
-  }
-
-  async function abrirCanal(canalId) {
-    convActualId = canalId;
-    ultimoHashMensajes = null;
-    ultimaConvRenderizada = null;
-    imagenBase64 = null;
-
-    layoutLista.classList.add('chat-layout__list--oculto');
-    panelMensajes.classList.add('chat-layout__panel--abierto');
-
-    if (intervaloRefresco) clearInterval(intervaloRefresco);
-
-    try {
-      await marcarCanalLeido(canalId);
-      await recargarCanales();
-      renderListaCanales();
-    } catch (err) {
-      console.warn('[mensajes] No se pudo marcar canal como leído:', err.message);
-    }
-
-    await renderPanelCanal(canalId);
-
-    intervaloRefresco = setInterval(async () => {
-      if (convActualId === canalId) {
-        await refrescarMensajesCanal(canalId);
       }
     }, 3000);
   }
@@ -541,89 +454,6 @@ export async function init() {
   }
 
   /* =========================================================
-     PANEL DE CANAL (Equipos/Torneos)
-     ========================================================= */
-  async function renderPanelCanal(canalId) {
-    let canal;
-    try {
-      canal = await obtenerCanal(canalId);
-    } catch (err) {
-      console.error('[mensajes] Error al obtener canal:', err);
-      panelMensajes.innerHTML = `<div class="chat-empty"><p class="chat-empty__text">No se pudo cargar el canal</p></div>`;
-      return;
-    }
-
-    panelMensajes.innerHTML = `
-      <div class="chat-header">
-        <button class="chat-back-btn" id="btn-volver-chat">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"/>
-            <polyline points="12 19 5 12 12 5"/>
-          </svg>
-        </button>
-
-        <div class="chat-header__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden;font-size:20px;">
-          ${canal.icono || '💬'}
-        </div>
-        <div class="chat-header__info">
-          <div class="chat-header__name">${escapeHtml(canal.nombre)}</div>
-          <div class="chat-header__sub">${canal.totalMiembros || 0} miembros</div>
-        </div>
-      </div>
-
-      <div class="chat-mensajes" id="chat-mensajes"></div>
-
-      <div class="chat-input-preview hidden" id="chat-input-preview">
-        <div class="chat-input-preview__img-wrapper">
-          <img id="chat-input-preview-img" src="" alt="" />
-          <button type="button" class="chat-input-preview__del" id="chat-input-preview-del" title="Quitar">✕</button>
-        </div>
-      </div>
-
-      <form class="chat-input" id="chat-form">
-        <label class="chat-input__attach" title="Adjuntar imagen">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-          </svg>
-          <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
-        </label>
-
-        <input type="text" id="chat-input-texto" placeholder="Escribe un mensaje..." maxlength="2000" autocomplete="off" />
-
-        <button type="submit" class="chat-input__btn" title="Enviar">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
-      </form>
-    `;
-
-    document.getElementById('btn-volver-chat')?.addEventListener('click', volverALista);
-
-    document.getElementById('chat-input-file')?.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 3 * 1024 * 1024) { toast('La imagen es muy grande (máx 3MB)', 'error'); e.target.value = ''; return; }
-      const reader = new FileReader();
-      reader.onload = (ev) => { imagenBase64 = ev.target.result; mostrarPreviewImagen(imagenBase64); };
-      reader.readAsDataURL(file);
-      e.target.value = '';
-    });
-
-    document.getElementById('chat-input-preview-del')?.addEventListener('click', () => {
-      imagenBase64 = null; ocultarPreviewImagen();
-    });
-
-    document.getElementById('chat-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await enviarMensajeDelCanal(canalId);
-    });
-
-    await refrescarMensajesCanal(canalId);
-  }
-
-  /* =========================================================
      PREVIEW DE IMAGEN (arriba del input)
      ========================================================= */
   function mostrarPreviewImagen(src) {
@@ -702,7 +532,7 @@ export async function init() {
           ` : ''}
           ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
-            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminadoMensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
+            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
             ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
             <div class="msg__meta">
               <span class="msg__hora">${horaCorta(m.createdAt)}</span>
@@ -737,96 +567,6 @@ export async function init() {
   }
 
   /* =========================================================
-     REFRESCAR MENSAJES (CANALES)
-     ========================================================= */
-  async function refrescarMensajesCanal(canalId) {
-    const cont = document.getElementById('chat-mensajes');
-    if (!cont) return;
-
-    let mensajes;
-    try {
-      mensajes = await listarMensajesDeCanal(canalId);
-    } catch (err) {
-      console.error('[mensajes] Error al cargar mensajes del canal:', err);
-      return;
-    }
-
-    const hash = mensajes.map(m => `${m.id}:${m.texto || ''}:${m.imagen ? 'img' : ''}:${m.createdAt}`).join('|');
-    const cambioDeCanal = ultimaConvRenderizada !== canalId;
-
-    if (!cambioDeCanal && hash === ultimoHashMensajes) return;
-
-    ultimoHashMensajes = hash;
-    ultimaConvRenderizada = canalId;
-
-    if (mensajes.length === 0) {
-      cont.innerHTML = `<div class="chat-mensajes__empty"><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">Escribe el primero!</p></div>`;
-      return;
-    }
-
-    const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
-
-    let html = '';
-    let diaAnterior = null;
-
-    mensajes.forEach((m, idx) => {
-      const fecha = new Date(m.createdAt);
-      const dia = fecha.toDateString();
-      if (dia !== diaAnterior) { html += `<div class="chat-dia">${labelDia(m.createdAt)}</div>`; diaAnterior = dia; }
-
-      const esMio = String(m.autorId) === String(user.id);
-      const tieneTexto = !!m.texto;
-      const tieneImagen = !!m.imagen;
-      const soloImagen = tieneImagen && !tieneTexto;
-
-      html += `
-        <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
-          ${!m.eliminadoParaTodos ? `
-          <button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1"/>
-              <circle cx="12" cy="5" r="1"/>
-              <circle cx="12" cy="19" r="1"/>
-            </svg>
-          </button>
-          ` : ''}
-          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
-          <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
-            ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
-            ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
-            ${tieneImagen && !m.eliminadoParaTodos ? `<div class="msg__imagen-wrapper" data-ver-imagen="${idx}"><img src="${m.imagen}" alt="" loading="lazy" /></div>` : ''}
-            <div class="msg__meta">
-              <span class="msg__hora">${horaCorta(m.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    cont.innerHTML = html;
-
-    cont.querySelectorAll('[data-ver-imagen]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.verImagen);
-        const m = mensajes[idx];
-        if (m?.imagen) abrirModalVerImagen(m.imagen);
-      });
-    });
-
-    conectarAccionesMensaje(cont, {
-      usuarioId: user.id,
-      obtenerMensajePorId: (id) => mensajes.find(m => String(m.id) === String(id)),
-      onCopiar: (texto) => navigator.clipboard.writeText(texto),
-      onEliminarParaMi: (id) => eliminarMensajeParaMi(id),
-      onEliminarParaTodos: (id) => eliminarMensajeParaTodos(id),
-      onRefrescar: () => refrescarMensajesCanal(canalId),
-    });
-
-    if (estabaAbajo || mensajes.length <= 2) cont.scrollTop = cont.scrollHeight;
-    try { await marcarCanalLeido(canalId); } catch (err) {}
-  }
-
-  /* =========================================================
      ENVIAR MENSAJE
      ========================================================= */
   async function enviarMensajeDelPanel(convId) {
@@ -848,29 +588,6 @@ export async function init() {
       renderListaConversaciones();
     } catch (err) {
       console.error('[mensajes] Error al enviar:', err);
-      toast(err.message || 'No se pudo enviar el mensaje', 'error');
-    }
-  }
-
-  async function enviarMensajeDelCanal(canalId) {
-    const input = document.getElementById('chat-input-texto');
-    if (!input) return;
-    const texto = input.value.trim();
-    const imagen = imagenBase64;
-    if (!texto && !imagen) return;
-
-    input.value = '';
-    imagenBase64 = null;
-    ocultarPreviewImagen();
-    input.focus();
-
-    try {
-      await enviarMensajeACanal(canalId, texto || null, imagen || null);
-      await refrescarMensajesCanal(canalId);
-      await recargarCanales();
-      renderListaCanales();
-    } catch (err) {
-      console.error('[mensajes] Error al enviar al canal:', err);
       toast(err.message || 'No se pudo enviar el mensaje', 'error');
     }
   }
@@ -965,30 +682,6 @@ export async function init() {
      ========================================================= */
   await recargarConversaciones();
   renderListaConversaciones();
-  
-  // Lógica de las pestañas (Conv / Canales)
-  const tabsMsg = document.querySelectorAll('[data-tab-msg]');
-  tabsMsg.forEach(tab => {
-    tab.addEventListener('click', async () => {
-      tabActual = tab.dataset.tabMsg;
-      tabsMsg.forEach(t => {
-        t.classList.toggle('active', t === tab);
-        t.style.borderBottomColor = t === tab ? 'var(--color-primary)' : 'transparent';
-      });
-
-      if (tabActual === 'conv') {
-        listaConversaciones.style.display = 'block';
-        listaCanalesEl.style.display = 'none';
-        await recargarConversaciones();
-        renderListaConversaciones();
-      } else {
-        listaConversaciones.style.display = 'none';
-        listaCanalesEl.style.display = 'block';
-        await recargarCanales();
-        renderListaCanales();
-      }
-    });
-  });
 
   return () => {
     if (intervaloRefresco) clearInterval(intervaloRefresco);

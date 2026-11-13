@@ -1300,7 +1300,10 @@ export async function init(params = {}) {
             </svg>
           </button>
           ` : ''}
-          ${!esMio ? `<img src="${avatarDeChat(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          
+          <!-- ⚡ AGREGADO: data-autor-id y cursor:pointer -->
+          ${!esMio ? `<img src="${avatarDeChat(m.autor)}" class="msg__avatar" alt="" data-autor-id="${m.autorId}" style="cursor:pointer" />` : ''}
+          
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
             ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
@@ -1324,6 +1327,14 @@ export async function init(params = {}) {
         const idx = Number(el.dataset.verImagenTorneo);
         const m = mensajes[idx];
         if (m?.imagen) abrirModalVerImagen(m.imagen);
+      });
+    });
+
+    // ⚡ NUEVO: Listener para abrir perfil desde el chat del torneo
+    cont.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
       });
     });
 

@@ -245,50 +245,63 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
         </div>
       </div>
 
-      <div class="gd-stat">
-        <div class="gd-stat__icon">${SVG.trophy}</div>
-        <div class="gd-stat__texto">
-          <div class="gd-stat__value">${partidos}</div>
-          <div class="gd-stat__label">Partidos</div>
-        </div>
-      </div>
-
-      ${victoriasVisibles ? `
+      ${!esComunidad ? `
         <div class="gd-stat">
-          <div class="gd-stat__icon">${SVG.check}</div>
+          <div class="gd-stat__icon">${SVG.trophy}</div>
           <div class="gd-stat__texto">
-            <div class="gd-stat__value">${victorias}</div>
-            <div class="gd-stat__label">Victorias</div>
+            <div class="gd-stat__value">${partidos}</div>
+            <div class="gd-stat__label">Partidos</div>
           </div>
         </div>
-      ` : ''}
 
-      ${empatesVisibles ? `
-        <div class="gd-stat">
-          <div class="gd-stat__icon">${SVG.minus}</div>
-          <div class="gd-stat__texto">
-            <div class="gd-stat__value">${empates}</div>
-            <div class="gd-stat__label">Empates</div>
+        ${victoriasVisibles ? `
+          <div class="gd-stat">
+            <div class="gd-stat__icon">${SVG.check}</div>
+            <div class="gd-stat__texto">
+              <div class="gd-stat__value">${victorias}</div>
+              <div class="gd-stat__label">Victorias</div>
+            </div>
           </div>
-        </div>
-      ` : ''}
+        ` : ''}
 
-      ${derrotasVisibles ? `
-        <div class="gd-stat">
-          <div class="gd-stat__icon">${SVG.x}</div>
-          <div class="gd-stat__texto">
-            <div class="gd-stat__value">${derrotas}</div>
-            <div class="gd-stat__label">Derrotas</div>
+        ${empatesVisibles ? `
+          <div class="gd-stat">
+            <div class="gd-stat__icon">${SVG.minus}</div>
+            <div class="gd-stat__texto">
+              <div class="gd-stat__value">${empates}</div>
+              <div class="gd-stat__label">Empates</div>
+            </div>
           </div>
-        </div>
+        ` : ''}
+
+        ${derrotasVisibles ? `
+          <div class="gd-stat">
+            <div class="gd-stat__icon">${SVG.x}</div>
+            <div class="gd-stat__texto">
+              <div class="gd-stat__value">${derrotas}</div>
+              <div class="gd-stat__label">Derrotas</div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${victoriasVisibles && porcentaje !== null ? `
+          <div class="gd-stat">
+            <div class="gd-stat__icon">${SVG.percent}</div>
+            <div class="gd-stat__texto">
+              <div class="gd-stat__value">${porcentaje}%</div>
+              <div class="gd-stat__label">% Victorias</div>
+            </div>
+          </div>
+        ` : ''}
       ` : ''}
 
-      ${victoriasVisibles && porcentaje !== null ? `
+      <!-- ⚡ Solo para comunidades, mostramos el Deporte -->
+      ${esComunidad ? `
         <div class="gd-stat">
-          <div class="gd-stat__icon">${SVG.percent}</div>
+          <div class="gd-stat__icon">${SVG.medal}</div>
           <div class="gd-stat__texto">
-            <div class="gd-stat__value">${porcentaje}%</div>
-            <div class="gd-stat__label">% Victorias</div>
+            <div class="gd-stat__value" style="font-size: 16px; margin-top: 4px;">${grupo.deporte}</div>
+            <div class="gd-stat__label">Deporte</div>
           </div>
         </div>
       ` : ''}

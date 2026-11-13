@@ -1005,7 +1005,20 @@ export async function init() {
       return;
     }
 
+    const iconoHtml = renderIconoHtml(grupo.iconoPersonalizado || grupo.escudo || RUTA_ESCUDO, 28);
+    const tipoLabel = grupo.tipo === 'comunidad' ? 'Comunidad' : 'Equipo';
+
     panel.innerHTML = `
+      <div class="chat-header">
+        <!-- ⚡ Hacemos clicables el avatar y la info -->
+        <div class="chat-header__avatar" id="chat-header-ir-info" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden;cursor:pointer;">
+          ${iconoHtml}
+        </div>
+        <div class="chat-header__info" id="chat-header-ir-info-text" style="cursor:pointer;">
+          <div class="chat-header__name">${escapeHtml(grupo.nombre)}</div>
+          <div class="chat-header__sub">${tipoLabel} · ${grupo.totalMiembros || 0} miembros</div>
+        </div>
+      </div>
       <div class="chat-mensajes" id="chat-mensajes-detalle"></div>
       <div class="chat-input-preview hidden" id="chat-detalle-preview">
         <div class="chat-input-preview__img-wrapper">
@@ -1022,6 +1035,15 @@ export async function init() {
         <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
+
+    // ⚡ NUEVO: Evento para ir a la pestaña "Información" al hacer clic en el header
+    const irAInfo = () => {
+      const btnInfo = document.querySelector('[data-subtab-grupo="info"]');
+      if (btnInfo) btnInfo.click();
+    };
+    
+    document.getElementById('chat-header-ir-info')?.addEventListener('click', irAInfo);
+    document.getElementById('chat-header-ir-info-text')?.addEventListener('click', irAInfo);
 
     document.getElementById('chat-detalle-file')?.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -1058,7 +1080,7 @@ export async function init() {
     ultimaCanalDetalleRenderizado = canalId;
 
     if (mensajes.length === 0) {
-      cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">Escribe el primero!</p></div>`;
+      cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`;
       return;
     }
 
@@ -1074,7 +1096,10 @@ export async function init() {
       html += `
         <div class="msg ${esMio ? 'msg--yo' : ''} ${m.eliminadoParaTodos ? 'msg--eliminado' : ''}" data-msg-id="${m.id}" data-msg-autor-id="${m.autorId}">
           ${!m.eliminadoParaTodos ? `<button class="msg-menu-btn" type="button" data-msg-menu-btn title="Opciones"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>` : ''}
-          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" />` : ''}
+          
+          <!-- ⚡ AGREGAMOS data-autor-id y cursor:pointer AL AVATAR -->
+          ${!esMio ? `<img src="${avatarDe(m.autor)}" class="msg__avatar" alt="" data-autor-id="${m.autorId}" style="cursor:pointer" />` : ''}
+          
           <div class="msg__burbuja ${soloImagen ? 'msg__burbuja--solo-imagen' : ''}">
             ${!esMio ? `<div class="msg__autor">${escapeHtml(m.autor?.nombre || 'Usuario')}</div>` : ''}
             ${m.eliminadoParaTodos ? `<div class="msg__eliminado"><img src="assets/icons/prohibido.png" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;display:inline-block;margin-right:4px;" /> Mensaje eliminado</div>` : (tieneTexto ? `<div class="msg__texto">${escapeHtml(m.texto)}</div>` : '')}
@@ -1085,8 +1110,17 @@ export async function init() {
     });
 
     cont.innerHTML = html;
+    
     cont.querySelectorAll('[data-ver-imagen-detalle]').forEach(el => {
       el.addEventListener('click', () => { const idx = Number(el.dataset.verImagenDetalle); if (mensajes[idx]?.imagen) abrirModalVerImagen(mensajes[idx].imagen); });
+    });
+
+    // ⚡ NUEVO: Listener para abrir el perfil al hacer clic en el avatar
+    cont.querySelectorAll('[data-autor-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        import('../components.js').then(({ verPerfilUsuario }) => verPerfilUsuario(el.dataset.autorId));
+      });
     });
 
     conectarAccionesMensaje(cont, {
@@ -1799,19 +1833,19 @@ export async function init() {
     listaCanalesEl.innerHTML = filtrados.map(c => {
       const ultimo = c.ultimoMensaje; const preview = ultimo ? (ultimo.autorId === user.id ? 'Tú: ' : '') + (ultimo.texto || (ultimo.imagen ? 'Imagen' : '')) : 'Sin mensajes aún';
       const iconoHtml = renderIconoHtml(c.icono || RUTA_ESCUDO, 28); const esActivo = c.id === canalActualId;
+      
+
+      // ⚡ NUEVO: Traer el marco
+      const marco = getMarcoData(c.marcoIcono, c.marcoColorIcono);
 
       return `
         <div class="conv-item ${esActivo ? 'conv-item--active' : ''}" data-canal="${c.id}">
-          <div class="conv-item__avatar" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden">${iconoHtml}</div>
+          <div class="conv-item__avatar ${marco.clase}" style="display:grid;place-items:center;background:var(--color-primary-light);border-radius:50%;overflow:hidden; ${marco.estilo}">${iconoHtml}</div>
           <div class="conv-item__info">
             <div class="conv-item__top"><div class="conv-item__name">${escapeHtml(c.nombre)}</div>${ultimo ? `<span class="conv-item__time">${horaCorta(ultimo.createdAt)}</span>` : ''}</div>
             <div class="conv-item__bottom"><div class="conv-item__preview">${escapeHtml(preview).slice(0, 60)}</div>${c.noLeidos > 0 ? `<span class="conv-item__badge">${c.noLeidos}</span>` : ''}</div>
           </div>
-          <button class="conv-item__menu-btn" data-menu-canal="${c.id}" title="Opciones" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
-          <div class="conv-item__dropdown hidden" data-dropdown-canal="${c.id}">
-            <button class="conv-item__dropdown-item" type="button" data-accion-canal="vaciar" data-canal-id="${c.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Vaciar chat</button>
-            <button class="conv-item__dropdown-item conv-item__dropdown-item--danger" type="button" data-accion-canal="eliminar" data-canal-id="${c.id}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Eliminar chat</button>
-          </div>
+          ...
         </div>
       `;
     }).join('');
@@ -2623,6 +2657,15 @@ export async function init() {
   await recargarGrupos();
   await renderPanelEquipo();
   await renderPanelComunidad();
+    // ⚡ NUEVO: Abrir la pestaña de comunidad si venimos del inicio
+  const tabGuardada = sessionStorage.getItem('tabMiEquipo');
+  if (tabGuardada) {
+    sessionStorage.removeItem('tabMiEquipo');
+    setTimeout(() => {
+      cambiarTab(tabGuardada);
+    }, 300);
+  }
+    // ... tu return existente
 
   return () => {
     if (intervaloCanal) clearInterval(intervaloCanal);

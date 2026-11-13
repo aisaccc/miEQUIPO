@@ -50,6 +50,8 @@ function formatearCanal(row, extras = {}) {
     refId: row.ref_id,
     nombre: row.nombre,
     icono: row.icono,
+    marcoIcono: row.marco_icono || 'default',           // ⚡ NUEVO
+    marcoColorIcono: row.marco_color_icono || null,     // ⚡ NUEVO
     createdAt: row.created_at,
     ultimoMensaje: extras.ultimoMensaje || null,
     noLeidos: extras.noLeidos ?? 0,
@@ -481,7 +483,9 @@ export async function listarCanales(usuarioId) {
     `SELECT
        c.id, c.tipo, c.ref_id,
        COALESCE(g.nombre, c.nombre) AS nombre,
-       COALESCE(g.escudo, c.icono) AS icono,
+       COALESCE(g.icono_personalizado, g.escudo, c.icono) AS icono,
+       g.marco_icono,              /* ⚡ NUEVO */
+       g.marco_color_icono,        /* ⚡ NUEVO */
        c.created_at,
        (SELECT COUNT(*)::int FROM canal_miembros cm2 WHERE cm2.canal_id = c.id) AS total_miembros,
        m.id AS ultimo_mensaje_id, m.texto AS ultimo_mensaje_texto,
@@ -550,7 +554,9 @@ export async function obtenerCanal(canalId, usuarioId) {
     `SELECT
        c.id, c.tipo, c.ref_id,
        COALESCE(g.nombre, c.nombre) AS nombre,
-       COALESCE(g.escudo, c.icono) AS icono,
+       COALESCE(g.icono_personalizado, g.escudo, c.icono) AS icono,
+       g.marco_icono,              /* ⚡ NUEVO */
+       g.marco_color_icono,        /* ⚡ NUEVO */
        c.created_at,
        (SELECT COUNT(*)::int FROM canal_miembros cm2 WHERE cm2.canal_id = c.id) AS total_miembros,
        (

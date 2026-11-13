@@ -528,12 +528,22 @@ export async function editarStats(grupoId, datos, usuarioId) {
 /* =========================================================
    ELIMINAR GRUPO
    ========================================================= */
+/* =========================================================
+   ELIMINAR GRUPO
+   ========================================================= */
 export async function eliminarGrupo(grupoId, usuarioId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     verificarCapitan(grupo, usuarioId);
+    
+    // ⚡ NUEVO: Eliminar el canal de chat antes de borrar el grupo
+    await client.query(
+      `DELETE FROM canales WHERE ref_id = $1 AND tipo IN ('equipo', 'comunidad', 'grupo')`, 
+      [grupoId]
+    );
+    
     await client.query(`DELETE FROM grupos WHERE id = $1`, [grupoId]);
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Grupo eliminado' };
