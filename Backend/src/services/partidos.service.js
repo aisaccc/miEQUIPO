@@ -24,6 +24,7 @@ function formatearPartido(row, extras = {}) {
     descripcion: row.descripcion,
     lugar: row.lugar,
     fecha: row.fecha,
+    bloqueado: row.fecha ? new Date(row.fecha) <= new Date() : false, // ⚡ NUEVO
     cupos: row.cupos,
     precio: row.precio,
     nivel: row.nivel,
@@ -602,6 +603,11 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
 
     const partidoAntes = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partidoAntes, usuarioId);
+     if (partidoAntes.fecha && new Date(partidoAntes.fecha) <= new Date()) {
+      const err = new Error('No puedes modificar un partido que ya ha comenzado.');
+      err.status = 400;
+      throw err;
+    }
 
     if (cambios.cupos !== undefined) {
       const { rows: inscritos } = await client.query(
@@ -718,6 +724,11 @@ export async function eliminarPartido(partidoId, usuarioId) {
 
     const partido = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
+    if (partido.fecha && new Date(partido.fecha) <= new Date()) {
+      const err = new Error('No puedes eliminar un partido que ya ha comenzado.');
+      err.status = 400;
+      throw err;
+    }
 
     const destinatarios = await obtenerDestinatariosPartido(client, partidoId);
 

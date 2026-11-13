@@ -249,7 +249,7 @@ export async function init() {
         </div>
       ` : '';
 
-      const lapizHtml = soyOrganizador ? `<button class="match-card__edit" data-accion="editar" data-id="${p.id}" title="Editar partido">${ICONOS.lapiz}</button>` : '';
+      const lapizHtml = (soyOrganizador && !p.bloqueado) ? `<button class="match-card__edit" data-accion="editar" data-id="${p.id}" title="Editar partido">${ICONOS.lapiz}</button>` : '';
       const deporteSlug = slugDeporte(p.deporte);
 
       return `

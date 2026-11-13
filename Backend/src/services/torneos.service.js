@@ -34,6 +34,7 @@ function formatearTorneo(row, extras = {}) {
     lugar: row.lugar,
     fechaInicio: row.fecha_inicio,
     fechaFin: row.fecha_fin,
+    bloqueado: row.fecha_fin ? new Date(row.fecha_fin + 'T23:59:59') <= new Date() : false,
     fechaLimiteInscripcion: row.fecha_limite_inscripcion,
     cuposEquipos: row.cupos_equipos,
     precio: row.precio,
@@ -1126,6 +1127,11 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
 
     const torneoAntes = await obtenerTorneoOFallar(client, torneoId);
     await verificarPermisoResultados(client, torneoAntes, usuarioId);
+    if (torneoAntes.fecha_fin && new Date(torneoAntes.fecha_fin + 'T23:59:59') <= new Date()) {
+      const err = new Error('No puedes modificar un torneo que ya ha finalizado.');
+      err.status = 400;
+      throw err;
+    }
 
     /* ⚡ VALIDACIÓN PREMIUM PARA PERSONALIZACIÓN
        Ahora incluye marcos (excepto 'default') y marcoColorIcono */
@@ -1307,6 +1313,12 @@ export async function eliminarTorneo(torneoId, usuarioId) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     verificarOrganizador(torneo, usuarioId);
+    if (torneo.fecha_fin && new Date(torneo.fecha_fin + 'T23:59:59') <= new Date()) {
+      const err = new Error('No puedes eliminar un torneo que ya ha finalizado.');
+      err.status = 400;
+      throw err;
+    }
+
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const destinatarios = await obtenerDestinatariosTorneo(client, torneoId, tipo);

@@ -322,7 +322,7 @@ export async function init() {
     const tipoTexto = t.tipoParticipacion === 'individual' ? 'POR PERSONA' : 'POR EQUIPOS';
     const deporteUpper = (t.deporte || '').toUpperCase();
 
-    const lapizHtml = soyOrganizador ? `
+    const lapizHtml = (soyOrganizador && !t.bloqueado) ? `
       <button class="tournament-card__edit" data-accion-torneo="editar" data-id="${t.id}" title="Editar torneo">
         ${ICONOS.lapiz}
       </button>

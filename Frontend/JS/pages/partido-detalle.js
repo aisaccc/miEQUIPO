@@ -345,7 +345,14 @@ export async function init(params = {}) {
     if (!user) {
       botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" disabled>Inicia sesión</button>`;
     } else if (soyAdminOGrupo) {
-      botonAccion = '';
+      botonAccion = `
+        ${mostrarBotonSolicitudes ? `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-ver-solicitudes">${ICONOS.usuarios} Solicitudes ${solicitudesPendientes > 0 ? `<span class="badge badge--warning" style="margin-left:6px">${solicitudesPendientes}</span>` : ''}</button>` : ''}
+        
+        ${!partido.bloqueado ? `
+          <button class="btn pd-hero__action ${mostrarBotonSolicitudes ? '' : 'pd-hero__action--primary'}" id="btn-editar-partido">${ICONOS.lapiz} Editar partido</button>
+          <button class="btn pd-hero__action pd-hero__action--danger" id="btn-eliminar-partido">${ICONOS.basura} Eliminar</button>
+        ` : ''}
+      `;
     } else if (enModoOrganizar) {
       if (confirmacionPendiente && confirmacionPendiente.esInteresado) {
         botonAccion = '';

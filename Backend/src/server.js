@@ -2,6 +2,7 @@ import app from './app.js';
 import { env } from './config/env.js';
 import { testConnection } from './config/db.js';
 import { iniciarJobExpirarPremium } from './jobs/expirarPremium.job.js';
+import { iniciarJobLimpiarEventos } from './jobs/limpiarEventos.job.js'; // ⚡ NUEVO
 
 const PORT = env.PORT;
 
@@ -25,6 +26,7 @@ async function start() {
 
   // ⚡ Job diario: degrada premium vencido + envía correo
   iniciarJobExpirarPremium();
+  iniciarJobLimpiarEventos(); // ⚡ NUEVO
 }
 
 start();

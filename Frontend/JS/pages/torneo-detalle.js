@@ -418,15 +418,19 @@ export async function init(params = {}) {
             <button class="btn td-hero__action" id="btn-sub-organizadores">
               ${ICONOS.corona} Sub-organizadores
             </button>
-            <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
-              ${ICONOS.lapiz} Editar torneo
-            </button>
+            ${!t.bloqueado ? `
+              <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
+                ${ICONOS.lapiz} Editar torneo
+              </button>
+            ` : ''}
           </div>
         ` : t.soySubOrganizador ? `
           <div class="td-hero__actions">
-            <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
-              ${ICONOS.lapiz} Editar torneo
-            </button>
+            ${!t.bloqueado ? `
+              <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
+                ${ICONOS.lapiz} Editar torneo
+              </button>
+            ` : ''}
           </div>
         ` : ''}
       </div>
