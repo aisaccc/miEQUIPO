@@ -159,7 +159,7 @@ export async function renderGrupoPublico(contenedor, grupoId, { onVolver } = {})
     } else {
       botonesHtml = `
         <span class="badge" style="padding:11px 16px;justify-content:center;background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.25)">
-          ${SVG.crown} Sos el ${esComunidad ? 'creador' : 'capitán'}
+          ${SVG.crown} Eres el ${esComunidad ? 'creador' : 'capitán'}
         </span>
       `;
     }

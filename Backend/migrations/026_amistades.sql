@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS amistades (
   
   -- Un usuario no puede tener dos registros de amistad con la misma persona
   CONSTRAINT unique_amistad UNIQUE (usuario_id, amigo_id),
-  -- No podés ser amigo de vos mismo
+  -- No puedes ser amigo de vos mismo
   CONSTRAINT no_autoamistad CHECK (usuario_id != amigo_id)
 );
 

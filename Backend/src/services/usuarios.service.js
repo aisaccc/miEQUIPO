@@ -280,7 +280,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     }
     if (cambiosFinales.marcoPerfil === 'custom') {
       if (!cambiosFinales.marcoColor) {
-        const err = new Error('Elegí un color para tu marco custom.');
+        const err = new Error('Ellge un color para tu marco custom.');
         err.status = 400;
         throw err;
       }
@@ -454,7 +454,7 @@ export async function cambiarMiPassword(usuarioId, passwordActual, passwordNueva
 
   return {
     ok: true,
-    mensaje: 'Contraseña actualizada. Volvé a iniciar sesión en todos tus dispositivos.'
+    mensaje: 'Contraseña actualizada. Vuelve a iniciar sesión en todos tus dispositivos.'
   };
 }
 

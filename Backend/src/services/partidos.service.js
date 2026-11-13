@@ -59,7 +59,7 @@ async function obtenerPartidoOFallar(client, partidoId) {
 
 function verificarOrganizador(partido, usuarioId) {
   if (String(partido.organizador_id) !== String(usuarioId)) {
-    const err = new Error('No tenés permiso para modificar este partido');
+    const err = new Error('No tienes permiso para modificar este partido');
     err.status = 403;
     throw err;
   }
@@ -543,7 +543,7 @@ export async function crearPartido(datos, usuarioId) {
       );
 
       if (!rows[0]) {
-        const err = new Error('El equipo indicado no existe o no tenés permisos sobre él');
+        const err = new Error('El equipo indicado no existe o no tienes permisos sobre él');
         err.status = 403;
         throw err;
       }
@@ -618,7 +618,7 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
         : inscritos[0].total;
 
       if (cambios.cupos < totalActual) {
-        const err = new Error(`No podés bajar los cupos a menos de ${totalActual} (inscritos actuales)`);
+        const err = new Error(`No puedes bajar los cupos a menos de ${totalActual} (inscritos actuales)`);
         err.status = 400;
         throw err;
       }
@@ -758,7 +758,7 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
-      const err = new Error('No podés inscribirte en este partido');
+      const err = new Error('No puedes inscribirte en este partido');
       err.status = 403;
       throw err;
     }
@@ -873,7 +873,7 @@ export async function salirDelPartido(partidoId, usuarioId) {
     const partido = await obtenerPartidoOFallar(client, partidoId);
 
     if (String(partido.organizador_id) === String(usuarioId)) {
-      const err = new Error('El organizador no puede salir del partido. Eliminalo si querés cancelarlo.');
+      const err = new Error('El organizador no puede salir del partido. Eliminalo si quieres cancelarlo.');
       err.status = 400;
       throw err;
     }
@@ -978,7 +978,7 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
-      const err = new Error('No podés postularte a este partido');
+      const err = new Error('No puedes postularte a este partido');
       err.status = 403;
       throw err;
     }
@@ -1026,7 +1026,7 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
     );
 
     if (existe.length > 0) {
-      const err = new Error(`Ya tenés una postulación con estado: ${existe[0].estado}`);
+      const err = new Error(`Ya tienes una postulación con estado: ${existe[0].estado}`);
       err.status = 409;
       throw err;
     }
@@ -1073,7 +1073,7 @@ export async function cancelarPostulacion(partidoId, usuarioId) {
   );
 
   if (rowCount === 0) {
-    const err = new Error('No tenés una postulación pendiente en este partido');
+    const err = new Error('No tienes una postulación pendiente en este partido');
     err.status = 404;
     throw err;
   }
@@ -1193,7 +1193,7 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
-      const err = new Error('No podés postular a este partido');
+      const err = new Error('No puedes postular a este partido');
       err.status = 403;
       throw err;
     }
@@ -1227,7 +1227,7 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
     );
 
     if (!equipo[0]) {
-      const err = new Error('No tenés permisos para postular ese equipo');
+      const err = new Error('No tienes permisos para postular ese equipo');
       err.status = 403;
       throw err;
     }
@@ -1299,7 +1299,7 @@ export async function cancelarPostulacionEquipo(partidoId, usuarioId, equipoId) 
     );
 
     if (!equipo[0]) {
-      const err = new Error('No tenés permisos sobre ese equipo');
+      const err = new Error('No tienes permisos sobre ese equipo');
       err.status = 403;
       throw err;
     }
@@ -1452,7 +1452,7 @@ export async function interesarse(partidoId, usuarioId, equipoId = null, mensaje
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
-      const err = new Error('No podés interesarte en este partido');
+      const err = new Error('No puedes interesarte en este partido');
       err.status = 403;
       throw err;
     }
@@ -1470,7 +1470,7 @@ export async function interesarse(partidoId, usuarioId, equipoId = null, mensaje
     }
 
     if (partido.tipo_partido === 'equipo' && !equipoId) {
-      const err = new Error('Este partido es de equipos. Debés elegir un equipo para interesarte.');
+      const err = new Error('Este partido es de equipos. Debes elegir un equipo para interesarte.');
       err.status = 400;
       throw err;
     }
@@ -1487,7 +1487,7 @@ export async function interesarse(partidoId, usuarioId, equipoId = null, mensaje
       );
 
       if (!equipo[0]) {
-        const err = new Error(`No tenés permisos sobre ese equipo o no es de ${partido.deporte}`);
+        const err = new Error(`No tienes permisos sobre ese equipo o no es de ${partido.deporte}`);
         err.status = 403;
         throw err;
       }
@@ -1629,7 +1629,7 @@ export async function confirmarPartido(partidoId, usuarioId, datos) {
 
     // ⚡ BLOQUEO: no se puede confirmar con un usuario bloqueado
     if (await estanBloqueados(usuarioId, interesadoId)) {
-      const err = new Error('No podés confirmar con este usuario');
+      const err = new Error('No puedes confirmar con este usuario');
       err.status = 403;
       throw err;
     }
@@ -1734,7 +1734,7 @@ export async function aprobarConfirmacion(partidoId, usuarioId, propuestaId) {
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, propuesta.organizador_id)) {
-      const err = new Error('No podés responder a esta propuesta');
+      const err = new Error('No puedes responder a esta propuesta');
       err.status = 403;
       throw err;
     }
@@ -1850,7 +1850,7 @@ export async function rechazarConfirmacion(partidoId, usuarioId, propuestaId) {
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, propuesta.organizador_id)) {
-      const err = new Error('No podés responder a esta propuesta');
+      const err = new Error('No puedes responder a esta propuesta');
       err.status = 403;
       throw err;
     }
@@ -1984,7 +1984,7 @@ export async function obtenerConfirmacionPendiente(partidoId, usuarioId) {
   const esInteresado = String(prop.interesado_id) === String(usuarioId);
 
   if (!esOrganizador && !esInteresado) {
-    const err = new Error('No tenés permiso para ver esta propuesta');
+    const err = new Error('No tienes permiso para ver esta propuesta');
     err.status = 403;
     throw err;
   }
@@ -2024,7 +2024,7 @@ export async function echarInscrito(partidoId, usuarioId, inscritoId) {
     verificarOrganizador(partido, usuarioId);
 
     if (String(partido.organizador_id) === String(inscritoId)) {
-      const err = new Error('No podés echarte a vos mismo del partido');
+      const err = new Error('No puedes echarte a ti mismo del partido');
       err.status = 400;
       throw err;
     }

@@ -194,7 +194,7 @@ export const schemaEliminarCuenta = z.object({
     .min(1, 'Ingresa tu contraseña'),
   confirmacion: z
     .literal('ELIMINAR', {
-      errorMap: () => ({ message: 'Escribí exactamente "ELIMINAR"' })
+      errorMap: () => ({ message: 'Escribe exactamente "ELIMINAR"' })
     }),
 }).strict();
 

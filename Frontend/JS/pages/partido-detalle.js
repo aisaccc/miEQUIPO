@@ -369,7 +369,7 @@ export async function init(params = {}) {
     } else if (deEquipo) {
       const misEqDeEsteDeporte = equiposQuePuedoPostular(partido);
       if (misEqDeEsteDeporte.length === 0) {
-        botonAccion = `<span class="pd-hero__action pd-hero__action--badge">No tenés equipos de ${partido.deporte}</span>`;
+        botonAccion = `<span class="pd-hero__action pd-hero__action--badge">No tienes equipos de ${partido.deporte}</span>`;
       } else {
         const yaInscrito = !!partido.miEquipoInscrito;
         const yaPostulado = !!partido.miEquipoPostulado;
@@ -972,13 +972,13 @@ export async function init(params = {}) {
     if (esDeEquipo(partido)) {
       const misEqDelDeporte = equiposQuePuedoPostular(partido);
       if (misEqDelDeporte.length === 0) {
-        return toast(`No tenés equipos de ${partido.deporte} para interesarte`, 'error');
+        return toast(`No tienes equipos de ${partido.deporte} para interesarte`, 'error');
       }
 
       let eqElegido = misEqDelDeporte[0];
       if (misEqDelDeporte.length > 1) {
         const opciones = misEqDelDeporte.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
-        const eleccion = prompt(`¿Con qué equipo querés interesarte?\n\n${opciones}\n\nEscribí el número:`);
+        const eleccion = prompt(`¿Con qué equipo quieres interesarte?\n\n${opciones}\n\nEscribe el número:`);
         if (!eleccion) return;
         const idx = Number(eleccion) - 1;
         if (isNaN(idx) || !misEqDelDeporte[idx]) return toast('Opción inválida', 'error');
@@ -1059,7 +1059,7 @@ export async function init(params = {}) {
 
   async function salirDelPartido(partido) {
     if (!user) return;
-    if (!confirm('¿Seguro que querés salir del partido?')) return;
+    if (!confirm('¿Seguro que quieres salir del partido?')) return;
     try {
       const resultado = await salirDelPartidoAPI(partido.id);
       toast(resultado?.mensaje || 'Saliste del partido', 'info');
@@ -1103,7 +1103,7 @@ export async function init(params = {}) {
     );
 
     if (misEqDisponibles.length === 0) {
-      return toast('No tenés equipos disponibles para postular', 'error');
+      return toast('No tienes equipos disponibles para postular', 'error');
     }
 
     if (misEqDisponibles.length === 1) {
@@ -1111,7 +1111,7 @@ export async function init(params = {}) {
     }
 
     const opciones = misEqDisponibles.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
-    const elegido = prompt(`¿Con cuál equipo querés postular?\n\n${opciones}\n\nEscribí el número:`);
+    const elegido = prompt(`¿Con cuál equipo quieres postular?\n\n${opciones}\n\nEscribe el número:`);
     if (!elegido) return;
     const idx = Number(elegido) - 1;
     if (isNaN(idx) || !misEqDisponibles[idx]) return toast('Opción inválida', 'error');

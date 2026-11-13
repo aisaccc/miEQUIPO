@@ -87,7 +87,7 @@ async function obtenerTorneoOFallar(client, torneoId) {
 
 function verificarOrganizador(torneo, usuarioId) {
   if (String(torneo.organizador_id) !== String(usuarioId)) {
-    const err = new Error('No tenés permiso para modificar este torneo');
+    const err = new Error('No tienes permiso para modificar este torneo');
     err.status = 403;
     throw err;
   }
@@ -104,7 +104,7 @@ async function verificarPermisoResultados(client, torneo, usuarioId) {
   );
 
   if (rows.length === 0) {
-    const err = new Error('No tenés permiso para gestionar el fixture de este torneo');
+    const err = new Error('No tienes permiso para gestionar el fixture de este torneo');
     err.status = 403;
     throw err;
   }
@@ -1158,7 +1158,7 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
         [torneoId]
       );
       if (cambios.cuposEquipos < equipos[0].total) {
-        const err = new Error(`No podés bajar los cupos a menos de ${equipos[0].total} (equipos ya inscritos)`);
+        const err = new Error(`No puedes bajar los cupos a menos de ${equipos[0].total} (equipos ya inscritos)`);
         err.status = 400;
         throw err;
       }
@@ -1173,7 +1173,7 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
         [torneoId]
       );
       if (equipos[0].total > 0) {
-        const err = new Error('No podés cambiar el tipo de participación con equipos ya inscritos');
+        const err = new Error('No puedes cambiar el tipo de participación con equipos ya inscritos');
         err.status = 400;
         throw err;
       }
@@ -1188,7 +1188,7 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
         [torneoId]
       );
       if (jornadas[0].total > 0) {
-        const err = new Error('No podés cambiar ida/vuelta con jornadas ya creadas');
+        const err = new Error('No puedes cambiar ida/vuelta con jornadas ya creadas');
         err.status = 400;
         throw err;
       }
@@ -1431,7 +1431,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
-      const err = new Error('No podés inscribirte en este torneo');
+      const err = new Error('No puedes inscribirte en este torneo');
       err.status = 403;
       throw err;
     }
@@ -1481,7 +1481,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
         [torneoId, usuarioId]
       );
       if (yaEnEspera.length > 0) {
-        const err = new Error('Ya tenés una solicitud pendiente');
+        const err = new Error('Ya tienes una solicitud pendiente');
         err.status = 409;
         throw err;
       }
@@ -1577,7 +1577,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     );
 
     if (!equipo[0]) {
-      const err = new Error('No tenés permisos para inscribir ese equipo');
+      const err = new Error('No tienes permisos para inscribir ese equipo');
       err.status = 403;
       throw err;
     }
@@ -1706,7 +1706,7 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
-      const err = new Error('No podés interactuar con este torneo');
+      const err = new Error('No puedes interactuar con este torneo');
       err.status = 403;
       throw err;
     }
@@ -1715,7 +1715,7 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
     const esIndividual = tipo === 'individual';
 
     if (String(torneo.organizador_id) === String(usuarioId)) {
-      const err = new Error('El organizador no puede retirarse. Eliminá el torneo si querés cancelarlo.');
+      const err = new Error('El organizador no puede retirarse. Eliminá el torneo si quieres cancelarlo.');
       err.status = 400;
       throw err;
     }
@@ -1820,7 +1820,7 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
     await verificarPermisoResultados(client, torneo, usuarioId);
 
     if (await estanBloqueados(usuarioId, equipoId)) {
-      const err = new Error('No podés gestionar solicitudes de este usuario');
+      const err = new Error('No puedes gestionar solicitudes de este usuario');
       err.status = 403;
       throw err;
     }
@@ -1973,13 +1973,13 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     const esIndividual = tipo === 'individual';
 
     if (torneo.estado !== 'inscripcion') {
-      const err = new Error('No podés expulsar participantes con el torneo ya iniciado o finalizado');
+      const err = new Error('No puedes expulsar participantes con el torneo ya iniciado o finalizado');
       err.status = 400;
       throw err;
     }
 
     if (torneo.fixture_bloqueado === true) {
-      const err = new Error('No podés expulsar participantes con el fixture confirmado');
+      const err = new Error('No puedes expulsar participantes con el fixture confirmado');
       err.status = 400;
       throw err;
     }
@@ -1993,7 +1993,7 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
     );
 
     if (partidosConEquipo.length > 0) {
-      const err = new Error('No podés expulsar a un participante que ya tiene partidos generados');
+      const err = new Error('No puedes expulsar a un participante que ya tiene partidos generados');
       err.status = 400;
       throw err;
     }
@@ -2108,7 +2108,7 @@ export async function invitarEquipo(torneoId, usuarioId, equipoId) {
       [equipoId]
     );
     if (capRows[0] && await estanBloqueados(usuarioId, capRows[0].capitan_id)) {
-      const err = new Error('No podés invitar a ese equipo');
+      const err = new Error('No puedes invitar a ese equipo');
       err.status = 403;
       throw err;
     }
@@ -2182,7 +2182,7 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
-      const err = new Error('No podés responder a esta invitación');
+      const err = new Error('No puedes responder a esta invitación');
       err.status = 403;
       throw err;
     }
@@ -2326,7 +2326,7 @@ export async function invitarOrganizador(torneoId, usuarioId, invitadoId, permis
     }
 
     if (await estanBloqueados(usuarioId, invitadoId)) {
-      const err = new Error('No podés invitar a este usuario');
+      const err = new Error('No puedes invitar a este usuario');
       err.status = 403;
       throw err;
     }
@@ -2416,13 +2416,13 @@ export async function responderInvitacionOrganizador(torneoId, usuarioId, acepta
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (String(torneo.organizador_id) === String(usuarioId)) {
-      const err = new Error('Vos ya sos el organizador principal');
+      const err = new Error('Ya eres el organizador principal');
       err.status = 400;
       throw err;
     }
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
-      const err = new Error('No podés responder a esta invitación');
+      const err = new Error('No puedes responder a esta invitación');
       err.status = 403;
       throw err;
     }
@@ -2434,7 +2434,7 @@ export async function responderInvitacionOrganizador(torneoId, usuarioId, acepta
     );
 
     if (!rows[0]) {
-      const err = new Error('No tenés una invitación pendiente para este torneo');
+      const err = new Error('No tienes una invitación pendiente para este torneo');
       err.status = 404;
       throw err;
     }
@@ -2492,7 +2492,7 @@ export async function responderInvitacionOrganizador(torneoId, usuarioId, acepta
       console.warn('[torneos] No se pudo notificar aceptación:', e.message);
     }
 
-    return { ok: true, mensaje: 'Ahora sos sub-organizador' };
+    return { ok: true, mensaje: 'Ahora eres sub-organizador' };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -2561,7 +2561,7 @@ export async function quitarOrganizador(torneoId, usuarioId, usuarioIdQuitar) {
     verificarOrganizador(torneo, usuarioId);
 
     if (String(torneo.organizador_id) === String(usuarioIdQuitar)) {
-      const err = new Error('No podés quitarte a vos mismo del torneo');
+      const err = new Error('No puedes quitarte a ti mismo del torneo');
       err.status = 400;
       throw err;
     }
@@ -2711,7 +2711,7 @@ export async function eliminarJornada(torneoId, jornadaId, usuarioId) {
     );
 
     if (partidos[0].total > 0) {
-      const err = new Error('No podés borrar una jornada que tiene partidos');
+      const err = new Error('No puedes borrar una jornada que tiene partidos');
       err.status = 400;
       throw err;
     }
@@ -2948,7 +2948,7 @@ export async function editarPartidoTorneo(torneoId, partidoId, usuarioId, cambio
       const camposPedidos = Object.keys(cambios).filter(k => cambios[k] !== undefined);
       const invalidos = camposPedidos.filter(k => !camposPermitidos.includes(k));
       if (invalidos.length > 0) {
-        const err = new Error('El fixture ya fue confirmado. Solo podés editar la fecha.');
+        const err = new Error('El fixture ya fue confirmado. Solo puedes editar la fecha.');
         err.status = 400;
         throw err;
       }

@@ -115,7 +115,7 @@ async function verificarCapitanOAdmin(client, grupoId, usuarioId) {
     [grupoId, usuarioId]
   );
   if (adminRows.length === 0) {
-    const err = new Error('No tenés permiso para realizar esta acción');
+    const err = new Error('No tienes permiso para realizar esta acción');
     err.status = 403;
     throw err;
   }
@@ -348,7 +348,7 @@ export async function crearGrupo(datos, usuarioId) {
     );
 
     if (yaExiste.length > 0) {
-      const err = new Error('Ya tenés un grupo con ese nombre');
+      const err = new Error('Ya tienes un grupo con ese nombre');
       err.status = 409;
       throw err;
     }
@@ -554,10 +554,10 @@ export async function unirseAGrupo(grupoId, usuarioId) {
     await client.query('BEGIN');
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-      const err = new Error('No podés unirte a este grupo'); err.status = 403; throw err;
+      const err = new Error('No puedes unirte a este grupo'); err.status = 403; throw err;
     }
     const { rows: yaEsMiembro } = await client.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
-    if (yaEsMiembro.length > 0) { const err = new Error('Ya sos miembro de este grupo'); err.status = 409; throw err; }
+    if (yaEsMiembro.length > 0) { const err = new Error('Ya eres miembro de este grupo'); err.status = 409; throw err; }
 
     if (grupo.tipo_acceso === 'privado') {
       const { rows: yaSolicito } = await client.query(`SELECT 1 FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, usuarioId]);
@@ -592,11 +592,11 @@ export async function salirDeGrupo(grupoId, usuarioId) {
   try {
     await client.query('BEGIN');
     const grupo = await obtenerGrupoOFallar(client, grupoId);
-    if (await estanBloqueados(usuarioId, grupo.capitan_id)) { const err = new Error('No podés interactuar con este grupo'); err.status = 403; throw err; }
-    if (String(grupo.capitan_id) === String(usuarioId)) { const err = new Error('El capitán no puede salir. Eliminá el grupo si querés cerrarlo.'); err.status = 400; throw err; }
+    if (await estanBloqueados(usuarioId, grupo.capitan_id)) { const err = new Error('No puedes interactuar con este grupo'); err.status = 403; throw err; }
+    if (String(grupo.capitan_id) === String(usuarioId)) { const err = new Error('El capitán no puede salir. Elimina el grupo si quieres cerrarlo.'); err.status = 400; throw err; }
 
     const { rowCount } = await client.query(`DELETE FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
-    if (rowCount === 0) { const err = new Error('No sos miembro de este grupo'); err.status = 404; throw err; }
+    if (rowCount === 0) { const err = new Error('No eres miembro de este grupo'); err.status = 404; throw err; }
     const canalId = `grupo-${grupoId}`;
     await quitarMiembroDeCanal(client, canalId, usuarioId);
     await client.query('COMMIT');
@@ -614,7 +614,7 @@ export async function salirDeGrupo(grupoId, usuarioId) {
    ========================================================= */
 export async function cancelarMiSolicitud(grupoId, usuarioId) {
   const { rowCount } = await pool.query(`DELETE FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, usuarioId]);
-  if (rowCount === 0) { const err = new Error('No tenés una solicitud pendiente en este grupo'); err.status = 404; throw err; }
+  if (rowCount === 0) { const err = new Error('No tienes una solicitud pendiente en este grupo'); err.status = 404; throw err; }
   return { ok: true, mensaje: 'Solicitud cancelada' };
 }
 
@@ -627,7 +627,7 @@ export async function gestionarSolicitud(grupoId, usuarioId, solicitanteId, acci
     await client.query('BEGIN');
     await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
-    if (await estanBloqueados(usuarioId, solicitanteId)) { const err = new Error('No podés gestionar solicitudes de este usuario'); err.status = 403; throw err; }
+    if (await estanBloqueados(usuarioId, solicitanteId)) { const err = new Error('No puedes gestionar solicitudes de este usuario'); err.status = 403; throw err; }
 
     const { rows } = await client.query(`SELECT * FROM grupo_solicitudes WHERE grupo_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`, [grupoId, solicitanteId]);
     if (!rows[0]) { const err = new Error('No hay una solicitud pendiente de ese usuario'); err.status = 404; throw err; }
@@ -666,13 +666,13 @@ export async function expulsarMiembro(grupoId, usuarioId, miembroId) {
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
-    if (String(usuarioId) === String(miembroId)) { const err = new Error('No podés expulsarte a vos mismo. Usá "Salir del equipo".'); err.status = 400; throw err; }
-    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No podés expulsar al capitán'); err.status = 400; throw err; }
+    if (String(usuarioId) === String(miembroId)) { const err = new Error('No puedes expulsarte a ti mismo. Usá "Salir del equipo".'); err.status = 400; throw err; }
+    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No puedes expulsar al capitán'); err.status = 400; throw err; }
 
     const soyCapitan = String(grupo.capitan_id) === String(usuarioId);
     if (!soyCapitan) {
       const { rows: targetRows } = await client.query(`SELECT rol FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, miembroId]);
-      if (targetRows[0] && targetRows[0].rol === 'admin') { const err = new Error('No podés expulsar a otro sub-capitán'); err.status = 403; throw err; }
+      if (targetRows[0] && targetRows[0].rol === 'admin') { const err = new Error('No puedes expulsar a otro sub-capitán'); err.status = 403; throw err; }
     }
 
     const { rowCount } = await client.query(`DELETE FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, miembroId]);
@@ -703,7 +703,7 @@ export async function cambiarRolMiembro(grupoId, usuarioId, miembroId, nuevoRol)
     const grupo = await obtenerGrupoOFallar(client, grupoId);
     verificarCapitan(grupo, usuarioId);
 
-    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No podés cambiar el rol del capitán'); err.status = 400; throw err; }
+    if (String(grupo.capitan_id) === String(miembroId)) { const err = new Error('No puedes cambiar el rol del capitán'); err.status = 400; throw err; }
     if (nuevoRol === 'capitan') { const err = new Error('Usá "admin" o "miembro". El capitán no se puede cambiar desde acá.'); err.status = 400; throw err; }
 
     const { rowCount } = await client.query(`UPDATE grupo_miembros SET rol = $1 WHERE grupo_id = $2 AND usuario_id = $3`, [nuevoRol, grupoId, miembroId]);
@@ -728,7 +728,7 @@ export async function listarMiembros(grupoId, usuarioId) {
   const { rows: miembroRows } = await pool.query(`SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2`, [grupoId, usuarioId]);
   const esMiembro = miembroRows.length > 0;
   const esCapitan = String(grupo.capitan_id) === String(usuarioId);
-  if (!esMiembro && !esCapitan) { const err = new Error('No tenés acceso a los miembros de este grupo'); err.status = 403; throw err; }
+  if (!esMiembro && !esCapitan) { const err = new Error('No tienes acceso a los miembros de este grupo'); err.status = 403; throw err; }
 
   const { rows } = await pool.query(
     `SELECT gm.usuario_id AS id, gm.rol, gm.posicion, gm.dorsal, gm.fecha_union, u.nombre, u.username, u.avatar, u.ciudad
@@ -964,7 +964,7 @@ export async function unirsePorLink(token, usuarioId) {
 
     // Verificar bloqueos
     if (await estanBloqueados(usuarioId, grupo.capitan_id)) {
-      const err = new Error('No podés unirte a este grupo'); err.status = 403; throw err;
+      const err = new Error('No puedes unirte a este grupo'); err.status = 403; throw err;
     }
 
     // Verificar si ya es miembro

@@ -440,7 +440,7 @@ async function obtenerPublicacionOFallar(id) {
 export async function editar(id, usuarioId, datos) {
   const pub = await obtenerPublicacionOFallar(id);
   if (String(pub.autor_id) !== String(usuarioId)) {
-    const err = new Error('No tenés permiso para editar esta publicación');
+    const err = new Error('No tienes permiso para editar esta publicación');
     err.status = 403;
     throw err;
   }
@@ -461,7 +461,7 @@ export async function editarPrivacidad(id, usuarioId, datos) {
   
   if (pub.scope === 'perfil') {
     if (String(pub.autor_id) !== String(usuarioId)) {
-      const err = new Error('No tenés permiso');
+      const err = new Error('No tienes permiso');
       err.status = 403;
       throw err;
     }
@@ -500,7 +500,7 @@ export async function eliminar(id, usuarioId) {
   }
 
   if (!puedeBorrar) {
-    const err = new Error('No tenés permiso para eliminar esta publicación');
+    const err = new Error('No tienes permiso para eliminar esta publicación');
     err.status = 403;
     throw err;
   }

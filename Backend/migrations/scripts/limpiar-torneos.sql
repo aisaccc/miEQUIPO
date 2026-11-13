@@ -21,7 +21,7 @@ DELETE FROM torneos;
 -- 3. Canales de chat de torneos
 DELETE FROM canales WHERE tipo = 'torneo' OR id LIKE 'torneo-%';
 
--- 4. Partidos amistosos (si querés también)
+-- 4. Partidos amistosos (si quieres también)
 -- DELETE FROM partidos;
 
 -- 5. Notificaciones relacionadas a torneos

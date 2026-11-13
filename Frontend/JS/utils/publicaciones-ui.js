@@ -449,7 +449,7 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
     const contenido = document.getElementById('crear-pub-contenido').value.trim();
 
     if (!contenido && mediaBase64Crear.length === 0) {
-      return toast('Escribí algo o subí un archivo', 'error');
+      return toast('Escribe algo o subí un archivo', 'error');
     }
 
     const btn = document.getElementById('btn-publicar');
@@ -543,7 +543,7 @@ export function abrirModalEditarPublicacion(pubId, { publicacionesCache = [], es
   const puedeEditarContenido = esAutor;
   const puedeEditarPrivacidad = esGrupo ? (esAutor || esStaffDelGrupo) : esAutor;
 
-  if (!puedeEditarContenido && !puedeEditarPrivacidad) return toast('No tenés permiso', 'error');
+  if (!puedeEditarContenido && !puedeEditarPrivacidad) return toast('No tienes permiso', 'error');
 
   textarea.value = pub?.contenido || '';
   const textareaWrapper = textarea.closest('.field');

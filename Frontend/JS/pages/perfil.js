@@ -363,7 +363,7 @@ export async function init() {
   function renderHistorial() {
     if (!elHistorial) return;
     if (histPartidos.length === 0) {
-      elHistorial.innerHTML = `<div class="empty-state--sm" style="padding:var(--space-5)"><div class="empty-state__icon">${ICONOS.calendario}</div><p class="text-sm text-muted">Aún no tenés partidos jugados</p><p class="text-xs text-muted mt-2">Los partidos aparecen acá cuando se finalizan</p></div>`;
+      elHistorial.innerHTML = `<div class="empty-state--sm" style="padding:var(--space-5)"><div class="empty-state__icon">${ICONOS.calendario}</div><p class="text-sm text-muted">Aún no tienes partidos jugados</p><p class="text-xs text-muted mt-2">Los partidos aparecen acá cuando se finalizan</p></div>`;
       return;
     }
     elHistorial.innerHTML = `<div class="card-grid">${histPartidos.map(p => renderCardHistorial(p)).join('')}</div>`;

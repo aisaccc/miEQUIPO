@@ -153,7 +153,7 @@ export async function init() {
       listaConversaciones.innerHTML = `
         <div class="empty-state" style="padding:var(--space-5) var(--space-3)">
           <div class="empty-state__icon" style="font-size:36px">💬</div>
-          <p class="text-sm text-muted">No tenés conversaciones</p>
+          <p class="text-sm text-muted">No tienes conversaciones</p>
           <button class="btn btn--primary btn--sm mt-4" id="btn-empezar-conv">
             Iniciar una conversación
           </button>
@@ -497,7 +497,7 @@ export async function init() {
           <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
         </label>
 
-        <input type="text" id="chat-input-texto" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <input type="text" id="chat-input-texto" placeholder="Escribe un mensaje..." maxlength="2000" autocomplete="off" />
 
         <button type="submit" class="chat-input__btn" title="Enviar">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -588,7 +588,7 @@ export async function init() {
           <input type="file" id="chat-input-file" accept="image/*" style="display:none" />
         </label>
 
-        <input type="text" id="chat-input-texto" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <input type="text" id="chat-input-texto" placeholder="Escribe un mensaje..." maxlength="2000" autocomplete="off" />
 
         <button type="submit" class="chat-input__btn" title="Enviar">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -760,7 +760,7 @@ export async function init() {
     ultimaConvRenderizada = canalId;
 
     if (mensajes.length === 0) {
-      cont.innerHTML = `<div class="chat-mensajes__empty"><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`;
+      cont.innerHTML = `<div class="chat-mensajes__empty"><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">Escribe el primero!</p></div>`;
       return;
     }
 

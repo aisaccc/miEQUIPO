@@ -437,7 +437,7 @@ export async function init() {
     contCreados.innerHTML = misCreados.map(t => {
       const esSubOrg = t.soySubOrganizador && !t.soyOrganizador;
       return renderCard(t, {
-        mostrarBadgeRol: esSubOrg ? `${ICONOS.escudo} Sub-organizador` : `${ICONOS.corona} Creado por vos`,
+        mostrarBadgeRol: esSubOrg ? `${ICONOS.escudo} Sub-organizador` : `${ICONOS.corona} Creado por ti`,
       });
     }).join('');
     conectarAcciones(contCreados);

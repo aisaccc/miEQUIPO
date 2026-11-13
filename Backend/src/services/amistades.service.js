@@ -4,13 +4,13 @@ import { estanBloqueados, idsBloqueadosTotales, estadoBloqueo } from '../utils/b
 
 export async function enviarSolicitud(usuarioId, amigoId) {
   if (usuarioId === amigoId) {
-    const err = new Error('No podés agregarte a vos mismo');
+    const err = new Error('No puedes agregarte a ti mismo');
     err.status = 400;
     throw err;
   }
 
   if (await estanBloqueados(usuarioId, amigoId)) {
-    const err = new Error('No podés enviar solicitudes a este usuario');
+    const err = new Error('No puedes enviar solicitudes a este usuario');
     err.status = 403;
     throw err;
   }
@@ -57,7 +57,7 @@ export async function enviarSolicitud(usuarioId, amigoId) {
 export async function responderSolicitud(usuarioId, solicitanteId, accion) {
   // Validar bloqueo al responder
   if (await estanBloqueados(usuarioId, solicitanteId)) {
-    const err = new Error('No podés responder a este usuario');
+    const err = new Error('No puedes responder a este usuario');
     err.status = 403;
     throw err;
   }
@@ -157,7 +157,7 @@ export async function eliminarAmistad(usuarioId, amigoId) {
 
 export async function bloquearUsuario(usuarioId, bloqueadoId) {
   if (usuarioId === bloqueadoId) {
-    const err = new Error('No podés bloquearte a vos mismo');
+    const err = new Error('No puedes bloquearte a ti mismo');
     err.status = 400;
     throw err;
   }
@@ -232,7 +232,7 @@ export async function aceptarLinkAmistad(token, usuarioId) {
     const amigoId = inv[0].referencia_id;
 
     if (amigoId === usuarioId) {
-      const err = new Error('No podés hacerte amigo de vos mismo');
+      const err = new Error('No puedes hacerte amigo de ti mismo');
       err.status = 400;
       throw err;
     }

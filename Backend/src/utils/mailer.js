@@ -154,7 +154,7 @@ export async function enviarEmailResetPassword(email, nombre, token) {
 export async function enviarEmailBienvenida(email, nombre) {
   const html = plantillaBase(`
     <h2 style="color: #2b3a38; margin-top: 0;">¡Cuenta verificada! 🎉</h2>
-    <p>Hola <strong>${nombre}</strong>, ya podés usar MiEquipo al máximo:</p>
+    <p>Hola <strong>${nombre}</strong>, ya puedes usar MiEquipo al máximo:</p>
 
     <ul style="color: #4b5563; font-size: 14px; line-height: 1.8; padding-left: 20px;">
       <li>Unirte a partidos en tu ciudad</li>

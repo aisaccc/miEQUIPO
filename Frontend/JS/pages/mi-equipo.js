@@ -1018,7 +1018,7 @@ export async function init() {
           ${SVG.clip}
           <input type="file" id="chat-detalle-file" accept="image/*" style="display:none" />
         </label>
-        <input type="text" id="chat-input-detalle" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <input type="text" id="chat-input-detalle" placeholder="Escribe un mensaje..." maxlength="2000" autocomplete="off" />
         <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
@@ -1058,7 +1058,7 @@ export async function init() {
     ultimaCanalDetalleRenderizado = canalId;
 
     if (mensajes.length === 0) {
-      cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`;
+      cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">Escribe el primero!</p></div>`;
       return;
     }
 
@@ -1498,7 +1498,7 @@ export async function init() {
             const f = formacion.find(x => x.id === id);
             if (f) {
               if (f.esPelota) {
-                if (confirm('¿Querés eliminar el balón?')) {
+                if (confirm('Quieres eliminar el balón?')) {
                   formacion = formacion.filter(x => x.id !== f.id);
                   renderCirculos();
                 }
@@ -1523,7 +1523,7 @@ export async function init() {
       if (nuevoNombre === null) return; 
       
       if (nuevoNombre.trim() === '') {
-        if (confirm('¿Querés eliminar esta ficha?')) {
+        if (confirm('Quieres eliminar esta ficha?')) {
           formacion = formacion.filter(f => f.id !== ficha.id);
           onSuccess();
         }
@@ -1873,7 +1873,7 @@ export async function init() {
       <div class="chat-input-preview hidden" id="chat-canal-preview"><div class="chat-input-preview__img-wrapper"><img id="chat-canal-preview-img" src="" alt="" /><button type="button" class="chat-input-preview__del" id="chat-canal-preview-del" title="Quitar">✕</button></div></div>
       <form class="chat-input" id="chat-form-canal">
         <label class="chat-input__attach" title="Adjuntar imagen">${SVG.clip}<input type="file" id="chat-canal-file" accept="image/*" style="display:none" /></label>
-        <input type="text" id="chat-input-canal" placeholder="Escribí un mensaje..." maxlength="2000" autocomplete="off" />
+        <input type="text" id="chat-input-canal" placeholder="Escribe un mensaje..." maxlength="2000" autocomplete="off" />
         <button type="submit" class="chat-input__btn" title="Enviar">${SVG.send}</button>
       </form>
     `;
@@ -1902,7 +1902,7 @@ export async function init() {
     if (!cambioDeCanal && hash === ultimoHashCanal) return;
     ultimoHashCanal = hash; ultimaCanalRenderizado = canalId;
 
-    if (mensajes.length === 0) { cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p></div>`; return; }
+    if (mensajes.length === 0) { cont.innerHTML = `<div class="chat-mensajes__empty"><div class="chat-mensajes__empty-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><p>Aún no hay mensajes.</p><p class="text-xs" style="margin-top:4px">Escribe el primero!</p></div>`; return; }
 
     const estabaAbajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 50;
     let html = ''; let diaAnterior = null;
@@ -1946,7 +1946,7 @@ export async function init() {
 
   function renderEmptyPanelCanal() {
     if (!panelCanalEl) return;
-    panelCanalEl.innerHTML = `<div class="chat-empty"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3 class="chat-empty__titulo">Chats de equipo</h3><p class="chat-empty__text">Elegí un equipo de la lista para ver su chat.</p></div>`;
+    panelCanalEl.innerHTML = `<div class="chat-empty"><div class="chat-empty__icon"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3 class="chat-empty__titulo">Chats de equipo</h3><p class="chat-empty__text">Ellge un equipo de la lista para ver su chat.</p></div>`;
   }
 
   const ICONOS_GRUPO = [

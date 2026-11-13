@@ -895,7 +895,7 @@ export async function init(params = {}) {
             <h3 class="torneo-tab-vacio__titulo">Sin fixture todavía</h3>
             <p class="torneo-tab-vacio__text">
               ${puedeGest
-                ? 'Armá el bracket de eliminación con los botones de arriba. Podés hacerlo automático (aleatorio) o manual (eligiendo cada cruce).'
+                ? 'Armá el bracket de eliminación con los botones de arriba. puedes hacerlo automático (aleatorio) o manual (eligiendo cada cruce).'
                 : 'Cuando el organizador arme el fixture, vas a ver acá el bracket completo con todos los cruces.'}
             </p>
           </div>
@@ -1190,7 +1190,7 @@ export async function init(params = {}) {
         <input
           type="text"
           id="chat-input-torneo"
-          placeholder="Escribí un mensaje..."
+          placeholder="Escribe un mensaje..."
           maxlength="2000"
           autocomplete="off"
         />
@@ -1264,7 +1264,7 @@ export async function init(params = {}) {
             </svg>
           </div>
           <p>Aún no hay mensajes.</p>
-          <p class="text-xs" style="margin-top:4px">¡Escribí el primero!</p>
+          <p class="text-xs" style="margin-top:4px">Escribe el primero!</p>
         </div>`;
       return;
     }
@@ -1603,7 +1603,7 @@ export async function init(params = {}) {
     const inscritos = t.equipos || [];
 
     titulo.textContent = `Editar ${FASES_LABEL[partido.fase] || 'cruce'}`;
-    descripcion.textContent = 'Cambiá los participantes de este cruce. Podés dejar uno vacío para dar un BYE.';
+    descripcion.textContent = 'Cambiá los participantes de este cruce. puedes dejar uno vacío para dar un BYE.';
 
     const opciones = inscritos.map(e =>
       `<option value="${e.id}">${e.nombre}</option>`
@@ -1830,7 +1830,7 @@ export async function init(params = {}) {
         `ATENCIÓN\n\n` +
         `Este torneo ya tiene ${partidosConResultado.length} partido(s) con resultado cargado.\n\n` +
         `Si rehacés el fixture, se van a borrar TODOS los cruces Y TODOS los resultados.\n\n` +
-        `¿Estás seguro de que querés rehacer el fixture?`;
+        `¿Estás seguro de que quieres rehacer el fixture?`;
 
       if (!confirm(msg)) return;
       if (!confirm('Última confirmación: ¿rehacer el fixture y perder todos los resultados?')) return;
@@ -2718,8 +2718,8 @@ export async function init(params = {}) {
       const confirmMsg =
         `ATENCIÓN: Este partido ya tiene un resultado cargado.\n\n` +
         `${nombrePartido}\n\n` +
-        `Si lo borrás, se va a recalcular la tabla de posiciones y los puntos de este partido se van a perder.\n\n` +
-        `¿Estás seguro de que querés borrarlo?`;
+        `Si lo borras, se va a recalcular la tabla de posiciones y los puntos de este partido se van a perder.\n\n` +
+        `¿Estás seguro de que quieres borrarlo?`;
 
       if (!confirm(confirmMsg)) return;
     } else {
@@ -3675,7 +3675,7 @@ export async function init(params = {}) {
   async function responderInvitacionOrganizadorUI(t, aceptar) {
     try {
       const res = await responderInvOrgAPI(t.id, aceptar);
-      toast(res.mensaje || (aceptar ? 'Ahora sos sub-organizador' : 'Invitación rechazada'),
+      toast(res.mensaje || (aceptar ? 'Ahora eres sub-organizador' : 'Invitación rechazada'),
             aceptar ? 'success' : 'info');
 
       torneo = await obtenerTorneo(t.id);

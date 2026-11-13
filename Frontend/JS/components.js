@@ -456,7 +456,7 @@ async function cargarAmigosHeader(desdePolling = false) {
           <div id="lista-amigos-render"></div>
           <div style="padding: 16px 0; text-align: center; margin-top: 10px;">
             <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary); padding: 10px; border-radius: var(--radius-md);">
-              🔗 Copiar link para Añadir Amigo
+              🔗 Añadir Amigo
             </button>
           </div>
         `;
@@ -488,7 +488,7 @@ async function cargarAmigosHeader(desdePolling = false) {
           listaRender.innerHTML = `
             <div style="text-align: center; padding: 30px 10px; color: var(--color-text-muted);">
               <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 8px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              <p class="text-sm">Aún no tenés amigos agregados.</p>
+              <p class="text-sm">Aún no tienes amigos agregados.</p>
             </div>`;
         } else {
           listaRender.innerHTML = amigos.map(a => `
@@ -895,7 +895,7 @@ export async function verPerfilUsuario(usuarioOId) {
 
   document.getElementById('btn-eliminar-amigo')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    if (!confirm(`¿Seguro que querés eliminar a ${u.nombre} de tus amigos?`)) return;
+    if (!confirm(`¿Seguro que quieres eliminar a ${u.nombre} de tus amigos?`)) return;
     try {
       await eliminarAmistadAPI(u.id);
       toast('Amigo eliminado', 'info');
@@ -906,7 +906,7 @@ export async function verPerfilUsuario(usuarioOId) {
 
   document.getElementById('btn-bloquear-usuario')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    if (!confirm(`¿Seguro que querés bloquear a ${u.nombre}? No podrá interactuar con vos.`)) return;
+    if (!confirm(`¿Seguro que quieres bloquear a ${u.nombre}? No podrá interactuar contigo.`)) return;
     try {
       await bloquearUsuarioAPI(u.id);
       toast('Usuario bloqueado', 'success');
@@ -1003,7 +1003,7 @@ export async function abrirModalVerPublicacion(pubId, cache) {
       </div>
       <div class="ver-pub__comentarios" id="ver-pub-comentarios"><p class="text-sm text-muted text-center" style="padding:var(--space-3)">Cargando comentarios...</p></div>
       <form class="ver-pub__form" id="ver-pub-form">
-        <input type="text" id="ver-pub-input" placeholder="Escribí un comentario..." maxlength="500" autocomplete="off" />
+        <input type="text" id="ver-pub-input" placeholder="Escribe un comentario..." maxlength="500" autocomplete="off" />
         <button type="submit" class="btn btn--primary btn--sm">Enviar</button>
       </form>
     </div>`;
@@ -1154,7 +1154,7 @@ export function initConfiguracion() {
       const { bloqueados } = await listarBloqueadosAPI();
       
       if (!bloqueados || bloqueados.length === 0) {
-        body.innerHTML = `<p class="text-sm text-muted text-center" style="padding:20px">No tenés usuarios bloqueados.</p>`;
+        body.innerHTML = `<p class="text-sm text-muted text-center" style="padding:20px">No tienes usuarios bloqueados.</p>`;
         return;
       }
 
@@ -1372,7 +1372,7 @@ document.getElementById('btn-confirmar-eliminar-cuenta')?.addEventListener('clic
   const texto = document.getElementById('eliminar-texto').value.trim();
   
   if (!pass) return toast('Ingresá tu contraseña', 'error');
-  if (texto !== 'ELIMINAR') return toast('Escribí exactamente "ELIMINAR"', 'error');
+  if (texto !== 'ELIMINAR') return toast('Escribe exactamente "ELIMINAR"', 'error');
 
   const btn = document.getElementById('btn-confirmar-eliminar-cuenta');
   btn.disabled = true;

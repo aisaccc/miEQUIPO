@@ -473,7 +473,7 @@ export async function init() {
             const partido = partidos.find(p => String(p.id) === String(id));
             let posicion = null;
             if (partido?.pedirPosiciones && partido.posiciones?.length > 0) {
-              const pos = prompt(`Elegí tu posición:\n${partido.posiciones.join(', ')}`);
+              const pos = prompt(`Ellge tu posición:\n${partido.posiciones.join(', ')}`);
               if (!pos) return;
               posicion = pos;
             }
@@ -497,13 +497,13 @@ export async function init() {
             const misEquipos = (todosEquipos || []).filter(g => g.deporte === partido.deporte);
 
             if (misEquipos.length === 0) {
-              return toast('No tenés equipos de ' + partido.deporte, 'error');
+              return toast('No tienes equipos de ' + partido.deporte, 'error');
             }
 
             let eqElegido = misEquipos[0];
             if (misEquipos.length > 1) {
               const opciones = misEquipos.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
-              const eleccion = prompt(`¿Con qué equipo?\n\n${opciones}\n\nEscribí el número:`);
+              const eleccion = prompt(`¿Con qué equipo?\n\n${opciones}\n\Escribe el número:`);
               if (!eleccion) return;
               const idx = Number(eleccion) - 1;
               if (isNaN(idx) || !misEquipos[idx]) return toast('Opción inválida', 'error');
@@ -538,13 +538,13 @@ export async function init() {
               const misEquiposDeporte = (todosEquipos || []).filter(g => g.deporte === partido.deporte);
 
               if (misEquiposDeporte.length === 0) {
-                return toast('No tenés equipos de ' + partido.deporte, 'error');
+                return toast('No tienes equipos de ' + partido.deporte, 'error');
               }
 
               let eqElegido = misEquiposDeporte[0];
               if (misEquiposDeporte.length > 1) {
                 const opciones = misEquiposDeporte.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
-                const eleccion = prompt(`¿Con qué equipo querés interesarte?\n\n${opciones}\n\nEscribí el número:`);
+                const eleccion = prompt(`¿Con qué equipo quieres interesarte?\n\n${opciones}\n\nEscribe el número:`);
                 if (!eleccion) return;
                 const idx = Number(eleccion) - 1;
                 if (isNaN(idx) || !misEquiposDeporte[idx]) return toast('Opción inválida', 'error');
@@ -773,8 +773,8 @@ export async function init() {
 
       if (misEqDelDeporte.length === 0) {
         campoEquipoOrg?.classList.remove('hidden');
-        dropdownContent.innerHTML = `<span class="equipo-dropdown__placeholder">${deporteSeleccionado ? `No tenés equipos de ${deporteSeleccionado}` : 'Elegí un deporte primero'}</span>`;
-        dropdownPanel.innerHTML = `<div style="padding:16px; text-align:center; color:var(--color-text-muted); font-size:13px">${deporteSeleccionado ? `No sos capitán de ningún equipo de ${deporteSeleccionado}.` : 'Primero elegí un deporte.'}</div>`;
+        dropdownContent.innerHTML = `<span class="equipo-dropdown__placeholder">${deporteSeleccionado ? `No tienes equipos de ${deporteSeleccionado}` : 'Elige un deporte primero'}</span>`;
+        dropdownPanel.innerHTML = `<div style="padding:16px; text-align:center; color:var(--color-text-muted); font-size:13px">${deporteSeleccionado ? `No eres capitán de ningún equipo de ${deporteSeleccionado}.` : 'Primero elige un deporte.'}</div>`;
         equipoOrganizadorSel = null;
       } else {
         campoEquipoOrg?.classList.remove('hidden');

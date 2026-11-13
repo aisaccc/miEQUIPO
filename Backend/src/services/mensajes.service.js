@@ -64,7 +64,7 @@ async function verificarParticipante(client, conversacionId, usuarioId) {
     [conversacionId, usuarioId]
   );
   if (rows.length === 0) {
-    const err = new Error('No tenés acceso a esta conversación');
+    const err = new Error('No tienes acceso a esta conversación');
     err.status = 403;
     throw err;
   }
@@ -77,7 +77,7 @@ async function verificarMiembroCanal(client, canalId, usuarioId) {
     [canalId, usuarioId]
   );
   if (rows.length === 0) {
-    const err = new Error('No sos miembro de este canal');
+    const err = new Error('No eres miembro de este canal');
     err.status = 403;
     throw err;
   }
@@ -153,13 +153,13 @@ export async function crearObtenerConversacion(usuarioId, datos) {
   const { usuarioId: otroUsuarioId, vinculadaTipo, vinculadaId, vinculadaNombre } = datos;
 
   if (String(usuarioId) === String(otroUsuarioId)) {
-    const err = new Error('No podés crear una conversación contigo mismo');
+    const err = new Error('No puedes crear una conversación contigo mismo');
     err.status = 400;
     throw err;
   }
 
   if (await estanBloqueados(usuarioId, otroUsuarioId)) {
-    const err = new Error('No podés enviar mensajes a este usuario');
+    const err = new Error('No puedes enviar mensajes a este usuario');
     err.status = 403;
     throw err;
   }
@@ -334,7 +334,7 @@ export async function enviarMensaje(conversacionId, usuarioId, texto, imagen = n
       [conversacionId, usuarioId]
     );
     if (otroRows[0] && await estanBloqueados(usuarioId, otroRows[0].usuario_id)) {
-      const err = new Error('No podés enviar mensajes a este usuario');
+      const err = new Error('No puedes enviar mensajes a este usuario');
       err.status = 403;
       throw err;
     }
@@ -418,7 +418,7 @@ export async function ocultarConversacion(conversacionId, usuarioId) {
   );
 
   if (rowCount === 0) {
-    const err = new Error('No sos participante de esta conversación');
+    const err = new Error('No eres participante de esta conversación');
     err.status = 404;
     throw err;
   }
@@ -772,7 +772,7 @@ export async function eliminarMensajeParaTodos(mensajeId, usuarioId) {
   const msg = rows[0];
 
   if (String(msg.autor_id) !== String(usuarioId)) {
-    const err = new Error('Solo podés eliminar tus propios mensajes para todos');
+    const err = new Error('Solo puedes eliminar tus propios mensajes para todos');
     err.status = 403;
     throw err;
   }

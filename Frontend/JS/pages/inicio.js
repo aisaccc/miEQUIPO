@@ -46,7 +46,7 @@ export async function init() {
       <div class="feed-empty">
         <div class="feed-empty__icon">${ICONOS.carpeta}</div>
         <div class="feed-empty__titulo">Aún no hay publicaciones</div>
-        <div class="feed-empty__text">Cuando vos o tus equipos y torneos publiquen algo, va a aparecer acá.</div>
+        <div class="feed-empty__text">Cuando tu o tus equipos y torneos publiquen algo, va a aparecer acá.</div>
       </div>`;
   }
 
