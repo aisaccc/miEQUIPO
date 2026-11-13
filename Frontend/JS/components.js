@@ -323,22 +323,20 @@ async function cargarAmigosHeader(desdePolling = false) {
 
     const paneList = document.getElementById('pane-lista');
     if (paneList) {
-      // ⚡ INYECTAMOS EL BUSCADOR Y EL BOTÓN DE LINK
-      const htmlBuscador = `
-        <div style="padding: 10px; border-bottom: 1px solid var(--color-border);">
-          <input type="text" id="input-buscar-amigo" class="field__input" placeholder="Buscar usuario por @nombre..." style="margin-bottom: 8px; font-size:13px; padding:8px;" />
-          <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
-            🔗 Copiar link para Añadir Amigo
-          </button>
-        </div>
-        <div id="resultados-busqueda-amigo" class="hidden"></div>
-      `;
-
+      // 1. Inyectamos el HTML base SOLO UNA VEZ
       if (!document.getElementById('input-buscar-amigo')) {
-        paneList.insertAdjacentHTML('afterbegin', htmlBuscador);
-        
-        // Evento para Generar Link
-        // Evento para Generar Link (Igual que compartir torneo)
+        paneList.innerHTML = `
+          <div style="padding: 10px; border-bottom: 1px solid var(--color-border);">
+            <input type="text" id="input-buscar-amigo" class="field__input" placeholder="Buscar usuario por @nombre..." style="margin-bottom: 8px; font-size:13px; padding:8px;" />
+            <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
+              🔗 Copiar link para Añadir Amigo
+            </button>
+          </div>
+          <div id="resultados-busqueda-amigo" class="hidden" style="padding: 10px;"></div>
+          <div id="lista-amigos-render" style="padding: 10px;"></div>
+        `;
+
+        // Evento para Generar Link de Amistad
         document.getElementById('btn-generar-link-amigo').addEventListener('click', async () => {
           try {
             const { generarLinkAmistad } = await import('./services/amistades.service.js');
@@ -352,7 +350,8 @@ async function cargarAmigosHeader(desdePolling = false) {
               toast('Link copiado al portapapeles', 'success');
             }
           } catch (err) { 
-            toast('Error al generar link', 'error'); 
+            toast('Error al generar link (Revisa la consola)', 'error'); 
+            console.error(err);
           }
         });
 
@@ -362,24 +361,25 @@ async function cargarAmigosHeader(desdePolling = false) {
           clearTimeout(timeoutBusqueda);
           const q = e.target.value.trim();
           const contRes = document.getElementById('resultados-busqueda-amigo');
+          const listaRender = document.getElementById('lista-amigos-render');
           
           if (q.length < 2) {
             contRes.classList.add('hidden');
-            paneList.querySelectorAll('.amigo-item, p.text-muted').forEach(el => el.classList.remove('hidden'));
+            listaRender.classList.remove('hidden');
             return;
           }
 
           timeoutBusqueda = setTimeout(async () => {
             contRes.classList.remove('hidden');
-            contRes.innerHTML = `<p class="text-sm text-muted text-center" style="padding:10px">Buscando...</p>`;
+            listaRender.classList.add('hidden');
+            contRes.innerHTML = `<p class="text-sm text-muted text-center">Buscando...</p>`;
             
-            // Ocultar lista normal
-            paneList.querySelectorAll('.amigo-item, p.text-muted').forEach(el => el.classList.add('hidden'));
-
             try {
-              const resultados = await buscarUsuariosAPI(q);
+              const { buscarUsuarios } = await import('./services/usuarios.service.js');
+              const resultados = await buscarUsuarios(q);
+              
               if (resultados.length === 0) {
-                contRes.innerHTML = `<p class="text-sm text-muted text-center" style="padding:10px">No se encontraron usuarios.</p>`;
+                contRes.innerHTML = `<p class="text-sm text-muted text-center">No se encontraron usuarios.</p>`;
                 return;
               }
               
@@ -407,7 +407,8 @@ async function cargarAmigosHeader(desdePolling = false) {
                 btn.addEventListener('click', async () => {
                   btn.disabled = true; btn.textContent = '...';
                   try {
-                    await enviarSolicitudAPI(btn.dataset.addAmigo);
+                    const { enviarSolicitud } = await import('./services/amistades.service.js');
+                    await enviarSolicitud(btn.dataset.addAmigo);
                     toast('Solicitud enviada', 'success');
                     btn.outerHTML = `<span class="badge badge--warning">Pendiente</span>`;
                   } catch (err) {
@@ -418,27 +419,35 @@ async function cargarAmigosHeader(desdePolling = false) {
               });
 
             } catch (err) {
-              contRes.innerHTML = `<p class="text-sm text-muted text-center">Error al buscar</p>`;
+              contRes.innerHTML = `<p class="text-sm text-danger text-center">Error al buscar. Revisa la consola.</p>`;
+              console.error(err);
             }
           }, 400);
         });
       }
 
-      // Render normal de amigos
-      if (amigos.length === 0) {
-        paneList.insertAdjacentHTML('beforeend', `<p class="text-sm text-muted text-center" style="padding:20px">Aún no tenés amigos.</p>`);
-      } else {
-        paneList.insertAdjacentHTML('beforeend', amigos.map(a => `
-          <div class="amigo-item" style="position:relative">
-            <img src="${a.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${a.id}" style="cursor:pointer" />
-            <div class="amigo-item__info" data-autor-id="${a.id}" style="cursor:pointer">
-              <div class="amigo-item__name">${escapeHtml(a.nombre)}</div>
-              <div class="amigo-item__sub">@${escapeHtml(a.username)}</div>
+      // 2. Renderizamos la lista de amigos en su contenedor específico (sin duplicar)
+      const listaRender = document.getElementById('lista-amigos-render');
+      if (listaRender) {
+        if (amigos.length === 0) {
+          listaRender.innerHTML = `<p class="text-sm text-muted text-center" style="padding:20px">Aún no tenés amigos.</p>`;
+        } else {
+          listaRender.innerHTML = amigos.map(a => `
+            <div class="amigo-item" style="position:relative">
+              <img src="${a.avatar || 'assets/icons/usuario.svg'}" alt="" class="avatar avatar--md" data-autor-id="${a.id}" style="cursor:pointer" />
+              <div class="amigo-item__info" data-autor-id="${a.id}" style="cursor:pointer">
+                <div class="amigo-item__name">${escapeHtml(a.nombre)}</div>
+                <div class="amigo-item__sub">@${escapeHtml(a.username)}</div>
+              </div>
+              <button class="btn btn--ghost btn--sm" data-msg-id="${a.id}">Mensaje</button>
             </div>
-            <button class="btn btn--ghost btn--sm" data-msg-id="${a.id}">Mensaje</button>
-          </div>
-        `).join(''));
-        // (Reconectar eventos de mensaje y perfil aquí, igual que en tu código original)
+          `).join('');
+          
+          // Aquí tendrías que volver a conectar los eventos de mensajes y ver perfil, etc.
+          listaRender.querySelectorAll('[data-autor-id]').forEach(el => {
+            el.addEventListener('click', () => verPerfilUsuario(el.dataset.autorId));
+          });
+        }
       }
     }
   } catch (err) {
