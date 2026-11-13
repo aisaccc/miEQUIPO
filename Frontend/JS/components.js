@@ -328,7 +328,7 @@ async function cargarAmigosHeader(desdePolling = false) {
         <div style="padding: 10px; border-bottom: 1px solid var(--color-border);">
           <input type="text" id="input-buscar-amigo" class="field__input" placeholder="Buscar usuario por @nombre..." style="margin-bottom: 8px; font-size:13px; padding:8px;" />
           <button class="btn btn--ghost btn--sm" id="btn-generar-link-amigo" style="width:100%; justify-content:center; border: 1px dashed var(--color-primary); color:var(--color-primary);">
-            🔗 Copiar link para invitar amigos
+            🔗 Copiar link para Añadir Amigo
           </button>
         </div>
         <div id="resultados-busqueda-amigo" class="hidden"></div>
@@ -338,13 +338,22 @@ async function cargarAmigosHeader(desdePolling = false) {
         paneList.insertAdjacentHTML('afterbegin', htmlBuscador);
         
         // Evento para Generar Link
+        // Evento para Generar Link (Igual que compartir torneo)
         document.getElementById('btn-generar-link-amigo').addEventListener('click', async () => {
           try {
+            const { generarLinkAmistad } = await import('./services/amistades.service.js');
             const { token } = await generarLinkAmistad();
             const url = `${window.location.origin}${window.location.pathname}#/join/amistad/${token}`;
-            await navigator.clipboard.writeText(url);
-            toast('Link copiado al portapapeles', 'success');
-          } catch (err) { toast('Error al generar link', 'error'); }
+            
+            if (navigator.share) {
+              await navigator.share({ title: '¡Agregame en Roster!', url });
+            } else {
+              await navigator.clipboard.writeText(url);
+              toast('Link copiado al portapapeles', 'success');
+            }
+          } catch (err) { 
+            toast('Error al generar link', 'error'); 
+          }
         });
 
         // Evento para Buscar Usuarios

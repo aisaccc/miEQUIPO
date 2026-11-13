@@ -915,8 +915,22 @@ export async function editarFormacionAbierta(grupoId, formacionAbierta, usuarioI
    GENERAR LINK DE GRUPO
    ========================================================= */
 export async function generarLinkGrupo(grupoId, usuarioId) {
-  await obtenerGrupoOFallar(pool, grupoId);
-  await verificarCapitanOAdmin(pool, grupoId, usuarioId); // Solo staff puede generar links
+  // Verificación directa sin transacciones para evitar el 500
+  const { rows: grupoRows } = await pool.query('SELECT capitan_id FROM grupos WHERE id = $1', [grupoId]);
+  if (!grupoRows[0]) {
+    const err = new Error('Grupo no encontrado'); err.status = 404; throw err;
+  }
+
+  const esCapitan = String(grupoRows[0].capitan_id) === String(usuarioId);
+  if (!esCapitan) {
+    const { rows: adminRows } = await pool.query(
+      `SELECT 1 FROM grupo_miembros WHERE grupo_id = $1 AND usuario_id = $2 AND rol IN ('capitan', 'admin')`,
+      [grupoId, usuarioId]
+    );
+    if (adminRows.length === 0) {
+      const err = new Error('Solo el capitán o admin puede generar el link'); err.status = 403; throw err;
+    }
+  }
 
   const { rows } = await pool.query(
     `INSERT INTO invitaciones_links (tipo, referencia_id, creador_id) 

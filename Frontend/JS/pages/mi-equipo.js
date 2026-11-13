@@ -825,7 +825,7 @@ export async function init() {
     document.getElementById('gd-btn-volver')?.addEventListener('click', volverFn);
 
     contenedor.querySelectorAll('[data-accion-grupo]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => { // ⚡ Agregamos async aquí
         e.stopPropagation();
         const accion = btn.dataset.accionGrupo;
         if (accion === 'editar')              abrirModalEditarGrupo(grupo, esComunidad);
@@ -835,6 +835,22 @@ export async function init() {
         if (accion === 'salir')               confirmarSalirGrupo(grupo, esComunidad);
         if (accion === 'cancelar-solicitud')  cancelarSolicitudUI(grupo, esComunidad);
         if (accion === 'invitar')             abrirModalInvitarGrupo(grupo, esComunidad); 
+        if (accion === 'invitar') {
+          try {
+            const { generarLinkGrupo } = await import('../services/grupos.service.js');
+            const { token } = await generarLinkGrupo(grupo.id);
+            const url = `${window.location.origin}${window.location.pathname}#/join/grupo/${token}`;
+            
+            if (navigator.share) {
+              await navigator.share({ title: `Unite a ${grupo.nombre} en Roster`, url });
+            } else {
+              await navigator.clipboard.writeText(url);
+              toast('Link de invitación copiado. ¡Compártelo!', 'success');
+            }
+          } catch (err) {
+            toast(err.message || 'Error al generar link', 'error');
+          }
+        }
       });
     });
 

@@ -15513,3 +15513,15 @@ select.field__input {
   font-weight: 600;
   border: 1px dashed var(--color-border-strong);
 }
+/* =========================================================
+   FIX MODO OSCURO: ÍCONOS EN BOTONES CON FONDO BLANCO
+   ========================================================= */
+
+[data-theme="dark"] .gd-hero__action--primary svg,
+[data-theme="dark"] .td-hero__action--primary svg,
+[data-theme="dark"] .pd-hero__action--primary svg,
+[data-theme="dark"] .btn--primary svg {
+  /* Obligamos a que el ícono tome el color del texto del botón (oscuro) */
+  stroke: currentColor !important; 
+  color: currentColor !important;
+}
