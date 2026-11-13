@@ -175,20 +175,36 @@ export function initHeader() {
       e.stopPropagation();
       // ⚡ Cerrar otros dropdowns
       document.querySelectorAll('.dropdown').forEach(dd => dd.classList.remove('open'));
+      
       menu.classList.toggle('open');
+
+      // ⚡ NUEVO: Bloquear el scroll al abrir el menú de perfil
+      if (menu.classList.contains('open')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     });
 
+    // Cerrar el menú al hacer clic afuera
     document.addEventListener('click', (e) => {
-      if (!menu.contains(e.target)) menu.classList.remove('open');
+      if (!menu.contains(e.target) && menu.classList.contains('open')) {
+        menu.classList.remove('open');
+        document.body.style.overflow = ''; // ⚡ Restaurar scroll
+      }
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') menu.classList.remove('open');
+      if (e.key === 'Escape' && menu.classList.contains('open')) {
+        menu.classList.remove('open');
+        document.body.style.overflow = ''; // ⚡ Restaurar scroll
+      }
     });
 
     menu.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const accion = btn.dataset.action;
+        document.body.style.overflow = ''; // ⚡ Restaurar scroll al navegar
         
         if (accion === 'perfil') {
           window.location.hash = '#/perfil';
@@ -258,6 +274,20 @@ let amigosTimerId = null;
 export function initDropdowns() {
   if (dropdownsIniciados) return;
   dropdownsIniciados = true;
+    // ⚡ FIX: Forzar que "Mis amigos" sea la pestaña por defecto al cargar la página
+  const tabLista = document.querySelector('[data-tab-amigos="lista"]');
+  const tabSolicitudes = document.querySelector('[data-tab-amigos="solicitudes"]');
+  const paneLista = document.getElementById('pane-lista');
+  const paneSolicitudes = document.getElementById('pane-solicitudes');
+  const footerAmigos = document.querySelector('#dropdown-amigos .dropdown__footer');
+
+  if (tabLista) {
+    tabLista.classList.add('active');
+    if (tabSolicitudes) tabSolicitudes.classList.remove('active');
+    if (paneLista) paneLista.classList.add('active');
+    if (paneSolicitudes) paneSolicitudes.classList.remove('active');
+    if (footerAmigos) footerAmigos.style.display = 'block';
+  }
 
   const dropdowns = document.querySelectorAll('.dropdown');
 
@@ -272,20 +302,33 @@ export function initDropdowns() {
       
       dropdowns.forEach(other => { if (other !== dd) other.classList.remove('open'); });
       dd.classList.toggle('open');
+
+      // ⚡ NUEVO: Si el menú se abre, bloqueamos el scroll del body (móvil y desktop)
+      if (dd.classList.contains('open')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     });
 
     panel.addEventListener('click', (e) => e.stopPropagation());
   });
 
+  // Cerrar menús al hacer clic afuera
   document.addEventListener('click', () => {
     dropdowns.forEach(dd => dd.classList.remove('open'));
+    document.body.style.overflow = ''; // ⚡ Restaurar el scroll
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') dropdowns.forEach(dd => dd.classList.remove('open'));
+    if (e.key === 'Escape') {
+      dropdowns.forEach(dd => dd.classList.remove('open'));
+      document.body.style.overflow = ''; // ⚡ Restaurar el scroll
+    }
   });
 
   const tabsAmigos = document.querySelectorAll('[data-tab-amigos]');
+  // ... el resto de tu código ...
   tabsAmigos.forEach(tab => {
     tab.addEventListener('click', () => {
       tabsAmigos.forEach(t => t.classList.remove('active'));

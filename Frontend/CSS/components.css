@@ -1546,3 +1546,10 @@ body:has(#modal-ver-perfil.open) {
 #dropdown-amigos:has(#pane-solicitudes.active) .dropdown__footer {
   display: none !important;
 }
+/* Ajuste para que los menús se puedan scrollear por dentro en celular */
+@media (max-width: 768px) {
+  .dropdown__panel {
+    max-height: calc(100vh - 100px) !important; 
+    overflow-y: auto !important;
+  }
+}
