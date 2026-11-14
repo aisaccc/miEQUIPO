@@ -15599,3 +15599,239 @@ select.field__input {
   background: transparent !important; /* Quitamos el fondo para que no se vea como bloque */
   opacity: 0.8;
 }
+/* =========================================================
+   SIDEBAR ESTILO MOCKUP (Fondo Oscuro)
+   ========================================================= */
+.app-sidebar {
+  background-color: #0B111A !important; /* Azul marino muy oscuro */
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Textos generales del sidebar */
+.sidebar-label {
+  color: #64748B !important; /* Gris azulado */
+}
+
+/* Items del menú */
+.sidebar-nav__item {
+  color: #94A3B8 !important; /* Gris claro */
+  font-weight: 500;
+}
+
+.sidebar-nav__item:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important; /* Blanco al pasar el mouse */
+}
+
+/* Item activo (El naranja con gradiente) */
+.sidebar-nav__item.active {
+  background: linear-gradient(90deg, #EA580C 0%, #F97316 100%) !important; 
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3) !important;
+}
+
+/* Botón de cerrar sesión abajo */
+.sidebar-logout {
+  color: #94A3B8 !important;
+}
+.sidebar-logout:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+}
+
+/* Tarjeta "Tu semana" */
+.sidebar-card {
+  background: #1E293B !important;
+  border: 1px solid #334155 !important;
+}
+.sidebar-card__label { color: #94A3B8 !important; }
+.sidebar-card__title { color: #F8FAFC !important; }
+.sidebar-card__progress { background: #334155 !important; }
+.sidebar-card__progress-fill { background: #EA580C !important; }
+.sidebar-card__hint { color: #64748B !important; }
+
+/* Modo claro: Si quieres que en modo claro también se vea así, dejalo. 
+   Si quieres que en modo claro sea blanco, avísame y lo ajustamos. */
+/* =========================================================
+   FIX: Alineación de íconos en los filtros (Chips)
+   ========================================================= */
+.chip {
+  display: inline-flex !important; /* Fuerza a que sea horizontal */
+  align-items: center !important;  /* Centra verticalmente */
+  justify-content: center !important;
+  gap: 8px !important;             /* Espacio entre el ícono y el texto */
+}
+
+/* Evita que el ícono se aplaste o se ponga arriba */
+.chip svg {
+  flex-shrink: 0 !important;
+  display: block !important;
+  margin: 0 !important; /* Quitamos el margen extra que le habíamos puesto */
+}
+/* =========================================================
+   FIX DEFINITIVO: SCROLL FLUIDO, HEADER FIJO Y SIDEBAR OSCURO
+   ========================================================= */
+
+/* 1. Arreglar el scroll para que el Sticky funcione */
+body {
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.app-shell {
+  height: auto !important;
+  min-height: 100vh !important;
+}
+
+/* 2. Header Fijo */
+.app-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  background: var(--color-surface) !important;
+}
+
+/* 3. Sidebar Fijo y con el diseño de la foto */
+.app-sidebar {
+  position: sticky !important;
+  top: var(--header-h) !important;
+  height: calc(100vh - var(--header-h)) !important;
+  overflow-y: auto !important;
+  
+  /* Fondo oscuro azulado */
+  background-color: #0B111A !important; 
+  /* El resplandor naranja abajo a la izquierda */
+  background-image: radial-gradient(circle at 0% 100%, rgba(234, 88, 12, 0.4) 0%, transparent 70%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 4. Botón activo del Sidebar (Degradado Naranja) */
+.sidebar-nav__item.active {
+  background: linear-gradient(90deg, #EA580C 0%, #F97316 100%) !important;
+  color: #FFFFFF !important;
+  border-left-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3) !important;
+}
+.sidebar-nav__item.active svg {
+  stroke: #FFFFFF !important;
+}
+
+/* 5. Textos del Sidebar en Modo Oscuro */
+.sidebar-label { color: #64748B !important; }
+.sidebar-nav__item { color: #94A3B8 !important; }
+.sidebar-nav__item:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+}
+.sidebar-nav__item:hover svg { stroke: #F8FAFC !important; }
+.sidebar-logout { color: #94A3B8 !important; }
+.sidebar-logout:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F8FAFC !important;
+}
+
+/* Tarjeta "Tu semana" */
+.sidebar-card {
+  background: #151E2D !important;
+  border: 1px solid #2A3951 !important;
+}
+.sidebar-card__title { color: #FFFFFF !important; }
+.sidebar-card__label, .sidebar-card__hint { color: #94A3B8 !important; }
+.sidebar-card__progress { background: #2A3951 !important; }
+.sidebar-card__progress-fill { background: #EA580C !important; }
+
+/* =========================================================
+   6. FIX: Alinear íconos de los filtros a la izquierda
+   ========================================================= */
+.chip {
+  display: inline-flex !important;
+  flex-direction: row !important; /* Asegura que el ícono no se vaya arriba */
+  align-items: center !important; /* Centra el ícono con el texto */
+  justify-content: center !important;
+  gap: 8px !important; /* Separación entre ícono y texto */
+}
+
+.chip svg {
+  flex-shrink: 0 !important;
+  margin: 0 !important; /* Quita cualquier margen que lo desplace */
+  display: block !important;
+}
+/* =========================================================
+   LAYOUT DEFINITIVO: HEADER Y SIDEBAR FIJOS (Solo Desktop)
+   ========================================================= */
+@media (min-width: 1025px) {
+  
+  /* 1. Bloqueamos el scroll de toda la ventana */
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .app-shell {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  /* 2. Hacemos que SOLO el contenido principal (app-main) tenga scroll */
+  .app-main {
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 3. Header Fijo (ya no necesita sticky porque el body no scrollea) */
+  .app-header {
+    position: relative !important;
+    z-index: 100;
+    background: var(--color-surface) !important;
+  }
+
+  /* 4. Sidebar Fijo y con el diseño exacto */
+  .app-sidebar {
+    position: relative !important;
+    height: 100% !important; /* Toma el alto de la pantalla */
+    background-color: #0B111A !important; /* Azul muy oscuro */
+    /* Resplandor naranja más sutil, solo en la esquina inferior izquierda */
+    background-image: radial-gradient(circle at 0% 100%, rgba(234, 88, 12, 0.15) 0%, transparent 65%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* 5. Botón Activo (Naranja) */
+  .sidebar-nav__item.active {
+    background: linear-gradient(90deg, #EA580C 0%, #F97316 100%) !important;
+    color: #FFFFFF !important;
+    border-radius: 8px !important;
+    border-left-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2) !important; /* Sombra más sutil */
+  }
+  
+  .sidebar-nav__item.active svg {
+    stroke: #FFFFFF !important;
+  }
+
+  /* 6. Textos del Sidebar */
+  .sidebar-label { color: #64748B !important; }
+  .sidebar-nav__item { color: #94A3B8 !important; }
+  .sidebar-nav__item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #F8FAFC !important;
+  }
+  .sidebar-nav__item:hover svg { stroke: #F8FAFC !important; }
+  .sidebar-logout { color: #94A3B8 !important; }
+  .sidebar-logout:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #F8FAFC !important;
+  }
+
+  /* Tarjeta "Tu semana" */
+  .sidebar-card {
+    background: #151E2D !important;
+    border: 1px solid #2A3951 !important;
+    box-shadow: none !important;
+  }
+  .sidebar-card__title { color: #FFFFFF !important; }
+  .sidebar-card__label, .sidebar-card__hint { color: #94A3B8 !important; }
+  .sidebar-card__progress { background: #2A3951 !important; }
+  .sidebar-card__progress-fill { background: #EA580C !important; }
+}

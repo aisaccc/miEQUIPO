@@ -109,7 +109,21 @@ export function renderFeedPublicaciones(contenedor, publicaciones, { onRefrescar
           <img class="feed-post__avatar" src="${p.autor?.avatar || 'assets/icons/usuario.svg'}" alt="" data-autor-id="${p.autor?.id}" style="cursor:pointer" />
           <div class="feed-post__autor">
             <div class="feed-post__nombre" data-autor-id="${p.autor?.id}" style="cursor:pointer">${escapeHtml(p.autor?.nombre || 'Usuario')}</div>
-            <div class="feed-post__meta">${fechaTxt} · ${privacidadHtml}</div>
+            ${(() => {
+              // Determinamos el tipo de contexto (Amigo, Equipo, Torneo, etc.)
+              let tipoContexto = 'Amigo';
+              let iconoContexto = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-top:-2px;margin-right:3px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+              if (p.scope === 'grupo') {
+                tipoContexto = p.grupo?.tipo === 'comunidad' ? 'Comunidad' : 'Equipo';
+                iconoContexto = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-top:-2px;margin-right:3px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+              } else if (p.scope === 'torneo') {
+                tipoContexto = 'Torneo';
+                iconoContexto = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-top:-2px;margin-right:3px"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
+              }
+
+              return `<div class="feed-post__meta">${fechaTxt} · ${iconoContexto} ${tipoContexto} ${privacidadHtml}</div>`;
+            })()}
           </div>
           ${puedeEditar ? `<button class="feed-post__menu" data-menu-feed="${p.id}"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>` : ''}
         </div>
