@@ -17934,3 +17934,23 @@ body {
     padding: 30px 24px 16px 24px !important;
   }
 }
+@media (max-width: 800px) {
+  
+  /* 1. ELIMINAR LA BARRA NARANJA DEL BORDE IZQUIERDO EN TODAS LAS PESTAÑAS */
+  .page-hero::before {
+    display: none !important;
+  }
+
+  /* 2. HACER QUE MI EQUIPO SEA RECTO Y ESTÉ PEGADO A LAS PESTAÑAS */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    border-radius: 0 !important; /* Quita las puntas redondeadas */
+    margin-bottom: 0 !important; /* Quita el espacio de abajo */
+    padding-bottom: 16px !important; /* Ajusta el relleno naranja */
+  }
+
+  /* 3. ACERCAR LAS SUB-PESTAÑAS DE MI EQUIPO */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important; /* Las pega al borde naranja */
+    margin-bottom: 16px !important;
+  }
+}
