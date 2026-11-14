@@ -12,7 +12,7 @@ import {
   eliminarMensajeParaMi,
   eliminarMensajeParaTodos
 } from '../services/mensajes.service.js';
-import { listarGrupos } from '../services/grupos.service.js';
+import { buscarUsuarios } from '../services/usuarios.service.js'; // ⚡ NUEVO IMPORT
 import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
 
 export async function init() {
@@ -36,6 +36,7 @@ export async function init() {
   let ultimoHashMensajes = null;
   let ultimaConvRenderizada = null;
   let imagenBase64 = null; 
+  let timeoutBusqueda = null; // ⚡ NUEVO: Para el debounce
 
   /* =========================================================
      HELPERS
@@ -545,7 +546,6 @@ export async function init() {
 
     cont.innerHTML = html;
 
-    // ⚡ NUEVO: Listener para abrir el perfil desde los avatares en el chat 1 a 1
     cont.querySelectorAll('[data-autor-id]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -598,7 +598,12 @@ export async function init() {
   async function abrirModalNuevaConv() {
     const input = document.getElementById('buscar-usuario');
     if (input) input.value = '';
-    await renderUsuariosModal('');
+    
+    // Estado inicial
+    const cont = document.getElementById('lista-usuarios');
+    if (cont) {
+      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Escribe un nombre o @usuario para buscar...</p>`;
+    }
     abrirModal('modal-nueva-conv');
   }
 
@@ -606,53 +611,57 @@ export async function init() {
     const cont = document.getElementById('lista-usuarios');
     if (!cont) return;
 
-    cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Cargando...</p>`;
+    const f = filtro.trim().toLowerCase();
 
-    let usuariosDescubiertos = [];
+    // ⚡ Buscar solo si hay al menos 2 letras
+    if (f.length < 2) {
+      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Escribe al menos 2 letras para buscar...</p>`;
+      return;
+    }
+
+    cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Buscando...</p>`;
+
     try {
-      const { data: grupos } = await listarGrupos({ limit: 50 });
-      const mapaUsuarios = new Map();
-      grupos.forEach(g => { if (g.capitan && g.capitan.id !== user.id) mapaUsuarios.set(g.capitan.id, g.capitan); });
-      usuariosDescubiertos = Array.from(mapaUsuarios.values());
-    } catch (err) {}
+      const usuarios = await buscarUsuarios(f);
+      
+      // Filtrar mi propio usuario
+      const filtrados = usuarios.filter(u => String(u.id) !== String(user.id));
 
-    if (usuariosDescubiertos.length === 0) {
-      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">No hay usuarios disponibles todavía</p>`;
-      return;
-    }
+      if (filtrados.length === 0) {
+        cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin usuarios que coincidan con "${escapeHtml(filtro)}"</p>`;
+        return;
+      }
 
-    const f = filtro.toLowerCase().trim();
-    const filtrados = f ? usuariosDescubiertos.filter(u => (u.nombre || '').toLowerCase().includes(f) || (u.username || '').toLowerCase().includes(f)) : usuariosDescubiertos;
-
-    if (filtrados.length === 0) {
-      cont.innerHTML = `<p class="text-sm text-muted text-center" style="padding:var(--space-4)">Sin usuarios que coincidan con "${escapeHtml(filtro)}"</p>`;
-      return;
-    }
-
-    cont.innerHTML = filtrados.map(u => `
-      <div class="amigo-item" data-user="${u.id}" style="cursor:pointer">
-        <img src="${avatarDe(u)}" class="avatar avatar--md" alt="" />
-        <div class="amigo-item__info">
-          <div class="amigo-item__name">${escapeHtml(u.nombre)}</div>
-          <div class="amigo-item__sub">@${escapeHtml(u.username)}</div>
+      cont.innerHTML = filtrados.map(u => `
+        <div class="amigo-item" data-user="${u.id}" style="cursor:pointer">
+          <img src="${avatarDe(u)}" class="avatar avatar--md" alt="" />
+          <div class="amigo-item__info">
+            <div class="amigo-item__name">${escapeHtml(u.nombre)}</div>
+            <div class="amigo-item__sub">@${escapeHtml(u.username)}</div>
+          </div>
+          <button class="btn btn--primary btn--sm">💬 Mensaje</button>
         </div>
-        <button class="btn btn--primary btn--sm">💬 Mensaje</button>
-      </div>
-    `).join('');
+      `).join('');
 
-    cont.querySelectorAll('[data-user]').forEach(el => {
-      el.addEventListener('click', async () => {
-        try {
-          const conv = await crearConversacion(el.dataset.user);
-          cerrarModal('modal-nueva-conv');
-          await recargarConversaciones();
-          renderListaConversaciones();
-          await abrirConversacion(conv.id);
-        } catch (err) {
-          toast(err.message || 'No se pudo crear la conversación', 'error');
-        }
+      cont.querySelectorAll('[data-user]').forEach(el => {
+        el.addEventListener('click', async () => {
+          try {
+            const conv = await crearConversacion(el.dataset.user);
+            cerrarModal('modal-nueva-conv');
+            await recargarConversaciones();
+            renderListaConversaciones();
+            await abrirConversacion(conv.id);
+          } catch (err) {
+            // Aquí se atrapa el error 403 de "solo amigos"
+            toast(err.message || 'No se pudo crear la conversación', 'error');
+          }
+        });
       });
-    });
+
+    } catch (err) {
+      console.error('[mensajes] Error al buscar usuarios:', err);
+      cont.innerHTML = `<p class="text-sm text-danger text-center" style="padding:var(--space-4)">Error al buscar usuarios</p>`;
+    }
   }
 
   /* =========================================================
@@ -666,8 +675,13 @@ export async function init() {
     if (e.target.id === 'modal-nueva-conv') cerrarModal('modal-nueva-conv');
   });
 
+  // ⚡ Implementamos Debounce para el buscador
   document.getElementById('buscar-usuario')?.addEventListener('input', (e) => {
-    renderUsuariosModal(e.target.value);
+    clearTimeout(timeoutBusqueda);
+    const valor = e.target.value;
+    timeoutBusqueda = setTimeout(() => {
+      renderUsuariosModal(valor);
+    }, 400);
   });
 
   btnNuevaConv?.addEventListener('click', abrirModalNuevaConv);
@@ -685,6 +699,7 @@ export async function init() {
 
   return () => {
     if (intervaloRefresco) clearInterval(intervaloRefresco);
+    if (timeoutBusqueda) clearTimeout(timeoutBusqueda);
     cerrarMenuConv();
   };
 }
