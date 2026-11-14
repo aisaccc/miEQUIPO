@@ -17195,3 +17195,91 @@ body {
     border-radius: 0 !important;
   }
 }
+/* =========================================================
+   SOLO ESCRITORIO: FONDO, LAYOUT DE MENSAJES Y STATS OSCURAS
+   ========================================================= */
+
+@media (min-width: 1025px) {
+
+  /* ---------------------------------------------------------
+     1. FONDO PREDETERMINADO EN MENSAJES
+     --------------------------------------------------------- */
+  /* Restauramos la imagen de fondo en la pestaña de mensajes para PC */
+  .app-main[data-page="mensajes"]::before {
+    display: block !important;
+    opacity: 1 !important;
+  }
+
+  /* ---------------------------------------------------------
+     2. LAYOUT CORREGIDO DE MENSAJES (2 COLUMNAS + HEADER ARRIBA)
+     --------------------------------------------------------- */
+  .chat-layout {
+    display: grid !important;
+    grid-template-columns: 340px 1fr !important;
+    grid-template-rows: auto 1fr !important;
+    grid-template-areas: 
+      "header header"
+      "list panel" !important;
+    gap: 16px !important;
+    height: calc(100vh - var(--header-h) - 80px) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    padding: 0 8px !important;
+  }
+
+  /* El header de "Mensajes" ocupa toda la fila de arriba */
+  .mensajes-header {
+    grid-area: header !important;
+    margin-bottom: 0 !important;
+    padding: 0 8px 8px 8px !important;
+    background: transparent !important;
+  }
+
+  /* La lista de conversaciones (izquierda) */
+  .chat-layout__list {
+    grid-area: list !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 20px !important;
+    background: var(--color-surface) !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    box-shadow: var(--shadow-sm) !important;
+    padding: 16px !important;
+  }
+
+  /* El panel del chat (derecha) */
+  .chat-layout__panel {
+    grid-area: panel !important;
+    display: flex !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 20px !important;
+    background: var(--color-surface) !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+
+  /* Aseguramos que la barra de búsqueda quede dentro de la lista */
+  .chat-list-toolbar {
+    margin-bottom: 16px !important;
+  }
+
+  /* ---------------------------------------------------------
+     3. STATS DEL PERFIL (EQUIPOS, PARTIDOS, TORNEOS) EN MODO OSCURO
+     --------------------------------------------------------- */
+  [data-theme="dark"] .profile-stat-card {
+    background: rgba(255, 138, 101, 0.08) !important; /* Naranja muy tenue */
+    border: 1px solid rgba(255, 138, 101, 0.15) !important;
+  }
+  
+  [data-theme="dark"] .profile-stat-card__value {
+    color: var(--color-primary) !important; /* Naranja brillante */
+  }
+  
+  [data-theme="dark"] .profile-stat-card__label {
+    color: var(--color-text-muted) !important; /* Gris claro */
+  }
+}

@@ -199,7 +199,68 @@ export async function listarCanales(usuarioId) {
     noLeidos: row.no_leidos,
   }));
 }
+/* =========================================================
+   LISTAR MIS CONVERSACIONES (1 a 1)
+   ========================================================= */
+export async function listarConversaciones(usuarioId) {
+  const bloqueados = await idsBloqueadosTotales(usuarioId);
 
+  const { rows } = await pool.query(
+    `SELECT
+       c.id, c.vinculada_tipo, c.vinculada_id, c.vinculada_nombre,
+       c.created_at, c.ultima_actividad, cp.oculta,
+       u.id AS otro_id, u.nombre AS otro_nombre,
+       u.username AS otro_username, u.avatar AS otro_avatar,
+       m.id AS ultimo_mensaje_id, m.texto AS ultimo_mensaje_texto,
+       m.imagen AS ultimo_mensaje_imagen, m.created_at AS ultimo_mensaje_fecha,
+       m.autor_id AS ultimo_mensaje_autor_id,
+       (
+         SELECT COUNT(*)::int
+         FROM mensajes m2
+         WHERE m2.conversacion_id = c.id
+           AND m2.autor_id != $1
+           AND NOT EXISTS (
+             SELECT 1 FROM mensaje_lecturas ml
+             WHERE ml.mensaje_id = m2.id AND ml.usuario_id = $1
+           )
+       ) AS no_leidos
+     FROM conversaciones c
+     JOIN conversacion_participantes cp
+       ON cp.conversacion_id = c.id AND cp.usuario_id = $1
+     JOIN conversacion_participantes cp2
+       ON cp2.conversacion_id = c.id AND cp2.usuario_id != $1
+     JOIN usuarios u ON u.id = cp2.usuario_id
+     LEFT JOIN LATERAL (
+       SELECT id, texto, imagen, created_at, autor_id
+       FROM mensajes
+       WHERE conversacion_id = c.id
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) m ON TRUE
+     WHERE cp.oculta = FALSE
+     ORDER BY c.ultima_actividad DESC`,
+    [usuarioId]
+  );
+
+  return rows
+    .filter(row => !bloqueados.includes(row.otro_id))
+    .map(row => formatearConversacion(row, {
+      otroUsuario: {
+        id: row.otro_id,
+        nombre: row.otro_nombre,
+        username: row.otro_username,
+        avatar: row.otro_avatar,
+      },
+      ultimoMensaje: row.ultimo_mensaje_id ? {
+        id: row.ultimo_mensaje_id,
+        texto: row.ultimo_mensaje_texto,
+        imagen: row.ultimo_mensaje_imagen || null,
+        createdAt: row.ultimo_mensaje_fecha,
+        autorId: row.ultimo_mensaje_autor_id,
+      } : null,
+      noLeidos: row.no_leidos,
+    }));
+}
 /* =========================================================
    CREAR O OBTENER CONVERSACIÓN 1 A 1
    ========================================================= */

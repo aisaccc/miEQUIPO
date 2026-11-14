@@ -8,6 +8,7 @@ import {
   crearNotificacion,
   crearNotificacionMultiple,
 } from './notificaciones.service.js';
+import crypto from 'crypto';
 import {
   agregarMiembrosACanal,
   quitarMiembrosDeCanal,
@@ -1051,8 +1052,9 @@ export async function crearTorneo(datos, usuarioId) {
     marcoIcono, marcoColorIcono // ⚡ NUEVOS
   } = datos;
 
-  /* ⚡ FIX: coma faltante entre `)` y `[`, y agregados marcoIcono / marcoColorIcono
-     (la query tiene 32 placeholders — antes solo se le pasaban 30) */
+// ⚡ Generar canal_chat_id ANTES del INSERT
+  const canalChatId = `torneo-${crypto.randomUUID()}`;
+
   const { rows } = await pool.query(
       `INSERT INTO torneos (
         nombre, deporte, emoji, descripcion, lugar,
@@ -1092,10 +1094,10 @@ export async function crearTorneo(datos, usuarioId) {
         sistemaClasificacion || 'simple',
         puntosVictoria ?? 3, puntosEmpate ?? 1, puntosDerrota ?? 0,
         permiteEmpate ?? true, incluyeEstadisticas ?? false, equiposClasifican || null,
-        null, usuarioId,
+        canalChatId, usuarioId,  // ⚡ antes era null
         cardColor || null, cardFoto || null, iconoPersonalizado || null,
         heroColor || null, heroFoto || null,
-        marcoIcono || 'default', marcoColorIcono || null, // ⚡ AGREGADOS
+        marcoIcono || 'default', marcoColorIcono || null,
       ]
   );
 
@@ -1641,17 +1643,42 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
         );
       }
 
-      const canalIdEq = await obtenerCanalDeTorneo(torneoId);
+      // ⚡ Asegurar que el canal existe antes de agregar miembros
+      let canalIdEq = await obtenerCanalDeTorneo(torneoId);
+      if (!canalIdEq) {
+        // El torneo se creó sin canal (bug antiguo). Lo creamos ahora.
+        const clientCanal = await pool.connect();
+        try {
+          await clientCanal.query('BEGIN');
+          await crearCanalParaTorneo(clientCanal, torneo, torneo.organizador_id);
+          await clientCanal.query('COMMIT');
+          canalIdEq = await obtenerCanalDeTorneo(torneoId);
+        } catch (e) {
+          await clientCanal.query('ROLLBACK');
+          console.warn('[torneos] No se pudo crear el canal del torneo:', e.message);
+        } finally {
+          clientCanal.release();
+        }
+      }
+
+      // Agregar al organizador al canal
       if (canalIdEq) {
-        const { rows: miembrosEq } = await client.query(
-          `SELECT gm.usuario_id
-           FROM grupo_miembros gm
-           WHERE gm.grupo_id = $1`,
-          [equipoId]
-        );
-        const uids = miembrosEq.map(r => r.usuario_id);
-        if (uids.length > 0) {
-          await agregarMiembrosACanal(client, canalIdEq, uids);
+        await agregarMiembrosACanal(client, canalIdEq, [torneo.organizador_id]);
+      }
+
+      // Agregar al inscrito (individuo o miembros del equipo)
+      if (canalIdEq) {
+        if (esIndividual) {
+          await agregarMiembrosACanal(client, canalIdEq, [usuarioId]);
+        } else {
+          const { rows: miembrosEq } = await client.query(
+            `SELECT gm.usuario_id FROM grupo_miembros gm WHERE gm.grupo_id = $1`,
+            [equipoId]
+          );
+          const uids = miembrosEq.map(r => r.usuario_id);
+          if (uids.length > 0) {
+            await agregarMiembrosACanal(client, canalIdEq, uids);
+          }
         }
       }
 
