@@ -16098,3 +16098,63 @@ body {
     margin-top: 0 !important;
   }
 }
+/* =========================================================
+   FIX DEFINITIVO: LAYOUT FIJO Y CERO ESPACIO SUPERIOR
+   ========================================================= */
+@media (min-width: 1025px) {
+  
+  /* 1. Bloqueamos el scroll de toda la ventana */
+  html, body {
+    height: 100vh !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-shell {
+    height: 100vh !important;
+    overflow: hidden !important;
+    /* Forzamos la altura del header para que no haya huecos */
+    grid-template-rows: var(--header-h) 1fr !important; 
+  }
+
+  /* 2. Hacemos que SOLO el contenido principal (app-main) tenga scroll */
+  .app-main {
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 3. Header Fijo */
+  .app-header {
+    position: relative !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    margin: 0 !important;
+  }
+
+  /* 4. Sidebar Fijo y sin espacio arriba */
+  .app-sidebar {
+    position: relative !important;
+    top: 0 !important;
+    height: 100% !important;
+    
+    /* ⚡ ACÁ ELIMINAMOS EL ESPACIO DE ARRIBA ⚡ */
+    padding-top: 16px !important; /* Solo dejamos 16px de margen */
+    padding-bottom: 16px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    gap: 16px !important;
+    
+    /* Colores exactos del diseño */
+    background-color: #0B111A !important;
+    background-image: radial-gradient(circle at 0% 100%, rgba(234, 88, 12, 0.4) 0%, transparent 70%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Forzamos que la tarjeta no tenga margen extra */
+  .app-sidebar .sidebar-card {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
