@@ -73,79 +73,124 @@ async function verificarParticipante(client, conversacionId, usuarioId) {
 }
 
 async function verificarMiembroCanal(client, canalId, usuarioId) {
+  // 1. Verificar si es miembro normal (participante)
   const { rows } = await client.query(
     `SELECT 1 FROM canal_miembros
      WHERE canal_id = $1 AND usuario_id = $2`,
     [canalId, usuarioId]
   );
-  if (rows.length === 0) {
-    const err = new Error('No eres miembro de este canal');
-    err.status = 403;
-    throw err;
+  if (rows.length > 0) return; // Es participante, tiene acceso.
+
+  // 2. Si no es participante, verificar si es Organizador o Sub-organizador de un Torneo
+  const { rows: torneoRows } = await client.query(
+    `SELECT t.id, t.organizador_id 
+     FROM canales c
+     JOIN torneos t ON t.id = c.ref_id
+     WHERE c.id = $1 AND c.tipo = 'torneo'`,
+    [canalId]
+  );
+
+  if (torneoRows[0]) {
+    const esCreador = String(torneoRows[0].organizador_id) === String(usuarioId);
+    if (esCreador) return;
+
+    // Verificar si está en la tabla de sub-organizadores (asumiendo que se llama torneo_organizadores)
+    const { rows: subAdminRows } = await client.query(
+      `SELECT 1 FROM torneo_organizadores
+       WHERE torneo_id = $1 AND usuario_id = $2`,
+      [torneoRows[0].id, usuarioId]
+    );
+    if (subAdminRows.length > 0) return;
   }
+
+  // Si no cumple ninguna condición, denegar acceso
+  const err = new Error('No eres miembro de este canal');
+  err.status = 403;
+  throw err;
 }
 
 /* =========================================================
    LISTAR MIS CONVERSACIONES (1 a 1)
    ========================================================= */
-export async function listarConversaciones(usuarioId) {
-  const bloqueados = await idsBloqueadosTotales(usuarioId);
-
+export async function listarCanales(usuarioId) {
   const { rows } = await pool.query(
     `SELECT
-       c.id, c.vinculada_tipo, c.vinculada_id, c.vinculada_nombre,
-       c.created_at, c.ultima_actividad, cp.oculta,
-       u.id AS otro_id, u.nombre AS otro_nombre,
-       u.username AS otro_username, u.avatar AS otro_avatar,
+       c.id, c.tipo, c.ref_id,
+       COALESCE(g.nombre, c.nombre) AS nombre,
+       COALESCE(g.icono_personalizado, g.escudo, c.icono) AS icono,
+       g.marco_icono,
+       g.marco_color_icono,
+       c.created_at,
+       (SELECT COUNT(*)::int FROM canal_miembros cm2 WHERE cm2.canal_id = c.id) AS total_miembros,
        m.id AS ultimo_mensaje_id, m.texto AS ultimo_mensaje_texto,
        m.imagen AS ultimo_mensaje_imagen, m.created_at AS ultimo_mensaje_fecha,
-       m.autor_id AS ultimo_mensaje_autor_id,
+       m.autor_id AS ultimo_mensaje_autor_id, um.nombre AS ultimo_mensaje_autor_nombre,
        (
-         SELECT COUNT(*)::int
-         FROM mensajes m2
-         WHERE m2.conversacion_id = c.id
+         SELECT COUNT(*)::int FROM mensajes m2
+         WHERE m2.canal_id = c.id
            AND m2.autor_id != $1
+           AND m2.created_at > COALESCE(ceu.vaciado_hasta, '1970-01-01'::timestamptz)
            AND NOT EXISTS (
              SELECT 1 FROM mensaje_lecturas ml
              WHERE ml.mensaje_id = m2.id AND ml.usuario_id = $1
            )
        ) AS no_leidos
-     FROM conversaciones c
-     JOIN conversacion_participantes cp
-       ON cp.conversacion_id = c.id AND cp.usuario_id = $1
-     JOIN conversacion_participantes cp2
-       ON cp2.conversacion_id = c.id AND cp2.usuario_id != $1
-     JOIN usuarios u ON u.id = cp2.usuario_id
+     FROM canales c
+     -- ⚡ FIX: Usamos LEFT JOIN para permitir entrar a organizadores que no están en canal_miembros
+     LEFT JOIN canal_miembros cm
+       ON cm.canal_id = c.id AND cm.usuario_id = $1
+     LEFT JOIN canales_estado_usuario ceu
+       ON ceu.canal_id = c.id AND ceu.usuario_id = $1
+     LEFT JOIN grupos g
+       ON c.tipo IN ('equipo', 'comunidad', 'grupo')
+       AND g.id::text = c.ref_id::text
      LEFT JOIN LATERAL (
        SELECT id, texto, imagen, created_at, autor_id
        FROM mensajes
-       WHERE conversacion_id = c.id
+       WHERE canal_id = c.id
+         AND created_at > COALESCE(ceu.vaciado_hasta, '1970-01-01'::timestamptz)
        ORDER BY created_at DESC
        LIMIT 1
      ) m ON TRUE
-     WHERE cp.oculta = FALSE
-     ORDER BY c.ultima_actividad DESC`,
+     LEFT JOIN usuarios um ON um.id = m.autor_id
+     WHERE (
+       cm.usuario_id IS NOT NULL 
+       OR (
+         c.tipo = 'torneo' AND EXISTS (
+           SELECT 1 FROM torneos t 
+           WHERE t.id::text = c.ref_id::text 
+             AND (
+               t.organizador_id = $1 
+               OR EXISTS (SELECT 1 FROM torneo_organizadores to2 WHERE to2.torneo_id = t.id AND to2.usuario_id = $1)
+             )
+         )
+       )
+     )
+     AND (
+       ceu.oculto_desde IS NULL
+       OR EXISTS (
+         SELECT 1 FROM mensajes m3
+         WHERE m3.canal_id = c.id
+           AND m3.created_at > ceu.oculto_desde
+           AND m3.autor_id != $1
+       )
+     )
+     ORDER BY COALESCE(m.created_at, c.created_at) DESC`,
     [usuarioId]
   );
 
-  return rows
-    .filter(row => !bloqueados.includes(row.otro_id))
-    .map(row => formatearConversacion(row, {
-      otroUsuario: {
-        id: row.otro_id,
-        nombre: row.otro_nombre,
-        username: row.otro_username,
-        avatar: row.otro_avatar,
-      },
-      ultimoMensaje: row.ultimo_mensaje_id ? {
-        id: row.ultimo_mensaje_id,
-        texto: row.ultimo_mensaje_texto,
-        imagen: row.ultimo_mensaje_imagen || null,
-        createdAt: row.ultimo_mensaje_fecha,
-        autorId: row.ultimo_mensaje_autor_id,
-      } : null,
-      noLeidos: row.no_leidos,
-    }));
+  return rows.map(row => formatearCanal(row, {
+    totalMiembros: row.total_miembros,
+    ultimoMensaje: row.ultimo_mensaje_id ? {
+      id: row.ultimo_mensaje_id,
+      texto: row.ultimo_mensaje_texto,
+      imagen: row.ultimo_mensaje_imagen || null,
+      createdAt: row.ultimo_mensaje_fecha,
+      autorId: row.ultimo_mensaje_autor_id,
+      autorNombre: row.ultimo_mensaje_autor_nombre,
+    } : null,
+    noLeidos: row.no_leidos,
+  }));
 }
 
 /* =========================================================

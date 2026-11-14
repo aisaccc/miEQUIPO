@@ -326,6 +326,24 @@ export function initDropdowns() {
       document.body.style.overflow = ''; // ⚡ Restaurar el scroll
     }
   });
+    // ⚡ NUEVO: Cerrar menús al hacer scroll
+  window.addEventListener('scroll', () => {
+    // Cierra el menú de usuario
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu && userMenu.classList.contains('open')) {
+      userMenu.classList.remove('open');
+    }
+
+    // Cierra los dropdowns (notificaciones, amigos, crear)
+    document.querySelectorAll('.dropdown').forEach(dd => {
+      if (dd.classList.contains('open')) {
+        dd.classList.remove('open');
+      }
+    });
+
+    // Asegura que el scroll del body vuelva a la normalidad si estaba bloqueado
+    document.body.style.overflow = '';
+  }, { passive: true });
 
   const tabsAmigos = document.querySelectorAll('[data-tab-amigos]');
   // ... el resto de tu código ...

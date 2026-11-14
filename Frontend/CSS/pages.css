@@ -17154,3 +17154,44 @@ body {
 [data-theme="dark"] .chat-list-toolbar__search svg {
   color: var(--color-text-muted) !important;
 }
+/* =========================================================
+   FIX: Íconos de editar visibles en Modo Oscuro
+   ========================================================= */
+
+[data-theme="dark"] .match-card__edit svg,
+[data-theme="dark"] .tournament-card__edit svg,
+[data-theme="dark"] .grupo-card__edit svg {
+  /* Forzamos el ícono a un color oscuro para que contraste con el fondo blanco del botón */
+  stroke: #1a1815 !important;
+  color: #1a1815 !important;
+}
+
+/* Un pequeño ajuste extra: cuando pasas el mouse por encima, lo hacemos naranja */
+[data-theme="dark"] .match-card__edit:hover svg,
+[data-theme="dark"] .tournament-card__edit:hover svg,
+[data-theme="dark"] .grupo-card__edit:hover svg {
+  stroke: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+@media (max-width: 768px) {
+  /* Reducimos el padding general de la página */
+  .app-main {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Hacemos que la publicación ocupe todo el espacio disponible */
+  .feed-post, .post {
+    padding: 12px !important; /* Menos relleno interno */
+    margin-bottom: 8px !important; 
+    border-radius: 12px !important; /* Bordes un poco menos redondeados */
+  }
+
+  /* Ajustar imágenes dentro del post si es necesario */
+  .feed-post__media, .post__image {
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    width: calc(100% + 24px) !important;
+    border-radius: 0 !important;
+  }
+}
