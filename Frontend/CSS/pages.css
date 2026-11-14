@@ -17806,3 +17806,62 @@ body {
     margin-bottom: 0px !important;
   }
 }
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     1. ARREGLAR EL FONDO NARANJA EN TORNEOS, PARTIDOS Y MI EQUIPO
+     ========================================================= */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* Forzamos la imagen que pediste o el color naranja sólido */
+    background-image: url('../assets/backgrounds/fondo naranja con texto ROSTER.png') !important;
+    background-color: #FF5722 !important; /* Respaldo por si falla la imagen */
+    background-size: cover !important;
+    background-position: center top !important;
+    background-repeat: no-repeat !important;
+    
+    /* Aseguramos que se vea recto abajo */
+    border-radius: 0 !important;
+    padding-bottom: 20px !important;
+  }
+
+  /* =========================================================
+     2. ARREGLAR EL CHAT CORTADO A LA DERECHA
+     ========================================================= */
+  /* El problema era un cálculo de ancho (100% + 32px) que se salía de la pantalla */
+  .chat-layout, 
+  .chat-layout__list, 
+  .chat-layout__panel {
+    width: 100% !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Cuando un chat está abierto a pantalla completa */
+  body:has(.chat-layout__panel--abierto) .chat-layout {
+    width: 100vw !important;
+    height: calc(100dvh - var(--header-h) - 64px) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Ajustamos el input para que el botón de enviar no se corte */
+  .chat-input {
+    padding: 10px 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Permitimos que la caja de texto se encoja para dejar espacio al botón */
+  .chat-input input {
+    min-width: 0 !important; 
+  }
+
+  /* Achicamos un poquito las burbujas de los mensajes */
+  .msg {
+    max-width: 85% !important;
+  }
+}
