@@ -17283,3 +17283,56 @@ body {
     color: var(--color-text-muted) !important; /* Gris claro */
   }
 }
+/* =========================================================
+   FIX: IMÁGENES DE POSTS EN MÓVIL Y FONDO DE ESCRITORIO
+   ========================================================= */
+
+/* 1. CENTRAR LA IMAGEN DEL POST EN MÓVIL */
+@media (max-width: 768px) {
+  .feed-post__media, 
+  .post__image,
+  .feed-post__media img,
+  .post__image img {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 10px !important; 
+    object-fit: contain !important; 
+  }
+}
+
+/* 2. FONDO EXCLUSIVO PARA COMPUTADOR (inicio-bg2.jpg) */
+@media (min-width: 1025px) {
+  
+  /* ⚡ FIX DEL CORTE BLANCO: Aseguramos que el fondo base de toda la app sea oscuro/claro según el tema */
+  body, html, .app-shell, .app-main {
+    background-color: var(--color-bg) !important;
+  }
+
+  /* MODO CLARO */
+  .app-main::before {
+    background-image:
+      linear-gradient(180deg, rgba(255, 248, 244, 0.5) 0%, rgba(255, 248, 244, 0.9) 70%, rgba(255, 248, 244, 1) 100%),
+      url("../assets/backgrounds/inicio-bg2.jpg") !important;
+    background-position: center top !important;
+    background-size: cover !important;
+    background-attachment: fixed !important;
+  }
+
+  /* MODO OSCURO */
+  [data-theme="dark"] .app-main::before {
+    background-image:
+      /* Bajamos la opacidad (0.2 a 0.9) para que la foto se luzca más arriba */
+      linear-gradient(180deg, rgba(11, 17, 26, 0.2) 0%, rgba(11, 17, 26, 0.85) 60%, rgba(11, 17, 26, 1) 100%),
+      url("../assets/backgrounds/inicio-bg2.jpg") !important;
+    background-position: center top !important;
+    background-size: cover !important;
+    background-attachment: fixed !important;
+  }
+
+  /* Quitamos la capa que ponía el color sólido por encima */
+  .app-main::after {
+    background: transparent !important;
+  }
+}
