@@ -15835,3 +15835,266 @@ body {
   .sidebar-card__progress { background: #2A3951 !important; }
   .sidebar-card__progress-fill { background: #EA580C !important; }
 }
+
+/* ==========================================
+   ROSTER - SIDEBAR REDISEÑADO
+   Pegar al final de pages.css
+   ========================================== */
+
+.app-sidebar {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(
+    165deg,
+    #162b41 0%,
+    #13263b 45%,
+    #101d30 100%
+  ) !important;
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+}
+
+/* Decoración naranja inferior */
+.app-sidebar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: -28%;
+  bottom: -135px;
+  width: 165%;
+  height: 225px;
+  background: linear-gradient(
+    130deg,
+    #ff8741 0%,
+    #ee6328 48%,
+    #b84825 100%
+  );
+  border-radius: 55% 65% 0 0;
+  transform: rotate(-14deg);
+}
+
+.app-sidebar::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: -35%;
+  bottom: -165px;
+  width: 160%;
+  height: 210px;
+  background: linear-gradient(
+    120deg,
+    rgba(130,50,35,.8),
+    rgba(245,104,43,.75)
+  );
+  border-radius: 65% 55% 0 0;
+  transform: rotate(12deg);
+}
+
+/* ==========================================
+   TARJETA TU SEMANA
+   ========================================== */
+
+.sidebar-card {
+  background: linear-gradient(
+    145deg,
+    #263f57 0%,
+    #1b3048 55%,
+    #15283e 100%
+  ) !important;
+  border: 1px solid rgba(142,173,204,.25) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+.sidebar-card__label {
+  color: #aab9c9 !important;
+  font-size: 11px !important;
+  letter-spacing: 1.3px !important;
+  font-weight: 600 !important;
+}
+
+.sidebar-card__title {
+  color: #ffffff !important;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.4px !important;
+  line-height: 1.3 !important;
+}
+
+.sidebar-card__progress {
+  background: #344a62 !important;
+  height: 8px !important;
+  border-radius: 20px !important;
+  overflow: hidden;
+}
+
+.sidebar-card__progress-fill {
+  background: linear-gradient(
+    90deg,
+    #ff6329,
+    #ff965f
+  ) !important;
+  height: 100%;
+  border-radius: 20px;
+  box-shadow: 0 0 10px rgba(255,107,58,.35) !important;
+}
+
+.sidebar-card__hint {
+  color: #b7c4d2 !important;
+  font-size: 12px !important;
+}
+
+/* ==========================================
+   ETIQUETA MENÚ
+   ========================================== */
+
+.sidebar-label {
+  color: #aab6c5 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase;
+}
+
+/* ==========================================
+   OPCIONES DE NAVEGACIÓN
+   ========================================== */
+
+.sidebar-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 49px;
+  padding: 12px 16px !important;
+  border-radius: 11px !important;
+  color: #d8e1ed !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  border: 1px solid transparent !important;
+  box-sizing: border-box;
+  transition:
+    background .2s ease,
+    color .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease !important;
+}
+
+.sidebar-nav__item svg {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  stroke: #d8e1ed !important;
+  stroke-width: 2;
+  transition: stroke .2s ease;
+}
+
+/* Hover */
+.sidebar-nav__item:hover:not(.active) {
+  background: rgba(255,255,255,.07) !important;
+  color: #ffffff !important;
+  transform: translateX(3px);
+}
+
+.sidebar-nav__item:hover:not(.active) svg {
+  stroke: #ff905e !important;
+}
+
+/* ==========================================
+   OPCIÓN ACTIVA
+   ========================================== */
+
+.sidebar-nav__item.active {
+  position: relative;
+  background: linear-gradient(
+    100deg,
+    #ef6a35 0%,
+    #ba563d 42%,
+    #483947 100%
+  ) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: 1px solid #ff895d !important;
+  border-radius: 11px !important;
+  box-shadow:
+    0 5px 16px rgba(239,99,49,.18),
+    inset 0 1px 0 rgba(255,255,255,.12) !important;
+  transform: none !important;
+}
+
+.sidebar-nav__item.active svg {
+  stroke: #ffffff !important;
+}
+
+.sidebar-nav__item.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  border-radius: 4px;
+  background: #ffb18a !important;
+  box-shadow: 0 0 9px rgba(255,144,92,.6);
+}
+
+/* ==========================================
+   CERRAR SESIÓN
+   ========================================== */
+
+.sidebar-logout {
+  color: #d2dce8 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  transition: all .2s ease !important;
+}
+
+.sidebar-logout svg {
+  stroke: #d2dce8 !important;
+}
+
+.sidebar-logout:hover {
+  background: rgba(255,255,255,.07) !important;
+  color: #ffffff !important;
+}
+
+.sidebar-logout:hover svg {
+  stroke: #ff905e !important;
+}
+
+/* ==========================================
+   AJUSTES DE INTERACCIÓN
+   ========================================== */
+
+.sidebar-nav__item:focus-visible,
+.sidebar-logout:focus-visible {
+  outline: 2px solid #ff965f !important;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav__item,
+  .sidebar-logout {
+    transition: none !important;
+  }
+}
+/* =========================================================
+   FIX: Reducir espacio entre el Header y "Tu semana"
+   ========================================================= */
+@media (min-width: 1025px) {
+  .app-sidebar {
+    /* Reducimos el padding de arriba (de 24px aprox a 12px) */
+    padding-top: 12px !important; 
+    /* Reducimos un poco el espacio entre la tarjeta y el menú */
+    gap: 12px !important; 
+  }
+
+  /* Aseguramos que la tarjeta no tenga margen extra arriba */
+  .sidebar-card {
+    margin-top: 0 !important;
+  }
+}
