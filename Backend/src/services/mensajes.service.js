@@ -4,6 +4,7 @@
 
 import { pool } from '../config/db.js';
 import { estanBloqueados, idsBloqueadosTotales } from '../utils/bloqueos.js';
+import crypto from 'crypto';
 
 /* =========================================================
    HELPERS
@@ -943,15 +944,24 @@ export async function obtenerCanalDeGrupo(grupoId) {
 
 export async function obtenerCanalDeTorneo(torneoId) {
   const { rows } = await pool.query(
-    `SELECT id FROM canales WHERE ref_id = $1 AND tipo = 'torneo' LIMIT 1`,
+    `SELECT id FROM canales WHERE ref_id = $1::uuid AND tipo = 'torneo' LIMIT 1`,
     [torneoId]
   );
   return rows[0]?.id || null;
 }
-
 export async function crearCanalParaTorneo(client, torneo, organizadorId) {
-  const canalId = torneo.canal_chat_id;
-  if (!canalId) throw new Error('El torneo no tiene canal_chat_id asignado');
+  let canalId = torneo.canal_chat_id;
+
+  // ⚡ Fallback: si el torneo es viejo y no tiene canal_chat_id, lo generamos y lo guardamos.
+  if (!canalId) {
+    canalId = `torneo-${crypto.randomUUID()}`;
+    await client.query(
+      `UPDATE torneos SET canal_chat_id = $1, updated_at = NOW() WHERE id = $2`,
+      [canalId, torneo.id]
+    );
+    torneo = { ...torneo, canal_chat_id: canalId }; // Actualizamos el objeto en memoria
+  }
+
   await client.query(
     `INSERT INTO canales (id, tipo, ref_id, nombre, icono)
      VALUES ($1, 'torneo', $2, $3, $4)
