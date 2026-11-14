@@ -17336,3 +17336,473 @@ body {
     background: transparent !important;
   }
 }
+/* =========================================================
+   REDISEÑO HERO INICIO EN MÓVIL (Usando la imagen exacta)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Quitamos la foto de fondo de la app para que no interfiera */
+  .app-main[data-page="inicio"]::before {
+    display: none !important;
+  }
+  .app-main[data-page="inicio"] {
+    background: var(--color-bg) !important;
+    /* ⚡ QUITAMOS EL PADDING SUPERIOR PARA QUE LA IMAGEN TOQUE EL HEADER */
+    padding-top: 0 !important; 
+  }
+
+  /* 2. EL BLOQUE CON TU IMAGEN, PEGADO A TODOS LOS BORDES */
+  .page-hero {
+    background-image: url('../assets/backgrounds/fondo naranja con texto ROSTER.png') !important;
+    background-size: cover !important;
+    /* ⚡ Subimos la foto con un valor negativo */
+    background-position: center -30px !important; 
+    background-repeat: no-repeat !important;
+    
+    /* ⚡ LA MAGIA PARA QUE NO QUEDE BORDE NEGRO: */
+    /* Estiramos el ancho al 100% y usamos márgenes negativos para salir del padding */
+    width: calc(100vw) !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-top: 0 !important; /* Pegado arriba */
+    margin-bottom: 0 !important;
+    
+    /* Redondeo solo en las esquinas de abajo */
+    border-radius: 0 0 24px 24px !important; 
+    
+    /* Ajustamos el padding interno (arriba, costados, abajo) */
+    padding: 30px 24px 55px 24px !important; 
+    
+    position: relative;
+    box-sizing: border-box;
+    box-shadow: none !important;
+  }
+
+  /* 3. TEXTOS (Para que contrasten con la imagen) */
+  .page-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-hero .page-eyebrow {
+    color: #FFFFFF !important;
+    opacity: 0.9;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .page-hero .page-title--xl {
+    color: #FFFFFF !important;
+    font-size: 36px !important;
+    font-style: italic !important; 
+    text-transform: uppercase !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    margin: 0 0 12px 0 !important;
+  }
+
+  .page-hero .page-subtitle {
+    color: #FFFFFF !important;
+    opacity: 0.95;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    font-weight: 500 !important;
+  }
+
+  /* 4. EL BUSCADOR MONTADO ENCIMA DE LA IMAGEN */
+  .composer {
+    /* Margen superior negativo para que suba y pise la imagen */
+    margin-top: -35px !important; 
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    margin-bottom: 20px !important;
+    
+    background: var(--color-surface) !important;
+    border-radius: 16px !important;
+    padding: 12px 16px !important;
+    position: relative;
+    z-index: 10 !important; /* Queda por encima de la imagen */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+    border: 1px solid var(--color-border) !important;
+  }
+
+  /* El input gris por dentro */
+  .composer__input {
+    background: var(--color-surface-2) !important; 
+    color: var(--color-text-muted) !important;
+    border-radius: 12px !important;
+    padding: 14px 16px !important;
+    font-weight: 500 !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+}
+/* =========================================================
+   FIX GLOBAL MÓVIL: HEROES PEGADOS AL TOP EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Quitamos el espacio superior de la app para que TODO pegue arriba */
+  .app-main {
+    padding-top: 0 !important;
+  }
+
+  /* 2. El contenedor principal tampoco debe tener espacio arriba */
+  #page-content {
+    padding-top: 0 !important;
+  }
+
+  /* 3. Hacemos que el Hero (Inicio, Partidos, Torneos, etc.) sea full-width */
+  .page-hero {
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-top: 0 !important;
+    margin-bottom: 20px !important;
+    border-radius: 0 0 24px 24px !important;
+  }
+
+  /* 4. Configuración específica de INICIO (imagen naranja + buscador) */
+  .app-main[data-page="inicio"]::before {
+    display: none !important; /* Ocultamos el fondo de atleta en inicio */
+  }
+  
+  .app-main[data-page="inicio"] .page-hero {
+    background-image: url('../assets/backgrounds/fondo naranja con texto ROSTER.png') !important;
+    background-size: cover !important;
+    background-position: center -30px !important; /* Ajuste de altura de la foto */
+    background-repeat: no-repeat !important;
+    padding: 30px 24px 55px 24px !important; 
+  }
+
+  .app-main[data-page="inicio"] .composer {
+    margin-top: -35px !important; /* El buscador se monta sobre la imagen */
+  }
+
+  /* 5. Para las pestañas que NO tienen Hero (Mensajes, Perfil, Detalles) */
+  /* Les damos un pequeño margen para que los títulos no queden pegados al techo */
+  #page-content > .page-title--xl,
+  #page-content > .mensajes-header,
+  #page-content > .gd-top,
+  #page-content > .pd-top {
+    margin-top: 16px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+/* =========================================================
+   REDUCIR ESPACIOS EN MÓVIL (Acercar elementos al Hero)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Para INICIO: Acercar los filtros al buscador */
+  .app-main[data-page="inicio"] .composer {
+    margin-bottom: 12px !important; /* Reducimos el espacio de abajo del buscador */
+  }
+  
+  .app-main[data-page="inicio"] .feed-filters {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* 2. Para TORNEOS Y MI EQUIPO: Achicar el borde naranja de abajo */
+  /* (No tocamos inicio porque ahí el buscador necesita ese espacio para montarse) */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero {
+    padding-bottom: 16px !important; /* Reducimos el relleno de abajo del todo */
+    margin-bottom: 12px !important; /* Acercamos el bloque a lo que sigue */
+  }
+
+  /* 3. Para TORNEOS Y MI EQUIPO: Subir las sub-pestañas (Disponibles, Mi Equipo, etc.) */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: 0 !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 4. Para TORNEOS Y MI EQUIPO: Acercar la barra de búsqueda / filtros */
+  .toolbar {
+    margin-top: 0 !important;
+    margin-bottom: 16px !important;
+  }
+  
+  /* Reducir el espacio del contenedor general en móvil */
+  .torneo-tab-contenido {
+    padding-top: 8px !important;
+  }
+}
+/* =========================================================
+   FIX MÓVIL: PANTALLA COMPLETA EN CHATS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Ocultar el encabezado "Mensajes" y la barra de búsqueda cuando un chat está abierto */
+  body:has(.chat-layout__panel--abierto) .mensajes-header,
+  body:has(.chat-layout__panel--abierto) .chat-list-toolbar {
+    display: none !important;
+  }
+
+  /* 2. Ajustar el contenedor principal para que ocupe toda la pantalla sin scroll de página */
+  body:has(.chat-layout__panel--abierto) .app-main[data-page="mensajes"] {
+    padding: 0 !important;
+    height: calc(100dvh - var(--header-h)) !important;
+    overflow: hidden !important;
+  }
+
+  /* 3. El chat ocupa el 100% del alto disponible, restando los 64px de la barra inferior */
+  body:has(.chat-layout__panel--abierto) .chat-layout {
+    height: calc(100dvh - var(--header-h) - 64px) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 4. Quitar bordes al panel del chat para que se vea limpio */
+  body:has(.chat-layout__panel--abierto) .chat-layout__panel {
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  /* 5. Asegurar que la barra de navegación inferior quede totalmente fija */
+  .app-bottom-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+  }
+}
+@media (max-width: 800px) {
+  
+  /* 1. Le damos más espacio de abajo al bloque naranja para que quepa el buscador arriba */
+  .app-main[data-page="inicio"] .page-hero {
+    background-image: url('../assets/backgrounds/fondo naranja con texto ROSTER.png') !important;
+    background-size: cover !important;
+    background-position: center -30px !important; 
+    background-repeat: no-repeat !important;
+    
+    /* ⚡ Aumentamos el padding de abajo (de 55px a 70px) */
+    padding: 30px 24px 70px 24px !important; 
+  }
+
+  /* 2. Subimos el buscador (aumentamos el negativo de -35px a -50px) */
+  .app-main[data-page="inicio"] .composer {
+    margin-top: -70px !important; /* ⚡ Este número lo sube */
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    margin-bottom: 12px !important; /* Mantiene la separación corta con los filtros */
+    position: relative;
+    z-index: 10 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  }
+
+  /* 3. Aseguramos que los filtros (Todo, Publicaciones...) sigan pegados */
+  .app-main[data-page="inicio"] .feed-filters {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    margin-bottom: 16px !important;
+  }
+}
+  /* Subimos el buscador y lo estiramos a los lados */
+  .app-main[data-page="inicio"] .composer {
+    margin-top: -70px !important; 
+    
+    /* ⚡ ACÁ LO ESTIRAMOS: Reducimos los márgenes laterales de 16px a 8px */
+    margin-left: 8px !important; 
+    margin-right: 8px !important; 
+    
+    margin-bottom: 12px !important;
+    
+    /* Ajustamos el padding para que sea delgado pero ancho */
+    padding: 6px 8px 6px 12px !important; 
+    
+    position: relative;
+    z-index: 10 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  }
+
+  /* El contenedor interno: achicamos el espacio entre el avatar y el input */
+  .app-main[data-page="inicio"] .composer__top {
+    gap: 10px !important; 
+  }
+
+  /* El input gris se estira para ocupar todo el espacio disponible */
+  .app-main[data-page="inicio"] .composer__input {
+    padding: 10px 14px !important; 
+    height: 40px !important; 
+    border-radius: 10px !important;
+    width: 100% !important; /* Fuerza a ocupar todo el ancho */
+    flex: 1 !important;
+  }
+
+  /* Achicamos un poquito el avatar para darle más lugar al input */
+  .app-main[data-page="inicio"] .composer__top img,
+  .app-main[data-page="inicio"] .composer__top .avatar {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  /* =========================================================
+   ACERCAR SUBTABS AL BOTÓN DE CREAR (Torneos y Partidos)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Recortamos el espacio de abajo del bloque naranja */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero {
+    /* Reducimos el padding inferior (el espacio debajo del botón) */
+    padding-bottom: 8px !important; 
+    /* Eliminamos el margen que separa el bloque naranja de lo que sigue */
+    margin-bottom: 0px !important; 
+  }
+
+  /* 2. Subimos las sub-pestañas para que queden casi pegadas */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs {
+    /* Un margen superior negativo las empuja hacia arriba */
+    margin-top: -1px !important; 
+    margin-bottom: 12px !important;
+  }
+}
+/* =========================================================
+   ACERCAR SUBTABS AL HERO EN MÓVIL (Torneos, Partidos y Mi Equipo)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Recortamos el espacio de abajo del bloque naranja en las 3 pestañas */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding-bottom: 8px !important; /* Achica el naranja por dentro */
+    margin-bottom: 0px !important;  /* Quita el espacio por fuera */
+  }
+
+  /* 2. Subimos las sub-pestañas para que queden pegadas */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs,
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: 2px !important; /* Las empuja hacia arriba del borde naranja */
+    margin-bottom: 12px !important;
+  }
+}
+/* =========================================================
+   FIX: PUNTAS RECTANGULARES EN EL HERO (Mi Equipo, Torneos, Partidos)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  .app-main[data-page="mi-equipo"] .page-hero,
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero {
+    /* ⚡ Quitamos el redondeo de las esquinas de abajo */
+    border-radius: 0 !important; 
+  }
+
+}
+/* =========================================================
+   FIX GLOBAL MÓVIL: HEROES RECTANGULARES EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Aplicamos el formato a TODAS las pestañas */
+  .page-hero {
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-top: 0 !important;
+    
+    /* ⚡ ACÁ ESTÁ LA MAGIA: Quitamos todas las curvas */
+    border-radius: 0 !important; 
+    
+    /* Quitamos el margen de abajo para que las pestañas se peguen */
+    margin-bottom: 0 !important; 
+  }
+
+  /* 2. Ajustamos el espacio interno del naranja para cada pestaña */
+  
+  /* En Torneos, Partidos y Mi Equipo, dejamos que las pestañas se monten */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding-bottom: 16px !important; 
+  }
+
+  /* En Inicio, necesitamos dejar más espacio para que entre el buscador */
+  .app-main[data-page="inicio"] .page-hero {
+    padding-bottom: 50px !important; 
+  }
+
+  /* 3. Montamos los elementos de abajo sobre el borde recto */
+  
+  /* Subimos las sub-pestañas (Torneos, Partidos, Mi Equipo) */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs,
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important; /* Se pega justo al borde recto */
+    margin-bottom: 16px !important;
+  }
+
+  /* Subimos la caja de búsqueda de Inicio */
+  .app-main[data-page="inicio"] .composer {
+    margin-top: -40px !important; 
+    margin-bottom: 12px !important;
+    position: relative;
+    z-index: 10 !important;
+  }
+}
+@media (max-width: 800px) {
+  /* 1. Forzamos a que el bloque naranja de Mi Equipo baje recto (sin curvas) */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    border-radius: 0 !important; /* Quita todas las curvas */
+    margin-bottom: 0 !important; /* Elimina el espacio de abajo */
+    padding-bottom: 16px !important; /* Ajusta el relleno inferior */
+  }
+
+  /* 2. Pegamos las sub-pestañas al borde naranja */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important; /* Las empuja 1 píxel hacia arriba para que se muerdan */
+    position: relative;
+    z-index: 10; /* Asegura que queden por encima del naranja */
+  }
+
+  /* 3. Nos aseguramos de que el fondo detrás de las pestañas sea el de la app */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    background: transparent !important;
+  }
+}
+/* =========================================================
+   FIX DEFINITIVO: HERO RECTANGULAR Y PEGADO EN MÓVIL
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Forzamos a TODOS los heroes a ser rectangulares y de ancho completo */
+  .page-hero {
+    border-radius: 0px !important;
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important; /* Quita el espacio de abajo */
+    padding-bottom: 16px !important; /* Relleno interno */
+  }
+
+  /* 2. Dejamos la excepción para INICIO (que sí lleva puntas redondeadas) */
+  .app-main[data-page="inicio"] .page-hero {
+    border-radius: 0 0 24px 24px !important;
+    padding-bottom: 55px !important; 
+  }
+
+  /* 3. Pegamos las pestañas al borde del hero sin dejar huecos */
+  .subtabs {
+    margin-top: 0px !important; /* Elimina la separación */
+    margin-bottom: 16px !important;
+  }
+
+  /* 4. Si el problema es el atributo data-page en Mi Equipo, lo forzamos igual */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    border-radius: 0px !important;
+    border-bottom-left-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    margin-bottom: 0px !important;
+  }
+}
