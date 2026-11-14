@@ -72,6 +72,9 @@ async function verificarParticipante(client, conversacionId, usuarioId) {
   }
 }
 
+/* =========================================================
+   VERIFICAR ACCESO A CANAL (Participante, Creador o Sub-admin)
+   ========================================================= */
 async function verificarMiembroCanal(client, canalId, usuarioId) {
   // 1. Verificar si es miembro normal (participante)
   const { rows } = await client.query(
@@ -81,36 +84,38 @@ async function verificarMiembroCanal(client, canalId, usuarioId) {
   );
   if (rows.length > 0) return; // Es participante, tiene acceso.
 
-  // 2. Si no es participante, verificar si es Organizador o Sub-organizador de un Torneo
+  // 2. Si no es participante, verificar si es Organizador o Sub-organizador del Torneo
   const { rows: torneoRows } = await client.query(
     `SELECT t.id, t.organizador_id 
      FROM canales c
-     JOIN torneos t ON t.id = c.ref_id
+     JOIN torneos t ON t.id::text = c.ref_id::text
      WHERE c.id = $1 AND c.tipo = 'torneo'`,
     [canalId]
   );
 
   if (torneoRows[0]) {
-    const esCreador = String(torneoRows[0].organizador_id) === String(usuarioId);
-    if (esCreador) return;
+    const torneo = torneoRows[0];
+    
+    // ¿Es el creador?
+    if (String(torneo.organizador_id) === String(usuarioId)) return;
 
-    // Verificar si está en la tabla de sub-organizadores (asumiendo que se llama torneo_organizadores)
+    // ¿Es un sub-organizador?
     const { rows: subAdminRows } = await client.query(
       `SELECT 1 FROM torneo_organizadores
        WHERE torneo_id = $1 AND usuario_id = $2`,
-      [torneoRows[0].id, usuarioId]
+      [torneo.id, usuarioId]
     );
     if (subAdminRows.length > 0) return;
   }
 
-  // Si no cumple ninguna condición, denegar acceso
-  const err = new Error('No eres miembro de este canal');
+  // Si no cumple ninguna, denegar acceso
+  const err = new Error('No tienes acceso a este chat');
   err.status = 403;
   throw err;
 }
 
 /* =========================================================
-   LISTAR MIS CONVERSACIONES (1 a 1)
+   LISTAR MIS CANALES (Incluye torneos donde soy org/sub-org)
    ========================================================= */
 export async function listarCanales(usuarioId) {
   const { rows } = await pool.query(
@@ -136,7 +141,6 @@ export async function listarCanales(usuarioId) {
            )
        ) AS no_leidos
      FROM canales c
-     -- ⚡ FIX: Usamos LEFT JOIN para permitir entrar a organizadores que no están en canal_miembros
      LEFT JOIN canal_miembros cm
        ON cm.canal_id = c.id AND cm.usuario_id = $1
      LEFT JOIN canales_estado_usuario ceu
@@ -154,8 +158,11 @@ export async function listarCanales(usuarioId) {
      ) m ON TRUE
      LEFT JOIN usuarios um ON um.id = m.autor_id
      WHERE (
+       -- Es miembro del canal
        cm.usuario_id IS NOT NULL 
-       OR (
+       OR 
+       -- O es organizador / sub-organizador de un torneo
+       (
          c.tipo = 'torneo' AND EXISTS (
            SELECT 1 FROM torneos t 
            WHERE t.id::text = c.ref_id::text 
