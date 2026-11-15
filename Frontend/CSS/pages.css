@@ -17954,3 +17954,42 @@ body {
     margin-bottom: 16px !important;
   }
 }
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     1. DIFUMINADO SUAVE (Fade) ABAJO DE LA PARTE NARANJA
+     ========================================================= */
+  .page-hero {
+    position: relative !important;
+  }
+
+  .page-hero::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: -1px !important; /* -1px para evitar líneas blancas de 1px */
+    left: 0 !important;
+    width: 100% !important;
+    height: 40px !important; /* Altura del difuminado. Ajustá si querés más o menos */
+    /* El degradado va desde transparente hasta el color de fondo de la app (claro u oscuro) */
+    background: linear-gradient(to bottom, transparent 0%, var(--color-bg) 100%) !important;
+    pointer-events: none !important;
+    z-index: 2 !important; 
+  }
+
+  /* Aseguramos que los textos y botones estén POR ENCIMA del difuminado */
+  .page-hero > * {
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  /* =========================================================
+     2. HACER ZOOM EN LA IMAGEN DE "MI EQUIPO"
+     ========================================================= */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* El 120% hace el zoom. Si necesitás ver más texto, probá con 130% o 140% */
+    background-size: 120% auto !important; 
+    
+    /* Ajustamos la posición para centrar el zoom */
+    background-position: center top !important; 
+  }
+}
