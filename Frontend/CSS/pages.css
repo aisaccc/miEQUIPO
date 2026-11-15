@@ -18096,3 +18096,1146 @@ body {
     margin-top: -1px !important; /* Vuelven a su posición original */
   }
 }
+@media (max-width: 800px) {
+  
+  /* 1. HACER MÁS LARGO EL BLOQUE NARANJA PARA DAR ESPACIO */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* Aumentamos el relleno inferior para que el botón no quede apretado */
+    padding-bottom: 70px !important; 
+  }
+
+  /* 2. ESTILO DEL BOTÓN: BLANCO Y RECTANGULAR */
+  .app-main[data-page="torneos"] .page-hero .btn--primary,
+  .app-main[data-page="partidos"] .page-hero .btn--primary,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary {
+    /* Fondo blanco puro y quitamos el gradiente naranja anterior */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    
+    /* Texto naranja */
+    color: var(--color-primary) !important; 
+    
+    /* Estilo visual */
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important; /* Bordes casi rectos */
+    font-weight: 800 !important;
+    font-size: 14px !important;
+    padding: 14px 24px !important;
+    
+    /* Centrado perfecto */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  /* 3. FORZAR EL ÍCONO (+) A COLOR NARANJA */
+  .app-main[data-page="torneos"] .page-hero .btn--primary svg,
+  .app-main[data-page="partidos"] .page-hero .btn--primary svg,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary svg,
+  .app-main[data-page="torneos"] .page-hero .btn--primary span,
+  .app-main[data-page="partidos"] .page-hero .btn--primary span,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+}
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     1. FIJAR LA IMAGEN Y EL TAMAÑO PARA QUE SEAN IGUALES
+     ========================================================= */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* ⚡ Forzamos una altura exacta para que la imagen nunca cambie de tamaño */
+    min-height: 210px !important; 
+    
+    /* Posicionamos la imagen de forma fija */
+    background-image: url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-size: cover !important;
+    background-position: center -20px !important; 
+    background-repeat: no-repeat !important;
+    
+    /* Espaciado interno para que el contenido respire */
+    padding: 30px 24px 20px 24px !important;
+    
+    /* Flexbox para acomodar el botón al fondo */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  /* =========================================================
+     2. ESTILO DEL BOTÓN (Igual a la foto)
+     ========================================================= */
+  .app-main[data-page="torneos"] .page-hero .btn--primary,
+  .app-main[data-page="partidos"] .page-hero .btn--primary,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary {
+    /* Fondo blanco puro */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    
+    /* Texto e ícono naranja */
+    color: var(--color-primary) !important;
+    
+    /* Tamaño y forma exactos */
+    width: auto !important; /* No ocupa todo el ancho */
+    align-self: flex-start !important; /* Se alinea a la izquierda */
+    padding: 10px 20px !important;
+    border-radius: 6px !important; /* Rectangular con puntas suaves */
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border: none !important;
+    
+    /* Asegura que el ícono y el texto se centren */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
+
+  /* Forzar el ícono (+) a color naranja */
+  .app-main[data-page="torneos"] .page-hero .btn--primary svg,
+  .app-main[data-page="partidos"] .page-hero .btn--primary svg,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary svg,
+  .app-main[data-page="torneos"] .page-hero .btn--primary span,
+  .app-main[data-page="partidos"] .page-hero .btn--primary span,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* =========================================================
+     3. PEGAR LAS SUB-PESTAÑAS AL BORDE NARANJA
+     ========================================================= */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs,
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important; /* Se pega justo al bloque */
+    margin-bottom: 16px !important;
+    position: relative;
+    z-index: 10;
+  }
+}
+@media (max-width: 800px) {
+  
+  /* 1. Subimos las pestañas con un margen negativo más agresivo */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs,
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -35px !important; /* ⚡ Este valor las sube sobre el naranja */
+    position: relative;
+    z-index: 10;
+    margin-bottom: 16px !important;
+  }
+
+  /* 2. Aseguramos que el fondo naranja tenga el espacio suficiente para que el botón no choque con las pestañas */
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding-bottom: 45px !important; /* Espacio extra abajo del botón */
+  }
+}
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     1. ESTILO DEL BOTÓN (BLANCO Y RECTANGULAR)
+     ========================================================= */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: var(--color-primary) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 6px !important;
+    font-weight: 800 !important;
+    font-size: 14px !important;
+    padding: 12px 24px !important;
+    
+    /* Para que no ocupe todo el ancho y se alinee a la izquierda */
+    width: auto !important; 
+    align-self: flex-start !important;
+    
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  /* Forzar el ícono (+) y el texto a color naranja */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary svg,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* =========================================================
+     2. SUBIR LAS PESTAÑAS Y DAR ESPACIO AL NARANJA
+     ========================================================= */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -35px !important; /* Sube las pestañas */
+    position: relative;
+    z-index: 10;
+  }
+
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding-bottom: 45px !important; /* Da espacio para que el texto no quede tapado */
+  }
+}
+@media (max-width: 800px) {
+  
+  /* 1. Definimos la base para que el botón flote sobre el fondo */
+  .app-main[data-page="mi-equipo"] {
+    position: relative !important;
+  }
+
+  /* 2. Posicionamos el botón usando TOP */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    position: absolute !important;
+    
+    /* ⚡ ACÁ ESTÁ LA MAGIA: 
+       Si el botón aparece muy arriba, aumentá este número (ej. 185px).
+       Si aparece muy abajo, disminuilo (ej. 165px). */
+    top: 150px !important; 
+    
+    left: 15px !important;
+    z-index: 1000 !important;
+    
+    /* 🎨 Estilo visual idéntico a Torneos (Blanco y Naranja) */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: var(--color-primary) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-weight: 800 !important;
+    font-size: 14px !important;
+    
+    /* Tamaño ajustado */
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  /* Forzar el ícono (+) a color naranja */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary svg,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* 3. Le damos la altura necesaria al bloque naranja */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding-bottom: 80px !important; 
+  }
+
+  /* 4. Las pestañas se mantienen en su lugar, debajo del naranja */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: 0 !important; 
+    margin-bottom: 16px !important;
+    position: relative;
+    z-index: 10;
+  }
+}
+
+@media (max-width: 800px) {
+  /* Igualar posición de las subpestañas */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important;
+    margin-bottom: 16px !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Igualar altura y espacios del encabezado */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding: 30px 24px 70px 24px !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Mantener el botón Crear equipo alineado */
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 800px) {
+  /* Título MI EQUIPO igual a TORNEOS */
+  .app-main[data-page="mi-equipo"] .page-hero__title {
+    font-size: 44px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    letter-spacing: -1px !important;
+  }
+
+  /* Subtítulo */
+  .app-main[data-page="mi-equipo"] .page-hero__subtitle {
+    font-size: 17px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Botón Crear equipo */
+  .app-main[data-page="mi-equipo"] .page-hero .btn {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Botones Mi Equipo, Mi Comunidad y Chat */
+  .app-main[data-page="mi-equipo"] .subtab {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+
+  /* Buscador y filtros */
+  .app-main[data-page="mi-equipo"] input,
+  .app-main[data-page="mi-equipo"] select {
+    font-size: 16px !important;
+  }
+}
+/* =========================================================
+   FIX DEFINITIVO: UNIFICAR MI EQUIPO CON TORNEOS Y PARTIDOS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. IGUALAR EL TÍTULO Y SUBTÍTULO (Cursiva, tamaño y posición) */
+  .app-main[data-page="mi-equipo"] .page-hero h1,
+  .app-main[data-page="mi-equipo"] .page-hero__title,
+  .app-main[data-page="mi-equipo"] .page-title--xl {
+    font-size: 36px !important;
+    font-style: italic !important; /* Fuerza la cursiva de Torneos */
+    text-transform: uppercase !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    letter-spacing: normal !important; /* Quita el espaciado raro que tenía */
+    margin: 0 0 12px 0 !important;
+    color: #FFFFFF !important;
+  }
+
+  .app-main[data-page="mi-equipo"] .page-hero p,
+  .app-main[data-page="mi-equipo"] .page-hero__subtitle,
+  .app-main[data-page="mi-equipo"] .page-subtitle {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    color: #FFFFFF !important;
+    opacity: 0.95;
+    font-weight: 500 !important;
+  }
+
+  /* 2. RESETEAR EL BOTÓN (Quitamos el posicionamiento absoluto que lo rompía) */
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    position: relative !important; /* 🔥 Vuelve al flujo normal */
+    top: auto !important;
+    left: auto !important;
+    
+    /* Mismo estilo exacto que Torneos y Partidos */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: var(--color-primary) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 15px !important;
+    width: auto !important;
+    align-self: flex-start !important;
+  }
+
+  /* Forzar ícono y texto del botón a naranja */
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary svg,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary svg,
+  .app-main[data-page="mi-equipo"] .page-hero .btn--primary span,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* 3. UNIFICAR EL CONTENEDOR NARANJA (Para que el Flexbox funcione igual) */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding: 30px 24px 20px 24px !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 210px !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* 4. PEGAR LAS SUB-PESTAÑAS (Mi Equipo, Mi Comunidad, Chat) CORRECTAMENTE */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: 0 !important; 
+    margin-bottom: 16px !important;
+  }
+}
+/* =========================================================
+   FIX DEFINITIVO: UNIFICAR MI EQUIPO CON TORNEOS Y PARTIDOS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. EL RECUADRO NARANJA (Igualamos altura y márgenes) */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    position: relative !important;
+    /* Aumentamos el padding de abajo a 80px para hacer espacio para el botón */
+    padding: 30px 24px 80px 24px !important; 
+    background-image: url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    min-height: 210px !important;
+    display: block !important;
+  }
+
+  /* 2. TEXTOS (Forzamos la cursiva y tamaño de Torneos) */
+  .app-main[data-page="mi-equipo"] .page-hero .page-eyebrow {
+    color: #FFFFFF !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .app-main[data-page="mi-equipo"] .page-hero .page-title--xl {
+    font-size: 36px !important;
+    font-style: italic !important; /* 🔥 Fuerza la cursiva */
+    text-transform: uppercase !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    letter-spacing: normal !important;
+    margin: 0 0 8px 0 !important;
+    color: #FFFFFF !important;
+  }
+  
+  .app-main[data-page="mi-equipo"] .page-hero .page-subtitle {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    color: #FFFFFF !important;
+    opacity: 0.95;
+    font-weight: 500 !important;
+  }
+
+  /* 3. EL BOTÓN (Lo sacamos del flujo y lo clavamos en el naranja) */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .grupo-toolbar .btn--primary,
+  .app-main[data-page="mi-equipo"] #equipo-contenido > .btn--primary {
+    position: absolute !important;
+    /* ⚡ Acá ajustamos la altura. Si lo ves muy arriba o abajo, cambiá este número */
+    top: 155px !important; 
+    left: 24px !important;
+    z-index: 1000 !important;
+    
+    /* Estilo exacto de Torneos (Blanco y Naranja) */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: var(--color-primary) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  /* Forzar el icono (+) y el texto a color naranja */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary svg,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* 4. LA BARRA DE BÚSQUEDA (Ocupa todo el ancho, ya que el botón se fue) */
+  .app-main[data-page="mi-equipo"] .grupo-toolbar {
+    margin-top: 16px !important;
+    display: block !important; /* Desactiva el flexbox que acomodaba el botón al lado */
+  }
+  
+  .app-main[data-page="mi-equipo"] .grupo-toolbar__search {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* 5. SUB-PESTAÑAS (Pegadas al borde naranja) */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important;
+    margin-bottom: 16px !important;
+    position: relative !important;
+    z-index: 10 !important;
+  }
+}
+/* =========================================================
+   FIX GLOBAL: MISMA IMAGEN DE FONDO EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Aplicamos la misma imagen, zoom y posición a las 4 pestañas */
+  .app-main[data-page="inicio"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    background-image: url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-color: transparent !important;
+    
+    /* 🔥 EL SECRETO ESTÁ ACÁ: Forzamos el mismo zoom y posición para todas */
+    background-size: 120% auto !important; 
+    background-position: center -30px !important; 
+    background-repeat: no-repeat !important;
+    
+    /* Ancho completo sin márgenes */
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    
+    /* Altura mínima idéntica para todas */
+    min-height: 210px !important; 
+    
+    /* Aseguramos el flujo para los elementos internos */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    position: relative !important;
+  }
+
+  /* 2. Ajustes de espacio interno (padding) para que nada se corte */
+  
+  /* En INICIO, dejamos más espacio abajo para que el buscador se monte encima */
+  .app-main[data-page="inicio"] .page-hero {
+    padding: 30px 24px 70px 24px !important; 
+    border-radius: 0 0 24px 24px !important; /* Mantenemos las puntas redondeadas de abajo solo en Inicio */
+  }
+  
+  /* En PARTIDOS, TORNEOS y MI EQUIPO, dejamos espacio para que entren el botón y las pestañas */
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding: 30px 24px 50px 24px !important; 
+    border-radius: 0 !important; /* Puntas rectas abajo */
+  }
+}
+/* =========================================================
+   FIX GLOBAL: UNIFICAR TEXTOS DEL HERO EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* ---------------------------------------------------------
+     1. LA FECHA (Eyebrow)
+     --------------------------------------------------------- */
+  .app-main[data-page="inicio"] .page-hero .page-eyebrow,
+  .app-main[data-page="partidos"] .page-hero .page-eyebrow,
+  .app-main[data-page="torneos"] .page-hero .page-eyebrow,
+  .app-main[data-page="mi-equipo"] .page-hero .page-eyebrow,
+  .app-main[data-page="mi-equipo"] .page-hero #mi-equipo-eyebrow {
+    color: #FFFFFF !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+    margin: 0 0 10px 0 !important; /* Separación con el título */
+    opacity: 0.9 !important;
+  }
+
+  /* ---------------------------------------------------------
+     2. EL TÍTULO PRINCIPAL (Inicio, Partidos, Torneos, Mi Equipo)
+     --------------------------------------------------------- */
+  .app-main[data-page="inicio"] .page-hero .page-title--xl,
+  .app-main[data-page="partidos"] .page-hero .page-title--xl,
+  .app-main[data-page="torneos"] .page-hero .page-title--xl,
+  .app-main[data-page="mi-equipo"] .page-hero .page-title--xl,
+  .app-main[data-page="mi-equipo"] .page-hero h1 {
+    color: #FFFFFF !important;
+    font-size: 36px !important;
+    font-style: italic !important; /* 🔥 Fuerza la cursiva */
+    text-transform: uppercase !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    letter-spacing: normal !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  /* ---------------------------------------------------------
+     3. EL SUBTÍTULO
+     --------------------------------------------------------- */
+  .app-main[data-page="inicio"] .page-hero .page-subtitle,
+  .app-main[data-page="partidos"] .page-hero .page-subtitle,
+  .app-main[data-page="torneos"] .page-hero .page-subtitle,
+  .app-main[data-page="mi-equipo"] .page-hero .page-subtitle {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    opacity: 0.95 !important;
+  }
+
+  /* ---------------------------------------------------------
+     4. ALINEACIÓN GENERAL DEL BLOQUE DE TEXTO
+     --------------------------------------------------------- */
+  /* Aseguramos que el contenedor del texto esté pegado a la izquierda */
+  .app-main[data-page="inicio"] .page-hero .page-hero__row,
+  .app-main[data-page="partidos"] .page-hero .page-hero__row,
+  .app-main[data-page="torneos"] .page-hero .page-hero__row,
+  .app-main[data-page="mi-equipo"] .page-hero .page-hero__row {
+    display: block !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+}
+/* =========================================================
+   FIX: SUBTÍTULO EN COLOR GRIS EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  .app-main[data-page="inicio"] .page-hero .page-subtitle,
+  .app-main[data-page="partidos"] .page-hero .page-subtitle,
+  .app-main[data-page="torneos"] .page-hero .page-subtitle,
+  .app-main[data-page="mi-equipo"] .page-hero .page-subtitle {
+    /* Usamos un gris claro para que contraste bien con el naranja */
+    color: #E2E2E2 !important; 
+    
+    /* Si lo preferís un poquito más oscuro, cambiá el código de arriba por #CBD5E1 o #94A3B8 */
+  }
+}
+/* =========================================================
+   MOVER EL BOTÓN DE MI EQUIPO (Método garantizado)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  .app-main[data-page="mi-equipo"] #equipo-contenido .grupo-toolbar .btn--primary,
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    position: relative !important;
+    
+    /* 🎯 ACÁ MOVÉS EL BOTÓN HACIA ARRIBA: */
+    /* Cuanto más negativo sea el número, más arriba va. */
+    top: -170px !important; 
+    left: 15px !important; 
+    
+    z-index: 1000 !important;
+  }
+}
+/* =========================================================
+   ALARGAR LA CAJA NARANJA DE VERDAD
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  .app-main[data-page="inicio"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* 1. Hacemos la caja más alta */
+    padding-bottom: 70px !important; 
+    min-height: 10px !important; 
+    
+    /* 2. 🔥 LA MAGIA: Le ponemos un color naranja sólido de fondo */
+    /* (Usamos un naranja muy parecido al de tu imagen) */
+    background-color: #FF5722 !important; 
+    
+    /* 3. Mantenemos la imagen original arriba, sin que se estire */
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  /* 4. Reacomodamos los botones de Partidos y Torneos para que bajen junto con la caja */
+  .app-main[data-page="partidos"] .page-hero .btn--primary,
+  .app-main[data-page="torneos"] .page-hero .btn--primary {
+    top: 165px !important; /* Aumentamos el "top" para que bajen un poco */
+  }
+
+  /* 5. Reacomodamos el botón de Mi Equipo */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    /* Como este se mueve con márgenes negativos, ajustamos su "top" */
+    top: -150px !important; 
+  }
+}
+/* =========================================================
+   SOLO TORNEOS: EXTRA DE NARANJA Y POSICIÓN DEL BOTÓN
+   ========================================================= */
+@media (max-width: 800px) {
+
+  /* 1. LA CAJA NARANJA DE TORNEOS */
+  .app-main[data-page="torneos"] .page-hero {
+    position: relative !important; /* Necesario para posicionar el botón */
+    
+    /* 📏 ACÁ ALARGÁS O ACORTÁS EL NARANJA: */
+    padding-bottom: 70px !important; 
+    
+    /* Color naranja sólido para el espacio extra */
+    background-color: #FF5722 !important; 
+    
+    /* Mantenemos la imagen intacta */
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+  }
+
+ /* 2. El botón flotante */
+  .app-main[data-page="torneos"] .page-hero .btn--primary {
+    position: absolute !important;
+    
+    /* 🎯 ACÁ LO POSICIONÁS: */
+    /* Usamos 'bottom' para que se mida desde el borde inferior del naranja */
+    bottom: 50px !important;  /* Si lo querés más arriba del borde, aumentá este número (ej. 25px) */
+    
+    left: 24px !important;    /* Distancia desde la izquierda */
+    
+    z-index: 1000000 !important; /* Para que quede por encima de todo */
+  }
+}
+/* =========================================================
+   SOLO TORNEOS: EXTRA DE NARANJA Y POSICIÓN DEL BOTÓN
+   ========================================================= */
+@media (max-width: 800px) {
+
+  /* 1. EL RECUADRO NARANJA */
+  .app-main[data-page="torneos"] .page-hero {
+    position: relative !important;
+    
+    /* 📏 Forzamos la altura para que la caja sea bien grande */
+    min-height: 228px !important; 
+    padding-bottom: 100px !important; 
+    
+    /* Color naranja sólido para el espacio extra */
+    background-color: #FF5722 !important; 
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  /* 2. EL BOTÓN (Posicionado desde arriba) */
+  .app-main[data-page="torneos"] .page-hero .btn--primary {
+    position: absolute !important;
+    
+    /* 🎯 ACÁ MOVÉS EL BOTÓN: */
+    /* Si lo querés más arriba, bajá este número (ej. 120px). */
+    /* Si lo querés más abajo, subí este número (ej. 140px). */
+    top: 66px !important; 
+    
+    left: 6px !important;
+    bottom: auto !important; /* Desactivamos bottom para evitar conflictos */
+    z-index: 9999 !important;
+  }
+}
+/* =========================================================
+   SOLO PARTIDOS: EXTRA DE NARANJA Y POSICIÓN DEL BOTÓN
+   ========================================================= */
+@media (max-width: 800px) {
+
+  /* 1. EL RECUADRO NARANJA */
+  .app-main[data-page="partidos"] .page-hero {
+    position: relative !important;
+    
+    /* 📏 ACÁ ALARGÁS O ACORTÁS EL NARANJA: */
+    /* Aumentá este número si querés el bloque más largo */
+    min-height: 228px !important; 
+    padding-bottom: 70px !important; 
+    
+    /* Color naranja sólido para el espacio extra */
+    background-color: #FF5722 !important; 
+    
+    /* Mantenemos la imagen intacta */
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+  }
+
+  /* 2. EL BOTÓN FLOTANTE */
+  .app-main[data-page="partidos"] .page-hero .btn--primary {
+    position: absolute !important;
+    
+    /* 🎯 ACÁ MOVÉS EL BOTÓN: */
+    /* Más grande = baja. Más chico = sube. */
+    top: 80px !important; 
+    
+    /* Distancia desde la izquierda */
+    left: 2px !important;   
+    
+    bottom: auto !important; /* Evita conflictos con otras reglas */
+    margin: 0 !important;
+    z-index: 9999 !important; /* Queda por encima de todo */
+  }
+}
+/* =========================================================
+   BOTÓN CREAR COMUNIDAD: MISMA POSICIÓN Y ESTILO QUE EQUIPO
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Posicionamos el botón de comunidad igual que el de equipo */
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .grupo-toolbar .btn--primary,
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary {
+    position: relative !important;
+    
+    /* 🎯 Mismos valores exactos que el botón de equipo */
+    top: -170px !important; 
+    left: 15px !important; 
+    
+    z-index: 1000 !important;
+
+    /* 🎨 Nos aseguramos de que tenga el mismo estilo blanco con naranja */
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: var(--color-primary) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  /* 2. Forzamos que el ícono (+) y el texto sean color naranja */
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary svg,
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary span {
+    stroke: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+
+  /* 3. Arreglamos el buscador de comunidad para que ocupe todo el ancho
+        (ya que el botón sale del flujo normal) */
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .grupo-toolbar {
+    display: block !important;
+    margin-top: 16px !important;
+  }
+  
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .grupo-toolbar__search {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+/* =========================================================
+   REDUCIR ESPACIO ENTRE BUSCADOR Y TARJETAS (Equipo y Comunidad)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Reducimos el margen inferior de la barra de búsqueda */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .grupo-toolbar,
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .grupo-toolbar {
+    margin-bottom: 0px !important; /* ⚡ Cambiá este número si querés más o menos espacio (ej. 4px o 12px) */
+  }
+
+  /* 2. Nos aseguramos de que la grilla de tarjetas no tenga margen extra arriba */
+  .app-main[data-page="mi-equipo"] #equipo-contenido .grupo-grid,
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .grupo-grid {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* 3. (Opcional) Acercamos un poquito las pestañas de "Mi Equipo / Mi Comunidad" al buscador */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-bottom: 1px !important; /* ⚡ Cambiá este número si querés las pestañas más pegadas al buscador */
+  }
+}
+/* =========================================================
+   SUBIR EL AVATAR EN MÓVIL (Que pise el banner)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Subimos el avatar */
+  .profile-header-card__avatar,
+  .perfil-header-card__avatar {
+    /* 🎯 ACÁ MOVÉS LA FOTO: 
+       -45px, -60px, -80px. Cuanto más negativo, más sube. */
+    margin-top: -60px !important; 
+    
+    /* Aseguramos que quede por ENCIMA de la foto de fondo */
+    position: relative !important;
+    z-index: 10 !important; 
+    
+    /* Mantenemos el borde blanco para que se despegue de la foto */
+    border: 4px solid var(--color-surface) !important; 
+  }
+
+  /* 2. Ajustamos el contenedor para que no haya un hueco extra abajo del banner */
+  .profile-header-card__body,
+  .perfil-header-card__content {
+    margin-top: 0 !important; 
+    padding-top: 0 !important; 
+  }
+}
+/* =========================================================
+   BORDES EN LAS TARJETAS DE ESTADÍSTICAS (Partidos, Torneos, Equipos)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Modo Claro: Borde sutil color naranja suave */
+  .profile-stat-card,
+  .perfil-stat,
+  .stats-grid .stat-box {
+    border: 1px solid rgba(255, 107, 74, 0.25) !important; 
+    /* Si querés un borde más grisáceo, cambiá la línea de arriba por: 
+       border: 1px solid var(--color-border) !important; */
+  }
+
+  /* 2. Modo Oscuro: Borde gris oscuro para que resalte del fondo negro */
+  [data-theme="dark"] .profile-stat-card,
+  [data-theme="dark"] .perfil-stat,
+  [data-theme="dark"] .stats-grid .stat-box {
+    border: 1px solid var(--color-border-strong) !important;
+    background: rgba(255, 138, 101, 0.05) !important; /* Un fondito casi invisible para que resalte */
+  }
+}
+/* =========================================================
+   BAJAR EL CONTENIDO DE MENSAJES (Solo Móvil)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  .app-main[data-page="mensajes"] {
+    /* 📏 Este número controla cuánto baja todo el contenido. 
+       Si lo ves muy abajo, poné 12px. Si querés más espacio, poné 24px. */
+    padding-top: 20px !important; 
+  }
+
+  /* Nos aseguramos de que el encabezado tenga un poco de aire extra */
+  .mensajes-header {
+    margin-top: 8px !important;
+  }
+}
+/* =========================================================
+   FONDO CON TOQUE NARANJA SUTIL PARA INICIO
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Modo Claro: Un blanco cálido con un toque levísimo de naranja/durazno */
+  .app-main[data-page="inicio"] {
+    background-color: #FFF0EA !important; 
+    /* Si querés que sea aún más sutil (casi blanco), probá con #FFFCFA */
+    /* Si querés que se note un poquito más, probá con #FFF0EB */
+  }
+
+  /* 2. Modo Oscuro: Un gris muy oscuro con un matiz cálido */
+  [data-theme="dark"] .app-main[data-page="inicio"] {
+    background-color: #1E2D45 !important; 
+    /* Si lo querés más negro, usá #0D0B0A */
+  }
+}
+/* =========================================================
+   HERO DE INICIO EN MODO OSCURO (Menos saturado)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero {
+    /* 1. Color base: Un naranja quemado, muy oscuro (se ve como un rojo ladrillo) */
+    background-color: #5c1e0f !important;
+
+    /* 2. Imagen con filtro oscuro: Le aplicamos un degradado oscuro encima para bajarle el brillo a la foto */
+    background-image: 
+      linear-gradient(to bottom, rgba(11, 17, 26, 0.6), rgba(11, 17, 26, 0.9)),
+      url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+      
+    /* Ajustamos la posición de la imagen por si el degradado la movió */
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+  }
+}
+/* =========================================================
+   FIX GLOBAL MODO OSCURO: HEROES OSCUROS EN TODAS LAS PESTAÑAS
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Aplicamos el fondo oscuro y quitamos la imagen naranja a todas */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-hero {
+    background: #78350F !important; 
+    background-image: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border-bottom: 1px solid rgba(255, 107, 74, 0.15) !important;
+  }
+
+  /* 2. El truco de la marca de agua tenue al 12% */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-hero::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    
+    background-image: url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-size: 120% auto !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+    
+    opacity: 0.12 !important; /* Ajustá este número si querés ver más o menos el ROSTER */
+    
+    z-index: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* 3. Aseguramos que TODOS los contenidos (textos, botones, buscador) queden arriba */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero > *,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero > *,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero > *,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-hero > * {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  /* 4. Ajuste extra para que los botones flotantes (Torneos/Partidos/Equipo) no se oculten */
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero .btn--primary,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero .btn--primary,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary {
+    z-index: 10 !important;
+  }
+
+  /* 5. Color naranja brillante para la fecha (Eyebrow) en todas */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-eyebrow,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-eyebrow,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-eyebrow,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-eyebrow {
+    color: #ff8a65 !important; 
+    opacity: 0.9 !important;
+  }
+}
+/* =========================================================
+   MEJORA VISUAL MODO OSCURO: HEROES Y BOTONES
+   ========================================================= */
+@media (max-width: 800px) {
+
+  /* ---------------------------------------------------------
+     1. HACER EL FONDO MÁS RICO (Degradado + Marca de agua)
+     --------------------------------------------------------- */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-hero {
+    /* Degradado: de un marrón muy oscuro a azul marino */
+    background: linear-gradient(135deg, #1c1311 0%, #0f172a 100%) !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(255, 107, 74, 0.2) !important;
+  }
+
+  /* Subimos la opacidad del texto ROSTER para que no se vea plano (de 0.12 a 0.25) */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero::before,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] .page-hero::before {
+    opacity: 0.25 !important; /* ⚡ Si querés verlo aún más, subilo a 0.35 */
+  }
+
+  /* ---------------------------------------------------------
+     2. BOTONES DE CREAR EN NARANJA (Modo Oscuro)
+     --------------------------------------------------------- */
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero .btn--primary,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero .btn--primary,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary {
+    /* Fondo naranja con degradado */
+    background: linear-gradient(135deg, #FF6B4A 0%, #FF8A65 100%) !important;
+    background-image: linear-gradient(135deg, #FF6B4A 0%, #FF8A65 100%) !important;
+    
+    /* Texto blanco puro */
+    color: #FFFFFF !important;
+    
+    /* Sombra naranja para que resalte */
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(255, 107, 74, 0.3) !important;
+  }
+
+  /* Forzar el ícono (+) a color blanco */
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero .btn--primary svg,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero .btn--primary svg,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary svg,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary svg,
+  [data-theme="dark"] .app-main[data-page="partidos"] .page-hero .btn--primary span,
+  [data-theme="dark"] .app-main[data-page="torneos"] .page-hero .btn--primary span,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary span,
+  [data-theme="dark"] .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary span {
+    stroke: #FFFFFF !important;
+    color: #FFFFFF !important;
+  }
+}
+/* =========================================================
+   FIX EXCLUSIVO: MEJORAR EL HERO Y FILTROS DE INICIO (DARK)
+   ========================================================= */
+@media (max-width: 800px) {
+  
+  /* 1. Recuperamos la imagen "ROSTER" con un filtro oscuro elegante */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero {
+    /* Quitamos la capa base sólida y ponemos la imagen + degradado oscuro */
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%), 
+                url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-size: cover !important;
+    background-position: center -30px !important;
+    background-repeat: no-repeat !important;
+    
+    /* Borde inferior sutil para dar profundidad */
+    border-bottom: 1px solid rgba(255, 107, 74, 0.2) !important;
+    position: relative !important;
+  }
+
+  /* Ocultamos el ::before que usamos en las otras pestañas para que no se duplique */
+  [data-theme="dark"] .app-main[data-page="inicio"] .page-hero::before {
+    display: none !important;
+  }
+
+  /* 2. Damos un poco de luz al buscador (Composer) */
+  [data-theme="dark"] .app-main[data-page="inicio"] .composer {
+    background: #1E293B !important; /* Un gris azulado un poco más claro */
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* El input de adentro del buscador */
+  [data-theme="dark"] .app-main[data-page="inicio"] .composer__input {
+    background: #0F172A !important; 
+    color: #E2E8F0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* 3. Mejoramos los botones de filtro (Todo, Publicaciones, Partidos) */
+  [data-theme="dark"] .app-main[data-page="inicio"] .feed-filters .chip:not(.chip--active) {
+    background: #1E293B !important; /* Fondo más claro para que no se vean como huecos */
+    color: #94A3B8 !important; 
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Hover de los filtros */
+  [data-theme="dark"] .app-main[data-page="inicio"] .feed-filters .chip:not(.chip--active):hover {
+    background: #273549 !important;
+    color: #FFFFFF !important;
+  }
+
+  /* El chip activo ("Todo") lo dejamos bien naranja para que resalte */
+  [data-theme="dark"] .app-main[data-page="inicio"] .feed-filters .chip--active {
+    background: linear-gradient(135deg, #FF6B4A 0%, #FF8A65 100%) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 74, 0.3) !important;
+  }
+}
