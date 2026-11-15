@@ -18009,3 +18009,45 @@ body {
     background-position: center -30px !important; 
   }
 }
+@media (max-width: 800px) {
+  
+  /* 1. Eliminamos cualquier rastro de difuminado */
+  .page-hero::after {
+    display: none !important;
+  }
+
+  /* 2. Aplicamos EXACTAMENTE el mismo fondo y zoom a todas las pestañas */
+  .app-main[data-page="inicio"] .page-hero,
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    background-image: url("../assets/backgrounds/Fondo%20naranja%20con%20texto%20ROSTER.png") !important;
+    background-color: transparent !important;
+    
+    /* ⚡ ACÁ ESTÁ LA MAGIA: Fijamos el tamaño al 120% del ancho de la pantalla.
+       Así, no importa si el bloque es más alto o más bajo, la imagen siempre 
+       tendrá el mismo tamaño y zoom en todas las pestañas. */
+    background-size: 120% auto !important; 
+    
+    /* Mantenemos la posición vertical exacta para que el texto quede alineado */
+    background-position: center -30px !important; 
+    background-repeat: no-repeat !important;
+    
+    width: 100vw !important;
+    margin-left: calc(-50vw + 50%) !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border-radius: 0 !important; 
+  }
+
+  /* 3. Ajustamos los paddings para mantener las proporciones */
+  .app-main[data-page="inicio"] .page-hero {
+    padding: 30px 24px 70px 24px !important; /* Espacio extra para el buscador */
+  }
+
+  .app-main[data-page="torneos"] .page-hero,
+  .app-main[data-page="partidos"] .page-hero,
+  .app-main[data-page="mi-equipo"] .page-hero {
+    padding: 30px 24px 16px 24px !important;
+  }
+}
