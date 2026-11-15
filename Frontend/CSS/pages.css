@@ -18051,3 +18051,48 @@ body {
     padding: 30px 24px 16px 24px !important;
   }
 }
+@media (max-width: 800px) {
+  
+  /* 1. Agregamos más altura al bloque naranja de Mi Equipo */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* ⚡ Aumentamos el espacio de abajo (de 16px a 70px) para igualar la altura del botón de Torneos */
+    padding-bottom: 70px !important; 
+    
+    /* La imagen se mantiene igual, solo se revela más hacia abajo */
+    background-position: center -30px !important; 
+  }
+
+  /* 2. Nos aseguramos que las pestañas sigan pegadas al borde naranja */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    margin-top: -1px !important; 
+    margin-bottom: 16px !important;
+  }
+}
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     SOLO PARA MI EQUIPO
+     ========================================================= */
+  
+  /* 1. Quitamos el margen del bloque naranja */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    margin-bottom: 0 !important;
+  }
+
+  /* 2. Subimos las pestañas para que se peguen al naranja */
+  .app-main[data-page="mi-equipo"] .subtabs {
+    /* ⚡ El margen negativo hace que suban. 
+       Si necesitás que se peguen aún más, probá con -40px o -50px */
+    margin-top: -30px !important; 
+    position: relative;
+    z-index: 10;
+  }
+
+  /* =========================================================
+     RESTAURAMOS TORNEOS Y PARTIDOS (Para que no les afecte)
+     ========================================================= */
+  .app-main[data-page="torneos"] .subtabs,
+  .app-main[data-page="partidos"] .subtabs {
+    margin-top: -1px !important; /* Vuelven a su posición original */
+  }
+}
