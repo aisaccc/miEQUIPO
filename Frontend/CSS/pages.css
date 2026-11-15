@@ -17993,3 +17993,19 @@ body {
     background-position: center top !important; 
   }
 }
+@media (max-width: 800px) {
+  
+  /* 1. ELIMINAR EL DIFUMINADO (Volver a como estaba) */
+  .page-hero::after {
+    display: none !important; 
+  }
+
+  /* 2. ALINEAR LA IMAGEN DE MI EQUIPO EXACTAMENTE IGUAL QUE LAS DEMÁS */
+  .app-main[data-page="mi-equipo"] .page-hero {
+    /* Quitamos el zoom del 120% y volvemos al cover normal */
+    background-size: cover !important; 
+    
+    /* Subimos la imagen exactamente al mismo nivel que Torneos/Partidos */
+    background-position: center -30px !important; 
+  }
+}
