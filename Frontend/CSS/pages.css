@@ -19239,3 +19239,107 @@ body {
     box-shadow: 0 4px 12px rgba(255, 107, 74, 0.3) !important;
   }
 }
+@media (max-width: 800px) {
+  
+  /* =========================================================
+     1. OCULTAR SOLO LAS PESTAÑAS DE ARRIBA (Mi Equipo, Mi Comunidad, Chat)
+     ========================================================= */
+  /* Usamos "page-hero + .subtabs" para apuntar únicamente a las que están justo debajo del bloque naranja */
+  body:has(.gd-top) .app-main[data-page="mi-equipo"] .page-hero,
+  body:has(.gd-top) .app-main[data-page="mi-equipo"] .page-hero + .subtabs {
+    display: none !important;
+  }
+
+  /* Ajustamos el margen superior para que el botón "Volver" no quede pegado al techo */
+  body:has(.gd-top) .app-main[data-page="mi-equipo"] {
+    padding-top: 16px !important;
+  }
+
+  /* =========================================================
+     2. ARREGLAR EL DESBORDE (El texto "Publicaciones de..." cortado)
+     ========================================================= */
+  /* Le damos margen a los contenedores principales del detalle */
+  .gd-top {
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    width: auto !important;
+  }
+
+  .gd-hero {
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    width: auto !important;
+  }
+
+  .gd-col {
+    padding: 0 16px !important;
+  }
+
+  /* Arreglamos el título de publicaciones para que no se corte */
+  .pubs-subtab-wrapper,
+  .perfil-pubs-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Aseguramos que las cards de publicaciones tengan su margen */
+  .feed-post, 
+  .post {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+}
+  /* =========================================================
+     2. RESETEO DE BOTONES EN EL DETALLE (Equipos, Comunidades, Formación)
+     ========================================================= */
+  /* Cuando entramos a un detalle (.gd-top), el botón vuelve a estar estático y normal */
+  body:has(.gd-top) .app-main[data-page="mi-equipo"] #equipo-contenido .btn--primary {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    box-shadow: none !important;
+    width: 100% !important; /* Ocupa el ancho disponible */
+    margin-bottom: 16px !important;
+  }
+
+  /* =========================================================
+     3. ARREGLOS ESPECÍFICOS
+     ========================================================= */
+  /* Evitar que el botón de "Nueva publicación" pise las pestañas */
+  .pubs-subtab-wrapper .btn--primary {
+    position: static !important;
+    margin: 10px 0 20px 0 !important;
+    width: 100% !important;
+  }
+
+  /* Ajustar la cancha de formación para que el botón no quede encima */
+  .campo-formacion-acciones {
+    position: relative !important;
+    z-index: 10 !important;
+    margin-top: 16px !important;
+  }
+  @media (max-width: 800px) {
+  
+  /* =========================================================
+     FIX EXCLUSIVO PARA COMUNIDADES
+     ========================================================= */
+  /* Forzamos a que los botones dentro de #comunidad-contenido 
+     y el hero de la comunidad vuelvan al flujo normal */
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .btn--primary,
+  .app-main[data-page="mi-equipo"] #comunidad-contenido .gd-hero__action--primary,
+  .app-main[data-page="mi-equipo"] .gd-hero__actions .btn--primary {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    box-shadow: none !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+}
