@@ -19343,3 +19343,145 @@ body {
     justify-content: center !important;
   }
 }
+/* =========================================================
+   FIX DEFINITIVO: ÍCONOS DE EQUIPOS/COMUNIDADES Y TORNEOS
+   ========================================================= */
+
+/* 1. Forzar a que los contenedores sean círculos perfectos y no tengan relleno */
+.grupo-card__crest,
+.gd-hero__crest,
+.chat-header__avatar,
+.td-hero__crest { /* ⚡ Agregamos la clase del torneo acá */
+  border-radius: 50% !important;
+  padding: 0 !important;
+  overflow: hidden !important; /* Corta la imagen si sobresale */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 2. Forzar a que las imágenes ocupen el 100% del contenedor */
+.grupo-card__crest img,
+.gd-hero__crest img,
+.chat-header__avatar img,
+.td-hero__crest img, /* ⚡ Y acá también */
+.grupo-card__crest .icono-custom,
+.gd-hero__crest .icono-custom,
+.td-hero__crest .icono-custom {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+/* =========================================================
+   FIX: ÍCONO CIRCULAR SOLO EN EL DETALLE DEL TORNEO
+   ========================================================= */
+
+/* 1. El contenedor del ícono en el detalle (reemplazá .td-hero__crest por la clase real) */
+.td-hero__crest,
+.torneo-detalle__icono,
+#torneo-detalle-contenido .icono-wrapper { /* Usá la clase real que tenga el recuadro del ícono */
+  border-radius: 50% !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  aspect-ratio: 1 / 1 !important; /* Obliga a que sea un cuadrado perfecto para que el 50% sea un círculo */
+}
+
+/* 2. La imagen adentro (que ocupe todo) */
+.td-hero__crest img,
+.torneo-detalle__icono img,
+#torneo-detalle-contenido .icono-wrapper img,
+.td-hero__crest .icono-custom,
+.torneo-detalle__icono .icono-custom {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+/* =========================================================
+   FIX: ÍCONO CIRCULAR SOLO EN DETALLE DE TORNEO
+   ========================================================= */
+
+.td-hero__sport {
+  border-radius: 50% !important; /* Lo hace un círculo perfecto */
+  padding: 0 !important;         /* Elimina el espacio interno que dejaba ver el fondo */
+  overflow: hidden !important;   /* Corta la imagen para que respete el círculo */
+  aspect-ratio: 1 / 1 !important;/* Asegura que sea un cuadrado perfecto */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+/* =========================================================
+   FIX: SUB-PESTAÑAS (TABS) CORTADAS EN MÓVIL
+   ========================================================= */
+@media (max-width: 768px) {
+  .subtabs {
+    /* Agrega un pequeño respiro a los lados para que no se corte la pestaña activa */
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    /* Compensa el padding para que siga ocupando de borde a borde */
+    margin-left: -12px !important;
+    margin-right: -12px !important;
+    /* Oculta la barra de scroll para que se vea más limpio */
+    scrollbar-width: none; 
+  }
+  
+  .subtabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Evita que la primera pestaña quede pegada al borde */
+  .subtab:first-child {
+    margin-left: 4px;
+  }
+}
+
+/* =========================================================
+   FIX: MODAL SCROLL (Evitar que el título se corte arriba)
+   ========================================================= */
+/* 1. Hacemos que el modal sea una columna flexible */
+.modal {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important; /* El modal entero YA NO hace scroll */
+}
+
+/* 2. El header (Título y la X) se quedan fijos arriba */
+.modal__header {
+  flex-shrink: 0 !important; 
+}
+
+/* 3. El body (Los inputs) es el ÚNICO que hace scroll */
+.modal__body {
+  flex: 1 !important;
+  overflow-y: auto !important; 
+}
+
+/* 4. El footer (Botones) se quedan fijos abajo */
+.modal__footer {
+  flex-shrink: 0 !important;
+}
+
+/* Ajuste extra para que en móvil no quede tan pegado al techo */
+@media (max-width: 600px) {
+  .modal {
+    margin-top: 5vh !important; /* Deja un pequeño espacio arriba de todo */
+  }
+}
+/* FIX: Espacio para el avatar con marco en Editar Perfil */
+.modal__body {
+  padding-top: 24px !important; /* Le da un poco más de aire arriba a todo el contenido */
+}
+
+#edit-perf-avatar-preview {
+  margin-top: 8px !important; /* Empuja la foto un poquito hacia abajo */
+  margin-left: 8px !important; /* Evita que el marco se corte contra el borde izquierdo */
+}

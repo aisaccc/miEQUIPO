@@ -7,6 +7,7 @@ import { ICONOS } from '../utils/iconos.js';
 import { obtenerMiPerfil, actualizarMiPerfil, actualizarMisDeportes } from '../services/usuarios.service.js';
 import { listarPublicacionesDe } from '../services/publicaciones.service.js';
 import { renderFeedPublicaciones, abrirModalCrearPublicacionCompartido } from '../utils/publicaciones-ui.js';
+import { abrirRecortadorImagen } from '../components.js';
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -107,15 +108,18 @@ export async function init() {
     if (elAvatar) {
       elAvatar.src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nombre || 'U')}&background=ff6a00&color=fff&size=200`;
       
+      // FIX: Evitamos la clase 'marco-custom' para que no pise el estilo en línea
       const marco = MARCOS_PERFIL.find(m => m.id === (u.marcoPerfil || 'default'));
-      elAvatar.className = 'perfil-header-card__avatar ' + (marco?.clase || '');
+      const claseMarco = (u.marcoPerfil === 'custom') ? '' : (marco?.clase || '');
+      elAvatar.className = 'perfil-header-card__avatar ' + claseMarco;
       
       if (u.marcoPerfil === 'custom' && u.marcoColor) {
-        elAvatar.style.borderColor = u.marcoColor;
-        elAvatar.style.boxShadow = `0 0 15px ${u.marcoColor}80`;
+        // FIX: Usamos setProperty con 'important' para que el color gane siempre
+        elAvatar.style.setProperty('border-color', u.marcoColor, 'important');
+        elAvatar.style.setProperty('box-shadow', `0 0 15px ${u.marcoColor}80`, 'important');
       } else {
-        elAvatar.style.borderColor = '';
-        elAvatar.style.boxShadow = '';
+        elAvatar.style.removeProperty('border-color');
+        elAvatar.style.removeProperty('box-shadow');
       }
     }
     
@@ -404,12 +408,11 @@ export async function init() {
       inputAvatarFile.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        if (file.size > 2 * 1024 * 1024) return toast('La imagen es muy grande (máx 2 MB)', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          avatarSel = ev.target.result; previewAvatar.src = avatarSel;
-        };
-        reader.readAsDataURL(file); e.target.value = '';
+        abrirRecortadorImagen(file, 'cuadrado', (base64) => {
+          avatarSel = base64;
+          previewAvatar.src = base64;
+        });
+        e.target.value = '';
       };
     }
 
@@ -459,31 +462,59 @@ export async function init() {
       });
     }
 
-    // ⚡ MARCO
+    // ⚡ MARCO (LIMPIO)
     let marcoSel = u.marcoPerfil || 'default';
     let marcoColorSel = u.marcoColor || '#E8836A';
+    let marcoBrillanteSel = u.marcoBrillante || false;
+    
     const contMarcos = document.getElementById('edit-perf-marcos');
     const marcoCustomWrapper = document.getElementById('edit-perf-marco-custom-wrapper');
-    const inputMarcoColor = document.getElementById('edit-perf-marco-color');
     const badgeMarcoPremium = document.getElementById('badge-marco-premium');
+
+    // Forzar que el HTML se muestre correctamente
+    if (marcoCustomWrapper) {
+      marcoCustomWrapper.style.display = 'none'; // Se oculta por defecto al abrir
+    }
+
+    const inputMarcoColor = document.getElementById('edit-perf-marco-color');
+    const inputMarcoBrillante = document.getElementById('edit-perf-marco-brillante');
 
     if (badgeMarcoPremium) badgeMarcoPremium.style.display = u.esPremium ? 'none' : 'inline-block';
     if (inputMarcoColor) inputMarcoColor.value = marcoColorSel;
-
+    
     function actualizarPreviewAvatar() {
       const marco = MARCOS_PERFIL.find(m => m.id === marcoSel);
       previewAvatar.className = 'perfil-header-card__avatar'; 
-      previewAvatar.style.borderColor = '';
-      previewAvatar.style.boxShadow = '';
+      previewAvatar.style.removeProperty('border-color');
+      previewAvatar.style.removeProperty('box-shadow');
       
-      if (marco?.clase) {
+      if (marco?.clase && marcoSel !== 'custom') {
         previewAvatar.classList.add(marco.clase);
       }
       
       if (marcoSel === 'custom') {
-        previewAvatar.style.borderColor = marcoColorSel;
-        previewAvatar.style.boxShadow = `0 0 15px ${marcoColorSel}80`;
+        previewAvatar.style.setProperty('border-color', marcoColorSel, 'important');
+        if (marcoBrillanteSel) {
+          previewAvatar.style.setProperty('box-shadow', `0 0 15px ${marcoColorSel}80`, 'important');
+        } else {
+          previewAvatar.style.setProperty('box-shadow', 'none', 'important');
+        }
       }
+    }
+
+    if (inputMarcoBrillante) {
+      inputMarcoBrillante.checked = marcoBrillanteSel;
+      inputMarcoBrillante.addEventListener('change', (e) => {
+        marcoBrillanteSel = e.target.checked;
+        actualizarPreviewAvatar();
+      });
+    }
+
+    if (inputMarcoColor) {
+      inputMarcoColor.addEventListener('input', (e) => {
+        marcoColorSel = e.target.value;
+        actualizarPreviewAvatar();
+      });
     }
 
     if (contMarcos) {
@@ -507,23 +538,19 @@ export async function init() {
           marcoSel = btn.dataset.marco;
           
           if (marcoSel === 'custom') {
-            if (marcoCustomWrapper) marcoCustomWrapper.style.display = 'flex';
+            if (marcoCustomWrapper) marcoCustomWrapper.style.display = 'flex'; // Mostrar
           } else {
-            if (marcoCustomWrapper) marcoCustomWrapper.style.display = 'none';
+            if (marcoCustomWrapper) marcoCustomWrapper.style.display = 'none'; // Ocultar
           }
           actualizarPreviewAvatar();
         });
       });
     }
 
-    if (inputMarcoColor) {
-      inputMarcoColor.addEventListener('input', (e) => {
-        marcoColorSel = e.target.value;
-        actualizarPreviewAvatar();
-      });
+    // Si ya tenía guardado un marco custom, mostrarlo al abrir
+    if (marcoSel === 'custom' && marcoCustomWrapper) {
+      marcoCustomWrapper.style.display = 'flex';
     }
-
-    if (marcoSel === 'custom' && marcoCustomWrapper) marcoCustomWrapper.style.display = 'flex';
     actualizarPreviewAvatar();
 
     // ⚡ Banner Foto
@@ -535,13 +562,11 @@ export async function init() {
     
     if (heroFotoWrapperCompleto) {
       heroFotoWrapperCompleto.style.display = 'block';
-      
       const labelEl = heroFotoWrapperCompleto.querySelector('.perfil-hero-foto__label');
       const btnSubir = heroFotoWrapperCompleto.querySelector('label.btn');
 
       if (!u.esPremium) {
         heroFotoWrapperCompleto.style.opacity = '0.6';
-        
         if (labelEl) {
           labelEl.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 8px;">
@@ -550,27 +575,21 @@ export async function init() {
             </div>
           `;
         }
-        
         if (btnSubir && !btnSubir.innerHTML.includes('🔒')) {
           btnSubir.innerHTML = btnSubir.innerHTML.replace('Subir foto', 'Subir foto 🔒');
         }
-
         heroFotoWrapperCompleto.querySelectorAll('input, button, label').forEach(el => {
           el.disabled = true;
           el.style.pointerEvents = 'none';
         });
-        
       } else {
         heroFotoWrapperCompleto.style.opacity = '1';
-        
         if (labelEl && labelEl.innerHTML.includes('badge--warning')) {
           labelEl.innerHTML = 'O subí una foto (opcional, máx 1.5 MB)';
         }
-        
         if (btnSubir && btnSubir.innerHTML.includes('🔒')) {
           btnSubir.innerHTML = btnSubir.innerHTML.replace('Subir foto 🔒', 'Subir foto');
         }
-        
         heroFotoWrapperCompleto.querySelectorAll('input, button, label').forEach(el => {
           el.disabled = false;
           el.style.pointerEvents = 'auto';
@@ -668,6 +687,7 @@ export async function init() {
           avatar: avatarSel || null, heroColor: colorSel, heroFoto: heroFotoSel,
           marcoPerfil: marcoSel,
           marcoColor: marcoSel === 'custom' ? marcoColorSel : null,
+          marcoBrillante: marcoSel === 'custom' ? marcoBrillanteSel : false,
           statsHeroBase: { partidos: Math.max(0, Number(inputBasePartidos?.value) || 0) },
         });
 

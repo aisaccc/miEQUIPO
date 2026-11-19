@@ -781,14 +781,18 @@ export async function verPerfilUsuario(usuarioOId) {
   const isDarkText = preset.text === 'dark';
 
   // Lógica para el MARCO
+  // Lógica para el MARCO
+  // Lógica para el MARCO
   const mClass = u.marcoPerfil && u.marcoPerfil !== 'default' && u.marcoPerfil !== 'custom' ? `marco-${u.marcoPerfil}` : '';
-  const mStyle = u.marcoPerfil === 'custom' && u.marcoColor 
-    ? `border-color: ${u.marcoColor} !important; box-shadow: 0 0 15px ${u.marcoColor}80 !important;` 
-    : '';
-
-  let opcionesMenu = '';
-  if (estadoAmistad === 'amigos') {
-    opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-eliminar-amigo" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.basura} Eliminar amigo</button>`;
+  
+  let mStyle = '';
+  if (u.marcoPerfil === 'custom' && u.marcoColor) {
+    mStyle = `border-color: ${u.marcoColor} !important;`;
+    if (u.marcoBrillante) {
+      mStyle += ` box-shadow: 0 0 15px ${u.marcoColor}80 !important;`;
+    } else {
+      mStyle += ` box-shadow: none !important;`;
+    }
   }
   opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-bloquear-usuario" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.candado} Bloquear usuario</button>`;
 
@@ -1593,4 +1597,119 @@ async function abrirModalBuscarAmigosGlobal() {
       }
     }, 400);
   });
+}
+/* =========================================================
+   RECORTADOR DE IMÁGENES (Cropper.js)
+   ========================================================= */
+let cropperInstance = null;
+
+export function abrirRecortadorImagen(file, forma, callback) {
+  const modal = document.getElementById('modal-recortador');
+  const image = document.getElementById('recortador-imagen');
+  const wrapper = document.getElementById('recortador-wrapper');
+  const btnConfirmar = document.getElementById('btn-confirmar-recorte');
+
+  if (!modal || !image || !wrapper || !btnConfirmar) {
+    console.error('Faltan elementos del recortador.');
+    return;
+  }
+
+  if (typeof Cropper === 'undefined') {
+    toast('No se pudo cargar Cropper.js', 'error');
+    return;
+  }
+
+  if (!file || !file.type.startsWith('image/')) {
+    toast('Selecciona una imagen válida', 'error');
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast('La imagen es muy grande (máx. 5 MB)', 'error');
+    return;
+  }
+
+  if (cropperInstance) {
+    cropperInstance.destroy();
+    cropperInstance = null;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    wrapper.classList.remove('cropper-circular', 'cropper-cuadrado');
+    wrapper.classList.add(
+      forma === 'circular' ? 'cropper-circular' : 'cropper-cuadrado'
+    );
+
+    image.onload = () => {
+      if (cropperInstance) {
+        cropperInstance.destroy();
+      }
+
+      cropperInstance = new Cropper(image, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 0.8,
+        restore: false,
+        guides: false,
+        center: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+      });
+    };
+    image.src = e.target.result;
+    abrirModal('modal-recortador');
+
+    btnConfirmar.onclick = () => {
+      if (!cropperInstance) return;
+
+      const canvas = cropperInstance.getCroppedCanvas({
+        width: 500,
+        height: 500,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      });
+
+      if (!canvas) {
+        toast('No se pudo recortar la imagen', 'error');
+        return;
+      }
+
+      let resultado = canvas;
+
+      if (forma === 'circular') {
+        const circular = document.createElement('canvas');
+        circular.width = 500;
+        circular.height = 500;
+
+        const ctx = circular.getContext('2d');
+
+        ctx.beginPath();
+        ctx.arc(250, 250, 250, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        ctx.drawImage(canvas, 0, 0, 500, 500);
+
+        resultado = circular;
+      }
+
+      const base64 = forma === 'circular'
+        ? resultado.toDataURL('image/png')
+        : resultado.toDataURL('image/jpeg', 0.85);
+
+      cropperInstance.destroy();
+      cropperInstance = null;
+
+      cerrarModal('modal-recortador');
+
+      callback(base64);
+    };
+  };
+
+  reader.readAsDataURL(file);
 }

@@ -36,6 +36,7 @@ import { conectarAccionesMensaje } from '../utils/mensaje-acciones.js';
 import { listarPublicacionesDeGrupo as listarPubsGrupoAPI } from '../services/publicaciones.service.js';
 import { renderFeedPublicaciones, abrirModalCrearPublicacionCompartido } from '../utils/publicaciones-ui.js';
 import { renderGrupoPublico } from '../utils/grupo-publico.js';
+import { abrirRecortadorImagen } from '../components.js';
 
 const RUTA_ESCUDO = 'assets/icons/escudo-de-seguridad.png';
 const AVATAR_FALLBACK = 'assets/icons/usuario.svg';
@@ -2183,13 +2184,21 @@ export async function init() {
       };
 
       document.getElementById('com-icono-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          iconoFileBase64 = ev.target.result;
-          previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`;
-        };
-        reader.readAsDataURL(file); e.target.value = '';
+        const file = e.target.files[0];
+        if (!file) return;
+
+        abrirRecortadorImagen(file, 'circular', (base64) => {
+          iconoFileBase64 = base64;
+
+          previewIcono.innerHTML = `
+            <img
+              src="${base64}"
+              style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
+            />
+          `;
+        });
+
+        e.target.value = '';
       };
       document.getElementById('com-icono-quitar').onclick = () => {
         iconoFileBase64 = null;
@@ -2390,10 +2399,23 @@ export async function init() {
       document.getElementById('com-hero-foto-quitar').onclick = () => { heroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('com-hero-foto-file').value = ''; };
 
       document.getElementById('com-icono-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => { iconoFileBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${iconoFileBase64}" style="width:100%; height:100%; object-fit:contain;" />`; btnQuitarIcono.classList.remove('hidden'); };
-        reader.readAsDataURL(file); e.target.value = '';
+        const file = e.target.files[0];
+        if (!file) return;
+
+        abrirRecortadorImagen(file, 'circular', (base64) => {
+          iconoFileBase64 = base64;
+
+          previewIcono.innerHTML = `
+            <img
+              src="${base64}"
+              style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
+            />
+          `;
+
+          btnQuitarIcono.classList.remove('hidden');
+        });
+
+        e.target.value = '';
       };
       document.getElementById('com-icono-quitar').onclick = () => { iconoFileBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('com-icono-file').value = ''; };
 

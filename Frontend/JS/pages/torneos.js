@@ -15,6 +15,7 @@ import {
 
 import { getReglasDeporte, getSistemaEfectivo } from '../utils/reglas-deporte.js';
 import { ICONOS } from '../utils/iconos.js';
+import { abrirRecortadorImagen } from '../components.js';
 
 /* =========================================================
    MAPA DE EMOJIS / ASSETS
@@ -826,11 +827,23 @@ export async function init() {
       document.getElementById('torneo-hero-foto-quitar').onclick = () => { visualHeroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('torneo-hero-foto-file').value = ''; };
 
       document.getElementById('torneo-icono-file').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { visualIconoBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${visualIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); };
-        reader.readAsDataURL(file); e.target.value = '';
+        const file = e.target.files[0];
+        if (!file) return;
+
+        abrirRecortadorImagen(file, 'circular', (base64) => {
+          visualIconoBase64 = base64;
+
+          previewIcono.innerHTML = `
+            <img
+              src="${base64}"
+              style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
+            />
+          `;
+
+          btnQuitarIcono.classList.remove('hidden');
+        });
+
+        e.target.value = '';
       };
       document.getElementById('torneo-icono-quitar').onclick = () => { visualIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file').value = ''; };
 

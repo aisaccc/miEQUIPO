@@ -52,6 +52,7 @@ import {
   calcularGanador, esPorTiempo, esPorPuntos, getSistemaEfectivo,
   formatearTiempo, parsearTiempo,
 } from '../utils/reglas-deporte.js';
+import { abrirRecortadorImagen } from '../components.js';
 
 function formatoDeDeporte(deporte) {
   const reglas = getReglasDeporte(deporte);
@@ -4062,11 +4063,23 @@ export async function init(params = {}) {
       document.getElementById('torneo-hero-foto-quitar-det').onclick = () => { editHeroFotoBase64 = null; wrapHero.classList.add('hidden'); btnQuitarHero.classList.add('hidden'); document.getElementById('torneo-hero-foto-file-det').value = ''; };
 
       document.getElementById('torneo-icono-file-det').onchange = (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > 1 * 1024 * 1024) return toast('Máx 1 MB', 'error');
-        const reader = new FileReader();
-        reader.onload = (ev) => { editIconoBase64 = ev.target.result; previewIcono.innerHTML = `<img src="${editIconoBase64}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />`; btnQuitarIcono.classList.remove('hidden'); };
-        reader.readAsDataURL(file); e.target.value = '';
+        const file = e.target.files[0];
+        if (!file) return;
+
+        abrirRecortadorImagen(file, 'circular', (base64) => {
+          editIconoBase64 = base64;
+
+          previewIcono.innerHTML = `
+            <img
+              src="${base64}"
+              style="width:100%; height:100%; object-fit:contain; border-radius:50%;"
+            />
+          `;
+
+          btnQuitarIcono.classList.remove('hidden');
+        });
+
+        e.target.value = '';
       };
       document.getElementById('torneo-icono-quitar-det').onclick = () => { editIconoBase64 = null; previewIcono.innerHTML = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-text-muted)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; btnQuitarIcono.classList.add('hidden'); document.getElementById('torneo-icono-file-det').value = ''; };
 

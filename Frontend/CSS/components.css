@@ -1553,3 +1553,22 @@ body:has(#modal-ver-perfil.open) {
     overflow-y: auto !important;
   }
 }
+/* =========================================================
+   ESTILOS PARA CROPPER.JS
+   ========================================================= */
+#recortador-imagen {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Recorte circular: comunidades, equipos y torneos */
+.cropper-circular .cropper-view-box,
+.cropper-circular .cropper-face {
+  border-radius: 50%;
+}
+
+/* Recorte cuadrado: perfil */
+.cropper-cuadrado .cropper-view-box,
+.cropper-cuadrado .cropper-face {
+  border-radius: 0;
+}

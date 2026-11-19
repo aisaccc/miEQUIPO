@@ -17,7 +17,7 @@ const CAMPOS_PERFIL_PROPIO = `
   hero_color, hero_foto, stats_hero_base, stats_hero_privadas, notificaciones_prefs,
   mensajes_solo_amigos,
   plan, premium_desde, premium_hasta, premium_origen,
-  marco_perfil, marco_color
+  marco_perfil, marco_color, marco_brillante /* ⚡ AGREGADO */
 `;
 
 const CAMPOS_PERFIL_PUBLICO = `
@@ -26,9 +26,8 @@ const CAMPOS_PERFIL_PUBLICO = `
   hero_color, hero_foto,
   stats_hero_base, stats_hero_privadas,
   plan, premium_hasta,
-  marco_perfil, marco_color
+  marco_perfil, marco_color, marco_brillante /* ⚡ AGREGADO */
 `;
-
 /* =========================================================
    HELPERS
    ========================================================= */
@@ -67,6 +66,7 @@ function formatearPerfilPropio(row, stats = {}) {
     premiumOrigen: row.premium_origen,
     marcoPerfil: row.marco_perfil || 'default',
     marcoColor: row.marco_color || null,
+    marcoBrillante: row.marco_brillante || false, /* ⚡ AGREGADO */
     statsHero: {
       partidos:  stats.partidos ?? 0,
       torneos:   stats.torneos  ?? 0,
@@ -112,6 +112,7 @@ function formatearPerfilPublico(row, stats = {}) {
     esPremium: calcularEsPremium(row),
     marcoPerfil: row.marco_perfil || 'default',
     marcoColor: row.marco_color || null,
+    marcoBrillante: row.marco_brillante || false, /* ⚡ AGREGADO */
   };
 }
 
@@ -330,6 +331,7 @@ export async function actualizarMiPerfil(usuarioId, cambios) {
     mensajesSoloAmigos: 'mensajes_solo_amigos',
     marcoPerfil: 'marco_perfil',
     marcoColor: 'marco_color',
+    marcoBrillante: 'marco_brillante', /* ⚡ AGREGADO */
   };
 
   const campos = [];
