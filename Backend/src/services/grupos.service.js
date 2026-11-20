@@ -34,6 +34,8 @@ function formatearGrupo(row, extras = {}) {
   const esCapitan = extras.esCapitan ?? false;
   const esAdmin   = extras.esAdmin ?? false;
   const puedeVerTodo = esMiembro || esCapitan || esAdmin;
+  const puedeVerContenido =
+  row.tipo_acceso !== 'privado' || puedeVerTodo;
 
   const stats = {
     victorias: (victoriasPrivadas && !puedeVerTodo) ? null : (statsRaw.victorias ?? 0),
@@ -55,7 +57,8 @@ function formatearGrupo(row, extras = {}) {
     statsEmpatesPrivadas: empatesPrivadas,
     statsDerrotasPrivadas: derrotasPrivadas,
     stats,
-    hilos: row.hilos || [],
+    hilos: puedeVerContenido ? (row.hilos || []) : [],
+    formacion: puedeVerContenido ? (row.formacion || []) : [],
     capitanId: row.capitan_id,
     capitan: extras.capitan || null,
     totalMiembros: extras.totalMiembros ?? 0,
@@ -76,7 +79,6 @@ function formatearGrupo(row, extras = {}) {
     updatedAt: row.updated_at,
     marcoIcono: row.marco_icono || 'default',
     marcoColorIcono: row.marco_color_icono || null,
-    formacion: row.formacion || [],
     formacionAbierta: row.formacion_abierta || false, // ⚡ NUEVO
     createdAt: row.created_at,
   };
@@ -270,19 +272,30 @@ export async function obtenerGrupo(grupoId, usuarioId) {
     );
     miSolicitudPendiente = miSolRows.length > 0;
   }
+  const puedeVerContenido =
+  esMiembro ||
+  esCapitan ||
+  grupo.tipo_acceso === 'publico';
 
   return {
     ...formatearGrupo(grupo, {
-      capitan: { id: grupo.u_id, nombre: grupo.u_nombre, username: grupo.u_username, avatar: grupo.u_avatar },
+      capitan: {
+        id: grupo.u_id,
+        nombre: grupo.u_nombre,
+        username: grupo.u_username,
+        avatar: grupo.u_avatar
+      },
       totalMiembros: miembroRows.length,
       totalSolicitudes: solicitudes.length,
       esCapitan,
       esAdmin,
-      esMiembro,
+      esMiembro
     }),
     miembros,
     solicitudes,
     miSolicitudPendiente,
+    hilos: puedeVerContenido ? (grupo.hilos || []) : [],
+    formacion: puedeVerContenido ? (grupo.formacion || []) : []
   };
 }
 
@@ -851,8 +864,22 @@ export async function editarFormacion(grupoId, formacion, usuarioId) {
       esCapOAdmin = false;
     }
 
-    if (!grupo.formacion_abierta && !esCapOAdmin) {
-      const err = new Error('La edición de la formación está cerrada. Solo el capitán o sub-capitán pueden modificarla.');
+    const { rows: miembroRows } = await client.query(
+      `SELECT 1
+      FROM grupo_miembros
+      WHERE grupo_id = $1 AND usuario_id = $2`,
+      [grupoId, usuarioId]
+    );
+
+    const esMiembro = miembroRows.length > 0;
+
+    if (
+      !esCapOAdmin &&
+      (!grupo.formacion_abierta || !esMiembro)
+    ) {
+      const err = new Error(
+        'No tienes permiso para modificar esta formación.'
+      );
       err.status = 403;
       throw err;
     }
@@ -904,7 +931,22 @@ export async function editarFormacionAbierta(grupoId, formacionAbierta, usuarioI
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await obtenerGrupoOFallar(client, grupoId);
+    const grupo = await obtenerGrupoOFallar(client, grupoId);
+
+    const { rows: capitanRows } = await client.query(
+      `SELECT plan, premium_hasta
+      FROM usuarios
+      WHERE id = $1 AND activo = TRUE`,
+      [grupo.capitan_id]
+    );
+
+    if (!calcularEsPremium(capitanRows[0] || {})) {
+      const err = new Error(
+        'Las estadísticas de jugadores requieren Premium.'
+      );
+      err.status = 403;
+      throw err;
+    }
     await verificarCapitanOAdmin(client, grupoId, usuarioId);
 
     await client.query(

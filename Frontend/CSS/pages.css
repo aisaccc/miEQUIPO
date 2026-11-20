@@ -19485,3 +19485,9 @@ body {
   margin-top: 8px !important; /* Empuja la foto un poquito hacia abajo */
   margin-left: 8px !important; /* Evita que el marco se corte contra el borde izquierdo */
 }
+/* FIX: Separar buscador del saludo en Inicio (SOLO PC) */
+@media (min-width: 801px) {
+  .app-main[data-page="inicio"] .composer {
+    margin-top: 20px !important;
+  }
+}

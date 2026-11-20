@@ -12,7 +12,35 @@ if (missing.length > 0) {
   console.error('❌ Faltan variables de entorno:', missing.join(', '));
   process.exit(1);
 }
+const port = Number(process.env.PORT);
+const dbPort = Number(process.env.DB_PORT);
 
+if (
+  !Number.isInteger(port) ||
+  port < 1 ||
+  port > 65535
+) {
+  throw new Error('PORT inválido');
+}
+
+if (
+  !Number.isInteger(dbPort) ||
+  dbPort < 1 ||
+  dbPort > 65535
+) {
+  throw new Error('DB_PORT inválido');
+}
+
+const jwtSecret = process.env.JWT_SECRET;
+const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+if (
+  jwtSecret.length < 32 ||
+  refreshSecret.length < 32 ||
+  jwtSecret === refreshSecret
+) {
+  throw new Error('Configuración JWT insegura');
+}
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: Number(process.env.PORT) || 3000,

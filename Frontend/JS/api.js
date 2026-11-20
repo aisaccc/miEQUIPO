@@ -56,13 +56,35 @@ async function intentarRefresh() {
 
       // Solo si el refresh realmente expiró
       if (res.status === 401 || res.status === 403) {
-        limpiarTokens();
-        throw new ApiError('Sesión expirada', 401);
+      throw new ApiError('Sesión expirada', 401);
       }
 
+
       const data = await res.json();
-      setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
+
+      // Evita restaurar tokens si la sesión cambió
+      // mientras se realizaba la renovación.
+      if (getRefreshToken() !== refreshToken) {
+        throw new ApiError(
+          'La sesión cambió durante la renovación',
+          409
+        );
+      }
+
+      if (!data.accessToken || !data.refreshToken) {
+        throw new ApiError(
+          'Respuesta de renovación inválida',
+          502
+        );
+      }
+
+      setTokens({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken
+      });
+
       return data;
+
     } catch (netErr) {
       if (netErr.name === 'AbortError') throw new ApiError('El servidor tardó demasiado.', 0);
       if (netErr instanceof ApiError) throw netErr;
@@ -107,14 +129,26 @@ async function request(endpoint, options = {}) {
 
   // Si es 401, intentamos refrescar el token
   if (res.status === 401 && auth && !sinRefresh && getRefreshToken()) {
-    const tokenOriginal = getAccessToken();
+    const tokenOriginal = finalHeaders['Authorization']?.replace(/^Bearer /, '') || null;
+    const tokenActual = getAccessToken();
+
+    // Otra solicitud ya renovó el token.
+    if (tokenActual && tokenOriginal && tokenActual !== tokenOriginal) {
+      return request(endpoint, { ...options, sinRefresh: true });
+    }
 
     try {
       await intentarRefresh();
       return request(endpoint, { ...options, sinRefresh: true });
     } catch (refreshErr) {
       // Si el fallo es de red o servidor, avisamos pero no te sacamos al login.
-      if (refreshErr.status === 0 || refreshErr.status === 429 || refreshErr.status >= 500 || refreshErr.status === 400) {
+      if (
+        refreshErr.status === 0 ||
+        refreshErr.status === 400 ||
+        refreshErr.status === 409 ||
+        refreshErr.status === 429 ||
+        refreshErr.status >= 500
+      ) {
         throw refreshErr;
       }
 

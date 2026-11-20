@@ -23,31 +23,44 @@ export function generarAccessToken(usuario) {
  */
 export function verificarAccessToken(token) {
   try {
-    return jwt.verify(token, env.JWT.secret);
-  } catch (err) {
+    return jwt.verify(token, env.JWT.secret, {
+      algorithms: ['HS256']
+    });
+  } catch {
     return null;
   }
 }
+
 
 /**
  * Genera un REFRESH token (largo, 7 días).
  * Este SÍ o SÍ debe guardarse hasheado en la BD, nunca en texto plano.
  */
+
 export function generarRefreshToken(usuario) {
   return jwt.sign(
-    { sub: usuario.id },
+    {
+      sub: String(usuario.id),
+      jti: crypto.randomUUID()
+    },
     env.JWT.refreshSecret,
-    { expiresIn: env.JWT.refreshExpiresIn }
+    {
+      algorithm: 'HS256',
+      expiresIn: env.JWT.refreshExpiresIn
+    }
   );
 }
+
 
 /**
  * Verifica un REFRESH token.
  */
 export function verificarRefreshToken(token) {
   try {
-    return jwt.verify(token, env.JWT.refreshSecret);
-  } catch (err) {
+    return jwt.verify(token, env.JWT.refreshSecret, {
+      algorithms: ['HS256']
+    });
+  } catch {
     return null;
   }
 }

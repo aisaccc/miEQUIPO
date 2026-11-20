@@ -21,26 +21,32 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Formato inválido' });
   }
   if (err.code === '23514') {
-    console.error('[CHECK VIOLATION]', err.detail || err.message);
+    console.error('[CHECK VIOLATION]', err.message);
+
     return res.status(400).json({
-      error: 'Valor no permitido',
-      detalle: err.detail || err.message,
+      error: 'Valor no permitido'
     });
   }
 
-  /* Error genérico */
-  const status = err.status || 500;
-  const mensaje = err.message || 'Error interno del servidor';
+  const status =
+    Number.isInteger(err.status) &&
+    err.status >= 400 &&
+    err.status < 500
+      ? err.status
+      : 500;
 
-  // En producción, no exponer detalles internos
-  if (status === 500 && process.env.NODE_ENV === 'production') {
-    return res.status(500).json({ error: 'Error interno del servidor' });
+  if (status === 500) {
+    return res.status(500).json({
+      error: 'Error interno del servidor'
+    });
   }
 
-  res.status(status).json({ error: mensaje });
+  return res.status(status).json({
+    error: err.message || 'Solicitud inválida'
+  });
 }
-
-/* Middleware para 404 */
 export function notFound(req, res) {
-  res.status(404).json({ error: `Ruta no encontrada: ${req.originalUrl}` });
+  return res.status(404).json({
+    error: 'Ruta no encontrada'
+  });
 }

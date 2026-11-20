@@ -507,6 +507,13 @@ export async function eliminarMiCuenta(usuarioId, password) {
    ========================================================= */
 export async function buscarUsuarios(query, usuarioExcluirId, limit = 20) {
   const q = `%${String(query).trim()}%`;
+  if (cambiosFinales.marcoBrillante === true && !esPrem) {
+  const err = new Error(
+    'El marco brillante requiere plan Premium.'
+  );
+  err.status = 403;
+  throw err;
+}
 
   const { rows } = await pool.query(
     `SELECT u.id, u.nombre, u.username, u.avatar,
@@ -524,3 +531,14 @@ export async function buscarUsuarios(query, usuarioExcluirId, limit = 20) {
 
   return rows;
 }
+const necesitaPlan =
+  (cambiosFinales.marcoPerfil !== undefined &&
+   cambiosFinales.marcoPerfil !== 'default') ||
+
+  (cambiosFinales.heroColor !== undefined &&
+   !HERO_COLORS.includes(cambiosFinales.heroColor)) ||
+
+  (cambiosFinales.heroFoto !== undefined &&
+   cambiosFinales.heroFoto !== null) ||
+
+  cambiosFinales.marcoBrillante === true;
