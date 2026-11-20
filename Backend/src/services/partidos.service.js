@@ -43,24 +43,6 @@ function formatearPartido(row, extras = {}) {
   };
 }
 
-async function obtenerPartidoBloqueadoOFallar(client, partidoId) {
-  const { rows } = await client.query(
-    `SELECT *
-     FROM partidos
-     WHERE id = $1
-     FOR UPDATE`,
-    [partidoId]
-  );
-
-  if (!rows[0]) {
-    const err = new Error('Partido no encontrado');
-    err.status = 404;
-    throw err;
-  }
-
-  return rows[0];
-}
-
 async function obtenerPartidoOFallar(client, partidoId) {
   const { rows } = await client.query(
     `SELECT * FROM partidos WHERE id = $1`,
@@ -75,7 +57,6 @@ async function obtenerPartidoOFallar(client, partidoId) {
 
   return rows[0];
 }
-
 
 function verificarOrganizador(partido, usuarioId) {
   if (String(partido.organizador_id) !== String(usuarioId)) {
@@ -620,10 +601,7 @@ export async function editarPartido(partidoId, cambios, usuarioId) {
   try {
     await client.query('BEGIN');
 
-    const partidoAntes = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partidoAntes = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partidoAntes, usuarioId);
      if (partidoAntes.fecha && new Date(partidoAntes.fecha) <= new Date()) {
       const err = new Error('No puedes modificar un partido que ya ha comenzado.');
@@ -787,10 +765,7 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
@@ -906,10 +881,7 @@ export async function salirDelPartido(partidoId, usuarioId) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
 
     if (String(partido.organizador_id) === String(usuarioId)) {
       const err = new Error('El organizador no puede salir del partido. Eliminalo si quieres cancelarlo.');
@@ -1128,10 +1100,8 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
 
   try {
     await client.query('BEGIN');
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+
+    const partido = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     const { rows } = await client.query(
@@ -1230,10 +1200,7 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
@@ -1385,10 +1352,7 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     const { rows } = await client.query(
@@ -1495,10 +1459,7 @@ export async function interesarse(partidoId, usuarioId, equipoId = null, mensaje
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
@@ -1690,11 +1651,10 @@ export async function confirmarPartido(partidoId, usuarioId, datos) {
       throw err;
     }
 
-
     if (interesadoTipo === 'usuario') {
       const { rows } = await client.query(
         `SELECT 1 FROM partido_interesados
-        WHERE partido_id = $1 AND usuario_id = $2`,
+         WHERE partido_id = $1 AND usuario_id = $2`,
         [partidoId, interesadoId]
       );
 
@@ -1704,46 +1664,6 @@ export async function confirmarPartido(partidoId, usuarioId, datos) {
         throw err;
       }
     }
-
-    // SEGURIDAD: validar al interesado cuando representa a un equipo
-    if (interesadoTipo === 'equipo') {
-      if (partido.tipo_partido !== 'equipo' || !equipoId) {
-        const err = new Error('Debes indicar un equipo válido.');
-        err.status = 400;
-        throw err;
-      }
-
-      const { rows } = await client.query(
-        `SELECT 1
-        FROM partido_interesados pi
-        JOIN grupos g ON g.id = pi.equipo_id
-        WHERE pi.partido_id = $1
-          AND pi.usuario_id = $2
-          AND pi.equipo_id = $3
-          AND g.tipo = 'equipo'
-          AND g.deporte = $4
-          AND (
-            g.capitan_id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM grupo_miembros gm
-              WHERE gm.grupo_id = g.id
-                AND gm.usuario_id = $2
-                AND gm.rol IN ('capitan', 'admin')
-            )
-          )`,
-        [partidoId, interesadoId, equipoId, partido.deporte]
-      );
-
-      if (!rows[0]) {
-        const err = new Error(
-          'El interesado no tiene una postulación válida con ese equipo.'
-        );
-        err.status = 403;
-        throw err;
-      }
-    }
-
 
     const { rows: yaHay } = await client.query(
       `SELECT id FROM partido_confirmaciones
@@ -1807,10 +1727,7 @@ export async function aprobarConfirmacion(partidoId, usuarioId, propuestaId) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoBloqueadoOFallar(
-      client,
-      partidoId
-    );
+    const partido = await obtenerPartidoOFallar(client, partidoId);
 
     const { rows: propRows } = await client.query(
       `SELECT * FROM partido_confirmaciones
@@ -1838,43 +1755,6 @@ export async function aprobarConfirmacion(partidoId, usuarioId, propuestaId) {
       err.status = 403;
       throw err;
     }
-
-    // SEGURIDAD: comprobar que todavía representa al equipo
-    if (propuesta.interesado_tipo === 'equipo') {
-      if (!propuesta.equipo_id || partido.tipo_partido !== 'equipo') {
-        const err = new Error('La propuesta de equipo es inválida.');
-        err.status = 400;
-        throw err;
-      }
-
-      const { rows } = await client.query(
-        `SELECT 1
-        FROM grupos g
-        WHERE g.id = $1
-          AND g.tipo = 'equipo'
-          AND g.deporte = $3
-          AND (
-            g.capitan_id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM grupo_miembros gm
-              WHERE gm.grupo_id = g.id
-                AND gm.usuario_id = $2
-                AND gm.rol IN ('capitan', 'admin')
-            )
-          )`,
-        [propuesta.equipo_id, usuarioId, partido.deporte]
-      );
-
-      if (!rows[0]) {
-        const err = new Error(
-          'Ya no tienes permiso para representar a este equipo.'
-        );
-        err.status = 403;
-        throw err;
-      }
-    }
-
 
     await client.query(
       `UPDATE partido_confirmaciones

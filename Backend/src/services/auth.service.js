@@ -7,19 +7,15 @@ import { hashearPassword, verificarPassword } from '../utils/password.js';
 import {
   generarAccessToken,
   generarRefreshToken,
-  verificarRefreshToken,
   hashearToken,
 } from '../utils/jwt.js';
 import { generarTokenAleatorio } from '../utils/token.js';
-
 import {
   crearSesion,
   buscarSesionPorRefresh,
   revocarSesionPorRefresh,
   revocarTodasLasSesiones,
-  rotarSesion,
 } from '../utils/sesiones.js';
-
 import {
   enviarEmailVerificacion,
   enviarEmailBienvenida,
@@ -196,19 +192,6 @@ export async function refrescarTokens(refreshToken, meta = {}) {
     throw err;
   }
 
-  const payload = verificarRefreshToken(refreshToken);
-
-  if (
-    !payload ||
-    typeof payload.sub !== 'string' ||
-    payload.sub !== String(sesion.usuario_id)
-  ) {
-    const err = new Error('Refresh token inválido');
-    err.status = 401;
-    throw err;
-  }
-
-
   const { rows } = await pool.query(
     `SELECT id, nombre, username, email, avatar, bio, edad, pais, ciudad,
             deportes, email_verificado, created_at, last_login,
@@ -232,7 +215,8 @@ export async function refrescarTokens(refreshToken, meta = {}) {
   const nuevoAccess = generarAccessToken(usuario);
   const nuevoRefresh = generarRefreshToken(usuario);
 
-  await rotarSesion(refreshToken, nuevoRefresh, meta);
+  await crearSesion(usuario.id, nuevoRefresh, meta);
+
   return {
     usuario: formatearUsuario(usuario),
     accessToken: nuevoAccess,

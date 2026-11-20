@@ -1,13 +1,6 @@
 import * as usuariosService from '../services/usuarios.service.js';
 import { validar } from '../validators/index.js';
-import {
-  schemaUuidParam,
-  schemaActualizarPerfil,
-  schemaActualizarDeportes,
-  schemaCambiarPassword,
-  schemaEliminarCuenta,
-  schemaBuscarUsuarios
-} from '../validators/usuarios.schema.js';
+import { schemaUuidParam } from '../validators/usuarios.schema.js';
 
 export async function obtenerMiPerfil(req, res, next) {
   try {
@@ -38,86 +31,53 @@ export async function obtener(req, res, next) {
   }
 }
 
-
 export async function actualizarMiPerfil(req, res, next) {
   try {
-    const datos = validar(schemaActualizarPerfil, req.body);
-
-    const perfil = await usuariosService.actualizarMiPerfil(
-      req.usuario.id,
-      datos
-    );
-
+    const perfil = await usuariosService.actualizarMiPerfil(req.usuario.id, req.body);
     res.json({ usuario: perfil });
   } catch (err) {
     next(err);
   }
 }
-
-
 
 export async function actualizarMisDeportes(req, res, next) {
   try {
-    const datos = validar(schemaActualizarDeportes, req.body);
-
-    const perfil = await usuariosService.actualizarMisDeportes(
-      req.usuario.id,
-      datos.deportes
-    );
-
+    const perfil = await usuariosService.actualizarMisDeportes(req.usuario.id, req.body.deportes);
     res.json({ usuario: perfil });
   } catch (err) {
     next(err);
   }
 }
 
-
-
 export async function cambiarMiPassword(req, res, next) {
   try {
-    const datos = validar(schemaCambiarPassword, req.body);
-
+    const { passwordActual, passwordNueva } = req.body;
     const resultado = await usuariosService.cambiarMiPassword(
       req.usuario.id,
-      datos.passwordActual,
-      datos.passwordNueva
+      passwordActual,
+      passwordNueva
     );
-
     res.json(resultado);
   } catch (err) {
     next(err);
   }
 }
-
-
 
 export async function eliminarMiCuenta(req, res, next) {
   try {
-    const datos = validar(schemaEliminarCuenta, req.body);
-
-    const resultado = await usuariosService.eliminarMiCuenta(
-      req.usuario.id,
-      datos.password
-    );
-
+    const { password } = req.body;
+    const resultado = await usuariosService.eliminarMiCuenta(req.usuario.id, password);
     res.json(resultado);
   } catch (err) {
     next(err);
   }
 }
 
-
-
 export async function buscar(req, res, next) {
   try {
-    const datos = validar(schemaBuscarUsuarios, req.query);
-
-    const usuarios = await usuariosService.buscarUsuarios(
-      datos.q,
-      req.usuario.id,
-      datos.limit
-    );
-
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json({ usuarios: [] });
+    const usuarios = await usuariosService.buscarUsuarios(q, req.usuario.id);
     res.json({ usuarios });
   } catch (err) {
     next(err);

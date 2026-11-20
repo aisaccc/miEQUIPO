@@ -87,24 +87,6 @@ async function obtenerTorneoOFallar(client, torneoId) {
   return rows[0];
 }
 
-async function obtenerTorneoBloqueadoOFallar(client, torneoId) {
-  const { rows } = await client.query(
-    `SELECT *
-     FROM torneos
-     WHERE id = $1
-     FOR UPDATE`,
-    [torneoId]
-  );
-
-  if (!rows[0]) {
-    const err = new Error('Torneo no encontrado');
-    err.status = 404;
-    throw err;
-  }
-
-  return rows[0];
-}
-
 function verificarOrganizador(torneo, usuarioId) {
   if (String(torneo.organizador_id) !== String(usuarioId)) {
     const err = new Error('No tienes permiso para modificar este torneo');
@@ -125,27 +107,6 @@ async function verificarPermisoResultados(client, torneo, usuarioId) {
 
   if (rows.length === 0) {
     const err = new Error('No tienes permiso para gestionar el fixture de este torneo');
-    err.status = 403;
-    throw err;
-  }
-}
-
-async function verificarPermisoCompleto(client, torneo, usuarioId) {
-  if (String(torneo.organizador_id) === String(usuarioId)) return;
-
-  const { rows } = await client.query(
-    `SELECT 1
-     FROM torneo_organizadores
-     WHERE torneo_id = $1
-       AND usuario_id = $2
-       AND permisos = 'completo'`,
-    [torneo.id, usuarioId]
-  );
-
-  if (!rows[0]) {
-    const err = new Error(
-      'No tienes permiso para modificar la configuración de este torneo.'
-    );
     err.status = 403;
     throw err;
   }
@@ -1166,11 +1127,8 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
   try {
     await client.query('BEGIN');
 
-    const torneoAntes = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
-    await verificarPermisoCompleto(client, torneoAntes, usuarioId);
+    const torneoAntes = await obtenerTorneoOFallar(client, torneoId);
+    await verificarPermisoResultados(client, torneoAntes, usuarioId);
     if (torneoAntes.fecha_fin && new Date(torneoAntes.fecha_fin + 'T23:59:59') <= new Date()) {
       const err = new Error('No puedes modificar un torneo que ya ha finalizado.');
       err.status = 400;
@@ -1355,10 +1313,7 @@ export async function eliminarTorneo(torneoId, usuarioId) {
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
     verificarOrganizador(torneo, usuarioId);
     if (torneo.fecha_fin && new Date(torneo.fecha_fin + 'T23:59:59') <= new Date()) {
       const err = new Error('No puedes eliminar un torneo que ya ha finalizado.');
@@ -1414,11 +1369,8 @@ export async function cerrarTorneo(torneoId, usuarioId) {
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
-    await verificarPermisoCompleto(client, torneo, usuarioId);
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     if (torneo.estado !== 'inscripcion') {
       const err = new Error('El torneo no está en período de inscripción');
@@ -1490,10 +1442,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No puedes inscribirte en este torneo');
@@ -1793,10 +1742,7 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No puedes interactuar con este torneo');
@@ -1909,11 +1855,8 @@ export async function gestionarSolicitud(torneoId, usuarioId, equipoId, accion) 
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
-    await verificarPermisoCompleto(client, torneo, usuarioId);
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     if (await estanBloqueados(usuarioId, equipoId)) {
       const err = new Error('No puedes gestionar solicitudes de este usuario');
@@ -2062,11 +2005,8 @@ export async function expulsarEquipo(torneoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
-    await verificarPermisoCompleto(client, torneo, usuarioId);
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
@@ -2200,7 +2140,7 @@ export async function invitarEquipo(torneoId, usuarioId, equipoId) {
     await client.query('BEGIN');
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
-    await verificarPermisoCompleto(client, torneo, usuarioId);
+    await verificarPermisoResultados(client, torneo, usuarioId);
 
     const { rows: capRows } = await client.query(
       `SELECT capitan_id FROM grupos WHERE id = $1`,
@@ -2278,37 +2218,7 @@ export async function responderInvitacion(torneoId, usuarioId, equipoId, aceptar
   try {
     await client.query('BEGIN');
 
-    const torneo = await obtenerTorneoBloqueadoOFallar(
-      client,
-      torneoId
-    );
-
-    const { rows: equipoAutorizado } = await client.query(
-      `SELECT 1
-      FROM grupos g
-      WHERE g.id = $1
-        AND g.tipo = 'equipo'
-        AND (
-          g.capitan_id = $2
-          OR EXISTS (
-            SELECT 1
-            FROM grupo_miembros gm
-            WHERE gm.grupo_id = g.id
-              AND gm.usuario_id = $2
-              AND gm.rol IN ('capitan', 'admin')
-          )
-        )`,
-      [equipoId, usuarioId]
-    );
-
-    if (!equipoAutorizado[0]) {
-      const err = new Error(
-        'No tienes permiso para responder invitaciones de este equipo.'
-      );
-      err.status = 403;
-      throw err;
-    }
-
+    const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
       const err = new Error('No puedes responder a esta invitación');

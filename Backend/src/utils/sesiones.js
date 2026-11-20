@@ -7,7 +7,6 @@
 
 import { pool } from '../config/db.js';
 import { hashearToken } from './jwt.js';
-import { verificarRefreshToken } from './jwt.js';
 
 /* =========================================================
    CREAR SESIÓN
@@ -22,21 +21,8 @@ import { verificarRefreshToken } from './jwt.js';
  */
 export async function crearSesion(usuarioId, refreshToken, meta = {}, diasValidez = 7) {
   const refreshHash = hashearToken(refreshToken);
-  const payload = verificarRefreshToken(refreshToken);
-
-  if (!payload || !Number.isFinite(payload.exp)) {
-    const err = new Error('Refresh token inválido');
-    err.status = 401;
-    throw err;
-  }
-
-  if (String(payload.sub) !== String(usuarioId)) {
-    const err = new Error('Usuario del token incorrecto');
-    err.status = 401;
-    throw err;
-  }
-
-  const expiresAt = new Date(payload.exp * 1000);
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + diasValidez);
 
   const { rows } = await pool.query(
     `INSERT INTO sesiones (usuario_id, refresh_hash, user_agent, ip_address, expires_at)
@@ -110,101 +96,3 @@ export async function revocarTodasLasSesiones(usuarioId) {
     [usuarioId]
   );
 }
-
-
-export async function rotarSesion(
-  refreshTokenAnterior,
-  refreshTokenNuevo,
-  meta = {}
-) {
-  const payloadAnterior =
-    verificarRefreshToken(refreshTokenAnterior);
-
-  const payloadNuevo =
-    verificarRefreshToken(refreshTokenNuevo);
-
-  if (
-    !payloadAnterior ||
-    !payloadNuevo ||
-    !Number.isFinite(payloadNuevo.exp) ||
-    typeof payloadAnterior.sub !== 'string' ||
-    payloadAnterior.sub !== payloadNuevo.sub
-  ) {
-    const err = new Error('Refresh token inválido');
-    err.status = 401;
-    throw err;
-  }
-
-  const hashAnterior = hashearToken(refreshTokenAnterior);
-  const hashNuevo = hashearToken(refreshTokenNuevo);
-  const expiresAt = new Date(payloadNuevo.exp * 1000);
-
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
-    const { rows } = await client.query(
-      `UPDATE sesiones
-       SET revocado = TRUE
-       WHERE refresh_hash = $1
-         AND usuario_id = $2
-         AND revocado = FALSE
-         AND expires_at > NOW()
-       RETURNING usuario_id`,
-      [hashAnterior, payloadAnterior.sub]
-    );
-
-    if (rows.length === 0) {
-      const err = new Error(
-        'Sesión inválida, expirada o ya utilizada'
-      );
-      err.status = 401;
-      throw err;
-    }
-
-    const usuarioId = rows[0].usuario_id;
-
-    const { rows: usuarios } = await client.query(
-      `SELECT id FROM usuarios
-       WHERE id = $1 AND activo = TRUE
-       FOR SHARE`,
-      [usuarioId]
-    );
-
-    if (usuarios.length === 0) {
-      const err = new Error('Usuario inactivo');
-      err.status = 401;
-      throw err;
-    }
-
-    const { rows: nuevas } = await client.query(
-      `INSERT INTO sesiones (
-        usuario_id,
-        refresh_hash,
-        user_agent,
-        ip_address,
-        expires_at
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, usuario_id, expires_at`,
-      [
-        usuarioId,
-        hashNuevo,
-        meta.userAgent || null,
-        meta.ip || null,
-        expiresAt
-      ]
-    );
-
-    await client.query('COMMIT');
-    return nuevas[0];
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-

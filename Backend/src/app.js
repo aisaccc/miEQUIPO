@@ -20,10 +20,6 @@ import amistadesRoutes from './routes/amistades.routes.js';
 
 const app = express();
 
-if (env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-}
-
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
@@ -50,6 +46,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+app.options('*', cors());
 app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

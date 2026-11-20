@@ -57,14 +57,14 @@ const avatarValido = z
   .string()
   .max(2_800_000, 'El avatar es demasiado grande')
   .refine(
-    val =>
-      !val ||
-      /^https?:\/\//i.test(val) ||
-      /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val),
+    val => {
+      if (!val) return true;
+      return /^https?:\/\//i.test(val) ||
+             /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(val);
+    },
     { message: 'El avatar debe ser una URL válida o una imagen' }
   )
-  .nullable()
-  .optional();
+
 /* Foto de banner: mismo formato que avatar, límite más generoso */
 const heroFotoValida = z
   .string()

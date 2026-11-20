@@ -294,54 +294,21 @@ export async function crearObtenerConversacion(usuarioId, datos) {
       throw err;
     }
         // ⚡ NUEVO: Verificar si el usuario destino solo acepta mensajes de amigos
-
     if (usuarioExiste[0].mensajes_solo_amigos) {
       const { rows: amistad } = await client.query(
         `SELECT 1 FROM amistades
-        WHERE estado = 'aceptada'
-          AND (
-            (usuario_id = $1 AND amigo_id = $2)
-            OR (usuario_id = $2 AND amigo_id = $1)
-          )
-        LIMIT 1`,
+         WHERE ((usuario_id = $1 AND amigo_id = $2) OR (usuario_id = $2 AND amigo_id = $1))
+           AND estado = 'aceptada'
+         LIMIT 1`,
         [usuarioId, otroUsuarioId]
       );
 
-      const { rows: contactoPrevio } = await client.query(
-        `SELECT 1
-        FROM conversaciones c
-        WHERE EXISTS (
-          SELECT 1 FROM conversacion_participantes
-          WHERE conversacion_id = c.id
-            AND usuario_id = $1
-        )
-        AND EXISTS (
-          SELECT 1 FROM conversacion_participantes
-          WHERE conversacion_id = c.id
-            AND usuario_id = $2
-        )
-        AND (
-          SELECT COUNT(*)
-          FROM conversacion_participantes
-          WHERE conversacion_id = c.id
-        ) = 2
-        AND EXISTS (
-          SELECT 1 FROM mensajes m
-          WHERE m.conversacion_id = c.id
-        )
-        LIMIT 1`,
-        [usuarioId, otroUsuarioId]
-      );
-
-      if (!amistad[0] && !contactoPrevio[0]) {
-        const err = new Error(
-          'Este usuario solo acepta mensajes nuevos de sus amigos.'
-        );
+      if (amistad.length === 0) {
+        const err = new Error('Este usuario solo acepta mensajes de sus amigos.');
         err.status = 403;
         throw err;
       }
     }
-
 
     const { rows: existente } = await client.query(
       `SELECT c.id, c.vinculada_tipo, c.vinculada_id, c.vinculada_nombre,
@@ -487,50 +454,6 @@ export async function enviarMensaje(conversacionId, usuarioId, texto, imagen = n
       err.status = 403;
       throw err;
     }
-
-    if (!otroRows[0]) {
-      const err = new Error('Destinatario no encontrado');
-      err.status = 404;
-      throw err;
-    }
-
-    const destinatarioId = otroRows[0].usuario_id;
-
-    const { rows: destinatarioRows } = await client.query(
-      `SELECT mensajes_solo_amigos
-      FROM usuarios
-      WHERE id = $1 AND activo = TRUE`,
-      [destinatarioId]
-    );
-
-    if (!destinatarioRows[0]) {
-      const err = new Error('Destinatario no disponible');
-      err.status = 404;
-      throw err;
-    }
-
-    if (destinatarioRows[0].mensajes_solo_amigos) {
-      const { rows: amistad } = await client.query(
-        `SELECT 1
-        FROM amistades
-        WHERE estado = 'aceptada'
-          AND (
-            (usuario_id = $1 AND amigo_id = $2)
-            OR (usuario_id = $2 AND amigo_id = $1)
-          )
-        LIMIT 1`,
-        [usuarioId, destinatarioId]
-      );
-
-      if (!amistad[0]) {
-        const err = new Error(
-          'Este usuario solo acepta mensajes de sus amigos.'
-        );
-        err.status = 403;
-        throw err;
-      }
-    }
-
 
     const { rows } = await client.query(
       `INSERT INTO mensajes (conversacion_id, autor_id, texto, imagen)

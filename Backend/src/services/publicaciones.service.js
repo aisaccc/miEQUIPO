@@ -309,58 +309,11 @@ export async function feedGlobal(usuarioActualId) {
       ))
       OR
       (p.scope = 'torneo' AND p.privacidad = 'publico')
-
       OR
-      (
-        p.scope = 'grupo'
-        AND EXISTS (
-          SELECT 1
-          FROM grupos g
-          WHERE g.id = p.grupo_id
-            AND (
-              p.autor_id = $1
-              OR (
-                (g.tipo_acceso = 'publico'
-                  OR g.capitan_id = $1
-                  OR EXISTS (
-                    SELECT 1
-                    FROM grupo_miembros gm
-                    WHERE gm.grupo_id = g.id
-                      AND gm.usuario_id = $1
-                  ))
-                AND (
-                  p.privacidad = 'publico'
-                  OR (
-                    p.privacidad = 'miembros'
-                    AND (
-                      g.capitan_id = $1
-                      OR EXISTS (
-                        SELECT 1
-                        FROM grupo_miembros gm
-                        WHERE gm.grupo_id = g.id
-                          AND gm.usuario_id = $1
-                      )
-                    )
-                  )
-                  OR (
-                    p.privacidad = 'staff'
-                    AND (
-                      g.capitan_id = $1
-                      OR EXISTS (
-                        SELECT 1
-                        FROM grupo_miembros gm
-                        WHERE gm.grupo_id = g.id
-                          AND gm.usuario_id = $1
-                          AND gm.rol IN ('capitan', 'admin')
-                      )
-                    )
-                  )
-                )
-              )
-            )
-        )
-      )
-
+      (p.scope = 'grupo' AND EXISTS (
+        SELECT 1 FROM grupos g
+        WHERE g.id = p.grupo_id AND (
+          (g.tipo = 'equipo' AND p.privacidad = 'publico')
           OR
           (g.tipo = 'comunidad' AND (
             g.tipo_acceso = 'publico'
@@ -425,7 +378,6 @@ export async function crear(usuarioId, datos) {
   try {
     await client.query('BEGIN');
 
-
     const fotosNuevas = contarFotosEnPub(datos.imagen);
     await validarLimitePerfil(client, usuarioId, fotosNuevas);
 
@@ -449,50 +401,6 @@ export async function crearEnGrupo(grupoId, usuarioId, datos) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { rows: permisosGrupo } = await client.query(
-      `SELECT
-        g.tipo_acceso,
-        g.capitan_id,
-        gm.rol
-      FROM grupos g
-      LEFT JOIN grupo_miembros gm
-        ON gm.grupo_id = g.id
-        AND gm.usuario_id = $2
-      WHERE g.id = $1`,
-      [grupoId, usuarioId]
-    );
-
-    const grupo = permisosGrupo[0];
-
-    if (!grupo) {
-      const err = new Error('Grupo no encontrado');
-      err.status = 404;
-      throw err;
-    }
-
-    const autorizado =
-      String(grupo.capitan_id) === String(usuarioId) ||
-      grupo.rol != null;
-
-    if (!autorizado) {
-      const err = new Error(
-        'Debes pertenecer al grupo para publicar.'
-      );
-      err.status = 403;
-      throw err;
-    }
-
-    if (
-      datos.privacidad === 'staff' &&
-      String(grupo.capitan_id) !== String(usuarioId) &&
-      !['capitan', 'admin'].includes(grupo.rol)
-    ) {
-      const err = new Error(
-        'No tienes permiso para publicar contenido de staff.'
-      );
-      err.status = 403;
-      throw err;
-    }
 
     const fotosNuevas = contarFotosEnPub(datos.imagen);
     await validarLimiteGrupo(client, grupoId, fotosNuevas);
@@ -524,100 +432,6 @@ async function obtenerPublicacionOFallar(id) {
     throw err;
   }
   return rows[0];
-}
-
-async function verificarAccesoPublicacion(id, usuarioId) {
-  const pub = await obtenerPublicacionOFallar(id);
-
-  if (String(pub.autor_id) === String(usuarioId)) {
-    return pub;
-  }
-
-  let permitido = false;
-
-  if (pub.scope === 'perfil') {
-    if (pub.privacidad === 'publico') {
-      permitido = true;
-    } else if (pub.privacidad === 'amigos') {
-      const { rows } = await pool.query(
-        `SELECT 1 FROM amistades
-         WHERE estado = 'aceptada'
-           AND (
-             (usuario_id = $1 AND amigo_id = $2)
-             OR (usuario_id = $2 AND amigo_id = $1)
-           )`,
-        [usuarioId, pub.autor_id]
-      );
-      permitido = rows.length > 0;
-    }
-  } else if (pub.scope === 'grupo') {
-    const { rows } = await pool.query(
-      `SELECT
-         g.tipo_acceso,
-         (g.capitan_id = $2) AS es_capitan,
-         gm.rol
-       FROM grupos g
-       LEFT JOIN grupo_miembros gm
-         ON gm.grupo_id = g.id AND gm.usuario_id = $2
-       WHERE g.id = $1`,
-      [pub.grupo_id, usuarioId]
-    );
-
-    const grupo = rows[0];
-
-    if (grupo) {
-      const miembro = grupo.es_capitan || grupo.rol != null;
-      const staff = grupo.es_capitan ||
-        ['capitan', 'admin'].includes(grupo.rol);
-
-      if (grupo.tipo_acceso === 'publico' || miembro) {
-        permitido =
-          pub.privacidad === 'publico' ||
-          (pub.privacidad === 'miembros' && miembro) ||
-          (pub.privacidad === 'staff' && staff);
-      }
-    }
-  } else if (pub.scope === 'torneo') {
-    if (pub.privacidad === 'publico') {
-      permitido = true;
-    } else {
-      const { rows } = await pool.query(
-        `SELECT 1
-         FROM torneos t
-         WHERE t.id = $1
-           AND (
-             t.organizador_id = $2
-             OR EXISTS (
-               SELECT 1 FROM torneo_organizadores o
-               WHERE o.torneo_id = t.id
-                 AND o.usuario_id = $2
-             )
-             OR EXISTS (
-               SELECT 1 FROM torneo_equipos te
-               LEFT JOIN grupo_miembros gm
-                 ON gm.grupo_id = te.equipo_id
-               WHERE te.torneo_id = t.id
-                 AND (
-                   te.equipo_id = $2
-                   OR gm.usuario_id = $2
-                 )
-             )
-           )`,
-        [pub.torneo_id, usuarioId]
-      );
-      permitido = rows.length > 0;
-    }
-  }
-
-  if (!permitido) {
-    const err = new Error(
-      'No tienes permiso para acceder a esta publicación.'
-    );
-    err.status = 403;
-    throw err;
-  }
-
-  return pub;
 }
 
 /* =========================================================
@@ -722,7 +536,8 @@ export async function eliminar(id, usuarioId) {
    TOGGLE LIKE
    ========================================================= */
 export async function toggleLike(id, usuarioId) {
-  await verificarAccesoPublicacion(id, usuarioId);
+  await obtenerPublicacionOFallar(id);
+
   const { rows: existentes } = await pool.query(
     `SELECT 1 FROM publicacion_likes WHERE publicacion_id = $1 AND usuario_id = $2`,
     [id, usuarioId]
@@ -746,8 +561,8 @@ export async function toggleLike(id, usuarioId) {
 /* =========================================================
    COMENTARIOS
    ========================================================= */
-export async function listarComentarios(id, usuarioId) {
-  await verificarAccesoPublicacion(id, usuarioId);
+export async function listarComentarios(id) {
+  await obtenerPublicacionOFallar(id);
 
   const { rows } = await pool.query(
     `SELECT
@@ -766,7 +581,7 @@ export async function listarComentarios(id, usuarioId) {
 }
 
 export async function crearComentario(id, usuarioId, texto) {
-  await verificarAccesoPublicacion(id, usuarioId);
+  await obtenerPublicacionOFallar(id);
 
   const { rows } = await pool.query(
     `INSERT INTO publicacion_comentarios (publicacion_id, autor_id, texto)

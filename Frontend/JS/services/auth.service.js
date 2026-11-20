@@ -12,30 +12,10 @@ const SESSION_KEY = 'miejquipo_session';
 /* =========================================================
    SESIÓN (usuario en localStorage)
    ========================================================= */
-
 export function getSesion() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-
-    if (!raw) return null;
-
-    const usuario = JSON.parse(raw);
-
-    if (
-      !usuario ||
-      typeof usuario !== 'object' ||
-      Array.isArray(usuario)
-    ) {
-      return null;
-    }
-
-    return usuario;
-  } catch (error) {
-    console.warn('[Auth] Sesión local inválida');
-    return null;
-  }
+  const raw = localStorage.getItem(SESSION_KEY);
+  return raw ? JSON.parse(raw) : null;
 }
-
 
 export function setSesion(usuario) {
   // Nunca guardar password
