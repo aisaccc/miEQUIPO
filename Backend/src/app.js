@@ -46,12 +46,19 @@ app.use(cors({
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+// Las respuestas de la API pueden contener información privada.
+// Impedir que el navegador y las cachés compartidas las almacenen.
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 if (env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+  app.use(morgan(':method :status :response-time ms'));
 }
 
 app.get('/api/health', (req, res) => {

@@ -7,6 +7,7 @@ import { hashearPassword, verificarPassword } from '../utils/password.js';
 import {
   generarAccessToken,
   generarRefreshToken,
+  verificarRefreshToken,
   hashearToken,
 } from '../utils/jwt.js';
 import { generarTokenAleatorio } from '../utils/token.js';
@@ -109,13 +110,12 @@ export async function registrarUsuario({ nombre, email, username, password }, me
   try {
     await enviarEmailVerificacion(usuario.email, usuario.nombre, tokenVerificacion);
   } catch (mailErr) {
-    console.error('[auth.service] No se pudo enviar email de verificación:', mailErr.message);
+    console.error('[auth.service] No se pudo enviar email de verificación:', mailErr.code || 'MAIL_ERROR');
   }
 
-  const accessToken = generarAccessToken(usuario);
   const refreshToken = generarRefreshToken(usuario);
-
-  await crearSesion(usuario.id, refreshToken, meta);
+  const sesion = await crearSesion(usuario.id, refreshToken, meta);
+  const accessToken = generarAccessToken(usuario, sesion.id);
 
   return {
     usuario: formatearUsuario(usuario),
@@ -167,10 +167,9 @@ export async function loginUsuario({ identificador, password }, meta = {}) {
     [usuario.id]
   );
 
-  const accessToken = generarAccessToken(usuario);
   const refreshToken = generarRefreshToken(usuario);
-
-  await crearSesion(usuario.id, refreshToken, meta);
+  const sesion = await crearSesion(usuario.id, refreshToken, meta);
+  const accessToken = generarAccessToken(usuario, sesion.id);
 
   const { password_hash, activo, ...usuarioLimpio } = usuario;
 
@@ -185,8 +184,15 @@ export async function loginUsuario({ identificador, password }, meta = {}) {
    REFRESH TOKEN
    ========================================================= */
 export async function refrescarTokens(refreshToken, meta = {}) {
+  const payload = verificarRefreshToken(refreshToken);
+  if (!payload) {
+    const err = new Error('Refresh token inválido o expirado');
+    err.status = 401;
+    throw err;
+  }
+
   const sesion = await buscarSesionPorRefresh(refreshToken);
-  if (!sesion) {
+  if (!sesion || sesion.usuario_id !== payload.sub) {
     const err = new Error('Refresh token inválido o expirado');
     err.status = 401;
     throw err;
@@ -208,19 +214,14 @@ export async function refrescarTokens(refreshToken, meta = {}) {
     throw err;
   }
 
-  // ⚡ FIX: ELIMINAMOS EL revocarSesionPorRefresh(refreshToken) para evitar que 
-  // las pestañas múltiples o los cortes de red te saquen. 
-  // El token viejo expirará naturalmente en la BD en 30 días.
-
-  const nuevoAccess = generarAccessToken(usuario);
-  const nuevoRefresh = generarRefreshToken(usuario);
-
-  await crearSesion(usuario.id, nuevoRefresh, meta);
+  // Fase 1: conservar una única sesión y su vencimiento original.
+  // No crear nuevas sesiones al renovar el access token.
+  const nuevoAccess = generarAccessToken(usuario, sesion.id);
 
   return {
     usuario: formatearUsuario(usuario),
     accessToken: nuevoAccess,
-    refreshToken: nuevoRefresh,
+    refreshToken,
   };
 }
 
@@ -228,7 +229,7 @@ export async function refrescarTokens(refreshToken, meta = {}) {
    LOGOUT
    ========================================================= */
 export async function cerrarSesion(refreshToken) {
-  if (!refreshToken) return { ok: true };
+  if (typeof refreshToken !== 'string' || !refreshToken || refreshToken.length > 2000) return { ok: true };
   await revocarSesionPorRefresh(refreshToken);
   return { ok: true };
 }
@@ -309,7 +310,7 @@ export async function verificarEmail(token) {
   try {
     await enviarEmailBienvenida(registro.email, registro.nombre);
   } catch (e) {
-    console.error('[auth.service] No se pudo enviar bienvenida:', e.message);
+    console.error('[auth.service] No se pudo enviar bienvenida:', e.code || 'MAIL_ERROR');
   }
 
   return { ok: true, mensaje: 'Email verificado correctamente' };

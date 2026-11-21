@@ -1,22 +1,22 @@
 import { verificarAccessToken } from '../utils/jwt.js';
 import { pool } from '../config/db.js';
 
-// ⚡ CACHÉ EN MEMORIA: Guarda los datos del usuario por 5 minutos
-const cacheUsuarios = new Map();
-const TIEMPO_CACHE_MS = 5 * 60 * 1000; // 5 minutos
-
 function calcularEsPremium(plan, premiumHasta) {
   if (plan !== 'premium') return false;
   if (!premiumHasta) return true;
   return new Date(premiumHasta) > new Date();
 }
 
-async function obtenerUsuarioDeCacheOBD(usuarioId) {
+async function obtenerUsuarioDeCacheOBD(usuarioId, sesionId) {
   const { rows } = await pool.query(
-    `SELECT id, username, activo, plan, premium_hasta
-     FROM usuarios
-     WHERE id = $1`,
-    [usuarioId]
+    `SELECT u.id, u.username, u.activo, u.plan, u.premium_hasta
+     FROM usuarios u
+     JOIN sesiones s ON s.usuario_id = u.id
+     WHERE u.id = $1
+       AND s.id = $2
+       AND s.revocado = FALSE
+       AND s.expires_at > NOW()`,
+    [usuarioId, sesionId]
   );
 
   const usuario = rows[0];
@@ -49,10 +49,10 @@ export async function requiereAuth(req, res, next) {
       return res.status(401).json({ error: 'No autenticado', mensaje: 'Token inválido' });
     }
 
-    const usuario = await obtenerUsuarioDeCacheOBD(payload.sub);
+    const usuario = await obtenerUsuarioDeCacheOBD(payload.sub, payload.sid);
 
     if (!usuario) {
-      return res.status(401).json({ error: 'No autenticado', mensaje: 'Usuario no encontrado' });
+      return res.status(401).json({ error: 'No autenticado', mensaje: 'Sesión inválida o expirada' });
     }
     if (!usuario.activo) {
       return res.status(403).json({ error: 'Cuenta desactivada', mensaje: 'Tu cuenta está desactivada' });
@@ -61,12 +61,12 @@ export async function requiereAuth(req, res, next) {
     req.usuario = usuario;
     next();
   } catch (err) {
-    console.error('[auth.middleware]', err);
+    console.error('[auth.middleware]', { name: err.name, code: err.code });
     return res.status(500).json({ error: 'Error interno', mensaje: 'Error de autenticación' });
   }
 }
 
-// authOpcional se queda igual (o puedes usar la misma caché si quieres)
+// La autenticación opcional comprueba también la sesión en PostgreSQL.
 export async function authOpcional(req, res, next) {
   try {
     const header = req.headers.authorization;
@@ -81,7 +81,7 @@ export async function authOpcional(req, res, next) {
       return next();
     }
 
-    const usuario = await obtenerUsuarioDeCacheOBD(payload.sub);
+    const usuario = await obtenerUsuarioDeCacheOBD(payload.sub, payload.sid);
     req.usuario = usuario && usuario.activo ? usuario : null;
     next();
   } catch (err) {

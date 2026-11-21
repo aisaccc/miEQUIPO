@@ -2,60 +2,77 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
 
-/**
- * Genera un ACCESS token (corto, 15 min).
- * El payload NO debe tener datos sensibles (es decodificable por cualquiera).
- */
-export function generarAccessToken(usuario) {
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* El access token queda asociado al id real de la tabla sesiones. */
+export function generarAccessToken(usuario, sesionId) {
+  if (!UUID_VALIDO.test(usuario.id) || !UUID_VALIDO.test(sesionId)) {
+    throw new Error('Identificador de sesión inválido');
+  }
+
   return jwt.sign(
     {
       sub: usuario.id,
       username: usuario.username,
+      sid: sesionId,
+      tipo: 'access',
     },
     env.JWT.secret,
-    { expiresIn: env.JWT.expiresIn }
+    {
+      algorithm: 'HS256',
+      expiresIn: env.JWT.expiresIn,
+      jwtid: crypto.randomUUID(),
+    }
   );
 }
 
-/**
- * Verifica un ACCESS token.
- * Devuelve el payload o null si es inválido/expirado.
- */
 export function verificarAccessToken(token) {
   try {
-    return jwt.verify(token, env.JWT.secret);
-  } catch (err) {
+    const payload = jwt.verify(token, env.JWT.secret, {
+      algorithms: ['HS256'],
+    });
+    if (
+      !payload || typeof payload !== 'object' ||
+      payload.tipo !== 'access' ||
+      typeof payload.sub !== 'string' || !UUID_VALIDO.test(payload.sub) ||
+      typeof payload.sid !== 'string' || !UUID_VALIDO.test(payload.sid) ||
+      typeof payload.exp !== 'number'
+    ) return null;
+    return payload;
+  } catch {
     return null;
   }
 }
 
-/**
- * Genera un REFRESH token (largo, 7 días).
- * Este SÍ o SÍ debe guardarse hasheado en la BD, nunca en texto plano.
- */
 export function generarRefreshToken(usuario) {
   return jwt.sign(
-    { sub: usuario.id },
+    { sub: usuario.id, tipo: 'refresh' },
     env.JWT.refreshSecret,
-    { expiresIn: env.JWT.refreshExpiresIn }
+    {
+      algorithm: 'HS256',
+      expiresIn: env.JWT.refreshExpiresIn,
+      jwtid: crypto.randomUUID(),
+    }
   );
 }
 
-/**
- * Verifica un REFRESH token.
- */
 export function verificarRefreshToken(token) {
   try {
-    return jwt.verify(token, env.JWT.refreshSecret);
-  } catch (err) {
+    const payload = jwt.verify(token, env.JWT.refreshSecret, {
+      algorithms: ['HS256'],
+    });
+    if (
+      !payload || typeof payload !== 'object' ||
+      payload.tipo !== 'refresh' ||
+      typeof payload.sub !== 'string' || !UUID_VALIDO.test(payload.sub) ||
+      typeof payload.exp !== 'number'
+    ) return null;
+    return payload;
+  } catch {
     return null;
   }
 }
 
-/**
- * Genera un hash SHA-256 de un token.
- * Se usa para guardar el refresh token en la BD sin exponerlo.
- */
 export function hashearToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
