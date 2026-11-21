@@ -1,4 +1,4 @@
-# MiEquipo
+# ROSTER
 
 Promesa:* La plataforma web/movil que centraliza la conexión entre deportistas para organizar partidos y una comunidad deportiva.
 
