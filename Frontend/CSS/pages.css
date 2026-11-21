@@ -19485,3 +19485,66 @@ body {
   margin-top: 8px !important; /* Empuja la foto un poquito hacia abajo */
   margin-left: 8px !important; /* Evita que el marco se corte contra el borde izquierdo */
 }
+/* =========================================================
+   FIX: Evitar que el Header tape la página de Inicio
+   ========================================================= */
+
+/* 1. Aseguramos que el contenedor principal respete el alto del header */
+.app-main {
+  padding-top: calc(var(--header-h) + 20px) !important; 
+  /* Si no tienes la variable --header-h, cambiala por 80px o 90px según el alto de tu barra */
+}
+
+/* 2. Le damos un poco más de aire al bloque de bienvenida ("Hola, Isaac") */
+.page-hero, 
+.inicio-hero, 
+.hero-inicio {
+  margin-top: 10px !important;
+  padding-top: 10px !important;
+}
+
+/* 3. Si el buscador o el texto siguen chocando, agregamos margen al contenedor del saludo */
+.hero-saludo-container, 
+.welcome-container {
+  margin-top: 16px !important;
+  position: relative;
+  z-index: 1; /* Asegura que el texto quede por encima del fondo */
+}
+/* =========================================================
+   FIX: Separar el Hero (Hola, Isaac) de la Grilla (Buscador)
+   ========================================================= */
+
+/* 1. Le damos un respiro abajo al bloque del saludo */
+.page-hero {
+  margin-bottom: 24px !important; /* Separa el título del buscador */
+  position: relative;
+  z-index: 2;
+}
+
+/* 2. Aseguramos que el subtítulo no quede oculto */
+.page-subtitle {
+  margin-top: 8px !important;
+  margin-bottom: 16px !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* 3. Quitamos cualquier margen negativo o posición absoluta que tenga el buscador o la grilla */
+.page-grid {
+  position: relative !important;
+  top: 0 !important;
+  margin-top: 0 !important; 
+}
+
+.composer {
+  position: relative !important;
+  top: 0 !important;
+  margin-top: 0 !important; /* Quita el margen negativo que lo hace chocar */
+  z-index: 1;
+}
+
+/* 4. Aseguramos que el título grande no tenga márgenes raros */
+.page-title--xl {
+  margin-bottom: 0 !important; 
+  line-height: 1.1 !important;
+}

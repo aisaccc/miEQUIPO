@@ -781,8 +781,6 @@ export async function verPerfilUsuario(usuarioOId) {
   const isDarkText = preset.text === 'dark';
 
   // Lógica para el MARCO
-  // Lógica para el MARCO
-  // Lógica para el MARCO
   const mClass = u.marcoPerfil && u.marcoPerfil !== 'default' && u.marcoPerfil !== 'custom' ? `marco-${u.marcoPerfil}` : '';
   
   let mStyle = '';
@@ -793,6 +791,12 @@ export async function verPerfilUsuario(usuarioOId) {
     } else {
       mStyle += ` box-shadow: none !important;`;
     }
+  }
+
+  // ⚡ ACÁ DECLARAMOS LA VARIABLE QUE FALTABA
+  let opcionesMenu = '';
+  if (estadoAmistad === 'amigos') {
+    opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-eliminar-amigo" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.basura} Eliminar amigo</button>`;
   }
   opcionesMenu += `<button class="btn btn--ghost btn--sm w-full" id="btn-bloquear-usuario" style="color:var(--color-danger); justify-content:flex-start; padding:8px 10px; width:100%; text-align:left">${ICONOS.candado} Bloquear usuario</button>`;
 
