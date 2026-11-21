@@ -19548,3 +19548,163 @@ body {
   margin-bottom: 0 !important; 
   line-height: 1.1 !important;
 }
+/* =========================================================
+   FIX SOLO ESCRITORIO: Reducir espacio superior en páginas
+   ========================================================= */
+@media (min-width: 901px) {
+  /* 1. Ajustamos el contenedor principal para que el espacio sea el justo */
+  .app-main {
+    /* Deja el espacio del header + solo unos pocos píxeles de aire */
+    padding-top: calc(var(--header-h) + 5px) !important; 
+  }
+
+  /* 2. Quitamos cualquier margen extra que tenga el bloque del título */
+  .page-hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important; 
+  }
+
+  /* 3. Aseguramos que el título quede bien pegado a su fecha */
+  .page-eyebrow {
+    margin-bottom: 4px !important; /* Acerca la fecha al título "Partidos" */
+  }
+  
+  .page-title, .page-title--xl {
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+  }
+}
+/* =========================================================
+   FIX DEFINITIVO ESCRITORIO: Layout y Scroll
+   ========================================================= */
+@media (min-width: 901px) {
+  
+  /* 1. Quitamos el margen que causaba el bloque invisible y usamos padding interno */
+  .app-main {
+    margin-top: 0 !important; 
+    padding-top: 85px !important; /* Empuja el contenido hacia abajo. Si tu header mide más o menos, ajustá este número */
+    box-sizing: border-box !important;
+  }
+
+  /* 2. Aseguramos que el header tape lo que pasa por debajo al scrollear */
+  .app-header {
+    position: fixed !important;
+    top: 0 !important;
+    width: 100% !important;
+    z-index: 9999 !important;
+    background-color: var(--color-surface) !important; /* Fondo sólido para que no se vea el texto detrás */
+  }
+
+  /* 3. El Hero (título y subtítulo) debe ocupar su espacio real y no tener márgenes negativos */
+  .page-hero {
+    position: relative !important;
+    margin-top: 0 !important;
+    padding-top: 10px !important;
+    margin-bottom: 24px !important; 
+    display: block !important;
+    z-index: 1 !important;
+  }
+
+  /* 4. La grilla y el buscador se quedan abajo del Hero */
+  .page-grid {
+    position: relative !important;
+    margin-top: 0 !important;
+    display: block !important; 
+    z-index: 2 !important;
+  }
+
+  .composer {
+    position: relative !important;
+    margin-top: 0 !important;
+    top: 0 !important;
+    z-index: 2 !important;
+  }
+
+  /* 5. Ajuste fino de la fecha y el título */
+  .page-eyebrow {
+    margin-bottom: 4px !important;
+    display: block !important;
+  }
+  
+  .page-title--xl {
+    margin-top: 0 !important;
+    line-height: 1.1 !important;
+  }
+}
+/* =========================================================
+   FIX: ELIMINAR ESPACIO SUPERIOR EN TODAS LAS PÁGINAS
+   ========================================================= */
+@media (min-width: 801px) {
+  .app-main[data-page] {
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] #page-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] .page-hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+/* =========================================================
+   FIX GLOBAL: ESPACIO SUPERIOR EN ESCRITORIO Y MÓVIL
+   ========================================================= */
+
+/* ESCRITORIO */
+@media (min-width: 801px) {
+  .app-main[data-page] {
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] #page-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] .page-hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+}
+
+/* CELULAR */
+@media (max-width: 800px) {
+  .app-main[data-page] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] #page-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page] .page-hero {
+    margin-top: 0 !important;
+  }
+
+  .app-main[data-page="mensajes"] .mensajes-header {
+    margin-top: 0 !important;
+  }
+}
+/* =========================================================
+   FIX ESCRITORIO: EVITAR QUE EL BUSCADOR TAPE EL SALUDO
+   ========================================================= */
+@media (min-width: 801px) {
+  .app-main[data-page="inicio"] .page-hero {
+    margin-bottom: 20px !important;
+    height: auto !important;
+  }
+
+  .app-main[data-page="inicio"] .composer {
+    margin-top: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+    transform: none !important;
+  }
+}

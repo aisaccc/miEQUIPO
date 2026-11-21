@@ -10,7 +10,11 @@ const passwordSegura = z
   .max(100, 'La contraseña no puede superar los 100 caracteres')
   .regex(/[a-z]/, 'La contraseña debe tener al menos una minúscula')
   .regex(/[A-Z]/, 'La contraseña debe tener al menos una mayúscula')
-  .regex(/[0-9]/, 'La contraseña debe tener al menos un número');
+  .regex(/[0-9]/, 'La contraseña debe tener al menos un número')
+  .refine(
+    password => Buffer.byteLength(password, 'utf8') <= 72,
+    'La contraseña no puede superar los 72 bytes'
+  );
 
 const usernameValido = z
   .string({ required_error: 'El nombre de usuario es obligatorio' })

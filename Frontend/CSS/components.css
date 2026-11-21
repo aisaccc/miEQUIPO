@@ -1572,3 +1572,11 @@ body:has(#modal-ver-perfil.open) {
 .cropper-cuadrado .cropper-face {
   border-radius: 0;
 }
+/* =========================================================
+   FIX: MOSTRAR TOASTS POR ENCIMA DE TODOS LOS MODALES
+   ========================================================= */
+body > .toast-container {
+  position: fixed !important;
+  z-index: 2000000 !important;
+  pointer-events: none;
+}

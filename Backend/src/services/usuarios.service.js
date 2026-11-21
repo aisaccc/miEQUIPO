@@ -434,7 +434,7 @@ export async function cambiarMiPassword(usuarioId, passwordActual, passwordNueva
   const ok = await verificarPassword(passwordActual, rows[0].password_hash);
   if (!ok) {
     const err = new Error('La contraseña actual es incorrecta');
-    err.status = 401;
+    err.status = 400;
     throw err;
   }
 
@@ -464,42 +464,84 @@ export async function cambiarMiPassword(usuarioId, passwordActual, passwordNueva
    DELETE /api/usuarios/me
    ========================================================= */
 export async function eliminarMiCuenta(usuarioId, password) {
-  const { rows } = await pool.query(
-    `SELECT password_hash FROM usuarios WHERE id = $1 AND activo = TRUE`,
-    [usuarioId]
-  );
+  const client = await pool.connect();
 
-  if (!rows[0]) {
-    const err = new Error('Usuario no encontrado');
-    err.status = 404;
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      `SELECT password_hash
+       FROM usuarios
+       WHERE id = $1 AND activo = TRUE
+       FOR UPDATE`,
+      [usuarioId]
+    );
+
+    if (!rows[0]) {
+      const err = new Error('Usuario no encontrado');
+      err.status = 404;
+      throw err;
+    }
+
+    const ok = await verificarPassword(
+      password,
+      rows[0].password_hash
+    );
+
+    if (!ok) {
+      const err = new Error('Contraseña incorrecta');
+      err.status = 400;
+      throw err;
+    }
+
+    await client.query(
+      `UPDATE usuarios
+       SET activo = FALSE,
+           nombre = 'Usuario eliminado',
+           email = id::text || '@cuenta-eliminada.invalid',
+           username = 'del_' || LEFT(REPLACE(id::text, '-', ''), 26),
+           password_hash = '!',
+           email_verificado = FALSE,
+           verificado_en = NULL,
+           avatar = NULL,
+           bio = NULL,
+           edad = NULL,
+           pais = NULL,
+           ciudad = NULL,
+           deportes = '[]'::jsonb,
+           hero_foto = NULL,
+           last_login = NULL,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [usuarioId]
+    );
+
+    await client.query(
+      `DELETE FROM sesiones
+       WHERE usuario_id = $1`,
+      [usuarioId]
+    );
+
+    await client.query(
+      `DELETE FROM tokens_temporales
+       WHERE usuario_id = $1`,
+      [usuarioId]
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      ok: true,
+      mensaje: 'Cuenta eliminada correctamente'
+    };
+
+  } catch (err) {
+    await client.query('ROLLBACK');
     throw err;
+
+  } finally {
+    client.release();
   }
-
-  const ok = await verificarPassword(password, rows[0].password_hash);
-  if (!ok) {
-    const err = new Error('Contraseña incorrecta');
-    err.status = 401;
-    throw err;
-  }
-
-  await pool.query(
-    `UPDATE usuarios
-     SET activo = FALSE, updated_at = NOW()
-     WHERE id = $1`,
-    [usuarioId]
-  );
-
-  await pool.query(
-    `UPDATE sesiones
-     SET revocado = TRUE
-     WHERE usuario_id = $1`,
-    [usuarioId]
-  );
-
-  return {
-    ok: true,
-    mensaje: 'Cuenta eliminada correctamente'
-  };
 }
 
 /* =========================================================

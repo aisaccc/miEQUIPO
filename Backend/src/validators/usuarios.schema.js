@@ -151,7 +151,7 @@ export const schemaActualizarPerfil = z.object({
   ciudad: ciudadValida,
   pais: paisValido,
   edad: edadValida,
-  avatar: avatarValido,
+  avatar: avatarValido.nullable().optional(),
   heroColor: heroColorValido.optional(),
   heroFoto: heroFotoValida,
   statsHeroBase: statsHeroBaseSchema.optional(),
@@ -165,6 +165,7 @@ export const schemaActualizarPerfil = z.object({
   }).optional(),
   // Color del marco custom (#RRGGBB). Solo se usa si marcoPerfil === 'custom'.
   marcoColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color inválido (formato #RRGGBB)').nullable().optional(),
+  marcoBrillante: z.boolean().optional(),
 }).strict();
 
 /* ---------- PATCH /api/usuarios/me/deportes ---------- */
@@ -181,7 +182,11 @@ const passwordSegura = z
   .max(100, 'Máximo 100 caracteres')
   .regex(/[a-z]/, 'Debe tener una minúscula')
   .regex(/[A-Z]/, 'Debe tener una mayúscula')
-  .regex(/[0-9]/, 'Debe tener un número');
+  .regex(/[0-9]/, 'Debe tener un número')
+  .refine(
+    password => Buffer.byteLength(password, 'utf8') <= 72,
+    'La contraseña no puede superar los 72 bytes'
+  );
 
 export const schemaCambiarPassword = z.object({
   passwordActual: z
