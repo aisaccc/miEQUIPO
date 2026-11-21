@@ -16,9 +16,7 @@ const urlsToCache = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
@@ -39,17 +37,32 @@ self.addEventListener('activate', event => {
 
 // Estrategia: Network First (Intenta red, si falla usa caché)
 self.addEventListener('fetch', event => {
-  // No interceptar llamadas a la API (para no servir datos viejos)
-  if (event.request.url.includes('/api/')) return;
+  const url = new URL(event.request.url);
+
+  // 1) Ignorar peticiones que no sean http/https (extensiones, data:, blob:, etc.)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return; // Dejamos que el navegador las maneje normalmente
+  }
+
+  // 2) No interceptar llamadas a la API
+  if (url.pathname.includes('/api/')) return;
+
+  // 3) Solo cachear peticiones GET (la API Cache no soporta POST/PUT)
+  if (event.request.method !== 'GET') return;
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Actualizar caché con la respuesta nueva
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+        // Solo cachear respuestas válidas
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseClone = response.clone();
+          // Usamos waitUntil para asegurar que el guardado se complete
+          event.waitUntil(
+            caches.open(CACHE_NAME).then(cache => {
+              return cache.put(event.request, responseClone);
+            })
+          );
+        }
         return response;
       })
       .catch(() => {
