@@ -19,6 +19,10 @@ export function errorHandler(err, req, res, next) {
 
   /* Errores de PostgreSQL */
   if (err.code === '23505') {
+    // El nuevo índice y la restricción UNIQUE de la migración original.
+    if (['usuarios_username_lower_uidx', 'usuarios_username_key'].includes(err.constraint)) {
+      return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso' });
+    }
     return res.status(409).json({
       error: 'Ese registro ya existe',
     });

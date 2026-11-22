@@ -69,18 +69,15 @@ export async function registrarUsuario({ nombre, email, username, password }, me
     [email, username]
   );
 
-  if (existentes.length > 0) {
-    const dup = existentes[0];
-    if (dup.email.toLowerCase() === email.toLowerCase()) {
-      const err = new Error('Ese email ya está registrado');
-      err.status = 409;
-      throw err;
-    }
-    if (dup.username.toLowerCase() === username.toLowerCase()) {
-      const err = new Error('Ese nombre de usuario ya está en uso');
-      err.status = 409;
-      throw err;
-    }
+  if (existentes.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+    const err = new Error('Ese nombre de usuario ya está en uso');
+    err.status = 409;
+    throw err;
+  }
+  if (existentes.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    const err = new Error('Ese email ya está registrado');
+    err.status = 409;
+    throw err;
   }
 
   const passwordHash = await hashearPassword(password);

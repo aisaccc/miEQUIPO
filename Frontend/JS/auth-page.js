@@ -44,6 +44,11 @@ document.querySelectorAll('.field__input').forEach(input => {
   input.addEventListener('input', () => {
     const field = input.closest('.field');
     if (field) field.classList.remove('has-error');
+    if (input.id === 'reg-user') {
+      input.removeAttribute('aria-invalid');
+      const error = field?.querySelector('.field__error');
+      if (error) error.textContent = '3-20 caracteres, sin espacios';
+    }
   });
   input.addEventListener('blur', () => {
     if (input.value.trim() === '' && input.required) {
@@ -115,6 +120,14 @@ formReg.addEventListener('submit', async (e) => {
     mostrarAlerta('success', `¡Cuenta creada, ${nuevo.nombre}! Redirigiendo...`);
     setTimeout(() => { window.location.href = 'app.html'; }, 800);
   } catch (err) {
+    if (err.status === 409 && err.message === 'Ese nombre de usuario ya está en uso') {
+      const field = user.closest('.field');
+      const error = field?.querySelector('.field__error');
+      if (error) error.textContent = err.message;
+      marcarError(user);
+      user.setAttribute('aria-invalid', 'true');
+      user.focus();
+    }
     mostrarAlerta('error', err.message);
     btn.disabled = false;
     btn.textContent = 'Crear cuenta';

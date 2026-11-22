@@ -390,7 +390,23 @@ export async function init() {
     if (!u) return;
 
     document.getElementById('edit-perf-nombre').value = u.nombre || '';
-    document.getElementById('edit-perf-username').value = u.username || '';
+    const inputUsername = document.getElementById('edit-perf-username');
+    inputUsername.value = u.username || '';
+    const campoUsername = inputUsername.closest('.field');
+    let errorUsername = campoUsername?.querySelector('.roster-username-error');
+    if (!errorUsername && campoUsername) {
+      errorUsername = document.createElement('div');
+      errorUsername.className = 'field__error roster-username-error';
+      errorUsername.setAttribute('role', 'alert');
+      campoUsername.appendChild(errorUsername);
+    }
+    function limpiarErrorUsername() {
+      campoUsername?.classList.remove('has-error');
+      inputUsername.removeAttribute('aria-invalid');
+      if (errorUsername) errorUsername.textContent = '';
+    }
+    limpiarErrorUsername();
+    inputUsername.oninput = limpiarErrorUsername;
     document.getElementById('edit-perf-bio').value = u.bio || '';
     document.getElementById('edit-perf-ciudad').value = u.ciudad || '';
     const inputEdad = document.getElementById('edit-perf-edad');
@@ -704,6 +720,12 @@ export async function init() {
         user = getSesion(); 
         await render(user); 
       } catch (err) {
+        if (err.status === 409 && err.message === 'Ese nombre de usuario ya está en uso') {
+          if (errorUsername) errorUsername.textContent = err.message;
+          campoUsername?.classList.add('has-error');
+          inputUsername.setAttribute('aria-invalid', 'true');
+          inputUsername.focus();
+        }
         console.error('[perfil] Error al guardar:', err);
         toast(err.message || 'No se pudo guardar el perfil', 'error');
       } finally {

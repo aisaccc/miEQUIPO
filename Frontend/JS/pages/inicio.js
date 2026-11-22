@@ -128,7 +128,7 @@ export async function init() {
         const hora = fecha ? fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
         const lugar = p.lugar || 'Sin lugar';
         return `
-          <a class="agenda-item" href="#/partido/${p.id}">
+          <a class="agenda-item" href="#/partido/${encodeURIComponent(p.id)}">
             <div class="agenda-item__fecha"><div class="agenda-item__dia">${dia}</div><div class="agenda-item__mes">${mes}</div></div>
             <div class="agenda-item__info">
               <div class="agenda-item__titulo">${escapeHtml(p.titulo || 'Partido')}</div>
@@ -155,8 +155,8 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(g => `
-        <a class="aside-item" href="#/mi-equipo" data-grupo-id="${g.id}" data-tipo="equipo">
-          <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.escudo}</div>
+        <a class="aside-item" href="#/mi-equipo" data-grupo-id="${escapeAttr(g.id)}" data-tipo="equipo">
+          <div class="aside-item__icono">${renderIconoSeguro(g.escudo, ICONOS.escudo)}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
             <div class="aside-item__meta">${escapeHtml(g.deporte || 'Sin deporte')}</div>
@@ -187,13 +187,13 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(g => `
-        <div class="aside-item" data-grupo-id="${g.id}" data-tipo="comunidad" style="cursor:pointer">
-          <div class="aside-item__icono">${g.escudo ? (esImagen(g.escudo) ? `<img src="${g.escudo}" alt="" />` : g.escudo) : ICONOS.globo}</div>
+        <div class="aside-item" data-grupo-id="${escapeAttr(g.id)}" data-tipo="comunidad" style="cursor:pointer">
+          <div class="aside-item__icono">${renderIconoSeguro(g.escudo, ICONOS.globo)}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(g.nombre)}</div>
-            <div class="aside-item__meta">${g.totalMiembros ?? 0} miembros · ${escapeHtml(g.deporte || '')}</div>
+            <div class="aside-item__meta">${escapeHtml(g.totalMiembros ?? 0)} miembros · ${escapeHtml(g.deporte || '')}</div>
           </div>
-          <button class="btn btn--ghost btn--sm" data-unirse-comunidad="${g.id}">Unirme</button>
+          <button class="btn btn--ghost btn--sm" data-unirse-comunidad="${escapeAttr(g.id)}">Ver</button>
         </div>`).join('');
 
       cont.querySelectorAll('[data-grupo-id]').forEach(el => {
@@ -207,7 +207,8 @@ export async function init() {
       cont.querySelectorAll('[data-unirse-comunidad]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          toast('Próximamente vas a poder unirte a comunidades', 'info');
+          sessionStorage.setItem('miEquipoTarget', JSON.stringify({ tab: 'comunidad', id: btn.dataset.unirseComunidad }));
+          window.location.hash = '#/mi-equipo';
         });
       });
     } catch (err) {
@@ -228,11 +229,11 @@ export async function init() {
         return;
       }
       cont.innerHTML = data.map(t => `
-        <a class="aside-item" href="#/torneo/${t.id}">
-          <div class="aside-item__icono">${t.emoji ? (esImagen(t.emoji) ? `<img src="${t.emoji}" alt="" />` : t.emoji) : ICONOS.trofeo}</div>
+        <a class="aside-item" href="#/torneo/${encodeURIComponent(t.id)}">
+          <div class="aside-item__icono">${renderIconoSeguro(t.emoji, ICONOS.trofeo)}</div>
           <div class="aside-item__info">
             <div class="aside-item__titulo">${escapeHtml(t.nombre)}</div>
-            <div class="aside-item__meta">${t.totalEquipos ?? 0}/${t.cuposEquipos ?? 0} · ${escapeHtml(t.deporte || '')}</div>
+            <div class="aside-item__meta">${escapeHtml(t.totalEquipos ?? 0)}/${escapeHtml(t.cuposEquipos ?? 0)} · ${escapeHtml(t.deporte || '')}</div>
           </div>
         </a>`).join('');
     } catch (err) {
@@ -327,4 +328,25 @@ function emojiDeporte(deporte) {
     return `<img src="${valor}" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;display:inline-block" />`;
   }
   return valor;
+}
+/* Valores externos: nunca insertar texto o atributos sin escapar. */
+function escapeAttr(valor) {
+  return escapeHtml(valor).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderIconoSeguro(valor, fallback) {
+  if (typeof valor !== 'string' || !valor) return fallback;
+  if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(valor)) {
+    return `<img src="${escapeAttr(valor)}" alt="" />`;
+  }
+  if (/^assets\/[^?#]+\.(svg|png|jpe?g|gif|webp)$/i.test(valor)) {
+    return `<img src="${escapeAttr(valor)}" alt="" />`;
+  }
+  try {
+    const url = new URL(valor);
+    if (url.protocol === 'https:' || url.protocol === 'http:') {
+      return `<img src="${escapeAttr(url.href)}" alt="" />`;
+    }
+  } catch { /* No es una URL absoluta: tratar como texto. */ }
+  return escapeHtml(valor);
 }

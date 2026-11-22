@@ -156,6 +156,54 @@ async function contarStatsHero(usuarioId) {
   };
 }
 
+/* Contadores privados del sidebar; no modifican las estadísticas del perfil. */
+async function contarActividadRoster(usuarioId) {
+  const { rows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*)::int FROM partidos p
+        WHERE p.organizador_id = $1
+           OR EXISTS (
+             SELECT 1 FROM partido_inscripciones pi
+             WHERE pi.partido_id = p.id AND pi.usuario_id = $1
+           )
+           OR EXISTS (
+             SELECT 1 FROM partido_equipos_inscritos pei
+             JOIN grupo_miembros gm ON gm.grupo_id = pei.equipo_id
+             WHERE pei.partido_id = p.id AND gm.usuario_id = $1
+           )
+           OR EXISTS (
+             SELECT 1 FROM partido_equipos_inscritos pei
+             JOIN grupos g ON g.id = pei.equipo_id
+             WHERE pei.partido_id = p.id AND g.capitan_id = $1
+           )
+       ) AS partidos,
+       (SELECT COUNT(*)::int FROM torneos t
+        WHERE t.organizador_id = $1
+           OR EXISTS (
+             SELECT 1 FROM torneo_organizadores tor
+             WHERE tor.torneo_id = t.id AND tor.usuario_id = $1
+           )
+           OR EXISTS (
+             SELECT 1 FROM torneo_equipos te
+             WHERE te.torneo_id = t.id AND (
+               (t.tipo_participacion = 'individual' AND te.equipo_id = $1)
+               OR (t.tipo_participacion = 'equipo' AND EXISTS (
+                 SELECT 1 FROM grupos g
+                 WHERE g.id = te.equipo_id AND (
+                   g.capitan_id = $1 OR EXISTS (
+                     SELECT 1 FROM grupo_miembros gm
+                     WHERE gm.grupo_id = g.id AND gm.usuario_id = $1
+                   )
+                 )
+               ))
+             )
+           )
+       ) AS torneos`,
+    [usuarioId]
+  );
+  return rows[0];
+}
+
 /* =========================================================
    GET /api/usuarios/me
    ========================================================= */
@@ -173,8 +221,11 @@ export async function obtenerMiPerfil(usuarioId) {
     throw err;
   }
 
-  const stats = await contarStatsHero(usuarioId);
-  return formatearPerfilPropio(rows[0], stats);
+  const [stats, actividadRoster] = await Promise.all([
+    contarStatsHero(usuarioId),
+    contarActividadRoster(usuarioId),
+  ]);
+  return { ...formatearPerfilPropio(rows[0], stats), actividadRoster };
 }
 
 /* =========================================================
