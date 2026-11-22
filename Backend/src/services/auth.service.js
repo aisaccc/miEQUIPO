@@ -20,6 +20,8 @@ import {
 import {
   enviarEmailVerificacion,
   enviarEmailBienvenida,
+  enviarEmailResetPassword,
+  enviarEmailPasswordActualizada,
 } from '../utils/mailer.js';
 
 /* =========================================================
@@ -55,6 +57,37 @@ function formatearUsuario(row) {
     heroColor: row.hero_color || 'navy',
     heroFoto: row.hero_foto || null,
   };
+}
+
+// Evita crear una sesión con una contraseña que acaba de ser restablecida.
+// Comparte el bloqueo de fila con la operación de recuperación.
+async function crearSesionConPasswordVigente(usuario, passwordHash, meta, actualizarLogin = false) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `SELECT activo, password_hash FROM usuarios WHERE id = $1 FOR UPDATE`,
+      [usuario.id]
+    );
+    if (!rows[0]?.activo || rows[0].password_hash !== passwordHash) {
+      const err = new Error('Credenciales inválidas. Intenta iniciar sesión nuevamente.');
+      err.status = 401;
+      throw err;
+    }
+    if (actualizarLogin) {
+      await client.query(`UPDATE usuarios SET last_login = NOW() WHERE id = $1`, [usuario.id]);
+    }
+    const refreshToken = generarRefreshToken(usuario);
+    const sesion = await crearSesion(usuario.id, refreshToken, meta, undefined, client);
+    const accessToken = generarAccessToken(usuario, sesion.id);
+    await client.query('COMMIT');
+    return { accessToken, refreshToken };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /* =========================================================
@@ -110,9 +143,7 @@ export async function registrarUsuario({ nombre, email, username, password }, me
     console.error('[auth.service] No se pudo enviar email de verificación:', mailErr.code || 'MAIL_ERROR');
   }
 
-  const refreshToken = generarRefreshToken(usuario);
-  const sesion = await crearSesion(usuario.id, refreshToken, meta);
-  const accessToken = generarAccessToken(usuario, sesion.id);
+  const { accessToken, refreshToken } = await crearSesionConPasswordVigente(usuario, passwordHash, meta);
 
   return {
     usuario: formatearUsuario(usuario),
@@ -159,14 +190,7 @@ export async function loginUsuario({ identificador, password }, meta = {}) {
     throw err;
   }
 
-  await pool.query(
-    `UPDATE usuarios SET last_login = NOW() WHERE id = $1`,
-    [usuario.id]
-  );
-
-  const refreshToken = generarRefreshToken(usuario);
-  const sesion = await crearSesion(usuario.id, refreshToken, meta);
-  const accessToken = generarAccessToken(usuario, sesion.id);
+  const { accessToken, refreshToken } = await crearSesionConPasswordVigente(usuario, usuario.password_hash, meta, true);
 
   const { password_hash, activo, ...usuarioLimpio } = usuario;
 
@@ -311,4 +335,130 @@ export async function verificarEmail(token) {
   }
 
   return { ok: true, mensaje: 'Email verificado correctamente' };
+}
+/* =========================================================
+   RECUPERACIÓN DE CONTRASEÑA
+   ========================================================= */
+const MENSAJE_RECUPERACION = 'Si existe una cuenta activa con ese correo verificado, recibirás un enlace de recuperación.';
+
+function errorResetInvalido() {
+  const err = new Error('El enlace es inválido, ya fue utilizado o ha expirado. Solicita uno nuevo.');
+  err.status = 400;
+  return err;
+}
+
+export async function solicitarResetPassword(email) {
+  const inicio = Date.now();
+  let envio = null;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Bloqueo por usuario para serializar solicitudes de recuperación.
+    const { rows } = await client.query(
+      `SELECT id, email FROM usuarios
+       WHERE LOWER(email) = LOWER($1) AND activo = TRUE AND email_verificado = TRUE
+       FOR UPDATE`,
+      [email]
+    );
+    if (rows.length === 1) {
+      const usuario = rows[0];
+      const reciente = await client.query(
+        `SELECT 1 FROM tokens_temporales
+         WHERE usuario_id = $1 AND tipo = 'reset_password'
+           AND created_at > NOW() - INTERVAL '60 seconds'
+         LIMIT 1`,
+        [usuario.id]
+      );
+      if (!reciente.rows.length) {
+        const token = generarTokenAleatorio(32);
+        await client.query(
+          `UPDATE tokens_temporales SET usado = TRUE
+           WHERE usuario_id = $1 AND tipo = 'reset_password' AND usado = FALSE`,
+          [usuario.id]
+        );
+        await client.query(
+          `INSERT INTO tokens_temporales (usuario_id, tipo, token_hash, expires_at)
+           VALUES ($1, 'reset_password', $2, NOW() + INTERVAL '15 minutes')`,
+          [usuario.id, hashearToken(token)]
+        );
+        envio = { email: usuario.email, token };
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+  // No esperar al SMTP en la respuesta pública: evita revelar si se envió un correo.
+  // En este MVP el envío no usa una cola persistente. Un fallo permite volver a solicitarlo.
+  if (envio) {
+    void enviarEmailResetPassword(envio.email, '', envio.token).catch(() => {
+      console.error('[auth.service] No se pudo enviar el correo de recuperación');
+    });
+  }
+  // Reduce diferencias observables de tiempo; no es una garantía de tiempo constante.
+  await new Promise(resolve => setTimeout(resolve, Math.max(0, 400 - (Date.now() - inicio))));
+  return { ok: true, mensaje: MENSAJE_RECUPERACION };
+}
+
+export async function restablecerPassword(token, password) {
+  const tokenHash = hashearToken(token);
+  // Rechazar tokens inválidos antes de realizar bcrypt.
+  const candidato = await pool.query(
+    `SELECT usuario_id FROM tokens_temporales
+     WHERE token_hash = $1 AND tipo = 'reset_password'
+       AND usado = FALSE AND expires_at > NOW()`,
+    [tokenHash]
+  );
+  if (!candidato.rows[0]) throw errorResetInvalido();
+  const usuarioId = candidato.rows[0].usuario_id;
+  const passwordHash = await hashearPassword(password);
+  const client = await pool.connect();
+  let email;
+  try {
+    await client.query('BEGIN');
+    // Mismo orden de bloqueo que solicitarResetPassword y las operaciones sobre usuarios.
+    const { rows } = await client.query(
+      `SELECT email FROM usuarios WHERE id = $1 AND activo = TRUE
+       AND email_verificado = TRUE FOR UPDATE`,
+      [usuarioId]
+    );
+    if (!rows[0]) throw errorResetInvalido();
+    email = rows[0].email;
+    // El consumo se comprueba y se realiza de forma atómica, incluso con solicitudes simultáneas.
+    const consumo = await client.query(
+      `UPDATE tokens_temporales SET usado = TRUE
+       WHERE token_hash = $1 AND usuario_id = $2 AND tipo = 'reset_password'
+         AND usado = FALSE AND expires_at > clock_timestamp()
+       RETURNING id`,
+      [tokenHash, usuarioId]
+    );
+    if (!consumo.rowCount) throw errorResetInvalido();
+    await client.query(
+      `UPDATE usuarios SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+      [passwordHash, usuarioId]
+    );
+    await client.query(
+      `UPDATE tokens_temporales SET usado = TRUE
+       WHERE usuario_id = $1 AND tipo = 'reset_password' AND usado = FALSE`,
+      [usuarioId]
+    );
+    // En la misma transacción: nunca cambiar la contraseña sin revocar las sesiones.
+    await client.query(
+      `UPDATE sesiones SET revocado = TRUE WHERE usuario_id = $1 AND revocado = FALSE`,
+      [usuarioId]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+  void enviarEmailPasswordActualizada(email).catch(() => {
+    console.error('[auth.service] No se pudo enviar el aviso de cambio de contraseña');
+  });
+  return { ok: true, mensaje: 'Contraseña actualizada. Vuelve a iniciar sesión.' };
 }

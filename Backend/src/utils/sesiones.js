@@ -19,12 +19,12 @@ import { hashearToken } from './jwt.js';
  * @param {number} diasValidez - días que dura el refresh (default 7)
  * @returns {Promise<object>} la fila creada
  */
-export async function crearSesion(usuarioId, refreshToken, meta = {}, diasValidez = 7) {
+export async function crearSesion(usuarioId, refreshToken, meta = {}, diasValidez = 7, db = pool) {
   const refreshHash = hashearToken(refreshToken);
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + diasValidez);
 
-  const { rows } = await pool.query(
+  const { rows } = await db.query(
     `INSERT INTO sesiones (usuario_id, refresh_hash, user_agent, ip_address, expires_at)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id, usuario_id, expires_at, created_at`,

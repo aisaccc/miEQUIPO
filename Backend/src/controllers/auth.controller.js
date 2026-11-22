@@ -16,6 +16,8 @@ import {
   schemaLogin,
   schemaVerificarEmail,
   schemaRefresh,
+  schemaOlvidePassword,
+  schemaResetPassword,
 } from '../validators/auth.schema.js';
 
 /* =========================================================
@@ -142,6 +144,27 @@ export async function verificarEmail(req, res, next) {
     const datos = validar(schemaVerificarEmail, req.body);
     const resultado = await authService.verificarEmail(datos.token);
 
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+/* POST /api/auth/olvide-password */
+export async function olvidePassword(req, res, next) {
+  try {
+    const { email } = validar(schemaOlvidePassword, req.body);
+    const resultado = await authService.solicitarResetPassword(email);
+    res.status(202).json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* POST /api/auth/reset-password */
+export async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = validar(schemaResetPassword, req.body);
+    const resultado = await authService.restablecerPassword(token, password);
     res.json(resultado);
   } catch (err) {
     next(err);

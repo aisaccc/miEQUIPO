@@ -47,7 +47,7 @@ const estilosBase = `
   line-height: 1.6;
 `;
 
-function plantillaBase(contenido) {
+function plantillaBase(contenido, marca = 'MiEquipo') {
   return `
     <div style="${estilosBase} max-width: 600px; margin: 0 auto; padding: 24px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -57,7 +57,7 @@ function plantillaBase(contenido) {
           ⚽
         </div>
         <h1 style="color: #ff6a00; margin: 12px 0 0; font-size: 22px;">
-          MiEquipo
+          ${marca}
         </h1>
       </div>
 
@@ -67,7 +67,7 @@ function plantillaBase(contenido) {
       </div>
 
       <p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px;">
-        © 2026 MiEquipo. Todos los derechos reservados.
+        © 2026 ${marca}. Todos los derechos reservados.
       </p>
     </div>
   `;
@@ -115,40 +115,34 @@ export async function enviarEmailVerificacion(email, nombre, token) {
 }
 
 export async function enviarEmailResetPassword(email, nombre, token) {
-  const link = `${env.FRONTEND_URL}/reset-password.html?token=${token}`;
-
+  // nombre se mantiene en la firma por compatibilidad; no se inserta HTML de usuarios.
+  const base = new URL(env.FRONTEND_URL);
+  if (base.protocol !== 'https:' && !(env.NODE_ENV === 'development' && ['localhost', '127.0.0.1'].includes(base.hostname))) {
+    throw new Error('FRONTEND_URL debe usar HTTPS');
+  }
+  const link = new URL('reset-password.html', `${base.origin}${base.pathname.replace(/\/$/, '')}/`);
+  // El fragmento no se envía en las solicitudes HTTP al servidor de archivos.
+  link.hash = new URLSearchParams({ token }).toString();
+  const href = link.href.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const html = plantillaBase(`
-    <h2 style="color: #2b3a38; margin-top: 0;">Recuperar contraseña 🔐</h2>
-    <p>Hola <strong>${nombre}</strong>, recibimos una solicitud para cambiar tu contraseña.</p>
-
+    <h2 style="color: #2b3a38; margin-top: 0;">Recuperar contraseña</h2>
+    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta de Roster.</p>
     <div style="text-align: center; margin: 32px 0;">
-      <a href="${link}"
-         style="background: #ff6a00; color: white; padding: 14px 32px;
-                border-radius: 10px; text-decoration: none;
-                font-weight: 700; display: inline-block;">
-        Cambiar contraseña
-      </a>
+      <a href="${href}" style="background: #ff6a00; color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 700; display: inline-block;">Restablecer contraseña</a>
     </div>
+    <p style="color: #6b7280; font-size: 14px;">Este enlace vence en <strong>15 minutos</strong> y solo se puede usar una vez.</p>
+    <p>Si no solicitaste el cambio, ignora este correo. Tu contraseña seguirá siendo la misma.</p>
+  `, 'Roster');
+  return enviar({ to: email, subject: 'Recuperar contraseña — Roster', html });
+}
 
-    <p style="color: #6b7280; font-size: 14px;">
-      O copiá este link:<br>
-      <a href="${link}" style="color: #ff6a00; word-break: break-all;">${link}</a>
-    </p>
-
-    <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
-      Este link expira en <strong>1 hora</strong>.
-    </p>
-
-    <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">
-      Si no solicitaste este cambio, ignorá este mensaje. Tu contraseña actual sigue siendo válida.
-    </p>
-  `);
-
-  return enviar({
-    to: email,
-    subject: 'Recuperar contraseña — MiEquipo',
-    html,
-  });
+export async function enviarEmailPasswordActualizada(email) {
+  const html = plantillaBase(`
+    <h2 style="color: #2b3a38; margin-top: 0;">Contraseña actualizada</h2>
+    <p>La contraseña de tu cuenta de Roster fue restablecida y tus sesiones anteriores se cerraron.</p>
+    <p>Si no reconoces este cambio, protege tu correo electrónico y solicita un nuevo enlace de recuperación desde Roster.</p>
+  `, 'Roster');
+  return enviar({ to: email, subject: 'Contraseña actualizada — Roster', html });
 }
 
 export async function enviarEmailBienvenida(email, nombre) {
