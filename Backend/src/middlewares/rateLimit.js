@@ -5,7 +5,8 @@ const esDev = env.NODE_ENV === 'development';
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: esDev ? 10000 : 5000, // ⚡ VUELVE A PONER ESTO
+  max: 50000, // ⚡ Temporal para la prueba
+  // ...
   message: { error: 'Demasiadas peticiones, intentá más tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
