@@ -3,10 +3,13 @@ import { env } from '../config/env.js';
 
 const esDev = env.NODE_ENV === 'development';
 
+
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: esDev ? 10000 : 5000,
-  message: { error: 'Demasiadas peticiones, intentá más tarde.' },
+  message: {
+    error: 'Demasiadas peticiones. Inténtalo más tarde.'
+  },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.method === 'OPTIONS',
@@ -15,12 +18,15 @@ export const generalLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: esDev ? 100 : 10,
-  message: { error: 'Demasiados intentos. Esperá 15 minutos.' },
+  message: {
+    error: 'Demasiados intentos. Inténtalo en 15 minutos.'
+  },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
   skip: (req) => req.method === 'OPTIONS',
 });
+
 // ⚡ NUEVO: Límite específico para el refresco de tokens
 // Evita que alguien sature la base de datos creando sesiones sin parar.
 export const refreshLimiter = rateLimit({
