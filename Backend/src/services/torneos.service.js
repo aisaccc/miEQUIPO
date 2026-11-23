@@ -1515,6 +1515,8 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
+    // Serializar postulaciones concurrentes del mismo torneo (evita duplicados y sobrecupos).
+    await client.query('SELECT id FROM torneos WHERE id = $1 FOR UPDATE', [torneoId]);
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
     if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
@@ -1578,6 +1580,11 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
       const link = `#/torneo/${torneoId}`;
 
       if (vaDirecto) {
+        // La inscripción directa no debe dejar un rechazo histórico visible como activo.
+        await client.query(
+          'DELETE FROM torneo_lista_espera WHERE torneo_id = $1 AND equipo_id = $2',
+          [torneoId, usuarioId]
+        );
         await client.query(
           `INSERT INTO torneo_equipos (torneo_id, equipo_id, es_individual)
            VALUES ($1, $2, TRUE)`,
@@ -1621,11 +1628,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
         return obtenerTorneo(torneoId, usuarioId);
       }
 
-      await client.query(
-        `INSERT INTO torneo_lista_espera (torneo_id, equipo_id, origen, estado, es_individual)
-         VALUES ($1, $2, 'solicitud', 'pendiente', TRUE)`,
-        [torneoId, usuarioId]
-      );
+      await registrarSolicitudInscripcion(client, torneoId, usuarioId, true);
 
       await client.query('COMMIT');
 
@@ -1647,10 +1650,9 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     const esUuid = esUuidValido(equipoId);
 
     if (!esUuid) {
-      await client.query('COMMIT');
-      const torneoActualizado = await obtenerTorneo(torneoId, usuarioId);
-      torneoActualizado.miEquipoInscritoLegacy = true;
-      return torneoActualizado;
+      const err = new Error('Debes seleccionar un equipo válido');
+      err.status = 400;
+      throw err;
     }
 
     const { rows: equipo } = await client.query(
@@ -1701,6 +1703,10 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     const link = `#/torneo/${torneoId}`;
 
     if (vaDirecto) {
+      await client.query(
+        'DELETE FROM torneo_lista_espera WHERE torneo_id = $1 AND equipo_id = $2',
+        [torneoId, equipoId]
+      );
       await client.query(
         `INSERT INTO torneo_equipos (torneo_id, equipo_id, es_individual)
          VALUES ($1, $2, FALSE)`,
@@ -1778,11 +1784,7 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
       return obtenerTorneo(torneoId, usuarioId);
     }
 
-    await client.query(
-      `INSERT INTO torneo_lista_espera (torneo_id, equipo_id, origen, estado, es_individual)
-       VALUES ($1, $2, 'solicitud', 'pendiente', FALSE)`,
-      [torneoId, equipoId]
-    );
+    await registrarSolicitudInscripcion(client, torneoId, equipoId, false);
 
     await client.query('COMMIT');
 
@@ -1803,6 +1805,44 @@ export async function inscribirEquipo(torneoId, usuarioId, equipoId) {
     throw err;
   } finally {
     client.release();
+  }
+}
+
+/* =========================================================
+   SOLICITUDES REPETIDAS: conservar una sola fila activa por participante.
+   Un rechazo previo no puede impedir una nueva solicitud.
+   Se llama dentro de la transacción que bloquea la fila del torneo.
+   ========================================================= */
+async function registrarSolicitudInscripcion(client, torneoId, participanteId, esIndividual) {
+  const { rows } = await client.query(
+    `SELECT id, estado FROM torneo_lista_espera
+     WHERE torneo_id = $1 AND equipo_id = $2
+     FOR UPDATE`,
+    [torneoId, participanteId]
+  );
+
+  if (rows.some(r => r.estado === 'pendiente')) {
+    const err = new Error('Ya tienes una solicitud pendiente en este torneo');
+    err.status = 409;
+    throw err;
+  }
+
+  if (rows.length > 0) {
+    // Reactivar rechazo/aceptación histórica en vez de chocar con la clave única.
+    await client.query(
+      `UPDATE torneo_lista_espera
+       SET estado = 'pendiente', origen = 'solicitud',
+           es_individual = $3, created_at = NOW(), resuelta_en = NULL
+       WHERE torneo_id = $1 AND equipo_id = $2`,
+      [torneoId, participanteId, esIndividual]
+    );
+  } else {
+    await client.query(
+      `INSERT INTO torneo_lista_espera
+         (torneo_id, equipo_id, origen, estado, es_individual)
+       VALUES ($1, $2, 'solicitud', 'pendiente', $3)`,
+      [torneoId, participanteId, esIndividual]
+    );
   }
 }
 

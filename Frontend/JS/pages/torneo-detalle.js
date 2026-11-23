@@ -1,5 +1,5 @@
 import { getSesion } from '../auth.js';
-import { toast, formatearFecha, abrirModal, cerrarModal } from '../components.js';
+import { toast, formatearFecha, abrirModal, cerrarModal, verPerfilUsuario } from '../components.js';
 import { listarGrupos, obtenerGrupo } from '../services/grupos.service.js';
 import {
   obtenerTorneo,
@@ -118,7 +118,6 @@ const COLOR_DEPORTE_TORNEO = {
   'Surf': { from: '#0EA5E9', to: '#0369A1' }, 'Escalada': { from: '#F59E0B', to: '#B45309' },
 };
 const COLOR_DEPORTE_TORNEO_DEFAULT = { from: '#FF6B4A', to: '#C2410C' };
-const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 /* ⚡ Marcos de ícono */
 const MARCOS_ICONO = [
   { id: 'default', nombre: 'Normal', clase: '' },
@@ -1966,11 +1965,13 @@ export async function init(params = {}) {
           <input type="checkbox" data-sel="${i}" />
         ` : ''}
 
-        <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; overflow:hidden">
+        <div class="avatar avatar--md" data-ver="${i}" role="button" tabindex="0"
+             title="${esIndividual ? 'Ver perfil' : 'Ver equipo'}"
+             style="background:var(--color-primary-light); display:grid; place-items:center; overflow:hidden; cursor:pointer">
           ${renderEscudoCruce(sol.equipoEscudo, esIndividual, 40)}
         </div>
-        <div class="solicitud-item__info" data-ver="${i}" style="cursor:pointer">
-          <div class="solicitud-item__nombre">${sol.equipoNombre}</div>
+        <div class="solicitud-item__info" data-ver="${i}" role="button" tabindex="0" style="cursor:pointer">
+          <div class="solicitud-item__nombre">${escapeHtml(sol.equipoNombre)}</div>
           <div class="solicitud-item__meta">
             ${sol.origen === 'invitacion-aceptada'
               ? `${ICONOS.check} Aceptó tu invitación`
@@ -1979,7 +1980,7 @@ export async function init(params = {}) {
           </div>
         </div>
         <div class="solicitud-item__actions">
-          ${!esIndividual ? `<button class="btn btn--ghost btn--sm" data-ver-btn="${i}">Ver</button>` : ''}
+          <button class="btn btn--ghost btn--sm" data-ver-btn="${i}">${esIndividual ? 'Ver perfil' : 'Ver equipo'}</button>
           ${!esIndividual ? `<button class="btn btn--ghost btn--sm" data-chat-capitan="${sol.equipoId}" title="Hablar con el capitán">${ICONOS.chat}</button>` : ''}
           ${sol.estado === 'pendiente' ? `
             <button class="btn btn--primary btn--sm" data-aceptar="${i}" ${lleno ? 'disabled title="Torneo lleno"' : ''}>Aprobar</button>
@@ -1994,11 +1995,34 @@ export async function init(params = {}) {
       </div>
     `).join('');
 
+    async function verSolicitante(el) {
+      const idx = Number(el.dataset.ver ?? el.dataset.verBtn);
+      const sol = lista[idx];
+      if (!sol?.equipoId) return;
+      // Cerrar el modal anterior: dos backdrops simultáneos pueden tapar el perfil.
+      cerrarModal('modal-gestionar-solicitudes');
+      try {
+        if (esIndividual) {
+          await verPerfilUsuario(sol.equipoId);
+        } else {
+          await verDetalleEquipo(sol);
+        }
+      } catch (err) {
+        console.error('[torneo-detalle] Error al abrir solicitante:', err);
+        toast('No se pudo abrir el perfil solicitado', 'error');
+        abrirModal('modal-gestionar-solicitudes');
+      }
+    }
     cont.querySelectorAll('[data-ver], [data-ver-btn]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = Number(el.dataset.ver ?? el.dataset.verBtn);
-        verDetalleEquipo(lista[idx]);
-      });
+      el.addEventListener('click', () => verSolicitante(el));
+      if (el.matches('[tabindex]')) {
+        el.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            verSolicitante(el);
+          }
+        });
+      }
     });
 
     cont.querySelectorAll('[data-aceptar]').forEach(btn => {
@@ -2449,7 +2473,7 @@ export async function init(params = {}) {
      INSCRIBIRME / INSCRIBIR EQUIPO
      ========================================================= */
   async function inscribirmeIndividual(t) {
-    const aceptaSolicitudes = !(t.precio === 0 && t.libreInscripcion === true);
+    const aceptaSolicitudes = !(Number(t.precio) === 0 && t.libreInscripcion === true);
     const mensaje = aceptaSolicitudes
       ? 'Tu inscripción quedará pendiente hasta que el organizador la apruebe. ¿Continuar?'
       : '¿Confirmar tu inscripción en este torneo?';
@@ -2519,7 +2543,8 @@ export async function init(params = {}) {
     try {
       await inscribirEquipoAPI(t.id, String(equipoId));
       cerrarModal('modal-inscribir-equipo');
-      toast('Solicitud enviada al organizador', 'success');
+      const vaDirecto = Number(t.precio) === 0 && t.libreInscripcion === true;
+      toast(vaDirecto ? '¡Equipo inscrito correctamente!' : 'Solicitud enviada al organizador', 'success');
       await render();
     } catch (err) {
       console.error('[torneo-detalle] Error al inscribir:', err);
@@ -3850,20 +3875,40 @@ export async function init(params = {}) {
   let editMarcoIcono = 'default';
   let editMarcoColorIcono = '#E8836A';
 
-  function renderPaletaDet(containerId, colorSeleccionado, onChange) {
-    const cont = document.getElementById(containerId);
-    if (!cont) return;
-    cont.innerHTML = PALETA_BASICOS.map(c => `
-      <button type="button" class="perfil-color-btn ${c === colorSeleccionado ? 'active' : ''}" data-color="${c}" style="background:${c}; width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; margin:0 4px;"></button>
-    `).join('');
-
-    cont.querySelectorAll('.perfil-color-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        cont.querySelectorAll('.perfil-color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        onChange(btn.dataset.color);
-      });
+  // Ocultar únicamente las paletas de colores prefijados (los círculos).
+  // Los inputs type=color Premium de Card/Hero NO se tocan: siguen permitiendo
+  // personalizar y guardar el color al crear o editar un torneo.
+  function quitarPaletasPredeterminadas(wrapperId, ids) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const grupos = '.field, .form-group, .form-field, .visual-field, .config-item';
+    for (const id of ids) {
+      const paleta = wrapper.querySelector(`[id="${id}"]`) || document.getElementById(id);
+      if (!paleta) continue;
+      const campo = paleta.closest(grupos);
+      if (campo && campo !== wrapper && wrapper.contains(campo)) {
+        const tieneOtroControl = Boolean(campo.querySelector('input, select, textarea'));
+        const tieneOtroElemento = [...campo.querySelectorAll('[id]')]
+          .some(el => el !== paleta && !paleta.contains(el));
+        if (!tieneOtroControl && !tieneOtroElemento) {
+          campo.remove();
+          continue;
+        }
+      }
+      // Si el HTML no agrupa el campo, quitar el título inmediatamente anterior.
+      const anterior = paleta.previousElementSibling;
+      if (anterior && anterior.matches('label, .field__label, strong') &&
+          /^Color (?:de la Card|del Hero)\b/i.test(anterior.textContent.trim())) {
+        anterior.remove();
+      }
+      paleta.remove();
+    }
+    // Algunos HTML colocan el label fuera de su .field.
+    wrapper.querySelectorAll('label, .field__label').forEach(etiqueta => {
+      if (!/^Color (?:de la Card|del Hero)\s*\(/i.test(etiqueta.textContent.trim())) return;
+      const campo = etiqueta.closest(grupos);
+      if (campo && campo.querySelector('input, select, textarea')) return;
+      etiqueta.remove();
     });
   }
 
@@ -4125,8 +4170,9 @@ export async function init(params = {}) {
     wrapperBasico.classList.remove('hidden');
     wrapperPremium.classList.remove('hidden');
 
-    renderPaletaDet('torneo-det-card-color-picker-basico', editCardColor, (c) => editCardColor = c);
-    renderPaletaDet('torneo-det-hero-color-picker-basico', editHeroColor, (c) => editHeroColor = c);
+    quitarPaletasPredeterminadas('torneo-det-visual-basico', [
+      'torneo-det-card-color-picker-basico', 'torneo-det-hero-color-picker-basico',
+    ]);
 
     if (user?.esPremium) {
       wrapperPremium.style.opacity = '1';

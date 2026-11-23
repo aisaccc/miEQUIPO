@@ -71,7 +71,6 @@ const COLOR_DEPORTE = {
 };
 
 const COLOR_DEFAULT = { bg: '#FFEDD5', fg: '#C2410C' };
-const PALETA_BASICOS = ['#E8836A', '#3B82F6', '#22C55E', '#F59E0B', '#6366F1', '#EC4899'];
 
 /* ⚡ Marcos de ícono */
 const MARCOS_ICONO = [
@@ -84,20 +83,6 @@ const MARCOS_ICONO = [
   { id: 'custom', nombre: 'Personalizado', clase: 'marco-icono-custom' }
 ];
 
-const HERO_COLORS = [
-  { key: 'navy', label: 'Navy', from: '#0F1B2D', to: '#1E2D45' },
-  { key: 'black', label: 'Negro', from: '#0A0A0A', to: '#1F1F1F' },
-  { key: 'carbon', label: 'Carbón', from: '#1F2937', to: '#374151' },
-  { key: 'blue', label: 'Azul', from: '#1E3A8A', to: '#2563EB' },
-  { key: 'forest', label: 'Bosque', from: '#064E3B', to: '#047857' },
-  { key: 'purple', label: 'Púrpura', from: '#4C1D95', to: '#7C3AED' },
-  { key: 'wine', label: 'Vino', from: '#7F1D1D', to: '#B91C1C' },
-  { key: 'coffee', label: 'Café', from: '#451A03', to: '#78350F' },
-  { key: 'mustard', label: 'Mostaza', from: '#92400E', to: '#CA8A04' },
-  { key: 'red', label: 'Rojo', from: '#DC2626', to: '#EF4444' },
-  { key: 'orange', label: 'Naranjo', from: '#EA580C', to: '#FB923C' },
-  { key: 'white', label: 'Blanco', from: '#FFFFFF', to: '#F5F5F5' },
-];
 
 /* ⚡ Helper: devuelve { clase, estilo } del marco */
 function getMarcoData(marcoIcono, marcoColorIcono) {
@@ -734,20 +719,40 @@ export async function init() {
     });
   });
 
-  function renderPaleta(containerId, colorSeleccionado, onChange) {
-    const cont = document.getElementById(containerId);
-    if (!cont) return;
-    cont.innerHTML = HERO_COLORS.map(c => `
-      <button type="button" class="perfil-color-btn ${c.from === colorSeleccionado ? 'active' : ''}" data-color="${c.from}" title="${c.label}" style="background: linear-gradient(135deg, ${c.from} 0%, ${c.to} 100%); width:32px; height:32px; border-radius:50%; border:none; cursor:pointer; margin:0 4px;"></button>
-    `).join('');
-
-    cont.querySelectorAll('.perfil-color-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        cont.querySelectorAll('.perfil-color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        onChange(btn.dataset.color);
-      });
+  // Ocultar únicamente las paletas de colores prefijados (los círculos).
+  // Los inputs type=color Premium de Card/Hero NO se tocan: siguen permitiendo
+  // personalizar y guardar el color al crear o editar un torneo.
+  function quitarPaletasPredeterminadas(wrapperId, ids) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const grupos = '.field, .form-group, .form-field, .visual-field, .config-item';
+    for (const id of ids) {
+      const paleta = wrapper.querySelector(`[id="${id}"]`) || document.getElementById(id);
+      if (!paleta) continue;
+      const campo = paleta.closest(grupos);
+      if (campo && campo !== wrapper && wrapper.contains(campo)) {
+        const tieneOtroControl = Boolean(campo.querySelector('input, select, textarea'));
+        const tieneOtroElemento = [...campo.querySelectorAll('[id]')]
+          .some(el => el !== paleta && !paleta.contains(el));
+        if (!tieneOtroControl && !tieneOtroElemento) {
+          campo.remove();
+          continue;
+        }
+      }
+      // Si el HTML no agrupa el campo, quitar el título inmediatamente anterior.
+      const anterior = paleta.previousElementSibling;
+      if (anterior && anterior.matches('label, .field__label, strong') &&
+          /^Color (?:de la Card|del Hero)\b/i.test(anterior.textContent.trim())) {
+        anterior.remove();
+      }
+      paleta.remove();
+    }
+    // Algunos HTML colocan el label fuera de su .field.
+    wrapper.querySelectorAll('label, .field__label').forEach(etiqueta => {
+      if (!/^Color (?:de la Card|del Hero)\s*\(/i.test(etiqueta.textContent.trim())) return;
+      const campo = etiqueta.closest(grupos);
+      if (campo && campo.querySelector('input, select, textarea')) return;
+      etiqueta.remove();
     });
   }
 
@@ -808,8 +813,9 @@ export async function init() {
     wrapperBasico.classList.remove('hidden');
     wrapperPremium.classList.remove('hidden');
 
-    renderPaleta('torneo-card-color-picker-basico', visualCardColor, (c) => visualCardColor = c);
-    renderPaleta('torneo-hero-color-picker-basico', visualHeroColor, (c) => visualHeroColor = c);
+    quitarPaletasPredeterminadas('torneo-visual-basico', [
+      'torneo-card-color-picker-basico', 'torneo-hero-color-picker-basico',
+    ]);
 
     if (user?.esPremium) {
       wrapperPremium.style.opacity = '1';
