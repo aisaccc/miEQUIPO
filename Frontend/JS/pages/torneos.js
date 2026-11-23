@@ -7,6 +7,7 @@ import {
   crearTorneo as crearTorneoAPI,
   editarTorneo as editarTorneoAPI,
   eliminarTorneo as eliminarTorneoAPI,
+  guardarTorneo as guardarTorneoAPI,
   inscribirEquipo as inscribirEquipoAPI,
   cancelarInscripcion as cancelarInscripcionAPI,
   gestionarSolicitud as gestionarSolicitudAPI,
@@ -211,6 +212,15 @@ export async function init() {
 
       const { data } = await listarTorneos(filtros);
       torneos = data;
+      if (user) {
+        try {
+          const { data: creados } = await listarTorneos({ soloMios: 'true', limit: 100 });
+          const ids = new Set(torneos.map(t => String(t.id)));
+          for (const creado of creados || []) {
+            if (!ids.has(String(creado.id))) { torneos.push(creado); ids.add(String(creado.id)); }
+          }
+        } catch (err) { console.warn('[torneos] No se pudieron ampliar Mis creados:', err.message); }
+      }
       renderDisponibles();
       renderCreados();
       renderInscritos();
@@ -224,6 +234,15 @@ export async function init() {
   try {
     const { data } = await listarTorneos({ limit: 50 });
     torneos = data;
+    if (user) {
+      try {
+        const { data: creados } = await listarTorneos({ soloMios: 'true', limit: 100 });
+        const ids = new Set(torneos.map(t => String(t.id)));
+        for (const creado of creados || []) {
+          if (!ids.has(String(creado.id))) { torneos.push(creado); ids.add(String(creado.id)); }
+        }
+      } catch (err) { console.warn('[torneos] No se pudieron ampliar Mis creados:', err.message); }
+    }
   } catch (err) {
     console.error('[torneos] Error al cargar:', err);
     toast('No se pudieron cargar los torneos', 'error');
@@ -264,7 +283,7 @@ export async function init() {
      RENDER CARD (VERTICAL)
      ========================================================= */
   function renderCard(t, opciones = {}) {
-    const { mostrarBadgeRol = null } = opciones;
+    const { mostrarBadgeRol = null, enMisCreados = false } = opciones;
 
     const inscritosCount = t.totalEquipos ?? 0;
     const porcentaje = Math.min(100, Math.round((inscritosCount / t.cuposEquipos) * 100));
@@ -369,6 +388,9 @@ export async function init() {
 
           <div class="tournament-card__bottom">
             <div class="tournament-card__price">${precioHtml}</div>
+            ${enMisCreados && soyOrganizador ? (t.guardadoPorCreador
+              ? `<span class="badge badge--success">Guardado en Mis creados</span>`
+              : `<button class="btn btn--ghost btn--sm" data-accion-torneo="guardar" data-id="${t.id}">Guardar torneo</button>`) : ''}
           </div>
         </div>
       </article>
@@ -379,7 +401,7 @@ export async function init() {
      RENDERS DE PANELES
      ========================================================= */
   function renderDisponibles() {
-    let lista = torneos;
+    let lista = torneos.filter(t => !(t.guardadoPorCreador && t.archivoVencido));
 
     if (filtroTipoActual === 'individual') lista = lista.filter(t => t.tipoParticipacion === 'individual');
     if (filtroTipoActual === 'equipo')     lista = lista.filter(t => t.tipoParticipacion === 'equipo');
@@ -439,6 +461,7 @@ export async function init() {
       const esSubOrg = t.soySubOrganizador && !t.soyOrganizador;
       return renderCard(t, {
         mostrarBadgeRol: esSubOrg ? `${ICONOS.escudo} Sub-organizador` : `${ICONOS.corona} Creado por ti`,
+        enMisCreados: true,
       });
     }).join('');
     conectarAcciones(contCreados);
@@ -493,6 +516,14 @@ export async function init() {
           if (accion === 'editar') {
             sessionStorage.setItem('torneoAEditar', String(id));
             window.location.hash = `#/torneo/${id}`;
+            return;
+          }
+
+          if (accion === 'guardar') {
+            if (!confirm('¿Conservar este torneo en Mis creados después de su fecha de término?')) return;
+            await guardarTorneoAPI(id);
+            toast('Torneo guardado en Mis creados', 'success');
+            await recargarTorneos();
             return;
           }
 
@@ -1075,6 +1106,58 @@ export async function init() {
     if (checkIncluyeEstad)   checkIncluyeEstad.checked = false;
   }
 
+  // El formulario HTML de Torneos no estaba entre los archivos compartidos.
+  // Esta función oculta su bloque visual de «Configuración avanzada» al CREAR
+  // y lo restaura al EDITAR, sin alterar los datos ni las reglas del backend.
+  const bloquesAvanzadosCreados = new Map();
+  function configurarSeccionAvanzadaCreacion(esCreacion) {
+    const modal = document.getElementById('modal-crear-torneo');
+    if (!modal) return;
+
+    if (!esCreacion) {
+      for (const [el, displayAnterior] of bloquesAvanzadosCreados.entries()) {
+        if (el.isConnected) el.style.display = displayAnterior;
+      }
+      bloquesAvanzadosCreados.clear();
+      actualizarConfiguracionPorModalidad();
+      actualizarAutoFixtureVisibility();
+      return;
+    }
+
+    const normalizar = value => String(value || '').normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const encabezados = [...modal.querySelectorAll('h2,h3,h4,h5,legend,summary,.form-section__title,.section-title')];
+    const encabezado = encabezados.find(el => normalizar(el.textContent) === 'configuracion avanzada');
+    let seccion = encabezado?.closest('fieldset,details,section,.form-section,.modal-section,.config-avanzada,.form-card');
+    if (!seccion && encabezado) seccion = encabezado.parentElement;
+    // Nunca ocultar todo el formulario ni el grupo con campos fundamentales.
+    if (seccion && seccion !== modal && !seccion.contains(document.getElementById('torneo-nombre'))) {
+      bloquesAvanzadosCreados.set(seccion, seccion.style.display);
+      seccion.style.display = 'none';
+    } else {
+      // Respaldo cuando el encabezado no está agrupado en una sección identificable.
+      // Se ocultan los grupos de opciones técnicas conocidas, no campos básicos.
+      const candidatos = [
+        configLigaWrapper,
+        autoFixtureWrapper,
+        sistemaWrapper,
+        nivelGridTorneo?.closest('.field') || nivelGridTorneo?.parentElement,
+        libreInscWrapper,
+        checkIdaVuelta?.closest('.field'),
+        checkIncluyeEstad?.closest('.field'),
+      ];
+      for (const el of candidatos) {
+        if (!el || el === modal || el.contains(document.getElementById('torneo-nombre')) || bloquesAvanzadosCreados.has(el)) continue;
+        bloquesAvanzadosCreados.set(el, el.style.display);
+        el.style.display = 'none';
+      }
+      if (encabezado && !bloquesAvanzadosCreados.has(encabezado)) {
+        bloquesAvanzadosCreados.set(encabezado, encabezado.style.display);
+        encabezado.style.display = 'none';
+      }
+    }
+  }
+
   function abrirModalCrear() {
     if (!user?.esPremium) {
       toast('La creación de torneos es exclusiva del plan Premium.', 'error');
@@ -1082,6 +1165,7 @@ export async function init() {
     }
 
     resetearFormulario();
+    configurarSeccionAvanzadaCreacion(true);
     document.getElementById('torneo-modal-titulo').textContent = 'Crear torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Crear torneo';
     
@@ -1097,6 +1181,7 @@ export async function init() {
   }
 
   function abrirModalEditar(torneo) {
+    configurarSeccionAvanzadaCreacion(false);
     document.getElementById('torneo-modal-titulo').textContent = 'Editar torneo';
     document.getElementById('btn-guardar-torneo').textContent = 'Guardar cambios';
 

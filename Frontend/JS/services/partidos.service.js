@@ -34,6 +34,10 @@ export async function eliminarPartido(id) {
   return api.delete(`/partidos/${id}`);
 }
 
+export async function guardarPartido(id) {
+  return api.patch(`/partidos/${id}/guardar`, {});
+}
+
 export async function inscribirse(id, posicion = null) {
   const { partido } = await api.post(`/partidos/${id}/inscribirse`, {
     posicion: posicion || null,
@@ -43,6 +47,11 @@ export async function inscribirse(id, posicion = null) {
 
 export async function salirDelPartido(id) {
   return api.delete(`/partidos/${id}/inscribirse`);
+}
+
+// Para la vista de un equipo inscrito o interesado: solo capitan/admin.
+export async function salirEquipoDelPartido(partidoId, equipoId) {
+  return api.delete(`/partidos/${partidoId}/salir-equipo/${equipoId}`);
 }
 
 export async function postularse(id, posicion = null) {

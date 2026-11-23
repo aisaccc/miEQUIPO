@@ -22,6 +22,7 @@ router.get('/:id', partidosController.obtener);
    ========================================================= */
 router.post('/', partidosController.crear);
 router.patch('/:id', partidosController.editar);
+router.patch('/:id/guardar', partidosController.guardar);
 router.delete('/:id', partidosController.eliminar);
 
 /* =========================================================
@@ -29,6 +30,8 @@ router.delete('/:id', partidosController.eliminar);
    ========================================================= */
 router.post('/:id/inscribirse', partidosController.inscribirse);
 router.delete('/:id/inscribirse', partidosController.salir);
+// Capitan/admin puede retirar su equipo inscrito o interesado, incluso confirmado.
+router.delete('/:id/salir-equipo/:equipoId', partidosController.salirEquipo);
 
 /* =========================================================
    POSTULACIONES (partido con aprobación)

@@ -353,6 +353,6 @@ export const schemaInvitarOrganizador = z.object({
 
 export const schemaResponderInvitacionOrganizador = z.object({
   aceptar: z.boolean({
-    required_error: 'Tenés que indicar si aceptás o rechazás',
+    required_error: 'Tienes que indicar si aceptás o rechazás',
   }),
 }).strict();

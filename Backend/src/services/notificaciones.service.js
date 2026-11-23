@@ -13,11 +13,11 @@ function categoriaNotif(tipo) {
     'inscripcion', 'salida', 'postulacion', 'aprobado', 'rechazado', 
     'confirmacion_partido', 'confirmacion_aceptada', 'confirmacion_rechazada', 
     'partido_confirmado', 'partido_revertido', 'nuevo_interesado', 
-    'jugador_salio', 'expulsado'
+    'jugador_salio', 'expulsado', 'partido_actualizado', 'partido_eliminado'
   ];
   const torneos = [
     'cierre', 'edicion', 'cancelacion', 'equipo_eliminado', 'torneo_eliminado', 
-    'invitacion', 'invitacion_organizador', 'respuesta_invitacion_organizador'
+    'invitacion', 'invitacion_organizador', 'respuesta_invitacion_organizador', 'torneo_actualizado'
   ];
   const mensajes = ['mensaje']; // Por si a futuro agregás notifs de mensajes
   
@@ -216,45 +216,33 @@ export async function crearNotificacion(usuarioId, tipo, mensaje, link = null) {
 /* =========================================================
    CREAR NOTIFICACIÓN A MÚLTIPLES USUARIOS
    ========================================================= */
-export async function crearNotificacionMultiple(usuarioIds, tipo, mensaje, link = null) {
-  if (!Array.isArray(usuarioIds) || usuarioIds.length === 0) {
-    return [];
-  }
+export async function crearNotificacionMultiple(usuarioIds, tipo, mensaje, link = null, opciones = {}) {
+  if (!Array.isArray(usuarioIds) || usuarioIds.length === 0) return [];
 
-  // ⚡ Filtrar a los usuarios que tienen la notificación desactivada
-  const cat = categoriaNotif(tipo);
-  let idsFiltrados = usuarioIds;
+  // El cliente opcional permite que las notificaciones sean atómicas con el cambio.
+  const db = opciones.client || pool;
+  const idsUnicos = [...new Set(usuarioIds.filter(Boolean).map(String))];
+  if (!idsUnicos.length) return [];
 
-  if (cat) {
-    const { rows } = await pool.query(
-      `SELECT id, notificaciones_prefs->>$1 AS pref FROM usuarios WHERE id = ANY($2::uuid[])`,
-      [cat, usuarioIds]
-    );
-    
-    // Guardamos los IDs de los que tienen la pref en 'false'
-    const idsBloqueados = rows.filter(r => r.pref === 'false').map(r => r.id);
-    
-    // Filtramos el array original
-    idsFiltrados = usuarioIds.filter(id => !idsBloqueados.includes(id));
-  }
+  const categoria = categoriaNotif(tipo);
+  const obligatoria = opciones.obligatoria === true;
 
-  if (idsFiltrados.length === 0) return [];
-
-  const values = [];
-  const placeholders = [];
-  let i = 1;
-
-  idsFiltrados.forEach(uid => {
-    placeholders.push(`($${i}, $${i + 1}, $${i + 2}, $${i + 3})`);
-    values.push(uid, tipo, mensaje, link);
-    i += 4;
-  });
-
-  const { rows } = await pool.query(
+  // Una sola inserción, sin duplicados y sin límite de parámetros por destinatario.
+  // Los avisos de cambios/cancelaciones son operativos y no se silencian
+  // mediante la preferencia de notificaciones sociales.
+  const { rows } = await db.query(
     `INSERT INTO notificaciones (usuario_id, tipo, mensaje, link)
-     VALUES ${placeholders.join(', ')}
+     SELECT u.id, $2, $3, $4
+     FROM usuarios u
+     JOIN (SELECT DISTINCT UNNEST($1::uuid[]) AS usuario_id) d ON d.usuario_id = u.id
+     WHERE u.activo = TRUE
+       AND (
+         $5::boolean = TRUE
+         OR $6::text IS NULL
+         OR (u.notificaciones_prefs ->> $6::text) IS DISTINCT FROM 'false'
+       )
      RETURNING id, tipo, mensaje, link, leida, created_at`,
-    values
+    [idsUnicos, tipo, mensaje, link, obligatoria, categoria]
   );
 
   return rows.map(formatearNotificacion);

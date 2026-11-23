@@ -157,6 +157,8 @@ function normalizarTorneo(t) {
     lugar: t.lugar,
     fechaInicio: t.fechaInicio ?? t.fecha_inicio ?? null,
     fechaFin: t.fechaFin ?? t.fecha_fin ?? null,
+    guardadoPorCreador: t.guardadoPorCreador ?? t.guardado_por_creador ?? false,
+    archivoVencido: t.archivoVencido ?? false,
     fechaLimiteInscripcion: t.fechaLimiteInscripcion ?? t.fecha_limite_inscripcion ?? null,
     cuposEquipos: t.cuposEquipos ?? t.cupos_equipos ?? 0,
     precio: t.precio ?? 0,
@@ -290,6 +292,10 @@ export async function editarTorneo(id, cambios) {
 /* =========================================================
    ELIMINAR
    ========================================================= */
+export async function guardarTorneo(id) {
+  return api.patch(`/torneos/${id}/guardar`, {});
+}
+
 export async function eliminarTorneo(id) {
   return api.delete(`/torneos/${id}`);
 }

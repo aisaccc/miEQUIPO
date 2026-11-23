@@ -36,6 +36,8 @@ function formatearTorneo(row, extras = {}) {
     fechaInicio: row.fecha_inicio,
     fechaFin: row.fecha_fin,
     bloqueado: row.fecha_fin ? new Date(row.fecha_fin + 'T23:59:59') <= new Date() : false,
+    guardadoPorCreador: row.guardado_por_creador === true,
+    archivoVencido: row.plazo_archivo_cumplido === true,
     fechaLimiteInscripcion: row.fecha_limite_inscripcion,
     cuposEquipos: row.cupos_equipos,
     precio: row.precio,
@@ -172,7 +174,19 @@ async function obtenerNombreMostrar(client, equipoId, esIndividual) {
   return rows[0]?.nombre || 'Un equipo';
 }
 
-async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
+
+/* Integrantes a notificar por cambios en eventos del equipo. */
+async function obtenerTodosLosMiembrosEquipo(client, equipoId) {
+  const { rows } = await client.query(
+    `SELECT capitan_id AS usuario_id FROM grupos WHERE id = $1
+     UNION
+     SELECT usuario_id FROM grupo_miembros WHERE grupo_id = $1`,
+    [equipoId]
+  );
+  return rows.map(r => r.usuario_id).filter(Boolean);
+}
+
+export async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
   const esIndividual = tipoParticipacion === 'individual';
   const ids = new Set();
 
@@ -184,7 +198,7 @@ async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
     if (esIndividual) {
       ids.add(row.equipo_id);
     } else {
-      const us = await obtenerUsuariosDeEquipo(client, row.equipo_id);
+      const us = await obtenerTodosLosMiembrosEquipo(client, row.equipo_id);
       us.forEach(u => ids.add(u));
     }
   }
@@ -198,12 +212,41 @@ async function obtenerDestinatariosTorneo(client, torneoId, tipoParticipacion) {
     if (esIndividual) {
       ids.add(row.equipo_id);
     } else {
-      const us = await obtenerUsuariosDeEquipo(client, row.equipo_id);
+      const us = await obtenerTodosLosMiembrosEquipo(client, row.equipo_id);
       us.forEach(u => ids.add(u));
     }
   }
 
+  // Equipos invitados todavía pendientes también tienen interés registrado.
+  if (!esIndividual) {
+    const { rows: invitados } = await client.query(
+      `SELECT equipo_id FROM torneo_invitaciones
+       WHERE torneo_id = $1 AND estado = 'pendiente'`,
+      [torneoId]
+    );
+    for (const { equipo_id } of invitados) {
+      const miembros = await obtenerTodosLosMiembrosEquipo(client, equipo_id);
+      miembros.forEach(id => ids.add(id));
+    }
+  }
+
   return [...ids];
+}
+
+/* Aviso operativo para participantes, inscritos en espera e invitados pendientes.
+   Se ejecuta dentro de la misma transacción que la modificación. */
+async function notificarCambioTorneo(client, torneo, detalle = 'fue actualizado') {
+  const destinatarios = await obtenerDestinatariosTorneo(
+    client, torneo.id, torneo.tipo_participacion || 'equipo'
+  );
+  if (!destinatarios.length) return;
+  await crearNotificacionMultiple(
+    destinatarios,
+    'torneo_actualizado',
+    `El torneo "${torneo.nombre}" ${detalle}. Revisá los cambios.`,
+    `#/torneo/${torneo.id}`,
+    { client, obligatoria: true }
+  );
 }
 
 async function obtenerParticipantes(client, torneoId, tipoParticipacion) {
@@ -692,6 +735,23 @@ export async function listarTorneos(filtros, usuarioId) {
     i++;
   }
 
+  // El historial guardado vencido solo se devuelve para la consulta Mis creados.
+  // El DATE se interpreta segun el calendario local de Chile.
+  if (soloMios === 'true') {
+    condiciones.push(`(
+      t.fecha_fin IS NULL
+      OR ((t.fecha_fin::timestamp + INTERVAL '2 days') AT TIME ZONE 'America/Santiago') > NOW()
+      OR (t.guardado_por_creador = TRUE AND t.organizador_id = $${i})
+    )`);
+    valores.push(usuarioId);
+    i++;
+  } else {
+    condiciones.push(`(
+      t.fecha_fin IS NULL
+      OR ((t.fecha_fin::timestamp + INTERVAL '2 days') AT TIME ZONE 'America/Santiago') > NOW()
+    )`);
+  }
+
   const bloqueados = await idsBloqueadosTotales(usuarioId);
   if (bloqueados.length > 0) {
     const placeholders = [];
@@ -722,6 +782,9 @@ export async function listarTorneos(filtros, usuarioId) {
 
   const { rows } = await pool.query(
     `SELECT t.*,
+       (t.fecha_fin IS NOT NULL AND
+        ((t.fecha_fin::timestamp + INTERVAL '2 days') AT TIME ZONE 'America/Santiago') <= NOW())
+        AS plazo_archivo_cumplido,
        u.id AS u_id, u.nombre AS u_nombre, u.username AS u_username, u.avatar AS u_avatar,
        (SELECT COUNT(*)::int FROM torneo_equipos WHERE torneo_id = t.id) AS total_equipos,
        (SELECT COUNT(*)::int FROM torneo_lista_espera WHERE torneo_id = t.id AND estado = 'pendiente') AS total_lista_espera,
@@ -844,11 +907,18 @@ export async function listarTorneos(filtros, usuarioId) {
 export async function obtenerTorneo(torneoId, usuarioId) {
   const { rows } = await pool.query(
     `SELECT t.*,
+       (t.fecha_fin IS NOT NULL AND
+        ((t.fecha_fin::timestamp + INTERVAL '2 days') AT TIME ZONE 'America/Santiago') <= NOW())
+        AS plazo_archivo_cumplido,
        u.id AS u_id, u.nombre AS u_nombre, u.username AS u_username, u.avatar AS u_avatar
      FROM torneos t
      JOIN usuarios u ON u.id = t.organizador_id
-     WHERE t.id = $1`,
-    [torneoId]
+     WHERE t.id = $1 AND (
+       t.fecha_fin IS NULL
+       OR ((t.fecha_fin::timestamp + INTERVAL '2 days') AT TIME ZONE 'America/Santiago') > NOW()
+       OR (t.guardado_por_creador = TRUE AND t.organizador_id = $2)
+     )`,
+    [torneoId, usuarioId]
   );
 
   if (!rows[0]) {
@@ -1236,23 +1306,17 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       marcoColorIcono: 'marco_color_icono',
     };
 
-    const camposCriticos = [
-      ['fechaInicio', 'fecha_inicio'],
-      ['fechaLimiteInscripcion', 'fecha_limite_inscripcion'],
-      ['lugar', 'lugar'],
-      ['precio', 'precio'],
-      ['cuposEquipos', 'cupos_equipos'],
-    ];
-
-    let cambioCritico = false;
-    for (const [camel, snake] of camposCriticos) {
-      if (cambios[camel] !== undefined) {
-        if (String(torneoAntes[snake]) !== String(cambios[camel])) {
-          cambioCritico = true;
-          break;
-        }
+    const cambioReal = Object.entries(permitidos).some(([campo, columna]) => {
+      if (cambios[campo] === undefined) return false;
+      const nuevo = cambios[campo];
+      const anterior = torneoAntes[columna];
+      // La fecha de PostgreSQL puede llegar como Date, string ISO o YYYY-MM-DD.
+      if (anterior instanceof Date && nuevo != null) {
+        const fechaNueva = new Date(nuevo);
+        return Number.isNaN(fechaNueva.getTime()) || anterior.getTime() !== fechaNueva.getTime();
       }
-    }
+      return JSON.stringify(nuevo ?? null) !== JSON.stringify(anterior ?? null);
+    });
 
     const campos = [];
     const valores = [];
@@ -1280,18 +1344,12 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
       valores
     );
 
-    if (cambioCritico) {
-      const tipo = torneoAntes.tipo_participacion || 'equipo';
-      const destinatarios = await obtenerDestinatariosTorneo(client, torneoId, tipo);
-
-      if (destinatarios.length > 0) {
-        await crearNotificacionMultiple(
-          destinatarios,
-          'edicion',
-          `El organizador editó "${torneoAntes.nombre}". Revisá los cambios.`,
-          `#/torneo/${torneoId}`
-        );
-      }
+    if (cambioReal) {
+      await notificarCambioTorneo(client, {
+        ...torneoAntes,
+        nombre: cambios.nombre ?? torneoAntes.nombre,
+        tipo_participacion: cambios.tipoParticipacion ?? torneoAntes.tipo_participacion,
+      });
     }
 
     await client.query('COMMIT');
@@ -1305,6 +1363,25 @@ export async function editarTorneo(torneoId, cambios, usuarioId) {
 }
 
 /* =========================================================
+   GUARDAR TORNEO COMO HISTORIAL (solo el creador original)
+   ========================================================= */
+export async function guardarTorneo(torneoId, usuarioId) {
+  const { rows } = await pool.query(
+    `UPDATE torneos SET guardado_por_creador = TRUE, updated_at = NOW()
+     WHERE id = $1 AND organizador_id = $2
+     RETURNING id, guardado_por_creador`,
+    [torneoId, usuarioId]
+  );
+  if (!rows[0]) {
+    const { rowCount } = await pool.query('SELECT 1 FROM torneos WHERE id = $1', [torneoId]);
+    const err = new Error(rowCount ? 'Solo el creador puede guardar este torneo' : 'Torneo no encontrado');
+    err.status = rowCount ? 403 : 404;
+    throw err;
+  }
+  return { ok: true, guardadoPorCreador: true, mensaje: 'Torneo guardado en Mis creados' };
+}
+
+/* =========================================================
    ELIMINAR TORNEO
    ========================================================= */
 export async function eliminarTorneo(torneoId, usuarioId) {
@@ -1315,12 +1392,6 @@ export async function eliminarTorneo(torneoId, usuarioId) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
     verificarOrganizador(torneo, usuarioId);
-    if (torneo.fecha_fin && new Date(torneo.fecha_fin + 'T23:59:59') <= new Date()) {
-      const err = new Error('No puedes eliminar un torneo que ya ha finalizado.');
-      err.status = 400;
-      throw err;
-    }
-
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const destinatarios = await obtenerDestinatariosTorneo(client, torneoId, tipo);
@@ -1344,9 +1415,10 @@ export async function eliminarTorneo(torneoId, usuarioId) {
     if (destinatarios.length > 0) {
       await crearNotificacionMultiple(
         destinatarios,
-        'cancelacion',
-        `El torneo "${torneo.nombre}" fue cancelado por el organizador.`,
-        null
+        'torneo_eliminado',
+        `El torneo "${torneo.nombre}" fue eliminado por el organizador.`,
+        null,
+        { client, obligatoria: true }
       );
     }
 
@@ -1412,7 +1484,8 @@ export async function cerrarTorneo(torneoId, usuarioId) {
         destinatarios,
         'cierre',
         `Las inscripciones de "${torneo.nombre}" fueron cerradas.`,
-        `#/torneo/${torneoId}`
+        `#/torneo/${torneoId}`,
+        { client, obligatoria: true }
       );
     }
 
@@ -1744,11 +1817,7 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
 
     const torneo = await obtenerTorneoOFallar(client, torneoId);
 
-    if (await estanBloqueados(usuarioId, torneo.organizador_id)) {
-      const err = new Error('No puedes interactuar con este torneo');
-      err.status = 403;
-      throw err;
-    }
+    // Cancelar tu propia inscripción debe seguir siendo posible aunque exista bloqueo.
 
     const tipo = torneo.tipo_participacion || 'equipo';
     const esIndividual = tipo === 'individual';
@@ -1763,8 +1832,27 @@ export async function cancelarInscripcion(torneoId, usuarioId, equipoId) {
     const esUuid = esUuidValido(idEfectivo);
 
     if (!esUuid) {
-      await client.query('COMMIT');
-      return { ok: true, mensaje: 'Inscripción cancelada (legacy)' };
+      const err = new Error('Debes indicar un equipo válido');
+      err.status = 400;
+      throw err;
+    }
+
+    // IMPORTANTE: antes se podía cancelar la inscripción de cualquier equipo
+    // conociendo su UUID. Verificar capitan/admin antes del borrado.
+    if (!esIndividual) {
+      const { rows: permisos } = await client.query(
+        `SELECT 1 FROM grupos g WHERE g.id = $1 AND g.tipo = 'equipo'
+           AND (g.capitan_id = $2 OR EXISTS (
+             SELECT 1 FROM grupo_miembros gm
+             WHERE gm.grupo_id = g.id AND gm.usuario_id = $2
+               AND gm.rol IN ('capitan','admin')
+           ))`, [idEfectivo, usuarioId]
+      );
+      if (!permisos[0]) {
+        const err = new Error('Solo el capitán o administrador puede retirar este equipo');
+        err.status = 403;
+        throw err;
+      }
     }
 
     const { rowCount: r1 } = await client.query(
@@ -2664,6 +2752,8 @@ export async function crearJornada(torneoId, usuarioId, datos) {
       ]
     );
 
+    await notificarCambioTorneo(client, torneo, 'incorporó una jornada nueva');
+
     await client.query('COMMIT');
     return rows[0];
   } catch (err) {
@@ -2723,6 +2813,8 @@ export async function editarJornada(torneoId, jornadaId, usuarioId, cambios) {
       valores
     );
 
+    await notificarCambioTorneo(client, torneo, 'modificó los datos de una jornada');
+
     await client.query('COMMIT');
     return rows[0];
   } catch (err) {
@@ -2765,6 +2857,8 @@ export async function eliminarJornada(torneoId, jornadaId, usuarioId) {
       err.status = 404;
       throw err;
     }
+
+    await notificarCambioTorneo(client, torneo, 'eliminó una jornada');
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Jornada eliminada' };
@@ -2883,6 +2977,16 @@ export async function guardarJornadaBulk(torneoId, jornadaId, usuarioId, datos) 
       await recalcularTablaPosiciones(client, torneoId);
     }
 
+    const hayCambiosBulk =
+      (datos.jornada && (datos.jornada.nombre !== undefined || datos.jornada.fecha !== undefined)) ||
+      (Array.isArray(datos.partidosEliminar) && datos.partidosEliminar.length > 0) ||
+      (Array.isArray(datos.partidos) && datos.partidos.some(p =>
+        p.id && (p.fecha !== undefined || p.resultado !== undefined)
+      ));
+    if (hayCambiosBulk) {
+      await notificarCambioTorneo(client, torneo, 'actualizó una jornada y sus partidos');
+    }
+
     await client.query('COMMIT');
 
     return {
@@ -2952,6 +3056,8 @@ export async function crearPartidoTorneo(torneoId, usuarioId, datos) {
         jornadaId || null,
       ]
     );
+
+    await notificarCambioTorneo(client, torneo, 'agregó un partido al calendario');
 
     await client.query('COMMIT');
     return rows[0];
@@ -3038,6 +3144,8 @@ export async function editarPartidoTorneo(torneoId, partidoId, usuarioId, cambio
       valores
     );
 
+    await notificarCambioTorneo(client, torneo, 'cambió un partido del calendario');
+
     await client.query('COMMIT');
     return rows[0];
   } catch (err) {
@@ -3073,6 +3181,8 @@ export async function eliminarPartidoTorneo(torneoId, partidoId, usuarioId) {
       err.status = 404;
       throw err;
     }
+
+    await notificarCambioTorneo(client, torneo, 'eliminó un partido del calendario');
 
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Partido eliminado' };
@@ -3117,6 +3227,9 @@ export async function editarCruce(torneoId, partidoId, usuarioId, cambios) {
 
     const partido = existe[0];
 
+    // Serializa cambios concurrentes sobre el fixture del mismo torneo.
+    await client.query('SELECT id FROM torneos WHERE id = $1 FOR UPDATE', [torneoId]);
+
     const { rows: primerPartido } = await client.query(
       `SELECT fase FROM torneo_partidos
        WHERE torneo_id = $1
@@ -3141,38 +3254,138 @@ export async function editarCruce(torneoId, partidoId, usuarioId, cambios) {
       throw err;
     }
 
-    const campos = [];
-    const valores = [];
-    let i = 1;
-
-    if (cambios.equipoLocalId !== undefined) {
-      campos.push(`equipo_local_id = $${i}`);
-      valores.push(esUuidValido(cambios.equipoLocalId) ? cambios.equipoLocalId : null);
-      i++;
-    }
-    if (cambios.equipoVisitanteId !== undefined) {
-      campos.push(`equipo_visitante_id = $${i}`);
-      valores.push(esUuidValido(cambios.equipoVisitanteId) ? cambios.equipoVisitanteId : null);
-      i++;
-    }
-
-    if (campos.length === 0) {
+    if (cambios.equipoLocalId === undefined && cambios.equipoVisitanteId === undefined) {
       await client.query('COMMIT');
       return { ok: true, mensaje: 'Sin cambios' };
     }
 
-    valores.push(partidoId);
+    // Comprobar y normalizar participantes: no convertir silenciosamente IDs inválidos a NULL.
+    const localId = cambios.equipoLocalId === undefined
+      ? partido.equipo_local_id : (cambios.equipoLocalId || null);
+    const visitaId = cambios.equipoVisitanteId === undefined
+      ? partido.equipo_visitante_id : (cambios.equipoVisitanteId || null);
+    const ids = [localId, visitaId].filter(Boolean);
 
-    const { rows } = await client.query(
-      `UPDATE torneo_partidos
-       SET ${campos.join(', ')}, updated_at = NOW()
-       WHERE id = $${i}
-       RETURNING *`,
-      valores
+    if (ids.length === 0) {
+      const err = new Error('El cruce debe tener al menos un participante. Usa Eliminar cruce para borrarlo.');
+      err.status = 400;
+      throw err;
+    }
+    if (ids.some(id => !esUuidValido(id))) {
+      const err = new Error('Participante inválido');
+      err.status = 400;
+      throw err;
+    }
+    if (localId && visitaId && String(localId) === String(visitaId)) {
+      const err = new Error('Un participante no puede competir contra sí mismo');
+      err.status = 400;
+      throw err;
+    }
+
+    const { rows: inscritos } = await client.query(
+      `SELECT equipo_id FROM torneo_equipos
+       WHERE torneo_id = $1 AND equipo_id = ANY($2::uuid[])`,
+      [torneoId, ids]
     );
+    if (inscritos.length !== ids.length) {
+      const err = new Error('Solo puedes seleccionar participantes inscritos en este torneo');
+      err.status = 400;
+      throw err;
+    }
+
+    // Traer la primera fase completa bloqueada para permitir intercambiar
+    // participantes entre cruces sin duplicarlos y sin estados intermedios.
+    const { rows: partidosFase } = await client.query(
+      `SELECT id, equipo_local_id, equipo_visitante_id, posicion_en_fase, siguiente_partido_id
+       FROM torneo_partidos
+       WHERE torneo_id = $1 AND fase = $2
+       ORDER BY posicion_en_fase ASC FOR UPDATE`,
+      [torneoId, partido.fase]
+    );
+    const slots = partidosFase.flatMap(p => [
+      { partidoId: String(p.id), lado: 'local', equipoId: p.equipo_local_id || null },
+      { partidoId: String(p.id), lado: 'visitante', equipoId: p.equipo_visitante_id || null },
+    ]);
+    const indiceLocal = slots.findIndex(v => v.partidoId === String(partidoId) && v.lado === 'local');
+    const indiceVisita = slots.findIndex(v => v.partidoId === String(partidoId) && v.lado === 'visitante');
+    if (indiceLocal < 0 || indiceVisita < 0) {
+      const err = new Error('No se encontraron las posiciones de este cruce');
+      err.status = 404;
+      throw err;
+    }
+
+    function asignarEnSlot(indiceDestino, participanteId) {
+      const nuevoId = participanteId || null;
+      const anteriorId = slots[indiceDestino].equipoId;
+      if (String(anteriorId) === String(nuevoId)) return;
+      const indiceOrigen = nuevoId
+        ? slots.findIndex((v, i) => i !== indiceDestino && String(v.equipoId) === String(nuevoId))
+        : -1;
+
+      if (indiceOrigen >= 0) {
+        // Intercambiar el participante entrante con el saliente.
+        slots[indiceOrigen].equipoId = anteriorId;
+      } else if (nuevoId && anteriorId) {
+        // Si el nuevo inscrito todavía no estaba asignado, intentar conservar
+        // el anterior en un espacio vacío fuera del cruce editado.
+        const indiceLibre = slots.findIndex((v, i) =>
+          i !== indiceDestino && v.equipoId === null &&
+          v.partidoId !== String(partidoId)
+        );
+        if (indiceLibre >= 0) slots[indiceLibre].equipoId = anteriorId;
+      }
+      slots[indiceDestino].equipoId = nuevoId;
+    }
+    asignarEnSlot(indiceLocal, localId);
+    asignarEnSlot(indiceVisita, visitaId);
+
+    // Defensa adicional antes de escribir: ningún participante repetido.
+    const idsActualizados = slots.map(v => v.equipoId).filter(Boolean).map(String);
+    if (new Set(idsActualizados).size !== idsActualizados.length) {
+      const err = new Error('El fixture tiene participantes duplicados. Revisa los cruces.');
+      err.status = 400;
+      throw err;
+    }
+
+    let cruceActualizado = null;
+    for (const p of partidosFase) {
+      const idPartido = String(p.id);
+      const localNuevo = slots.find(v => v.partidoId === idPartido && v.lado === 'local').equipoId;
+      const visitaNueva = slots.find(v => v.partidoId === idPartido && v.lado === 'visitante').equipoId;
+      if (String(localNuevo) === String(p.equipo_local_id || null) &&
+          String(visitaNueva) === String(p.equipo_visitante_id || null)) continue;
+
+      const esBye = Boolean(localNuevo) !== Boolean(visitaNueva);
+      const ganadorBye = esBye ? (localNuevo ? 'local' : 'visitante') : null;
+      const { rows: actualizados } = await client.query(
+        `UPDATE torneo_partidos
+         SET equipo_local_id = $1, equipo_visitante_id = $2,
+             es_bye = $3, ganador = $4,
+             estado = $5, resultado = NULL, estadisticas = NULL,
+             updated_at = NOW()
+         WHERE id = $6 AND torneo_id = $7
+         RETURNING *`,
+        [localNuevo, visitaNueva, esBye, ganadorBye,
+         esBye ? 'finalizado' : 'pendiente', p.id, torneoId]
+      );
+      if (idPartido === String(partidoId)) cruceActualizado = actualizados[0];
+
+      if (p.siguiente_partido_id) {
+        const campoSiguiente = p.posicion_en_fase % 2 === 0
+          ? 'equipo_local_id' : 'equipo_visitante_id';
+        await client.query(
+          `UPDATE torneo_partidos
+           SET ${campoSiguiente} = $1, updated_at = NOW()
+           WHERE id = $2 AND torneo_id = $3`,
+          [esBye ? (localNuevo || visitaNueva) : null, p.siguiente_partido_id, torneoId]
+        );
+      }
+    }
+
+    await notificarCambioTorneo(client, torneo, 'modificó un cruce del cuadro');
 
     await client.query('COMMIT');
-    return rows[0];
+    return cruceActualizado || { ok: true, mensaje: 'Cruce sin cambios' };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -3247,6 +3460,8 @@ export async function generarFixtureLiga(torneoId, usuarioId) {
       }
     }
 
+    await notificarCambioTorneo(client, torneo, 'generó el calendario de liga');
+
     await client.query('COMMIT');
 
     return {
@@ -3273,6 +3488,8 @@ export async function armarFixtureAleatorio(torneoId, usuarioId) {
     await verificarPermisoResultados(client, torneo, usuarioId);
 
     const info = await armarFixtureAleatorioInterno(client, torneoId, torneo);
+
+    await notificarCambioTorneo(client, torneo, 'generó un cuadro de eliminación');
 
     await client.query('COMMIT');
 
@@ -3434,6 +3651,8 @@ export async function armarFixtureManual(torneoId, usuarioId, datos) {
       );
     }
 
+    await notificarCambioTorneo(client, torneo, 'modificó el cuadro del torneo');
+
     await client.query('COMMIT');
 
     return {
@@ -3488,6 +3707,8 @@ export async function confirmarFixture(torneoId, usuarioId) {
       [torneoId]
     );
 
+    await notificarCambioTorneo(client, torneo, 'confirmó el cuadro de eliminación');
+
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Fixture confirmado y bloqueado' };
   } catch (err) {
@@ -3519,6 +3740,24 @@ export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
     }
 
     const partido = rows[0];
+
+    if (torneo.deporte === 'Boxeo' && datos.resultado?.metodo === 'KO') {
+      if (!['local', 'visitante'].includes(datos.resultado.ganador)) {
+        const err = new Error('Selecciona un ganador válido por KO');
+        err.status = 400;
+        throw err;
+      }
+      if (datos.estado && datos.estado !== 'finalizado') {
+        const err = new Error('Una victoria por KO debe registrar el combate como finalizado');
+        err.status = 400;
+        throw err;
+      }
+      if (!partido.equipo_local_id || !partido.equipo_visitante_id) {
+        const err = new Error('El combate debe tener dos participantes para registrar KO');
+        err.status = 400;
+        throw err;
+      }
+    }
 
     const resultadoFinal = calcularGanadorPorDeporte(
       torneo.deporte,
@@ -3575,6 +3814,8 @@ export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
       }
     }
 
+    await notificarCambioTorneo(client, torneo, 'actualizó un resultado');
+
     await client.query('COMMIT');
     return { ok: true, mensaje: 'Resultado cargado' };
   } catch (err) {
@@ -3587,6 +3828,12 @@ export async function cargarResultado(torneoId, partidoId, usuarioId, datos) {
 
 function calcularGanadorPorDeporte(deporte, resultado, sistemaClasificacion = 'simple') {
   if (!resultado) return null;
+
+  // KO prevalece sobre la puntuación: sirve tanto en ligas como en eliminatorias.
+  if (deporte === 'Boxeo' && resultado.metodo === 'KO') {
+    return resultado.ganador === 'local' || resultado.ganador === 'visitante'
+      ? resultado.ganador : null;
+  }
 
   if (sistemaClasificacion === 'tiempo') {
     return calcularGanadorPorTiempo(resultado);
@@ -3706,12 +3953,14 @@ function calcularGanadorPorPuntos(resultado) {
 
 async function recalcularTablaPosiciones(client, torneoId) {
   const { rows: metaRows } = await client.query(
-    `SELECT sistema_clasificacion FROM torneos WHERE id = $1`,
+    `SELECT sistema_clasificacion, deporte FROM torneos WHERE id = $1`,
     [torneoId]
   );
+  // Boxeo normalmente usa puntuación, pero sus victorias (incluido KO)
+  // también deben reflejarse en la tabla de liga.
   if (
     metaRows[0]?.sistema_clasificacion === 'tiempo' ||
-    metaRows[0]?.sistema_clasificacion === 'puntos'
+    (metaRows[0]?.sistema_clasificacion === 'puntos' && metaRows[0]?.deporte !== 'Boxeo')
   ) {
     return;
   }
@@ -3745,8 +3994,11 @@ async function recalcularTablaPosiciones(client, torneoId) {
 
   for (const p of partidos) {
     const r = p.resultado || {};
-    const gl = Number(r.goles_local ?? r.puntos_local ?? r.sets_local ?? 0);
-    const gv = Number(r.goles_visitante ?? r.puntos_visitante ?? r.sets_visitante ?? 0);
+    const puntosParticipantes = Array.isArray(r.participantes) ? r.participantes : [];
+    const gl = Number(r.goles_local ?? r.puntos_local ?? r.sets_local
+      ?? puntosParticipantes.find(q => String(q.id) === String(p.equipo_local_id))?.puntos ?? 0);
+    const gv = Number(r.goles_visitante ?? r.puntos_visitante ?? r.sets_visitante
+      ?? puntosParticipantes.find(q => String(q.id) === String(p.equipo_visitante_id))?.puntos ?? 0);
 
     if (p.ganador === 'local') {
       await actualizarFilaTabla(client, torneoId, p.equipo_local_id, gl, gv, puntos_victoria, 'ganado');

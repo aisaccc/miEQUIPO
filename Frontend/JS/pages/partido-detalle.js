@@ -8,6 +8,8 @@ import {
   obtenerPartido,
   editarPartido as editarPartidoAPI,
   eliminarPartido as eliminarPartidoAPI,
+  guardarPartido as guardarPartidoAPI,
+  salirEquipoDelPartido as salirEquipoDelPartidoAPI,
   inscribirse as inscribirseAPI,
   salirDelPartido as salirDelPartidoAPI,
   postularse as postularseAPI,
@@ -306,8 +308,9 @@ export async function init(params = {}) {
     confirmacionPendiente = partido.confirmacionPendiente || null;
 
     const soyOrg = soyOrganizador(partido);
-    const soyCapitanDelOrg = miEquipoEsOrganizador(partido);
-    const soyAdminOGrupo = soyOrg || soyCapitanDelOrg;
+    // Solicitudes y gestión: exclusivamente el usuario creador.
+    // Ser integrante/capitán del equipo organizador NO equivale a ser suborganizador.
+    const soyAdminOGrupo = soyOrg;
 
     const totalInscritos = deEquipo ? equiposInscritos.length : inscritos.length;
     const cuposDisponibles = partido.cupos - totalInscritos;
@@ -350,8 +353,11 @@ export async function init(params = {}) {
         
         ${!partido.bloqueado ? `
           <button class="btn pd-hero__action ${mostrarBotonSolicitudes ? '' : 'pd-hero__action--primary'}" id="btn-editar-partido">${ICONOS.lapiz} Editar partido</button>
-          <button class="btn pd-hero__action pd-hero__action--danger" id="btn-eliminar-partido">${ICONOS.basura} Eliminar</button>
         ` : ''}
+        ${soyOrg ? (partido.guardadoPorCreador
+          ? `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.check} Guardado en Mis creados</span>`
+          : `<button class="btn pd-hero__action" id="btn-guardar-partido-historial">Guardar partido</button>`) : ''}
+        ${soyOrg ? `<button class="btn pd-hero__action pd-hero__action--danger" id="btn-eliminar-partido">${ICONOS.basura} Eliminar</button>` : ''}
       `;
     } else if (enModoOrganizar) {
       if (confirmacionPendiente && confirmacionPendiente.esInteresado) {
@@ -381,13 +387,13 @@ export async function init(params = {}) {
         const yaInscrito = !!partido.miEquipoInscrito;
         const yaPostulado = !!partido.miEquipoPostulado;
         if (yaInscrito) {
-          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.check} Tu equipo está inscrito</span>`;
+          botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.check} Tu equipo está inscrito</span><button class="btn pd-hero__action" id="btn-retirar-participacion" style="color:#FCA5A5">Salir del partido con mi equipo</button>`;
         } else if (yaPostulado) {
           botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.reloj} Postulación pendiente</span><button class="btn pd-hero__action" id="btn-cancelar-postulacion-equipo" style="color:#FCA5A5">Cancelar</button>`;
         } else if (partido.estado !== 'abierto' || equiposInscritos.length >= partido.cupos) {
           botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.candado} Partido lleno</span>`;
         } else {
-          botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postular-equipo">${ICONOS.documento} Postular mi equipo</button>`;
+          botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postular-equipo">${partido.aprobacionRequerida ? ICONOS.documento : ICONOS.check} ${partido.aprobacionRequerida ? 'Solicitar inscripción de mi equipo' : 'Inscribir mi equipo'}</button>`;
         }
       }
     } else if (yoEstoyInscrito) {
@@ -402,6 +408,16 @@ export async function init(params = {}) {
       botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-postularme">${ICONOS.documento} Postularme</button>`;
     } else {
       botonAccion = `<button class="btn pd-hero__action pd-hero__action--primary" id="btn-inscribirme">${ICONOS.check} Inscribirme</button>`;
+    }
+
+    // Poder retirarse incluso con una propuesta pendiente, en Organizar o
+    // con interes activo tras confirmarse el partido.
+    const tengoParticipacion = yoEstoyInscrito || Boolean(yoPostule) || yoInteresado
+      || Boolean(partido.miEquipoInscrito) || Boolean(partido.miEquipoPostulado)
+      || Boolean(confirmacionPendiente?.esInteresado);
+    const haySalidaEnBoton = /id="btn-(salir-partido|cancelar-interes|cancelar-postulacion|cancelar-postulacion-equipo|retirar-participacion)"/.test(botonAccion);
+    if (!soyOrg && tengoParticipacion && !haySalidaEnBoton) {
+      botonAccion += `<button class="btn pd-hero__action" id="btn-retirar-participacion" style="color:#FCA5A5">Cancelar mi participación</button>`;
     }
 
     const infoFechaHero = enModoOrganizar ? `A coordinar` : formatearFecha(partido.fecha);
@@ -594,10 +610,21 @@ export async function init(params = {}) {
 
     document.getElementById('btn-interesarme')?.addEventListener('click', () => interesarse(partido));
     document.getElementById('btn-interesarme-equipo')?.addEventListener('click', () => interesarse(partido));
-    document.getElementById('btn-cancelar-interes')?.addEventListener('click', () => cancelarInteres(partido));
+    document.getElementById('btn-cancelar-interes')?.addEventListener('click', () => retirarmeDeCualquierPartido(partido));
     document.getElementById('btn-aprobar-propuesta')?.addEventListener('click', () => aprobarPropuesta(partido));
     document.getElementById('btn-rechazar-propuesta')?.addEventListener('click', () => rechazarPropuesta(partido));
     document.getElementById('btn-cancelar-propuesta')?.addEventListener('click', () => cancelarPropuesta(partido));
+
+    document.getElementById('btn-guardar-partido-historial')?.addEventListener('click', async () => {
+      if (!confirm('¿Guardar este partido en Mis creados para conservarlo cuando venza?')) return;
+      try {
+        await guardarPartidoAPI(partido.id);
+        toast('Partido guardado en Mis creados', 'success');
+        await render();
+      } catch (err) {
+        toast(err.message || 'No se pudo guardar el partido', 'error');
+      }
+    });
 
     document.getElementById('btn-editar-partido')?.addEventListener('click', () => abrirModalEditar(partido));
 
@@ -615,6 +642,7 @@ export async function init(params = {}) {
 
     document.getElementById('btn-inscribirme')?.addEventListener('click', () => inscribirme(partido));
     document.getElementById('btn-salir-partido')?.addEventListener('click', () => salirDelPartido(partido));
+    document.getElementById('btn-retirar-participacion')?.addEventListener('click', () => retirarmeDeCualquierPartido(partido));
     document.getElementById('btn-postularme')?.addEventListener('click', () => postularme(partido));
     document.getElementById('btn-cancelar-postulacion')?.addEventListener('click', () => cancelarPostulacion(partido));
     document.getElementById('btn-postular-equipo')?.addEventListener('click', () => abrirModalPostularMiEquipo(partido));
@@ -632,6 +660,10 @@ export async function init(params = {}) {
   }
 
   async function abrirModalSolicitudes(partido) {
+    if (!soyOrganizador(partido)) {
+      toast('Solo el creador del partido puede ver las solicitudes', 'error');
+      return;
+    }
     const deEquipo = esDeEquipo(partido);
     const enModoOrganizar = esModoOrganizar(partido);
 
@@ -838,31 +870,66 @@ export async function init(params = {}) {
     const postulantes = partido.equiposPostulantes || [];
     const pendientes = postulantes.filter(p => p.estado === 'pendiente');
 
+    // Evita que nombres, rutas o textos enviados desde el backend se interpreten como HTML.
+    const escapar = (valor) => String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[caracter]);
+
+    // Los escudos pueden llegar como una ruta de imagen, una URL, una imagen base64 o un emoji.
+    const dibujarEscudo = (valor) => {
+      const escudo = typeof valor === 'string' ? valor.trim() : '';
+      if (!escudo) return ICONOS.escudo;
+
+      const esImagen = /\.(?:svg|png|jpe?g|gif|webp)(?:[?#].*)?$/i.test(escudo)
+        || /^(?:https?:\/\/|\/|\.\/|\.\.\/|assets\/)/i.test(escudo)
+        || /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(escudo);
+
+      if (esImagen && !/^(?:javascript|vbscript|data:text):/i.test(escudo)) {
+        return `<img src="${escapar(escudo)}" alt="Escudo del equipo" loading="lazy" style="width:100%;height:100%;max-width:42px;max-height:42px;object-fit:contain;display:block" />`;
+      }
+      return `<span style="font-size:26px;line-height:1;display:block">${escapar(escudo)}</span>`;
+    };
+
     if (postulantes.length === 0) {
       body.innerHTML = `<div class="empty-state--sm"><div class="empty-state__icon">${ICONOS.escudo}</div><p>Aún no hay equipos postulantes</p></div>`;
     } else {
       body.innerHTML = `
         <p class="text-sm text-muted mb-4">${pendientes.length} equipo(s) esperando aprobación</p>
-        ${postulantes.map((post) => `
-          <div class="solicitud-item" style="align-items:flex-start">
-            <!-- ⚡ Avatar clickeable -->
-            <div class="avatar avatar--md" style="background:var(--color-primary-light); display:grid; place-items:center; font-size:22px; flex-shrink:0; cursor:pointer" data-ver-equipo-post="${post.equipoId || post.equipo_id}">
-              ${post.escudo || '🛡️'}
-            </div>
-            <div class="solicitud-item__info">
-              <div class="solicitud-item__nombre" data-ver-equipo-post="${post.equipoId || post.equipo_id}" style="cursor:pointer; text-decoration: underline; text-decoration-style: dotted;">
-                ${post.nombre || 'Equipo'}
+        ${postulantes.map(post => {
+          const equipoId = escapar(post.equipoId || post.equipo_id || '');
+          const nombre = escapar(post.nombre || 'Equipo');
+          const deporte = escapar(post.deporte || '');
+          return `
+            <div class="solicitud-item" style="display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;column-gap:12px;row-gap:12px;padding:12px;min-width:0">
+              <div class="avatar avatar--md" style="width:48px;height:48px;min-width:48px;box-sizing:border-box;border-radius:12px;background:var(--color-primary-light);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer" data-ver-equipo-post="${equipoId}" title="Ver equipo">
+                ${dibujarEscudo(post.escudo)}
               </div>
-              <div class="solicitud-item__meta">${post.deporte ? `${ICONOS.medalla} ${post.deporte}` : ''}</div>
+              <div class="solicitud-item__info" style="min-width:0;overflow-wrap:anywhere">
+                <div class="solicitud-item__nombre" data-ver-equipo-post="${equipoId}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;line-height:1.4;overflow-wrap:anywhere">
+                  ${nombre}
+                </div>
+                <div class="solicitud-item__meta" style="overflow-wrap:anywhere">${deporte ? `${ICONOS.medalla} ${deporte}` : ''}</div>
+              </div>
+              <div class="solicitud-item__actions" style="grid-column:1 / -1;display:flex;flex-direction:row;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0">
+                ${post.estado === 'pendiente'
+                  ? `<button type="button" class="btn btn--primary btn--sm" data-aceptar-eq="${equipoId}" style="flex:1 1 105px;max-width:180px;min-width:0">Aprobar</button>
+                     <button type="button" class="btn btn--ghost btn--sm" data-rechazar-eq="${equipoId}" style="flex:1 1 105px;max-width:180px;min-width:0;color:var(--color-danger)">${ICONOS.basura} Borrar</button>`
+                  : `<span class="badge badge--${post.estado === 'aceptado' ? 'success' : 'danger'}">${escapar(post.estado || 'Procesado')}</span>`}
+              </div>
             </div>
-            <div class="solicitud-item__actions" style="flex-direction:column; align-items:flex-end">
-              ${post.estado === 'pendiente' ? `<div class="flex gap-2"><button class="btn btn--primary btn--sm" data-aceptar-eq="${post.equipoId || post.equipo_id}">Aprobar</button><button class="btn btn--ghost btn--sm" data-rechazar-eq="${post.equipoId || post.equipo_id}" style="color:var(--color-danger)">${ICONOS.basura} Borrar</button></div>` : `<span class="badge badge--${post.estado === 'aceptado' ? 'success' : 'danger'}">${post.estado}</span>`}
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       `;
 
-      // ⚡ Listener para ver el perfil del equipo postulante
+      // Si una imagen no existe, muestra un icono en lugar del texto de la ruta.
+      body.querySelectorAll('.solicitud-item .avatar img').forEach(img => {
+        const mostrarIcono = () => {
+          if (img.parentElement) img.parentElement.innerHTML = ICONOS.escudo;
+        };
+        img.addEventListener('error', mostrarIcono, { once: true });
+        if (img.complete && img.naturalWidth === 0) mostrarIcono();
+      });
+
       body.querySelectorAll('[data-ver-equipo-post]').forEach(el => {
         el.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -1064,6 +1131,38 @@ export async function init(params = {}) {
     }
   }
 
+  async function retirarmeDeCualquierPartido(partido) {
+    if (!user) return;
+    if (!confirm('¿Cancelar tu inscripción, interés o confirmación en este partido?')) return;
+    try {
+      if (esDeEquipo(partido)) {
+        // Para equipos, solo el capitán o administrador puede retirar al equipo.
+        let equipoId = partido.miEquipoInscritoId || partido.miEquipoPostuladoId
+          || (confirmacionPendiente?.esInteresado ? confirmacionPendiente.equipoId : null);
+        if (!equipoId) {
+          const opciones = misEquipos.filter(eq => eq.deporte === partido.deporte);
+          if (opciones.length === 1) equipoId = opciones[0].id;
+          else if (opciones.length > 1) {
+            const lista = opciones.map((eq, i) => `${i + 1}. ${eq.nombre}`).join('\n');
+            const eleccion = prompt(`¿Qué equipo quieres retirar?\n\n${lista}\n\nIngresa el número:`);
+            if (eleccion === null) return;
+            const pos = Number(eleccion) - 1;
+            if (!Number.isInteger(pos) || !opciones[pos]) return toast('Equipo no válido', 'error');
+            equipoId = opciones[pos].id;
+          }
+        }
+        if (equipoId) await salirEquipoDelPartidoAPI(partido.id, equipoId);
+        else await salirDelPartidoAPI(partido.id); // Backend permite inferir un único equipo.
+      } else {
+        await salirDelPartidoAPI(partido.id);
+      }
+      toast('Participación cancelada', 'info');
+      await render();
+    } catch (err) {
+      toast(err.message || 'No se pudo cancelar la participación', 'error');
+    }
+  }
+
   async function salirDelPartido(partido) {
     if (!user) return;
     if (!confirm('¿Seguro que quieres salir del partido?')) return;
@@ -1129,7 +1228,9 @@ export async function init(params = {}) {
   async function postularEquipo(partido, equipo) {
     try {
       await postularEquipoAPI(partido.id, String(equipo.id));
-      toast(`Postulación enviada con ${equipo.nombre}`, 'success');
+      toast(partido.aprobacionRequerida
+        ? `Solicitud enviada con ${equipo.nombre}`
+        : `${equipo.nombre} quedó inscrito en el partido`, 'success');
       await render();
     } catch (err) {
       toast(err.message || 'No se pudo postular el equipo', 'error');

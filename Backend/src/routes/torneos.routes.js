@@ -24,6 +24,7 @@ router.get('/:id', torneosController.obtener);
    ========================================================= */
 router.post('/', torneosController.crear);
 router.patch('/:id', torneosController.editar);
+router.patch('/:id/guardar', torneosController.guardar);
 router.delete('/:id', torneosController.eliminar);
 
 /* =========================================================

@@ -63,6 +63,16 @@ export async function editar(req, res, next) {
   }
 }
 
+export async function guardar(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await partidosService.guardarPartido(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function eliminar(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
@@ -93,6 +103,19 @@ export async function salir(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
     const resultado = await partidosService.salirDelPartido(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/* DELETE /api/partidos/:id/salir-equipo/:equipoId
+   Solo capitan/admin del equipo. Funciona tambien si ya fue confirmado. */
+export async function salirEquipo(req, res, next) {
+  try {
+    const partidoId = validar(schemaUuidParam, req.params.id);
+    const equipoId = validar(schemaUuidParam, req.params.equipoId);
+    const resultado = await partidosService.salirEquipoDelPartido(partidoId, req.usuario.id, equipoId);
     res.json(resultado);
   } catch (err) {
     next(err);

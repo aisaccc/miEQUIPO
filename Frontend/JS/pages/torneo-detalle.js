@@ -5,6 +5,7 @@ import {
   obtenerTorneo,
   editarTorneo as editarTorneoAPI,
   eliminarTorneo as eliminarTorneoAPI,
+  guardarTorneo as guardarTorneoAPI,
   cerrarTorneo as cerrarTorneoAPI,
   inscribirEquipo as inscribirEquipoAPI,
   cancelarInscripcion as cancelarInscripcionAPI,
@@ -61,6 +62,14 @@ function formatoDeDeporte(deporte) {
   else if (reglas.labelMarcador === 'Puntos') campo = 'puntos';
   else if (reglas.labelMarcador === 'Carreras') campo = 'carreras';
   return { campo, label: reglas.labelMarcador || 'Resultado' };
+}
+
+// Resultado de boxeo compatible con liga y eliminación (sin tablas nuevas).
+function formatearMarcadorTorneo(deporte, resultado, sistema) {
+  if (deporte === 'Boxeo' && resultado?.metodo === 'KO') {
+    return resultado.ganador === 'local' ? 'KO · Local' : 'KO · Visitante';
+  }
+  return formatearResultado(deporte, resultado, sistema);
 }
 /* ⚡ Helper: devuelve { clase, estilo } del marco del ícono */
 function getMarcoData(marcoIcono, marcoColorIcono) {
@@ -419,6 +428,9 @@ export async function init(params = {}) {
             <button class="btn td-hero__action" id="btn-sub-organizadores">
               ${ICONOS.corona} Sub-organizadores
             </button>
+            ${t.guardadoPorCreador
+              ? `<span class="badge badge--success">Guardado en Mis creados</span>`
+              : `<button class="btn td-hero__action" id="btn-guardar-torneo-historial">Guardar torneo</button>`}
             ${!t.bloqueado ? `
               <button class="btn td-hero__action td-hero__action--primary" id="btn-editar-torneo">
                 ${ICONOS.lapiz} Editar torneo
@@ -629,7 +641,7 @@ export async function init(params = {}) {
       return botones;
     }
     if (miEquipo) {
-      const nombreMostrado = esIndividual ? miEquipo.nombre : `${miEquipo.escudo || ICONOS.escudo} ${miEquipo.nombre}`;
+      const nombreMostrado = esIndividual ? escapeHtml(miEquipo.nombre) : `${renderEscudoCruce(miEquipo.escudo, false, 20)} ${escapeHtml(miEquipo.nombre)}`;
       return `
         <div class="badge badge--success" style="padding:12px 16px; font-size:14px; text-align:center; width:100%; justify-content:center">${ICONOS.check} Ya estás inscrito: ${nombreMostrado}</div>
         <button class="btn btn--ghost" id="btn-abrir-chat">${ICONOS.chat} Chat del torneo</button>
@@ -640,7 +652,7 @@ export async function init(params = {}) {
     if (miInv) {
       return `
         <div class="card" style="width:100%; background:var(--color-primary-light); border:none; padding:14px">
-          <p class="text-sm" style="margin:0 0 var(--space-3) 0">${ICONOS.correo} <strong>¡Te invitaron!</strong> El organizador quiere que ${miInv.equipoEscudo || ICONOS.escudo} <strong>${miInv.equipoNombre}</strong> participe.</p>
+          <p class="text-sm" style="margin:0 0 var(--space-3) 0">${ICONOS.correo} <strong>¡Te invitaron!</strong> El organizador quiere que ${renderEscudoCruce(miInv.equipoEscudo, false, 20)} <strong>${escapeHtml(miInv.equipoNombre)}</strong> participe.</p>
           <div class="flex gap-2"><button class="btn btn--primary btn--sm" id="btn-aceptar-invitacion">Aceptar</button><button class="btn btn--ghost btn--sm" id="btn-rechazar-invitacion">Rechazar</button></div>
         </div>
       `;
@@ -733,7 +745,7 @@ export async function init(params = {}) {
                 ${filas.map((f, i) => `
                   <tr class="${i % 2 === 0 ? '' : 'tabla-posiciones__fila--alt'}">
                     <td>${i + 1}</td>
-                    <td style="text-align:left"><div style="display:flex; align-items:center; gap:var(--space-2)">${esIndividual ? `<img src="${f.equipoEscudo || 'assets/icons/usuario.svg'}" class="avatar avatar--sm" style="width:24px;height:24px" />` : `<span style="font-size:20px">${f.equipoEscudo || ICONOS.escudo}</span>`}<span>${f.equipoNombre || 'Sin nombre'}</span></div></td>
+                    <td style="text-align:left"><div style="display:flex; align-items:center; gap:var(--space-2)">${renderEscudoCruce(f.equipoEscudo, esIndividual, 24)}<span>${escapeHtml(f.equipoNombre || 'Sin nombre')}</span></div></td>
                     <td>${f.partidosJugados}</td><td>${f.partidosGanados}</td><td>${f.partidosEmpatados}</td><td>${f.partidosPerdidos}</td><td>${f.puntosFavor}</td><td>${f.puntosContra}</td><td>${f.diferencia > 0 ? '+' : ''}${f.diferencia}</td><td style="font-weight:700">${f.puntosTotales}</td>
                   </tr>
                 `).join('')}
@@ -843,7 +855,7 @@ export async function init(params = {}) {
 
   function renderPartido(p, deporte, esIndividual, puedeGest, sistema) {
     const finalizado = p.estado === 'finalizado';
-    const marcador = finalizado ? formatearResultado(deporte, p.resultado, sistema) : 'vs';
+    const marcador = finalizado ? formatearMarcadorTorneo(deporte, p.resultado, sistema) : 'vs';
     const localHtml = renderEscudoCruce(p.localEscudo, esIndividual, 24);
     const visitanteHtml = renderEscudoCruce(p.visitanteEscudo, esIndividual, 24);
 
@@ -1039,7 +1051,7 @@ export async function init(params = {}) {
     if (esBye) {
       marcador = '<span class="badge badge--neutral">BYE</span>';
     } else if (finalizado) {
-      marcador = formatearResultado(deporte, p.resultado, sistema);
+      marcador = formatearMarcadorTorneo(deporte, p.resultado, sistema);
     }
 
     const claseCard = [
@@ -1464,7 +1476,7 @@ export async function init(params = {}) {
 
     titulo.textContent = `Detalle · ${t.deporte}`;
 
-    const marcadorPrincipal = formatearResultado(t.deporte, partido.resultado, sistema);
+    const marcadorPrincipal = formatearMarcadorTorneo(t.deporte, partido.resultado, sistema);
 
     const localEscHtml = `<div style="display:flex; justify-content:center">${renderEscudoCruce(partido.localEscudo, esIndividual, 64)}</div>`;
     const visEscHtml = `<div style="display:flex; justify-content:center">${renderEscudoCruce(partido.visitanteEscudo, esIndividual, 64)}</div>`;
@@ -1539,7 +1551,7 @@ export async function init(params = {}) {
                 <div style="display:flex; align-items:center; gap:var(--space-3)">
                   ${esIndividual
                     ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
-                    : `<span style="font-size:28px">${escudo}</span>`}
+                    : renderEscudoCruce(escudo === ICONOS.escudo ? null : escudo, false, 28)}
                   <div>
                     <div style="font-weight:600">${nombre}</div>
                     ${esGanador ? `<div class="badge badge--success" style="margin-top:4px">${ICONOS.trofeo} Ganador</div>` : ''}
@@ -1556,9 +1568,9 @@ export async function init(params = {}) {
     }
 
     const ganadorHtml = partido.ganador === 'local'
-      ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.localNombre || 'Local'}</span>`
+      ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.localNombre || 'Local'}${t.deporte === 'Boxeo' && partido.resultado?.metodo === 'KO' ? ' por KO' : ''}</span>`
       : partido.ganador === 'visitante'
-        ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.visitanteNombre || 'Visitante'}</span>`
+        ? `<span class="badge badge--success">${ICONOS.trofeo} Ganó ${partido.visitanteNombre || 'Visitante'}${t.deporte === 'Boxeo' && partido.resultado?.metodo === 'KO' ? ' por KO' : ''}</span>`
         : `<span class="badge badge--warning">Empate</span>`;
 
     body.innerHTML = `
@@ -1619,41 +1631,32 @@ export async function init(params = {}) {
     const inscritos = t.equipos || [];
 
     titulo.textContent = `Editar ${FASES_LABEL[partido.fase] || 'cruce'}`;
-    descripcion.textContent = 'Cambiá los participantes de este cruce. puedes dejar uno vacío para dar un BYE.';
+    descripcion.textContent = 'Cambia los participantes del cruce. Si eliges uno que está en otro cruce de esta fase, se intercambiarán automáticamente. Puedes dejar una posición vacía para dar un BYE.';
 
     const opciones = inscritos.map(e =>
-      `<option value="${e.id}">${e.nombre}</option>`
+      `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`
     ).join('');
 
-    function refrescar() {
-      const localId = selectLocal.value;
-      const visitaId = selectVisita.value;
-
-      selectLocal.innerHTML = `
-        <option value="">— Vacío (bye) —</option>
-        ${inscritos
-          .filter(e => String(e.id) !== String(visitaId))
-          .map(e => `<option value="${e.id}">${e.nombre}</option>`)
-          .join('')}
-      `;
-      selectVisita.innerHTML = `
-        <option value="">— Vacío (bye) —</option>
-        ${inscritos
-          .filter(e => String(e.id) !== String(localId))
-          .map(e => `<option value="${e.id}">${e.nombre}</option>`)
-          .join('')}
-      `;
-    }
-
+    // Las opciones se crean una sola vez. Reconstruir innerHTML en cada cambio
+    // borraba el value seleccionado y el backend recibía NULL (bye).
     selectLocal.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
     selectVisita.innerHTML = `<option value="">— Vacío (bye) —</option>${opciones}`;
     selectLocal.value = partido.equipoLocalId || '';
     selectVisita.value = partido.equipoVisitanteId || '';
 
-    refrescar();
-
-    selectLocal.onchange = refrescar;
-    selectVisita.onchange = refrescar;
+    function actualizarOpciones() {
+      const localId = selectLocal.value;
+      const visitaId = selectVisita.value;
+      Array.from(selectLocal.options).forEach(op => {
+        op.disabled = Boolean(op.value && op.value === visitaId);
+      });
+      Array.from(selectVisita.options).forEach(op => {
+        op.disabled = Boolean(op.value && op.value === localId);
+      });
+    }
+    selectLocal.onchange = actualizarOpciones;
+    selectVisita.onchange = actualizarOpciones;
+    actualizarOpciones();
 
     const btnGuardar = document.getElementById('btn-guardar-cruce');
     btnGuardar.disabled = false;
@@ -1876,6 +1879,10 @@ export async function init(params = {}) {
      GESTIONAR SOLICITUDES
      ========================================================= */
   function abrirGestionSolicitudes(t) {
+    if (!(esOrganizador(t) || t.soySubOrganizador === true)) {
+      toast('Solo creadores y suborganizadores pueden revisar solicitudes', 'error');
+      return;
+    }
     renderSolicitudes(t, 'pendientes');
     abrirModal('modal-gestionar-solicitudes');
   }
@@ -1883,6 +1890,10 @@ export async function init(params = {}) {
   function renderSolicitudes(t, tab) {
     const cont = document.getElementById('lista-solicitudes');
     if (!cont) return;
+    if (!(esOrganizador(t) || t.soySubOrganizador === true)) {
+      cont.textContent = 'No tienes permiso para revisar solicitudes.';
+      return;
+    }
 
     const esIndividual = t.tipoParticipacion === 'individual';
 
@@ -2122,7 +2133,7 @@ export async function init(params = {}) {
 
   async function expulsarSolicitante(t, sol) {
     const esIndividual = t.tipoParticipacion === 'individual';
-    const nombre = esIndividual ? sol.equipoNombre : `${sol.equipoEscudo || ICONOS.escudo} ${sol.equipoNombre}`;
+    const nombre = sol.equipoNombre;
     if (!confirm(`¿Eliminar a ${nombre} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
 
     try {
@@ -2269,6 +2280,17 @@ export async function init(params = {}) {
       abrirModalSubOrganizadores(t);
     });
 
+    document.getElementById('btn-guardar-torneo-historial')?.addEventListener('click', async () => {
+      if (!confirm('¿Guardar este torneo para conservarlo en Mis creados después de finalizar?')) return;
+      try {
+        await guardarTorneoAPI(t.id);
+        toast('Torneo guardado en Mis creados', 'success');
+        await render();
+      } catch (err) {
+        toast(err.message || 'No se pudo guardar el torneo', 'error');
+      }
+    });
+
     document.getElementById('btn-editar-torneo')?.addEventListener('click', () => {
       abrirModalEditarTorneo(t);
     });
@@ -2409,7 +2431,7 @@ export async function init(params = {}) {
     const esIndividual = t.tipoParticipacion === 'individual';
     const nombreMostrar = esIndividual
       ? equipo.nombre
-      : `${equipo.escudo || ICONOS.escudo} ${equipo.nombre}`;
+      : equipo.nombre;
 
     if (!confirm(`¿Eliminar a ${nombreMostrar} del torneo? ${esIndividual ? 'Le' : 'El capitán y admins van a recibir'} una notificación.`)) return;
 
@@ -2672,7 +2694,7 @@ export async function init(params = {}) {
 
       let resultadoHtml = '';
       if (finalizado && p.resultado) {
-        const marcador = formatearResultado(t.deporte, p.resultado, sistema);
+        const marcador = formatearMarcadorTorneo(t.deporte, p.resultado, sistema);
         resultadoHtml = `
           <div class="partido-editable__resultado">
             <span class="badge badge--success">Finalizado: ${marcador}</span>
@@ -2956,6 +2978,93 @@ export async function init(params = {}) {
   }
 
   /* =========================================================
+     RESULTADOS DE BOXEO — Victoria por puntos o KO
+     ========================================================= */
+  function limpiarSelectorKO() {
+    document.getElementById('roster-boxeo-metodo-victoria')?.remove();
+    for (const id of ['cargar-resultado-modo-simple', 'cargar-resultado-modo-tiempo-puntos']) {
+      const cont = document.getElementById(id);
+      if (!cont) continue;
+      Array.from(cont.children).forEach(el => { el.style.display = ''; });
+    }
+  }
+
+  function instalarSelectorKO(t, partido, modoActivo) {
+    if (t.deporte !== 'Boxeo' || !modoActivo) return;
+    const panel = document.createElement('div');
+    panel.id = 'roster-boxeo-metodo-victoria';
+    panel.style.cssText = 'padding:12px; margin-bottom:16px; border:1px solid var(--color-border); border-radius:10px;';
+    panel.innerHTML = `
+      <div class="field" style="margin-bottom:12px">
+        <label class="field__label" for="roster-boxeo-metodo">Tipo de victoria</label>
+        <select class="field__input" id="roster-boxeo-metodo">
+          <option value="puntos">Victoria por puntos</option>
+          <option value="KO">Victoria por KO</option>
+        </select>
+      </div>
+      <div id="roster-boxeo-ganador-wrap" style="display:none">
+        <label class="field__label" for="roster-boxeo-ganador">Ganador por KO</label>
+        <select class="field__input" id="roster-boxeo-ganador">
+          <option value="local">${escapeHtml(partido.localNombre || 'Local')}</option>
+          <option value="visitante">${escapeHtml(partido.visitanteNombre || 'Visitante')}</option>
+        </select>
+        <p class="text-xs text-muted" style="margin:8px 0 0">Un KO finaliza el combate; no necesitas ingresar puntajes.</p>
+      </div>`;
+
+    const otrosCampos = Array.from(modoActivo.children);
+    modoActivo.prepend(panel);
+    const metodo = panel.querySelector('#roster-boxeo-metodo');
+    const ganador = panel.querySelector('#roster-boxeo-ganador');
+    const wrapGanador = panel.querySelector('#roster-boxeo-ganador-wrap');
+    metodo.value = partido.resultado?.metodo === 'KO' ? 'KO' : 'puntos';
+    ganador.value = partido.resultado?.ganador === 'visitante' ? 'visitante' : 'local';
+
+    function actualizarMetodo() {
+      const esKO = metodo.value === 'KO';
+      wrapGanador.style.display = esKO ? '' : 'none';
+      otrosCampos.forEach(el => { el.style.display = esKO ? 'none' : ''; });
+      if (esKO) document.getElementById('cargar-resultado-estado').value = 'finalizado';
+    }
+    metodo.addEventListener('change', actualizarMetodo);
+    actualizarMetodo();
+
+    const btn = document.getElementById('btn-guardar-resultado');
+    const guardarAnterior = btn.onclick;
+    btn.onclick = () => {
+      if (metodo.value === 'KO') return guardarResultadoKO(t, partido, ganador.value);
+      return guardarAnterior?.();
+    };
+  }
+
+  async function guardarResultadoKO(t, partido, ganador) {
+    if (!partido.equipoLocalId || !partido.equipoVisitanteId) {
+      return toast('Para registrar un KO deben existir ambos participantes', 'error');
+    }
+    if (ganador !== 'local' && ganador !== 'visitante') {
+      return toast('Selecciona el ganador del combate', 'error');
+    }
+    const btn = document.getElementById('btn-guardar-resultado');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    try {
+      await cargarResultadoAPI(t.id, partido.id, {
+        resultado: { metodo: 'KO', ganador },
+        estado: 'finalizado',
+      });
+      toast('Victoria por KO registrada', 'success');
+      cerrarModal('modal-cargar-resultado');
+      torneo = await obtenerTorneo(t.id);
+      await render();
+    } catch (err) {
+      console.error('[torneo-detalle] Error al registrar KO:', err);
+      toast(err.message || 'No se pudo registrar el KO', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar resultado';
+    }
+  }
+
+  /* =========================================================
      CARGAR RESULTADO
      ========================================================= */
   function abrirCargarResultado(t, partido) {
@@ -2985,6 +3094,7 @@ export async function init(params = {}) {
     const modoSets    = document.getElementById('cargar-resultado-modo-sets');
     const modoTP      = document.getElementById('cargar-resultado-modo-tiempo-puntos');
 
+    limpiarSelectorKO();
     modoSimple?.classList.add('hidden');
     modoSets?.classList.add('hidden');
     modoTP?.classList.add('hidden');
@@ -2997,6 +3107,7 @@ export async function init(params = {}) {
     if (sistema === 'tiempo' || sistema === 'puntos') {
       modoTP?.classList.remove('hidden');
       prepararModoTiempoPuntos(t, partido, sistema, esIndividual);
+      instalarSelectorKO(t, partido, modoTP);
       abrirModal('modal-cargar-resultado');
       return;
     }
@@ -3158,6 +3269,7 @@ export async function init(params = {}) {
     btnGuardar.textContent = 'Guardar resultado';
     btnGuardar.disabled = false;
     btnGuardar.onclick = () => guardarResultadoSimple(t, partido);
+    instalarSelectorKO(t, partido, modoSimple);
 
     abrirModal('modal-cargar-resultado');
   }
@@ -3264,7 +3376,7 @@ export async function init(params = {}) {
   function renderFilaTiempo(participanteId, nombre, esIndividual, escudo, min, seg, cen, lado) {
     const escudoHtml = esIndividual
       ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
-      : `<span style="font-size:28px">${escudo}</span>`;
+      : renderEscudoCruce(escudo === ICONOS.escudo ? null : escudo, false, 28);
 
     return `
       <div class="tp-fila" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3); background:var(--color-bg-alt); border-radius:var(--radius-md); margin-bottom:var(--space-3)">
@@ -3294,7 +3406,7 @@ export async function init(params = {}) {
   function renderFilaPuntos(participanteId, nombre, esIndividual, escudo, puntos, lado) {
     const escudoHtml = esIndividual
       ? `<img src="${escudo === ICONOS.escudo ? 'assets/icons/usuario.svg' : escudo}" alt="" class="avatar avatar--md" />`
-      : `<span style="font-size:28px">${escudo}</span>`;
+      : renderEscudoCruce(escudo === ICONOS.escudo ? null : escudo, false, 28);
 
     return `
       <div class="tp-fila" style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3); background:var(--color-bg-alt); border-radius:var(--radius-md); margin-bottom:var(--space-3)">
@@ -4289,4 +4401,3 @@ export async function init(params = {}) {
     if (intervaloCanalTorneo) clearInterval(intervaloCanalTorneo);
   };
 }
-  // (CONTINÚA EN LA PARTE 2/2)

@@ -8,6 +8,8 @@ import {
   listarPartidos,
   crearPartido as crearPartidoAPI,
   eliminarPartido as eliminarPartidoAPI,
+  guardarPartido as guardarPartidoAPI,
+  salirEquipoDelPartido as salirEquipoDelPartidoAPI,
   inscribirse as inscribirseAPI,
   salirDelPartido as salirDelPartidoAPI,
   postularse as postularseAPI,
@@ -70,6 +72,16 @@ export async function init() {
   try {
     const { data } = await listarPartidos({ limit: 50 });
     partidos = data;
+    // Mis creados deben verse aunque no esten entre los 50 primeros del feed.
+    if (user) {
+      try {
+        const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 100 });
+        const ids = new Set(partidos.map(p => String(p.id)));
+        for (const creado of creados || []) {
+          if (!ids.has(String(creado.id))) { partidos.push(creado); ids.add(String(creado.id)); }
+        }
+      } catch (err) { console.warn('[partidos] No se pudieron ampliar Mis creados:', err.message); }
+    }
     console.log('[partidos] Cargados desde backend:', partidos.length);
   } catch (err) {
     console.error('[partidos] Error al cargar:', err);
@@ -203,7 +215,9 @@ export async function init() {
         botonPrincipal = '';
       } else if (soyOrganizador) {
         botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="ver" data-id="${p.id}">Ver partido</button>`;
-        botonSecundario = '';
+        botonSecundario = p.guardadoPorCreador
+          ? `<span class="badge badge--success" style="padding:6px">Guardado</span>`
+          : `<button class="btn btn--ghost btn--sm" data-accion="guardar" data-id="${p.id}">Guardar partido</button>`;
       } else if (enModoOrganizar) {
         if (yoInteresado) {
           botonPrincipal = `<span class="badge badge--warning" style="padding:8px 12px">${ICONOS.mano} Interesado</span>`;
@@ -222,8 +236,11 @@ export async function init() {
         } else if (miEquipoPostulado) {
           botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>${ICONOS.reloj} Pendiente</button>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion-equipo" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>`;
+        } else if (yoInteresado) {
+          botonPrincipal = `<span class="badge badge--warning">Interesado</span>`;
+          botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-interes" data-id="${p.id}">Cancelar interés</button>`;
         } else if (p.estado !== 'finalizado' && !esLleno) {
-          botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="postular-equipo" data-id="${p.id}">${ICONOS.documento} Postular equipo</button>`;
+          botonPrincipal = `<button class="btn btn--primary btn--sm" data-accion="postular-equipo" data-id="${p.id}">${p.aprobacionRequerida ? ICONOS.documento : ICONOS.check} ${p.aprobacionRequerida ? 'Solicitar inscripción' : 'Inscribir equipo'}</button>`;
         } else {
           botonPrincipal = `<span class="badge badge--neutral" style="padding:8px 12px">${ICONOS.candado} No disponible</span>`;
         }
@@ -234,6 +251,9 @@ export async function init() {
         } else if (yoPostule) {
           botonPrincipal = `<button class="btn btn--ghost btn--sm" disabled>${ICONOS.reloj} Pendiente</button>`;
           botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-postulacion" data-id="${p.id}" style="color:var(--color-danger)">Cancelar</button>`;
+        } else if (yoInteresado) {
+          botonPrincipal = `<span class="badge badge--warning">Interesado</span>`;
+          botonSecundario = `<button class="btn btn--ghost btn--sm" data-accion="cancelar-interes" data-id="${p.id}">Cancelar interés</button>`;
         } else if (p.estado !== 'finalizado' && !esLleno) {
           botonPrincipal = p.aprobacionRequerida ? `<button class="btn btn--primary btn--sm" data-accion="postularse" data-id="${p.id}">${ICONOS.documento} Postularme</button>` : `<button class="btn btn--primary btn--sm" data-accion="inscribirse" data-id="${p.id}">${ICONOS.check} Inscribirme</button>`;
         } else {
@@ -295,6 +315,15 @@ export async function init() {
 
       const { data } = await listarPartidos(filtros);
       partidos = data;
+      if (user) {
+        try {
+          const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 100 });
+          const ids = new Set(partidos.map(p => String(p.id)));
+          for (const creado of creados || []) {
+            if (!ids.has(String(creado.id))) { partidos.push(creado); ids.add(String(creado.id)); }
+          }
+        } catch (err) { console.warn('[partidos] No se pudieron ampliar Mis creados:', err.message); }
+      }
       renderDisponibles();
       renderCreados();
       renderInscritos();
@@ -305,7 +334,7 @@ export async function init() {
 
   function renderDisponibles() {
     try {
-      let lista = partidos;
+      let lista = partidos.filter(p => !(p.guardadoPorCreador && p.archivoVencido));
 
       // ⚡ Lógica de filtros robusta usando totalInscritosReal
       if (filtroActual === 'abiertos') {
@@ -388,8 +417,8 @@ export async function init() {
     try {
       const misInscritos = partidos.filter(p => {
         if (String(p.organizador?.id) === String(user?.id)) return false;
-        if (!esDeEquipo(p)) return !!p.yoInscrito || !!p.yoPostule;
-        return !!p.miEquipoInscrito || !!p.miEquipoPostulado;
+        if (!esDeEquipo(p)) return !!p.yoInscrito || !!p.yoPostule || !!p.yoInteresado;
+        return !!p.miEquipoInscrito || !!p.miEquipoPostulado || !!p.yoInteresado;
       });
 
       const countEl = document.getElementById('count-inscritos');
@@ -446,6 +475,14 @@ export async function init() {
             return;
           }
 
+          if (accion === 'guardar') {
+            if (!confirm('¿Conservar este partido en Mis creados cuando venza?')) return;
+            await guardarPartidoAPI(id);
+            toast('Partido guardado en Mis creados', 'success');
+            await recargarPartidos();
+            return;
+          }
+
           if (accion === 'eliminar') {
             if (!confirm('¿Eliminar este partido?')) return;
             await eliminarPartidoAPI(id);
@@ -463,7 +500,11 @@ export async function init() {
 
           if (accion === 'desinscribirse') {
             if (!confirm('¿Salir del partido?')) return;
-            const resultado = await salirDelPartidoAPI(id);
+            const partido = partidos.find(p => String(p.id) === String(id));
+            const equipoId = partido?.tipoPartido === 'equipo' ? partido.miEquipoInscritoId : null;
+            const resultado = equipoId
+              ? await salirEquipoDelPartidoAPI(id, equipoId)
+              : await salirDelPartidoAPI(id);
             toast(resultado?.mensaje || 'Saliste del partido', 'info');
             await recargarPartidos();
             return;
@@ -511,7 +552,7 @@ export async function init() {
             }
 
             await postularEquipoAPI(id, String(eqElegido.id));
-            toast('Equipo postulado', 'success');
+            toast(partido.aprobacionRequerida ? 'Solicitud enviada a la lista de espera' : 'Equipo inscrito correctamente', 'success');
             await recargarPartidos();
             return;
           }
@@ -567,7 +608,24 @@ export async function init() {
           if (accion === 'cancelar-interes') {
             if (!confirm('¿Cancelar tu interés en este partido?')) return;
             try {
-              await cancelarInteresAPI(id);
+              const partido = partidos.find(p => String(p.id) === String(id));
+              if (partido?.tipoPartido === 'equipo') {
+                const { data: equipos } = await listarGrupos({ tipo: 'equipo', soloMios: 'true', limit: 50 });
+                const opciones = (equipos || []).filter(eq => eq.deporte === partido.deporte);
+                let equipoId = partido.miEquipoInscritoId || partido.miEquipoPostuladoId;
+                if (!equipoId && opciones.length === 1) equipoId = opciones[0].id;
+                if (!equipoId && opciones.length > 1) {
+                  const respuesta = prompt('¿Qué equipo deseas retirar?\n\n' + opciones.map((e, i) => `${i+1}. ${e.nombre}`).join('\n'));
+                  if (respuesta === null) return;
+                  const n = Number(respuesta) - 1;
+                  if (!Number.isInteger(n) || !opciones[n]) return toast('Equipo inválido', 'error');
+                  equipoId = opciones[n].id;
+                }
+                if (equipoId) await salirEquipoDelPartidoAPI(id, equipoId);
+                else await cancelarInteresAPI(id);
+              } else {
+                await cancelarInteresAPI(id);
+              }
               toast('Interés cancelado', 'info');
               await recargarPartidos();
             } catch (err) {
@@ -630,6 +688,34 @@ export async function init() {
     `).join('');
   }
 
+  // La inscripción abierta es independiente del nivel y del tipo de partido.
+  // Se crea aquí para funcionar con el HTML actual sin introducir nuevos archivos.
+  const anclaInscripcion = document.getElementById('eleccion-aprobacion') || nivelGrid;
+  const modalCrearPartido = document.getElementById('modal-crear-partido');
+  let panelInscripcion = document.getElementById('panel-partido-inscripcion-abierta');
+  if (!panelInscripcion && anclaInscripcion && modalCrearPartido) {
+    panelInscripcion = document.createElement('div');
+    panelInscripcion.id = 'panel-partido-inscripcion-abierta';
+    panelInscripcion.className = 'field';
+    panelInscripcion.style.margin = '16px 0';
+    panelInscripcion.innerHTML = `
+      <label class="field__label" for="partido-inscripcion-abierta">Inscripción abierta</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;min-height:42px">
+        <input type="checkbox" id="partido-inscripcion-abierta" checked
+          style="width:20px;height:20px;accent-color:var(--color-primary);flex:none" />
+        <span>Permitir que se inscriban sin aprobación</span>
+      </label>
+      <small id="partido-inscripcion-ayuda" style="display:block;color:var(--color-text-muted);margin-top:4px">
+        Activada: inscripción directa. Desactivada: solicitudes pendientes de aprobación.
+      </small>`;
+    if (anclaInscripcion.id === 'eleccion-aprobacion') {
+      anclaInscripcion.insertAdjacentElement('beforebegin', panelInscripcion);
+    } else {
+      anclaInscripcion.insertAdjacentElement('afterend', panelInscripcion);
+    }
+  }
+  const checkInscripcionAbierta = document.getElementById('partido-inscripcion-abierta');
+
   let nivelSeleccionado = 'amistoso';
   let posicionesActivas = [];
   let modoOrganizar = false;
@@ -643,39 +729,12 @@ export async function init() {
     });
   });
 
-  function nivelRequiereAprobacion() {
-    const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
-    if (!nivel) return false;
-    if (nivel.eleccionAprobacion) {
-      const check = document.getElementById('partido-requiere-aprobacion');
-      return check ? check.checked : false;
-    }
-    return nivel.requiereAprobacion === true;
-  }
-
   function actualizarAvisoAprobacion() {
-    if (modoOrganizar) {
-      document.getElementById('aviso-aprobacion')?.classList.remove('show');
-      document.getElementById('eleccion-aprobacion')?.classList.add('hidden');
-      return;
-    }
-    const nivel = nivelesPartido.find(n => n.valor === nivelSeleccionado);
-    const aviso = document.getElementById('aviso-aprobacion');
-    const eleccion = document.getElementById('eleccion-aprobacion');
-
-    if (nivel?.eleccionAprobacion) {
-      eleccion?.classList.remove('hidden');
-    } else {
-      eleccion?.classList.add('hidden');
-      const check = document.getElementById('partido-requiere-aprobacion');
-      if (check) check.checked = false;
-    }
-
-    if (nivel?.requiereAprobacion === true) {
-      aviso?.classList.add('show');
-    } else {
-      aviso?.classList.remove('show');
-    }
+    // Sustituimos la aprobación automática dependiente del nivel.
+    // Los campos antiguos se ocultan y su valor no se envía.
+    document.getElementById('aviso-aprobacion')?.classList.remove('show');
+    document.getElementById('eleccion-aprobacion')?.classList.add('hidden');
+    panelInscripcion?.classList.toggle('hidden', modoOrganizar);
   }
 
   function actualizarPosiciones() {
@@ -729,6 +788,7 @@ export async function init() {
       avisoAprob?.classList.remove('show');
       eleccionAprob?.classList.add('hidden');
       avisoModoOrganizar?.classList.add('show');
+      panelInscripcion?.classList.add('hidden');
 
       const btnGuardar = document.getElementById('btn-guardar-partido');
       if (btnGuardar) btnGuardar.textContent = '📢 Publicar convocatoria';
@@ -928,7 +988,9 @@ export async function init() {
     document.getElementById('posiciones-wrapper').classList.add('hidden');
     document.getElementById('posiciones-selector').classList.add('hidden');
     document.getElementById('partido-pedir-posiciones').checked = false;
-    document.getElementById('partido-requiere-aprobacion').checked = false;
+    const checkAnterior = document.getElementById('partido-requiere-aprobacion');
+    if (checkAnterior) checkAnterior.checked = false;
+    if (checkInscripcionAbierta) checkInscripcionAbierta.checked = true;
     document.getElementById('aviso-aprobacion').classList.remove('show');
     document.getElementById('eleccion-aprobacion').classList.add('hidden');
 
@@ -995,7 +1057,7 @@ export async function init() {
       nivel: nivelSeleccionado,
       tipoPartido: tipoPartidoSeleccionado,
       organizadorEquipoId: (tipoPartidoSeleccionado === 'equipo' && equipoOrganizadorSel) ? String(equipoOrganizadorSel) : null,
-      aprobacionRequerida: modoOrganizar ? false : (nivelRequiereAprobacion() || tipoPartidoSeleccionado === 'equipo'),
+      aprobacionRequerida: modoOrganizar ? false : !(checkInscripcionAbierta?.checked ?? true),
       pedirPosiciones: pedirPos,
       posiciones: pedirPos ? [...posicionesActivas] : [],
       estadoPartido: modoOrganizar ? 'buscando_jugadores' : 'confirmado',

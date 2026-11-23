@@ -94,6 +94,16 @@ export async function editar(req, res, next) {
 /* =========================================================
    DELETE /api/torneos/:id
    ========================================================= */
+export async function guardar(req, res, next) {
+  try {
+    const id = validar(schemaUuidParam, req.params.id);
+    const resultado = await torneosService.guardarTorneo(id, req.usuario.id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function eliminar(req, res, next) {
   try {
     const id = validar(schemaUuidParam, req.params.id);
