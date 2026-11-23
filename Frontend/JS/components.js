@@ -270,6 +270,68 @@ export function formatearFecha(iso) {
 let dropdownsIniciados = false;
 let isFetchingAmigos = false;
 let amigosTimerId = null;
+let amigosCargaVersion = 0;
+
+// Cambia la interfaz local al confirmar una solicitud y sincroniza los datos
+// con el servidor después. Evita tener que entrar a otra pestaña para verlo.
+function reflejarCambioAmistadLocal({ accion, usuarioId } = {}) {
+  if (!usuarioId) return;
+
+  if (accion === 'aceptar' || accion === 'rechazar') {
+    const pane = document.getElementById('pane-solicitudes');
+    const btn = [...(pane?.querySelectorAll('[data-aceptar], [data-rechazar]') || [])]
+      .find(b => String(b.dataset.aceptar || b.dataset.rechazar) === String(usuarioId));
+    const fila = btn?.closest('.amigo-item');
+
+    if (fila) {
+      fila.remove();
+      const contadorSol = document.getElementById('count-amigos-sol');
+      const badge = document.getElementById('badge-amigos');
+      const contadorAmigos = document.getElementById('count-amigos-lista');
+      const nuevoPendientes = pane.querySelectorAll('.amigo-item').length;
+
+      if (contadorSol) contadorSol.textContent = nuevoPendientes;
+      if (badge) {
+        badge.textContent = nuevoPendientes;
+        badge.classList.toggle('hidden', nuevoPendientes === 0);
+      }
+      if (accion === 'aceptar' && contadorAmigos) {
+        contadorAmigos.textContent = (Number(contadorAmigos.textContent) || 0) + 1;
+      }
+      if (nuevoPendientes === 0) {
+        pane.innerHTML = '<p class="text-sm" style="padding:20px;text-align:center;color:var(--color-text-muted)">No hay solicitudes pendientes.</p>';
+      }
+    }
+  }
+
+  // Si el perfil de la persona está abierto, actualizar también su botón.
+  const modal = document.getElementById('modal-ver-perfil');
+  if (accion === 'aceptar' && modal?.classList.contains('open') &&
+      String(perfilPublicoActual?.id) === String(usuarioId)) {
+    const btnAceptar = modal.querySelector('#btn-aceptar-amigo');
+    if (btnAceptar) {
+      btnAceptar.outerHTML = `<span class="badge badge--success" style="padding:8px 12px; border-radius:8px">${ICONOS.check} Amigos</span>`;
+    }
+    const menu = modal.querySelector('#menu-perfil-opciones');
+    if (menu && !menu.querySelector('#btn-eliminar-amigo')) {
+      const btnEliminar = document.createElement('button');
+      btnEliminar.id = 'btn-eliminar-amigo';
+      btnEliminar.className = 'btn btn--ghost btn--sm w-full';
+      btnEliminar.style.cssText = 'color:var(--color-danger);justify-content:flex-start;padding:8px 10px;width:100%;text-align:left';
+      btnEliminar.innerHTML = `${ICONOS.basura} Eliminar amigo`;
+      btnEliminar.addEventListener('click', async e => {
+        e.stopPropagation();
+        if (!confirm(`¿Seguro que quieres eliminar a ${perfilPublicoActual.nombre} de tus amigos?`)) return;
+        try {
+          await eliminarAmistadAPI(usuarioId);
+          toast('Amigo eliminado', 'info');
+          cerrarModal('modal-ver-perfil');
+        } catch (err) { toast(err.message, 'error'); }
+      });
+      menu.prepend(btnEliminar);
+    }
+  }
+}
 
 export function initDropdowns() {
   if (dropdownsIniciados) return;
@@ -375,6 +437,12 @@ export function initDropdowns() {
     });
   }
 
+  // Todas las operaciones de amistades de esta pestaña notifican aquí.
+  window.addEventListener('roster:amistad-actualizada', (e) => {
+    reflejarCambioAmistadLocal(e.detail);
+    void cargarAmigosHeader();
+  });
+
   cargarAmigosHeader();
 
   const loop = async () => {
@@ -391,6 +459,7 @@ export function initDropdowns() {
 }
 async function cargarAmigosHeader(desdePolling = false) {
   if (desdePolling && isFetchingAmigos) return;
+  const version = ++amigosCargaVersion;
   isFetchingAmigos = true;
 
   const user = getSesion();
@@ -401,6 +470,9 @@ async function cargarAmigosHeader(desdePolling = false) {
       listarAmigosAPI(),
       listarSolicitudesAPI()
     ]);
+
+    // Una carga antigua no puede sobrescribir los datos de una carga nueva.
+    if (version !== amigosCargaVersion) return;
 
     const badgeMain = document.getElementById('badge-amigos');
     const countSol = document.getElementById('count-amigos-sol');
@@ -441,20 +513,27 @@ async function cargarAmigosHeader(desdePolling = false) {
         });
         paneSol.querySelectorAll('[data-aceptar]').forEach(btn => {
           btn.addEventListener('click', async () => {
+            btn.disabled = true;
             try {
               await responderSolicitudAPI(btn.dataset.aceptar, 'aceptar');
               toast('Solicitud aceptada', 'success');
-              cargarAmigosHeader();
-            } catch (err) { toast(err.message, 'error'); }
+              // El servicio emite el evento y actualiza el menú automáticamente.
+            } catch (err) {
+              btn.disabled = false;
+              toast(err.message, 'error');
+            }
           });
         });
         paneSol.querySelectorAll('[data-rechazar]').forEach(btn => {
           btn.addEventListener('click', async () => {
+            btn.disabled = true;
             try {
               await responderSolicitudAPI(btn.dataset.rechazar, 'rechazar');
               toast('Solicitud rechazada', 'info');
-              cargarAmigosHeader();
-            } catch (err) { toast(err.message, 'error'); }
+            } catch (err) {
+              btn.disabled = false;
+              toast(err.message, 'error');
+            }
           });
         });
       }
@@ -538,7 +617,7 @@ async function cargarAmigosHeader(desdePolling = false) {
   } catch (err) {
     console.error('[components] Error al cargar amigos header:', err);
   } finally {
-    isFetchingAmigos = false;
+    if (version === amigosCargaVersion) isFetchingAmigos = false;
   }
 }
 
@@ -760,7 +839,6 @@ export async function verPerfilUsuario(usuarioOId) {
         await desbloquearUsuarioAPI(usuarioId);
         toast('Usuario desbloqueado', 'success');
         cerrarModal('modal-ver-perfil');
-        cargarAmigosHeader();
       } catch (err) { toast(err.message, 'error'); }
     });
     document.querySelectorAll('#modal-ver-perfil [data-cerrar-modal]').forEach(btn => { btn.onclick = () => cerrarModal('modal-ver-perfil'); });
@@ -913,7 +991,7 @@ export async function verPerfilUsuario(usuarioOId) {
     try {
       await responderSolicitudAPI(u.id, 'aceptar');
       toast('Ahora son amigos', 'success');
-      btn.outerHTML = `<span class="badge badge--success" style="padding:8px 12px; border-radius: 8px;">${ICONOS.check} Amigos</span>`;
+      // El evento del servicio actualiza el botón, el menú y los contadores.
     } catch (err) { toast(err.message, 'error'); btn.disabled = false; }
   });
 
@@ -929,7 +1007,6 @@ export async function verPerfilUsuario(usuarioOId) {
       await eliminarAmistadAPI(u.id);
       toast('Amigo eliminado', 'info');
       cerrarModal('modal-ver-perfil');
-      cargarAmigosHeader();
     } catch (err) { toast(err.message, 'error'); }
   });
 
@@ -940,7 +1017,6 @@ export async function verPerfilUsuario(usuarioOId) {
       await bloquearUsuarioAPI(u.id);
       toast('Usuario bloqueado', 'success');
       cerrarModal('modal-ver-perfil');
-      cargarAmigosHeader();
     } catch (err) { toast(err.message, 'error'); }
   });
 
