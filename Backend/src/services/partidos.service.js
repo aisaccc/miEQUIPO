@@ -297,10 +297,13 @@ export async function listarPartidos(filtros, usuarioId) {
        ) AS yo_postule,
        EXISTS (
          SELECT 1 FROM partido_equipos_inscritos pei
-         JOIN grupo_miembros gm ON gm.grupo_id = pei.equipo_id
+         JOIN grupos g_partido ON g_partido.id = pei.equipo_id
          WHERE pei.partido_id = p.id
-           AND gm.usuario_id = $${idxUser}
-           AND gm.rol IN ('capitan', 'admin')
+           AND (g_partido.capitan_id = $${idxUser} OR EXISTS (
+             SELECT 1 FROM grupo_miembros gm
+             WHERE gm.grupo_id = pei.equipo_id AND gm.usuario_id = $${idxUser}
+               AND gm.rol IN ('capitan', 'admin')
+           ))
        ) AS mi_equipo_inscrito,
        EXISTS (
          SELECT 1 FROM partido_interesados pint
@@ -308,27 +311,36 @@ export async function listarPartidos(filtros, usuarioId) {
        ) AS yo_interesado,
        EXISTS (
          SELECT 1 FROM partido_equipos_postulantes pep
-         JOIN grupo_miembros gm ON gm.grupo_id = pep.equipo_id
-         WHERE pep.partido_id = p.id
-           AND gm.usuario_id = $${idxUser}
-           AND pep.estado = 'pendiente'
+         JOIN grupos g_partido ON g_partido.id = pep.equipo_id
+         WHERE pep.partido_id = p.id AND pep.estado = 'pendiente'
+           AND (g_partido.capitan_id = $${idxUser} OR EXISTS (
+             SELECT 1 FROM grupo_miembros gm
+             WHERE gm.grupo_id = pep.equipo_id AND gm.usuario_id = $${idxUser}
+               AND gm.rol IN ('capitan', 'admin')
+           ))
        ) AS mi_equipo_postulado,
        (
          SELECT pep.equipo_id
          FROM partido_equipos_postulantes pep
-         JOIN grupo_miembros gm ON gm.grupo_id = pep.equipo_id
-         WHERE pep.partido_id = p.id
-           AND gm.usuario_id = $${idxUser}
-           AND pep.estado = 'pendiente'
+         JOIN grupos g_partido ON g_partido.id = pep.equipo_id
+         WHERE pep.partido_id = p.id AND pep.estado = 'pendiente'
+           AND (g_partido.capitan_id = $${idxUser} OR EXISTS (
+             SELECT 1 FROM grupo_miembros gm
+             WHERE gm.grupo_id = pep.equipo_id AND gm.usuario_id = $${idxUser}
+               AND gm.rol IN ('capitan', 'admin')
+           ))
          LIMIT 1
        ) AS mi_equipo_postulado_id,
        (
          SELECT pei.equipo_id
          FROM partido_equipos_inscritos pei
-         JOIN grupo_miembros gm ON gm.grupo_id = pei.equipo_id
+         JOIN grupos g_partido ON g_partido.id = pei.equipo_id
          WHERE pei.partido_id = p.id
-           AND gm.usuario_id = $${idxUser}
-           AND gm.rol IN ('capitan', 'admin')
+           AND (g_partido.capitan_id = $${idxUser} OR EXISTS (
+             SELECT 1 FROM grupo_miembros gm
+             WHERE gm.grupo_id = pei.equipo_id AND gm.usuario_id = $${idxUser}
+               AND gm.rol IN ('capitan', 'admin')
+           ))
          LIMIT 1
        ) AS mi_equipo_inscrito_id
      FROM partidos p
@@ -417,7 +429,7 @@ export async function obtenerPartido(partidoId, usuarioId) {
             pp.posicion, pp.estado, pp.created_at AS fecha
      FROM partido_postulaciones pp
      JOIN usuarios u ON u.id = pp.usuario_id
-     WHERE pp.partido_id = $1
+     WHERE pp.partido_id = $1 AND pp.estado = 'pendiente'
      ORDER BY pp.created_at ASC`,
     [partidoId]
   );
@@ -436,7 +448,7 @@ export async function obtenerPartido(partidoId, usuarioId) {
             pep.estado, pep.created_at AS fecha
      FROM partido_equipos_postulantes pep
      JOIN grupos g ON g.id = pep.equipo_id
-     WHERE pep.partido_id = $1
+     WHERE pep.partido_id = $1 AND pep.estado = 'pendiente'
      ORDER BY pep.created_at ASC`,
     [partidoId]
   );
@@ -449,7 +461,7 @@ export async function obtenerPartido(partidoId, usuarioId) {
 
   const { rows: miPostulacion } = await pool.query(
     `SELECT posicion, estado FROM partido_postulaciones
-     WHERE partido_id = $1 AND usuario_id = $2`,
+     WHERE partido_id = $1 AND usuario_id = $2 AND estado = 'pendiente'`,
     [partidoId, usuarioId]
   );
 
@@ -506,11 +518,12 @@ export async function obtenerPartido(partidoId, usuarioId) {
   const { rows: misEquiposPostulados } = await pool.query(
     `SELECT pep.equipo_id
      FROM partido_equipos_postulantes pep
-     JOIN grupo_miembros gm ON gm.grupo_id = pep.equipo_id
-     WHERE pep.partido_id = $1
-       AND gm.usuario_id = $2
-       AND gm.rol IN ('capitan', 'admin')
-       AND pep.estado = 'pendiente'
+     JOIN grupos g_partido ON g_partido.id = pep.equipo_id
+     WHERE pep.partido_id = $1 AND pep.estado = 'pendiente'
+       AND (g_partido.capitan_id = $2 OR EXISTS (
+         SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = pep.equipo_id
+           AND gm.usuario_id = $2 AND gm.rol IN ('capitan', 'admin')
+       ))
      LIMIT 1`,
     [partidoId, usuarioId]
   );
@@ -518,10 +531,12 @@ export async function obtenerPartido(partidoId, usuarioId) {
   const { rows: misEquiposInscritos } = await pool.query(
     `SELECT pei.equipo_id
      FROM partido_equipos_inscritos pei
-     JOIN grupo_miembros gm ON gm.grupo_id = pei.equipo_id
+     JOIN grupos g_partido ON g_partido.id = pei.equipo_id
      WHERE pei.partido_id = $1
-       AND gm.usuario_id = $2
-       AND gm.rol IN ('capitan', 'admin')
+       AND (g_partido.capitan_id = $2 OR EXISTS (
+         SELECT 1 FROM grupo_miembros gm WHERE gm.grupo_id = pei.equipo_id
+           AND gm.usuario_id = $2 AND gm.rol IN ('capitan', 'admin')
+       ))
      LIMIT 1`,
     [partidoId, usuarioId]
   );
@@ -827,7 +842,7 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
@@ -901,6 +916,13 @@ export async function inscribirse(partidoId, usuarioId, posicion = null) {
       [partidoId, usuarioId, posicion || null]
     );
 
+    // Si había una postulación antigua (rechazada o pendiente), la inscripción
+    // directa prevalece y no debe seguir figurando como solicitud activa.
+    await client.query(
+      `DELETE FROM partido_postulaciones WHERE partido_id = $1 AND usuario_id = $2`,
+      [partidoId, usuarioId]
+    );
+
     const nuevoTotal = conteo[0].total + 1;
     if (nuevoTotal >= partido.cupos) {
       await client.query(
@@ -950,7 +972,7 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
 
     // ⚡ BLOQUEO con el organizador
     if (await estanBloqueados(usuarioId, partido.organizador_id)) {
@@ -995,23 +1017,45 @@ export async function postularse(partidoId, usuarioId, posicion = null) {
       throw err;
     }
 
-    const { rows: existe } = await client.query(
-      `SELECT estado FROM partido_postulaciones
+    const { rows: inscrito } = await client.query(
+      `SELECT 1 FROM partido_inscripciones
        WHERE partido_id = $1 AND usuario_id = $2`,
       [partidoId, usuarioId]
     );
-
-    if (existe.length > 0) {
-      const err = new Error(`Ya tienes una postulación con estado: ${existe[0].estado}`);
+    if (inscrito.length) {
+      const err = new Error('Ya estás inscrito en este partido');
       err.status = 409;
       throw err;
     }
 
-    await client.query(
-      `INSERT INTO partido_postulaciones (partido_id, usuario_id, posicion)
-       VALUES ($1, $2, $3)`,
-      [partidoId, usuarioId, posicion || null]
+    // Una postulación rechazada o aprobada en el pasado NO es una solicitud
+    // activa. Si el jugador salió o fue expulsado, puede volver a solicitar.
+    const { rows: anteriores } = await client.query(
+      `SELECT estado FROM partido_postulaciones
+       WHERE partido_id = $1 AND usuario_id = $2 FOR UPDATE`,
+      [partidoId, usuarioId]
     );
+    if (anteriores[0]?.estado === 'pendiente') {
+      const err = new Error('Ya tienes una postulación pendiente');
+      err.status = 409;
+      throw err;
+    }
+
+    if (anteriores.length) {
+      await client.query(
+        `UPDATE partido_postulaciones
+         SET estado = 'pendiente', posicion = $3,
+             resuelta_en = NULL, created_at = NOW()
+         WHERE partido_id = $1 AND usuario_id = $2`,
+        [partidoId, usuarioId, posicion || null]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO partido_postulaciones (partido_id, usuario_id, posicion)
+         VALUES ($1, $2, $3)`,
+        [partidoId, usuarioId, posicion || null]
+      );
+    }
 
     if (String(partido.organizador_id) !== String(usuarioId)) {
       const { rows: datos } = await client.query(
@@ -1054,7 +1098,7 @@ export async function gestionarPostulante(partidoId, usuarioId, postulanteId, ac
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     const { rows } = await client.query(
@@ -1190,16 +1234,26 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
       throw err;
     }
 
-    const { rows: existentes } = await client.query(
-      `SELECT 'postulado' AS tipo FROM partido_equipos_postulantes
-       WHERE partido_id = $1 AND equipo_id = $2
-       UNION
-       SELECT 'inscrito' AS tipo FROM partido_equipos_inscritos
+    const { rows: inscritos } = await client.query(
+      `SELECT 1 FROM partido_equipos_inscritos
        WHERE partido_id = $1 AND equipo_id = $2`,
       [partidoId, equipoId]
     );
-    if (existentes.length) {
-      const err = new Error(`El equipo ya está ${existentes[0].tipo} en este partido`);
+    if (inscritos.length) {
+      const err = new Error('El equipo ya está inscrito en este partido');
+      err.status = 409;
+      throw err;
+    }
+
+    const { rows: anteriores } = await client.query(
+      `SELECT estado FROM partido_equipos_postulantes
+       WHERE partido_id = $1 AND equipo_id = $2 FOR UPDATE`,
+      [partidoId, equipoId]
+    );
+    // Sólo una postulación PENDIENTE bloquea una nueva solicitud.
+    // Las rechazadas y aceptadas antiguas se pueden reutilizar tras retirarse.
+    if (partido.aprobacion_requerida !== false && anteriores[0]?.estado === 'pendiente') {
+      const err = new Error('El equipo ya tiene una postulación pendiente');
       err.status = 409;
       throw err;
     }
@@ -1221,9 +1275,23 @@ export async function postularEquipo(partidoId, usuarioId, equipoId) {
         `INSERT INTO partido_equipos_inscritos (partido_id, equipo_id) VALUES ($1, $2)`,
         [partidoId, equipoId]
       );
+      // Al inscribirse directamente deja de existir cualquier postulación previa
+      // (rechazada, aceptada o pendiente) para que no se muestre como pendiente.
+      await client.query(
+        `DELETE FROM partido_equipos_postulantes
+         WHERE partido_id = $1 AND equipo_id = $2`,
+        [partidoId, equipoId]
+      );
       if (conteo[0].total + 1 >= partido.cupos) {
         await client.query(`UPDATE partidos SET estado = 'lleno' WHERE id = $1`, [partidoId]);
       }
+    } else if (anteriores.length) {
+      await client.query(
+        `UPDATE partido_equipos_postulantes
+         SET estado = 'pendiente', resuelta_en = NULL, created_at = NOW()
+         WHERE partido_id = $1 AND equipo_id = $2`,
+        [partidoId, equipoId]
+      );
     } else {
       await client.query(
         `INSERT INTO partido_equipos_postulantes (partido_id, equipo_id)
@@ -1267,7 +1335,7 @@ export async function gestionarEquipoPostulante(partidoId, usuarioId, equipoId, 
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     const { rows } = await client.query(
@@ -2171,7 +2239,7 @@ export async function echarInscrito(partidoId, usuarioId, inscritoId) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     if (String(partido.organizador_id) === String(inscritoId)) {
@@ -2197,10 +2265,30 @@ export async function echarInscrito(partidoId, usuarioId, inscritoId) {
       [partidoId]
     );
 
+    // Un partido normal que nació confirmado NO debe pasar a Organizar
+    // al expulsar al último jugador: debe liberar el cupo para reingresar.
+    // Sólo una confirmación real del modo Organizar justifica volver a ese modo.
+    const { rowCount: confirmacionCancelada } = await client.query(
+      `UPDATE partido_confirmaciones
+       SET estado = 'cancelada', resuelta_en = NOW()
+       WHERE partido_id = $1 AND interesado_id = $2
+         AND interesado_tipo = 'usuario' AND estado = 'aceptada'`,
+      [partidoId, inscritoId]
+    );
     const yaNoQuedan = conteo[0].total === 0;
+    const haComenzado = Boolean(partido.fecha && new Date(partido.fecha) <= new Date());
     let reversiono = false;
 
-    if (yaNoQuedan && partido.estado_partido === 'confirmado') {
+    if (confirmacionCancelada > 0) {
+      await client.query(
+        `DELETE FROM partido_interesados
+         WHERE partido_id = $1 AND usuario_id = $2 AND equipo_id IS NULL`,
+        [partidoId, inscritoId]
+      );
+    }
+
+    if (yaNoQuedan && confirmacionCancelada > 0 &&
+        partido.estado_partido === 'confirmado' && !haComenzado) {
       await client.query(
         `UPDATE partidos
          SET estado_partido = 'buscando_jugadores',
@@ -2221,7 +2309,7 @@ export async function echarInscrito(partidoId, usuarioId, inscritoId) {
       );
 
       reversiono = true;
-    } else if (conteo[0].total < partido.cupos && partido.estado === 'lleno') {
+    } else if (conteo[0].total < partido.cupos && partido.estado === 'lleno' && !haComenzado) {
       await client.query(
         `UPDATE partidos SET estado = 'abierto' WHERE id = $1`,
         [partidoId]
@@ -2331,7 +2419,7 @@ export async function echarEquipoInscrito(partidoId, usuarioId, equipoId) {
   try {
     await client.query('BEGIN');
 
-    const partido = await obtenerPartidoOFallar(client, partidoId);
+    const partido = await obtenerPartidoBloqueadoOFallar(client, partidoId);
     verificarOrganizador(partido, usuarioId);
 
     const { rowCount } = await client.query(
@@ -2350,7 +2438,31 @@ export async function echarEquipoInscrito(partidoId, usuarioId, equipoId) {
       `SELECT COUNT(*)::int AS total FROM partido_equipos_inscritos WHERE partido_id = $1`,
       [partidoId]
     );
-    if (conteo[0].total < partido.cupos && partido.estado === 'lleno') {
+    const { rowCount: confirmacionCancelada } = await client.query(
+      `UPDATE partido_confirmaciones
+       SET estado = 'cancelada', resuelta_en = NOW()
+       WHERE partido_id = $1 AND equipo_id = $2
+         AND interesado_tipo = 'equipo' AND estado = 'aceptada'`,
+      [partidoId, equipoId]
+    );
+    const haComenzado = Boolean(partido.fecha && new Date(partido.fecha) <= new Date());
+    const volverAOrganizar = confirmacionCancelada > 0 && conteo[0].total === 0 &&
+      partido.estado_partido === 'confirmado' && !haComenzado;
+    if (confirmacionCancelada > 0) {
+      await client.query(
+        `DELETE FROM partido_interesados
+         WHERE partido_id = $1 AND equipo_id = $2`,
+        [partidoId, equipoId]
+      );
+    }
+    if (volverAOrganizar) {
+      await client.query(
+        `UPDATE partidos SET estado_partido = 'buscando_jugadores',
+           estado = 'abierto', lugar = NULL, fecha = NULL, precio = 0,
+           updated_at = NOW() WHERE id = $1`,
+        [partidoId]
+      );
+    } else if (conteo[0].total < partido.cupos && partido.estado === 'lleno' && !haComenzado) {
       await client.query(
         `UPDATE partidos SET estado = 'abierto' WHERE id = $1`,
         [partidoId]

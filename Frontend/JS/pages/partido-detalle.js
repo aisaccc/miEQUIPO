@@ -94,7 +94,8 @@ export async function init(params = {}) {
 
   function miEquipoEstaPostulado(p, eqId) {
     return (p.equiposPostulantes || []).some(e =>
-      String(e.equipoId ?? e.equipo_id ?? e.id) === String(eqId)
+      String(e.equipoId ?? e.equipo_id ?? e.id) === String(eqId) &&
+      e.estado === 'pendiente'
     );
   }
 
@@ -400,8 +401,6 @@ export async function init(params = {}) {
       botonAccion = `<button class="btn pd-hero__action" id="btn-salir-partido" style="color:#FCA5A5">${ICONOS.x} Salir del partido</button>`;
     } else if (yoPostule && yoPostule.estado === 'pendiente') {
       botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.reloj} Postulación pendiente</span><button class="btn pd-hero__action" id="btn-cancelar-postulacion" style="color:#FCA5A5">Cancelar</button>`;
-    } else if (yoPostule && yoPostule.estado === 'rechazado') {
-      botonAccion = `<span class="pd-hero__action pd-hero__action--badge">${ICONOS.x} Postulación rechazada</span>`;
     } else if (partido.estado !== 'abierto') {
       botonAccion = `<span class="pd-hero__action pd-hero__action--badge">Partido ${partido.estado}</span>`;
     } else if (partido.aprobacionRequerida) {
@@ -412,7 +411,7 @@ export async function init(params = {}) {
 
     // Poder retirarse incluso con una propuesta pendiente, en Organizar o
     // con interes activo tras confirmarse el partido.
-    const tengoParticipacion = yoEstoyInscrito || Boolean(yoPostule) || yoInteresado
+    const tengoParticipacion = yoEstoyInscrito || yoPostule?.estado === 'pendiente' || yoInteresado
       || Boolean(partido.miEquipoInscrito) || Boolean(partido.miEquipoPostulado)
       || Boolean(confirmacionPendiente?.esInteresado);
     const haySalidaEnBoton = /id="btn-(salir-partido|cancelar-interes|cancelar-postulacion|cancelar-postulacion-equipo|retirar-participacion)"/.test(botonAccion);

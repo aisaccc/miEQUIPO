@@ -75,7 +75,7 @@ export async function init() {
     // Mis creados deben verse aunque no esten entre los 50 primeros del feed.
     if (user) {
       try {
-        const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 100 });
+        const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 50 });
         const ids = new Set(partidos.map(p => String(p.id)));
         for (const creado of creados || []) {
           if (!ids.has(String(creado.id))) { partidos.push(creado); ids.add(String(creado.id)); }
@@ -317,7 +317,7 @@ export async function init() {
       partidos = data;
       if (user) {
         try {
-          const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 100 });
+          const { data: creados } = await listarPartidos({ soloMios: 'true', limit: 50 });
           const ids = new Set(partidos.map(p => String(p.id)));
           for (const creado of creados || []) {
             if (!ids.has(String(creado.id))) { partidos.push(creado); ids.add(String(creado.id)); }
