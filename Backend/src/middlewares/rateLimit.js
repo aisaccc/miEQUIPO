@@ -18,9 +18,9 @@ export const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos. Esperá 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   skip: (req) => req.method === 'OPTIONS',
 });
-
 // ⚡ NUEVO: Límite específico para el refresco de tokens
 // Evita que alguien sature la base de datos creando sesiones sin parar.
 export const refreshLimiter = rateLimit({
