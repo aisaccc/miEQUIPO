@@ -19,7 +19,32 @@ import {
    ========================================================= */
 export async function feed(req, res, next) {
   try {
-    const publicaciones = await publicacionesService.feedGlobal(req.usuario.id);
+    const soloAmigos = req.query.soloAmigos === 'true';
+    const categoria = req.query.categoria ?? null;
+    if (categoria !== null && !['post', 'partido', 'torneo', 'grupo'].includes(categoria)) {
+      const err = new Error('Categoría de publicación inválida');
+      err.status = 400;
+      throw err;
+    }
+    const limiteRaw = req.query.limit ?? '100';
+    const offsetRaw = req.query.offset ?? '0';
+    const numeroValido = valor => typeof valor === 'string' && /^\d+$/.test(valor);
+    if (!numeroValido(String(limiteRaw)) || !numeroValido(String(offsetRaw))) {
+      const err = new Error('Parámetros de paginación inválidos');
+      err.status = 400;
+      throw err;
+    }
+    const limite = Number(limiteRaw);
+    const desplazamiento = Number(offsetRaw);
+    if (!Number.isSafeInteger(limite) || limite < 1 || limite > 100 ||
+        !Number.isSafeInteger(desplazamiento) || desplazamiento < 0) {
+      const err = new Error('limit debe estar entre 1 y 100; offset no puede ser negativo');
+      err.status = 400;
+      throw err;
+    }
+    const publicaciones = await publicacionesService.feedGlobal(req.usuario.id, {
+      soloAmigos, categoria, limite, desplazamiento,
+    });
     res.json({ publicaciones });
   } catch (err) {
     next(err);

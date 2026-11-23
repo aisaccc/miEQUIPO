@@ -264,65 +264,90 @@ let mediaBase64Crear = []; // ⚡ AHORA ES UN ARRAY
 let tipoMediaCrear = null;
 let privacidadCrear = 'publico';
 
-export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, opciones = {}) {
-  const textareaCont = document.getElementById('crear-pub-contenido');
-  if (!textareaCont) return toast('Error interno: falta el modal', 'error');
 
-  let tipoPublicacion = opciones.tipo || 'post';
-  const esComunidad = opciones.esComunidad === true;
-  
-  mediaBase64Crear = []; tipoMediaCrear = null;
+export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, opciones = {}) {
+  const modal = document.getElementById('modal-crear-publicacion');
+  const textareaCont = document.getElementById('crear-pub-contenido');
+  const selector = document.getElementById('crear-pub-tipo-selector');
+  const btnPublicar = document.getElementById('btn-publicar');
+  const labelImagen = document.getElementById('crear-pub-label-imagen');
+  const inputImagen = document.getElementById('crear-pub-imagen-file');
+  const previewWrapper = document.getElementById('crear-pub-preview-wrapper');
+  const previewImg = document.getElementById('crear-pub-preview-img');
+  const btnQuitarImagen = document.getElementById('crear-pub-quitar-imagen');
+
+  if (!modal || !textareaCont || !btnPublicar || !labelImagen || !inputImagen || !previewWrapper || !previewImg || !btnQuitarImagen) {
+    return toast('Error interno: faltan elementos del modal de publicación', 'error');
+  }
+
+  const esPerfil = scope === 'perfil';
+  const esGrupo = scope === 'grupo';
+  const esTorneo = scope === 'torneo';
+  const esComunidad = esGrupo && opciones.esComunidad === true;
+
+  if (!esPerfil && !esGrupo && !esTorneo) {
+    return toast('No se reconoce el lugar de publicación', 'error');
+  }
+
+  // Solo Inicio y Perfil permiten escoger una etiqueta manualmente.
+  // Equipo, comunidad y torneo tienen categoría automática por el contexto.
+  const tiposValidos = new Set(['post', 'partido', 'torneo', 'grupo']);
+  let tipoPublicacion = esPerfil && tiposValidos.has(opciones.tipo)
+    ? opciones.tipo
+    : 'post';
+
+  mediaBase64Crear = [];
+  tipoMediaCrear = null;
   privacidadCrear = 'publico';
 
   textareaCont.value = '';
-  document.getElementById('crear-pub-preview-wrapper').classList.add('hidden');
-  document.getElementById('crear-pub-preview-img').src = '';
-  document.getElementById('crear-pub-imagen-file').value = '';
-  document.getElementById('crear-pub-label-imagen').classList.remove('hidden');
+  previewWrapper.classList.add('hidden');
+  previewImg.src = '';
+  inputImagen.value = '';
+  labelImagen.classList.remove('hidden');
+  btnPublicar.disabled = false;
+  btnPublicar.textContent = 'Publicar';
 
-  // ⚡ SELECTOR DE TIPO (Publicación / Partido / Torneo / Grupo)
-  const selector = document.getElementById('crear-pub-tipo-selector');
-  const btnPublicar = document.getElementById('btn-publicar');
-  const textareaWrapper = textareaCont.parentElement;
-  const imagenWrapper = document.getElementById('crear-pub-label-imagen').parentElement;
-  let avisoRedir = document.getElementById('aviso-redireccion');
+  // Restablecer el modal compartido cada vez que se abre.
+  textareaCont.closest('.field')?.classList.remove('hidden');
+  labelImagen.closest('.field')?.classList.remove('hidden');
+  document.getElementById('aviso-redireccion')?.remove();
 
+  // Chips: visibles en Inicio y Perfil, ocultos en grupos y torneos.
   if (selector) {
+    const contenedorSelector = selector.closest('.field') || selector;
+    contenedorSelector.classList.toggle('hidden', !esPerfil);
+
     selector.querySelectorAll('[data-tipo-pub]').forEach(btn => {
-      btn.classList.toggle('subtab--active', btn.dataset.tipoPub === tipoPublicacion);
+      btn.onclick = null;
+      btn.classList.toggle(
+        'subtab--active',
+        esPerfil && btn.dataset.tipoPub === tipoPublicacion
+      );
+
+      if (!esPerfil) return;
+
       btn.onclick = () => {
-        selector.querySelectorAll('[data-tipo-pub]').forEach(b => b.classList.remove('subtab--active'));
-        btn.classList.add('subtab--active');
-        tipoPublicacion = btn.dataset.tipoPub;
-        
-        if (tipoPublicacion !== 'post') {
-          textareaWrapper.classList.add('hidden');
-          imagenWrapper.classList.add('hidden');
-          
-          if (!avisoRedir) {
-            avisoRedir = document.createElement('div');
-            avisoRedir.id = 'aviso-redireccion';
-            avisoRedir.className = 'aviso-aprobacion show mb-4';
-            document.getElementById('modal-crear-publicacion').querySelector('.modal__body').prepend(avisoRedir);
-          }
-          avisoRedir.style.display = 'flex';
-          avisoRedir.innerHTML = `<span class="aviso-aprobacion__icon">ℹ️</span><div>Al presionar el botón, serás redirigido para crear un <strong>${tipoPublicacion}</strong>.</div>`;
-          
-          btnPublicar.textContent = `Ir a ${tipoPublicacion.charAt(0).toUpperCase() + tipoPublicacion.slice(1)}`;
-        } else {
-          textareaWrapper.classList.remove('hidden');
-          imagenWrapper.classList.remove('hidden');
-          if (avisoRedir) avisoRedir.style.display = 'none';
-          btnPublicar.textContent = 'Publicar';
-        }
+        const nuevoTipo = btn.dataset.tipoPub;
+        if (!tiposValidos.has(nuevoTipo)) return;
+
+        tipoPublicacion = nuevoTipo;
+
+        selector.querySelectorAll('[data-tipo-pub]').forEach(b => {
+          b.classList.toggle('subtab--active', b === btn);
+        });
+
+        // Los chips son etiquetas, NO redirecciones.
+        // El textarea, las imágenes y Publicar permanecen visibles.
       };
     });
-    // Forzar el estado inicial
-    selector.querySelector(`[data-tipo-pub="${tipoPublicacion}"]`)?.click();
   }
 
-  // ⚡ INYECTAR SELECTOR DE PRIVACIDAD
+  // Selector de privacidad.
+
+  // INYECTAR SELECTOR DE PRIVACIDAD (DISEÑO ORIGINAL)
   let privCont = document.getElementById('crear-pub-privacidad-container');
+
   if (!privCont) {
     privCont = document.createElement('div');
     privCont.id = 'crear-pub-privacidad-container';
@@ -331,7 +356,7 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
   }
 
   let opcionesPrivacidad = [];
-  
+
   if (scope === 'perfil') {
     opcionesPrivacidad = [
       { valor: 'publico', icono: ICONOS.globo, label: 'Público', desc: 'Todos' },
@@ -362,7 +387,7 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
       <div style="font-size:var(--fs-sm); font-weight:600; margin-bottom:8px;">¿Quién puede verla?</div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         ${opcionesPrivacidad.map(op => `
-          <button type="button" class="btn ${privacidadCrear === op.valor ? 'btn--primary' : 'btn--ghost'}" 
+          <button type="button" class="btn ${privacidadCrear === op.valor ? 'btn--primary' : 'btn--ghost'}"
                   data-priv="${op.valor}" style="flex:1; display:flex; flex-direction:column; align-items:center; padding:10px;">
             <span style="width:20px; height:20px; margin-bottom:4px;">${op.icono}</span>
             <span style="font-size:12px; font-weight:700">${op.label}</span>
@@ -383,119 +408,146 @@ export function abrirModalCrearPublicacionCompartido(scope, refId, onRefrescar, 
       };
     });
   }
-    // ⚡ Aviso de límite de fotos (solo perfil y grupo, no torneo)
+
+
+  // Avisos de límite de fotografías.
   let avisoLimite = document.getElementById('crear-pub-aviso-limite');
+
   if (!avisoLimite) {
     avisoLimite = document.createElement('div');
     avisoLimite.id = 'crear-pub-aviso-limite';
-    avisoLimite.style.cssText = 'margin-bottom:12px; padding:10px 12px; background: var(--color-primary-light); border-radius:8px; font-size:12px; color: var(--color-primary-dark); font-weight:600; display:none;';
-    document.getElementById('crear-pub-label-imagen').parentElement.prepend(avisoLimite);
+    avisoLimite.style.cssText =
+      'margin-bottom:12px;padding:10px 12px;background:var(--color-primary-light);border-radius:8px;font-size:12px;color:var(--color-primary-dark);font-weight:600;display:none;';
+
+    labelImagen.parentElement.prepend(avisoLimite);
   }
+
   avisoLimite.style.display = 'none';
 
   const sesion = getSesion();
-  if (!sesion?.esPremium && tipoPublicacion === 'post') {
-    if (scope === 'perfil') {
-      avisoLimite.innerHTML = `ℹ️ Plan Básico: máximo 3 fotos por ciclo de 30 días.`;
+
+  if (!sesion?.esPremium) {
+    if (esPerfil) {
+      avisoLimite.textContent =
+        'ℹ️ Plan Básico: máximo 3 fotos por ciclo de 30 días.';
       avisoLimite.style.display = 'block';
-    } else if (scope === 'grupo' && !esComunidad) {
-      avisoLimite.innerHTML = `ℹ️ Si el dueño del equipo es Básico, el grupo tiene un tope de 4 fotos en total.`;
+    } else if (esGrupo && !esComunidad) {
+      avisoLimite.textContent =
+        'ℹ️ Si el dueño del equipo es Básico, el grupo tiene un tope de 4 fotos en total.';
       avisoLimite.style.display = 'block';
     }
   }
 
-  // ⚡ LÓGICA PARA MÚLTIPLES IMÁGENES
-  document.getElementById('crear-pub-imagen-file').onchange = (e) => {
-    const files = Array.from(e.target.files).slice(0, 3); // Máximo 3
-    if (files.length === 0) return;
-    
+  // Subida de hasta 3 imágenes.
+  inputImagen.onchange = (e) => {
+    const archivos = Array.from(e.target.files || []).slice(0, 3);
+
+    const validos = archivos.filter(file => {
+      if (file.size <= 5 * 1024 * 1024) return true;
+
+      toast(`La foto ${file.name} es muy grande (máx 5MB)`, 'error');
+      return false;
+    });
+
+    if (validos.length === 0) return;
+
     mediaBase64Crear = [];
     let procesadas = 0;
 
-    files.forEach(file => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast(`La foto ${file.name} es muy grande (máx 5MB)`, 'error');
-        return;
-      }
-      
+    validos.forEach(file => {
       const reader = new FileReader();
+
       reader.onload = (ev) => {
         mediaBase64Crear.push(ev.target.result);
         procesadas++;
-        
-        if (procesadas === files.length) {
+
+        if (procesadas === validos.length) {
           tipoMediaCrear = 'imagen';
-          const imgPreview = document.getElementById('crear-pub-preview-img');
-          imgPreview.src = mediaBase64Crear[0]; // Mostramos la primera
-          
-          document.getElementById('crear-pub-preview-wrapper').classList.remove('hidden');
-          document.getElementById('crear-pub-label-imagen').classList.add('hidden');
+          previewImg.src = mediaBase64Crear[0];
+          previewWrapper.classList.remove('hidden');
+          labelImagen.classList.add('hidden');
         }
       };
+
+      reader.onerror = () => {
+        procesadas++;
+        toast(`No se pudo leer la foto ${file.name}`, 'error');
+      };
+
       reader.readAsDataURL(file);
     });
   };
 
-  document.getElementById('crear-pub-quitar-imagen').onclick = () => {
-    mediaBase64Crear = []; tipoMediaCrear = null;
-    document.getElementById('crear-pub-preview-wrapper').classList.add('hidden');
-    document.getElementById('crear-pub-preview-img').src = '';
-    document.getElementById('crear-pub-imagen-file').value = '';
-    document.getElementById('crear-pub-label-imagen').classList.remove('hidden');
+  // Quitar imágenes seleccionadas.
+  btnQuitarImagen.onclick = () => {
+    mediaBase64Crear = [];
+    tipoMediaCrear = null;
+    previewWrapper.classList.add('hidden');
+    previewImg.src = '';
+    inputImagen.value = '';
+    labelImagen.classList.remove('hidden');
   };
 
-  document.getElementById('btn-publicar').onclick = async () => {
-    // ⚡ Validación de redirección según el tipo
-    if (tipoPublicacion === 'partido') {
-      cerrarModal('modal-crear-publicacion');
-      window.location.hash = '#/partidos';
-      return toast('Ve a la sección Partidos para crear uno nuevo', 'info');
-    } else if (tipoPublicacion === 'torneo') {
-      cerrarModal('modal-crear-publicacion');
-      window.location.hash = '#/torneos';
-      return toast('Ve a la sección Torneos para crear uno nuevo', 'info');
-    } else if (tipoPublicacion === 'grupo') {
-      cerrarModal('modal-crear-publicacion');
-      window.location.hash = '#/mi-equipo';
-      return toast('Ve a Mi Equipo para crear un nuevo grupo', 'info');
-    }
-
-    const contenido = document.getElementById('crear-pub-contenido').value.trim();
+  // Publicar sin redirigir a ninguna sección.
+  btnPublicar.onclick = async () => {
+    const contenido = textareaCont.value.trim();
 
     if (!contenido && mediaBase64Crear.length === 0) {
       return toast('Escribe algo o subí un archivo', 'error');
     }
 
-    const btn = document.getElementById('btn-publicar');
-    btn.disabled = true; btn.textContent = 'Publicando...';
+    btnPublicar.disabled = true;
+    btnPublicar.textContent = 'Publicando...';
 
     try {
-      const datos = { contenido: contenido || null, tipo: 'post', privacidad: privacidadCrear };
-      
-      // ⚡ Guardamos como JSON string para la base de datos
+      // Inicio/Perfil: categoría elegida mediante chips.
+      // Equipo/Comunidad/Torneo: tipo post y contexto automático.
+      const datos = {
+        contenido: contenido || null,
+        tipo: esPerfil ? tipoPublicacion : 'post',
+        privacidad: privacidadCrear
+      };
+
       if (mediaBase64Crear.length > 0) {
-        datos.imagen = JSON.stringify(mediaBase64Crear); 
+        datos.imagen = JSON.stringify(mediaBase64Crear);
       }
 
-      if (scope === 'grupo') await crearPublicacionEnGrupo(refId, datos);
-      else if (scope === 'torneo') await crearPublicacionEnTorneo(refId, datos);
-      else await crearPublicacion(datos);
+      if (esGrupo) {
+        await crearPublicacionEnGrupo(refId, datos);
+      } else if (esTorneo) {
+        await crearPublicacionEnTorneo(refId, datos);
+      } else {
+        await crearPublicacion(datos);
+      }
 
       cerrarModal('modal-crear-publicacion');
       toast('Publicación creada', 'success');
-      if (onRefrescar) await onRefrescar();
+
+      if (onRefrescar) {
+        await onRefrescar();
+      }
     } catch (err) {
       toast(err.message || 'No se pudo publicar', 'error');
     } finally {
-      btn.disabled = false; btn.textContent = 'Publicar';
+      btnPublicar.disabled = false;
+      btnPublicar.textContent = 'Publicar';
     }
   };
 
-  document.querySelectorAll('#modal-crear-publicacion [data-cerrar-modal]').forEach(btn => btn.onclick = () => cerrarModal('modal-crear-publicacion'));
-  document.getElementById('modal-crear-publicacion').onclick = (e) => { if (e.target.id === 'modal-crear-publicacion') cerrarModal('modal-crear-publicacion'); };
+  // Cerrar modal.
+  modal.querySelectorAll('[data-cerrar-modal]').forEach(btn => {
+    btn.onclick = () => cerrarModal('modal-crear-publicacion');
+  });
+
+  modal.onclick = e => {
+    if (e.target === modal) {
+      cerrarModal('modal-crear-publicacion');
+    }
+  };
 
   abrirModal('modal-crear-publicacion');
 }
+
 
 /* =========================================================
    MENÚ ⋯ y EDITAR PUBLICACIÓN

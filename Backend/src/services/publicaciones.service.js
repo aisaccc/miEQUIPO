@@ -126,7 +126,10 @@ function formatearComentario(row) {
   };
 }
 
-function sqlBasePublicacion(whereClause) {
+function sqlBasePublicacion(whereClause, { limite = 100, desplazamiento = 0 } = {}) {
+  // Ambos valores provienen de la capa de control y se normalizan de nuevo aquí.
+  const limiteSeguro = Number.isInteger(limite) ? Math.max(1, Math.min(100, limite)) : 100;
+  const desplazamientoSeguro = Number.isSafeInteger(desplazamiento) ? Math.max(0, desplazamiento) : 0;
   return `
     SELECT
       p.id, p.tipo, p.scope, p.grupo_id, p.torneo_id, p.privacidad,
@@ -142,8 +145,8 @@ function sqlBasePublicacion(whereClause) {
     FROM publicaciones p
     JOIN usuarios u ON u.id = p.autor_id
     ${whereClause}
-    ORDER BY p.created_at DESC
-    LIMIT 100
+    ORDER BY p.created_at DESC, p.id DESC
+    LIMIT ${limiteSeguro} OFFSET ${desplazamientoSeguro}
   `;
 }
 
@@ -290,7 +293,7 @@ export async function listarPorTorneo(torneoId, usuarioActualId) {
 /* =========================================================
    FEED GLOBAL
    ========================================================= */
-export async function feedGlobal(usuarioActualId) {
+export async function feedGlobal(usuarioActualId, { soloAmigos = false, categoria = null, limite = 100, desplazamiento = 0 } = {}) {
   const filtroPrivacidad = `
     (
       (p.scope = 'perfil' AND (
@@ -329,8 +332,29 @@ export async function feedGlobal(usuarioActualId) {
     )
   `;
 
+  // Filtrar en PostgreSQL ANTES de paginar. Filtrar los primeros 100 en el
+  // navegador dejaría fuera publicaciones antiguas de amigos.
+  const filtroAmigos = soloAmigos ? `
+    AND EXISTS (
+      SELECT 1 FROM amistades a
+      WHERE a.estado = 'aceptada'
+        AND (
+          (a.usuario_id = $1 AND a.amigo_id = p.autor_id)
+          OR (a.usuario_id = p.autor_id AND a.amigo_id = $1)
+        )
+    )
+  ` : '';
+
+  // Filtros por categoría de contenido (etiqueta), sin crear recursos reales.
+  const filtroCategoria = ({
+    post: "AND p.scope = 'perfil' AND (p.tipo = 'post' OR p.tipo IS NULL)",
+    partido: "AND p.tipo = 'partido'",
+    torneo: "AND (p.scope = 'torneo' OR p.tipo = 'torneo')",
+    grupo: "AND (p.scope = 'grupo' OR p.tipo = 'grupo')",
+  })[categoria] || '';
+
   const { rows } = await pool.query(
-    sqlBasePublicacion(`WHERE ${filtroPrivacidad}`),
+    sqlBasePublicacion(`WHERE ${filtroPrivacidad} ${filtroAmigos} ${filtroCategoria}`, { limite, desplazamiento }),
     [usuarioActualId]
   );
 
